@@ -1119,6 +1119,13 @@
             <div class="field" style="margin-bottom:0;"><label for="shiftNightCutover">Night: Starting/Ending Cutover</label><input type="time" id="shiftNightCutover"></div>
           </div>
 
+          <div class="sub" style="font-weight:600; color:var(--text); text-transform:none; margin-bottom:8px;">Machine Working Hours</div>
+          <p class="hint" style="text-align:left; margin-left:0;">Separate from the Day/Night Start-End times above — those set the full shift (e.g. 6:30 to 6:30 = 12 hours, for attendance). This is the shorter number production, machine, and Total Picks efficiency math actually runs on (e.g. 11.5 hours, accounting for an untracked break). Changing the shift length above does NOT change this — set it here directly.</p>
+          <div class="grid-2" style="margin-bottom:16px;">
+            <div class="field" style="margin-bottom:0;"><label for="shiftDayMachineHours">Day: Machine Hours</label><input type="number" id="shiftDayMachineHours" min="0" step="0.25" placeholder="e.g. 11.5"></div>
+            <div class="field" style="margin-bottom:0;"><label for="shiftNightMachineHours">Night: Machine Hours</label><input type="number" id="shiftNightMachineHours" min="0" step="0.25" placeholder="e.g. 11.5"></div>
+          </div>
+
           <div class="sub" style="font-weight:600; color:var(--text); text-transform:none; margin-bottom:8px;">Grace Period — When Each Locks</div>
           <p class="hint" style="text-align:left; margin-left:0;">For each one, choose either a number of minutes after that shift ends, or a fixed clock time.</p>
           <div id="graceFieldsContainer"></div>
@@ -3089,6 +3096,8 @@ function populateShiftRuleForm(rule){
   const bounds = shiftBoundsFromRule(rule);
   $('shiftDayCutover').value = hoursToTimeStr(bounds.dayCutover);
   $('shiftNightCutover').value = hoursToTimeStr(bounds.nightCutover);
+  $('shiftDayMachineHours').value = (rule.day.machineHours !== undefined && rule.day.machineHours !== null) ? rule.day.machineHours : 11.5;
+  $('shiftNightMachineHours').value = (rule.night.machineHours !== undefined && rule.night.machineHours !== null) ? rule.night.machineHours : 11.5;
   GRACE_COMBOS.forEach(c => {
     const ids = graceFieldIds(c.role, c.shift);
     const cfg = rule.grace[c.role][c.shift];
@@ -3120,7 +3129,7 @@ function renderShiftRuleHistoryList(){
       <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px;">
         <div>
           <div style="font-weight:600; font-size:13px;">${dateLabel}${isActive ? ' <span class="badge badge-approved">Active Now</span>' : ''}</div>
-          <div class="hint" style="text-align:left; margin-left:0; margin-top:4px;">Day ${r.day.start}\u2013${r.day.end} (cutover ${r.day.cutover || '\u2014'}) &middot; Night ${r.night.start}\u2013${r.night.end} (cutover ${r.night.cutover || '\u2014'})</div>
+          <div class="hint" style="text-align:left; margin-left:0; margin-top:4px;">Day ${r.day.start}\u2013${r.day.end} (cutover ${r.day.cutover || '\u2014'}, machine ${r.day.machineHours ?? '\u2014'}h) &middot; Night ${r.night.start}\u2013${r.night.end} (cutover ${r.night.cutover || '\u2014'}, machine ${r.night.machineHours ?? '\u2014'}h)</div>
         </div>
         <div style="display:flex; gap:6px; flex-shrink:0;">
           <button class="mini-icon-btn edit-shift-rule-btn" data-date="${r.effectiveDate}" title="Edit">${MINI_EDIT_ICON}</button>
@@ -3189,6 +3198,11 @@ if($('saveShiftRuleBtn')){
     if(timeStrToHours(dayCutover) === null || timeStrToHours(nightCutover) === null){
       toast('Please set both Starting/Ending cutover times'); return;
     }
+    const dayMachineHours = Number($('shiftDayMachineHours').value);
+    const nightMachineHours = Number($('shiftNightMachineHours').value);
+    if(!isFinite(dayMachineHours) || dayMachineHours <= 0 || !isFinite(nightMachineHours) || nightMachineHours <= 0){
+      toast('Please set both Machine Working Hours to a number greater than 0'); return;
+    }
 
     const grace = { operator: {}, supervisor: {} };
     for(const c of GRACE_COMBOS){
@@ -3208,8 +3222,8 @@ if($('saveShiftRuleBtn')){
 
     const rule = {
       effectiveDate,
-      day: { start: dayStart, end: dayEnd, cutover: dayCutover },
-      night: { start: nightStart, end: nightEnd, cutover: nightCutover },
+      day: { start: dayStart, end: dayEnd, cutover: dayCutover, machineHours: dayMachineHours },
+      night: { start: nightStart, end: nightEnd, cutover: nightCutover, machineHours: nightMachineHours },
       grace
     };
     const originalDate = state.editingShiftRuleDate;
@@ -3358,11 +3372,13 @@ function countWorkingDays(fromDate, toDate){
   }
   return count;
 }
-// Total expected hours for one shift (Day or Night) across a date range —
-// summed day by day using whichever Shift & Timing rule was actually in
-// effect on EACH individual date, so a rule change partway through the
-// range is reflected correctly instead of applying one length to the whole
-// span. Holidays are excluded, same as countWorkingDays.
+// Total expected MACHINE hours for one shift (Day or Night) across a date
+// range — using the separate Machine Working Hours setting (not the
+// shift's own Start-to-End clock span), summed day by day using whichever
+// Shift & Timing rule was actually in effect on EACH individual date, so a
+// rule change partway through the range is reflected correctly instead of
+// applying one length to the whole span. Holidays are excluded, same as
+// countWorkingDays.
 function sumShiftHoursForRange(fromDate, toDate, shiftName){
   if(!fromDate || !toDate) return 0;
   let total = 0;
@@ -3370,7 +3386,7 @@ function sumShiftHoursForRange(fromDate, toDate, shiftName){
   const end = new Date(toDate + 'T00:00:00');
   while(d <= end){
     const ds = dateToStr(d);
-    if(!isHoliday(ds)) total += shiftLengthHoursForDate(ds, shiftName);
+    if(!isHoliday(ds)) total += machineHoursForDate(ds, shiftName);
     d.setDate(d.getDate() + 1);
   }
   return total;
@@ -3953,8 +3969,8 @@ function defaultGraceEntry(minutes, clock){
 function makeDefaultShiftRule(){
   return {
     effectiveDate: '2000-01-01', // always-applicable baseline until a later rule supersedes it
-    day: { start: '06:30', end: '18:30', cutover: '12:30' },
-    night: { start: '18:30', end: '06:30', cutover: '00:30' },
+    day: { start: '06:30', end: '18:30', cutover: '12:30', machineHours: 11.5 },
+    night: { start: '18:30', end: '06:30', cutover: '00:30', machineHours: 11.5 },
     grace: {
       operator: { day: defaultGraceEntry(60, '19:30'), night: defaultGraceEntry(60, '07:30') },
       supervisor: { day: defaultGraceEntry(60, '19:30'), night: defaultGraceEntry(60, '07:30') }
@@ -4004,12 +4020,17 @@ function shiftBoundsFromRule(rule){
   let nightCutover = timeStrToHours(n.cutover) ?? ((nightStart + nightLen/2) % 24);
   return { dayStart, dayEnd, nightStart, nightEnd, dayCutover, nightCutover };
 }
-// Length of one shift instance on a given date, in hours — Night wraps
-// past midnight so its length is computed accordingly.
-function shiftLengthHoursForDate(dateStr, shiftName){
-  const b = shiftBoundsFromRule(getShiftRuleForDate(dateStr));
-  if(shiftName === 'Night') return b.nightEnd > b.nightStart ? (b.nightEnd - b.nightStart) : (24 - b.nightStart + b.nightEnd);
-  return b.dayEnd - b.dayStart;
+// Machine/production working hours for one shift instance on a given date —
+// deliberately SEPARATE from the shift's own Start-to-End clock span (e.g.
+// a 6:30-6:30 shift is 12 hours for attendance purposes, but the machine
+// only counts 11.5 productive hours, accounting for an untracked break).
+// Set independently per Day/Night in Admin > Shift & Timing; defaults to
+// 11.5 for older saved rules that predate this field.
+function machineHoursForDate(dateStr, shiftName){
+  const rule = getShiftRuleForDate(dateStr);
+  const cfg = shiftName === 'Night' ? rule.night : rule.day;
+  const hrs = Number(cfg && cfg.machineHours);
+  return isFinite(hrs) && hrs > 0 ? hrs : 11.5;
 }
 // Day runs from that date's configured Day start to Day end; Night runs
 // the rest of the clock. Anytime before Day's start still belongs to the
@@ -5147,16 +5168,18 @@ function computeOperatorEfficiency(records, operatorId, fromDate, toDate, assign
   const shiftSet = (assignedShift === 'Day' || assignedShift === 'Night')
     ? new Set([...completedKeys].map(k => k.split('|')[0]))
     : completedKeys;
-  // Each shift's length comes from whichever Admin > Shift & Timing rule
-  // was actually in effect on ITS OWN date — so a later change to the
-  // hours never reaches back and changes an already-worked shift's total.
+  // Each shift's MACHINE hours (the separate Machine Working Hours setting,
+  // not the shift's own Start-to-End clock span) comes from whichever
+  // Admin > Shift & Timing rule was actually in effect on ITS OWN date —
+  // so a later change to the hours never reaches back and changes an
+  // already-worked shift's total.
   let shiftHours = 0;
   if(assignedShift === 'Day' || assignedShift === 'Night'){
-    shiftSet.forEach(dateStr => { shiftHours += shiftLengthHoursForDate(dateStr, assignedShift); });
+    shiftSet.forEach(dateStr => { shiftHours += machineHoursForDate(dateStr, assignedShift); });
   } else {
     shiftSet.forEach(key => {
       const [dateStr, shiftName] = key.split('|');
-      shiftHours += shiftLengthHoursForDate(dateStr, shiftName);
+      shiftHours += machineHoursForDate(dateStr, shiftName);
     });
   }
   // Stop time and machine count only from the completed shifts actually
