@@ -674,6 +674,8 @@
   .lightbox-close:active{ transform: translateY(1px) scale(0.96); }
   .row-actions-backdrop{ position:fixed; inset:0; background:rgba(15,23,42,0.45); z-index:100; display:flex; align-items:flex-end; justify-content:center; }
   .row-actions-sheet{ background:#fff; width:100%; max-width:420px; border-radius:18px 18px 0 0; padding:18px 16px calc(18px + env(safe-area-inset-bottom)); box-shadow:0 -6px 24px rgba(0,0,0,0.18); }
+  .edit-modal-backdrop{ position:fixed; inset:0; background:rgba(15,23,42,0.55); z-index:110; display:flex; align-items:center; justify-content:center; padding:16px; }
+  .edit-modal-sheet{ background:#fff; width:100%; max-width:480px; max-height:88vh; overflow-y:auto; border-radius:18px; padding:20px; box-shadow:0 12px 40px rgba(0,0,0,0.25); }
   .row-actions-sheet .sub{ margin-top:0; }
   .row-actions-sheet button{ width:100%; text-align:left; margin-bottom:8px; }
   .approve-actions{ display:flex; gap:8px; margin-top: 12px; }
@@ -1146,6 +1148,42 @@
           </div>
         </div>
         <button class="btn btn-primary" id="saveMachineCooldownBtn" style="margin-top:12px;">Save</button>
+
+        <div class="sub" style="margin-top:24px; font-weight:600; color:var(--text); text-transform:none;">Weekly Automatic Stop &amp; Machine Hours</div>
+        <p class="sub" style="margin-top:0;">For one day of the week (e.g. every Thursday), automatically apply a fixed cleaning stop to every running machine and reduce that day's Machine Working Hours to match — Operators still get picks for that time if the reason has a picks/hour rate set, but it isn't held against their efficiency (Machine Working Hours already accounts for it).</p>
+        <div class="card" style="margin-bottom:16px;">
+          <div class="sub" style="margin-top:0; font-weight:600; color:var(--text); text-transform:none;" id="weekdayAutoStopFormTitle">Add a Rule</div>
+          <div class="field">
+            <label for="wasEffectiveDate">Effective From</label>
+            <input type="date" id="wasEffectiveDate">
+          </div>
+          <p class="hint" style="text-align:left; margin-left:0;">Applies to this weekday on or after this date — earlier dates (including any you've already corrected by hand) are left exactly as they are.</p>
+          <div class="grid-2">
+            <div class="field"><label for="wasWeekday">Day of Week</label>
+              <select id="wasWeekday">
+                <option value="0">Sunday</option>
+                <option value="1">Monday</option>
+                <option value="2">Tuesday</option>
+                <option value="3">Wednesday</option>
+                <option value="4" selected>Thursday</option>
+                <option value="5">Friday</option>
+                <option value="6">Saturday</option>
+              </select>
+            </div>
+            <div class="field"><label for="wasReason">Stop Reason</label><select id="wasReason"></select></div>
+          </div>
+          <div class="grid-2">
+            <div class="field"><label for="wasDayHours">Day: Auto-Stop Hours</label><input type="number" id="wasDayHours" min="0" step="0.25" placeholder="e.g. 3"></div>
+            <div class="field"><label for="wasDayMachineHours">Day: Machine Hours (that day)</label><input type="number" id="wasDayMachineHours" min="0" step="0.25" placeholder="e.g. 8.5"></div>
+          </div>
+          <div class="grid-2" style="margin-bottom:16px;">
+            <div class="field" style="margin-bottom:0;"><label for="wasNightHours">Night: Auto-Stop Hours</label><input type="number" id="wasNightHours" min="0" step="0.25" placeholder="e.g. 2"></div>
+            <div class="field" style="margin-bottom:0;"><label for="wasNightMachineHours">Night: Machine Hours (that day)</label><input type="number" id="wasNightMachineHours" min="0" step="0.25" placeholder="e.g. 9.5"></div>
+          </div>
+          <button class="btn btn-primary" id="saveWeekdayAutoStopBtn" style="margin-top:6px;">Save Rule</button>
+          <button class="btn btn-ghost" id="cancelWeekdayAutoStopEditBtn" style="margin-top:6px; display:none;">Cancel Edit</button>
+        </div>
+        <div id="weekdayAutoStopList"></div>
       </div>
 
       <div class="auth-pane" id="admin-execaccess">
@@ -1313,7 +1351,6 @@
       </div>
 
       <div id="manualEntryPanel" class="card" style="display:none; margin-bottom:14px;"></div>
-      <div id="reportEditPanel" class="card" style="display:none; margin-bottom:14px;"></div>
 
       <div id="reportBody"></div>
     </section>
@@ -1827,6 +1864,46 @@ function stopReasonRate(reasonField){
   const found = (state.stopReasons || []).find(r => r.name === name);
   return found ? (Number(found.picksPerHour) || 0) : 0;
 }
+// Total "picks earned from being stopped" for one reading. Prefers the
+// precise per-reason breakdown saved alongside newer entries (stopTime and
+// reason can each be more than one, entered as separate Stop Time & Reason
+// boxes) — each portion's own hours times its own reason's rate. Older
+// entries saved before this breakdown existed only have the combined
+// stopTime + reason string; if more than one reason was joined together
+// into that string, this splits the total hours evenly across however many
+// reasons are named as a reasonable estimate — far better than those
+// entries silently earning 0 just because stopReasonRate can't match a
+// combined "01 X; 02 Y" string to any single configured reason.
+function computeStopPicks(r){
+  if(Array.isArray(r.stopBreakdown) && r.stopBreakdown.length){
+    return r.stopBreakdown.reduce((sum, b) => sum + (Number(b.hours) || 0) * stopReasonRate(b.reason), 0);
+  }
+  const totalHours = Number(r.stopTime) || 0;
+  if(!totalHours || !r.reason || r.reason === '—') return 0;
+  const reasonNames = r.reason.split(';').map(s => s.trim()).filter(Boolean);
+  if(reasonNames.length <= 1) return totalHours * stopReasonRate(r.reason);
+  const perReasonHours = totalHours / reasonNames.length;
+  return reasonNames.reduce((sum, name) => sum + perReasonHours * stopReasonRate(name), 0);
+}
+// What to put in each of the 4 Stop Time & Reason boxes when opening an
+// EXISTING entry for editing. Prefers the precise per-box breakdown saved
+// alongside newer entries — each box gets back exactly what was typed into
+// it. For older entries saved before that breakdown existed, where more
+// than one reason got joined into a single combined string, this splits
+// them back into separate boxes (one per reason named, hours divided
+// evenly as an estimate) instead of leaving everything piled into box 1
+// with a reason dropdown that can't match anything.
+function stopBoxSeeds(r){
+  if(Array.isArray(r.stopBreakdown) && r.stopBreakdown.length){
+    return r.stopBreakdown.slice(0,4).map(b => ({ hours: Number(b.hours) || 0, reason: b.reason || '' }));
+  }
+  const totalHours = Number(r.stopTime) || 0;
+  if(!totalHours || !r.reason || r.reason === '—') return [];
+  const reasonNames = r.reason.split(';').map(s => s.trim()).filter(Boolean);
+  if(reasonNames.length <= 1) return [{ hours: totalHours, reason: r.reason }];
+  const per = totalHours / reasonNames.length;
+  return reasonNames.slice(0,4).map(name => ({ hours: per, reason: name }));
+}
 const ROLE_LABEL = { admin: 'Admin', supervisor: 'Supervisor', operator: 'Operator', employee: 'Employee', executive: 'Executive Management', pending: 'Pending Setup' };
 const EMP_STATUS_LABEL = { running: 'On The Job', vacation: 'Vacation', leave: 'On Leave', terminated: 'Exit / Terminated', final_exit: 'Exit / Terminated' };
 function empStatusLabel(status){ return EMP_STATUS_LABEL[status] || 'On The Job'; }
@@ -1877,6 +1954,8 @@ let state = {
   execVisibility: null,  // Executive Management field-visibility config (loaded from db)
   shiftRules: [],   // Admin-configurable, effective-dated history of shift start/end + operator/supervisor grace periods (see Admin > Shift & Timing)
   machineCooldownMinutes: 30, // Admin-configurable "machine disappears from the list for X minutes after logging" setting (see Admin > Shift & Timing)
+  weekdayAutoStops: [], // Admin-configurable "every Thursday, X hours auto-stop for cleaning" rules (see Admin > Shift & Timing)
+  editingWeekdayAutoStopIdx: null,
   editingShiftRuleDate: null, // effectiveDate of the shift rule currently open for editing in that form, if any
   execViewTarget: null,  // loginId Executive Management is currently drilled into (read-only)
   passportAccess: { users: [] }, // who besides Admin can see/edit Passport Location & Renewal Status
@@ -2981,7 +3060,7 @@ async function loadConfigLists(){
     // These 9 reads are all independent — firing them together instead of
     // one-after-another is most of why login used to feel slow (it was
     // waiting on 8+ sequential round-trips before showing anything).
-    const [departments, positions, leaveTypes, salaryComponents, premiumTiers, stopReasonsRaw, execVisibility, passportAccess, holidaysObj, shiftRules, machineCooldownObj] = await Promise.all([
+    const [departments, positions, leaveTypes, salaryComponents, premiumTiers, stopReasonsRaw, execVisibility, passportAccess, holidaysObj, shiftRules, machineCooldownObj, weekdayAutoStops] = await Promise.all([
       window.__db.getConfigList('departments', ['Weaving','Maintenance','HR','Accounts','Quality']),
       window.__db.getConfigList('positions', ['Machine Operator','Supervisor','Instructor','Manager']),
       window.__db.getConfigList('leaveTypes', ['Sick','Umrah','Annual','Compensatory','Exit Request','Other']),
@@ -2992,7 +3071,8 @@ async function loadConfigLists(){
       window.__db.getConfigObject('passportAccess', { users: [] }),
       window.__db.getConfigObject('holidays', {}),
       window.__db.getConfigList('shiftRules', [makeDefaultShiftRule()]),
-      window.__db.getConfigObject('machineCooldown', { minutes: 30 })
+      window.__db.getConfigObject('machineCooldown', { minutes: 30 }),
+      window.__db.getConfigList('weekdayAutoStops', [])
     ]);
     state.departments = departments;
     state.positions = positions;
@@ -3005,6 +3085,7 @@ async function loadConfigLists(){
     state.holidays = holidaysObj || {};
     state.shiftRules = (shiftRules && shiftRules.length) ? shiftRules : [makeDefaultShiftRule()];
     state.machineCooldownMinutes = (machineCooldownObj && isFinite(Number(machineCooldownObj.minutes))) ? Number(machineCooldownObj.minutes) : 30;
+    state.weekdayAutoStops = weekdayAutoStops || [];
     renderConfigChips('deptChips', state.departments, 'departments');
     renderConfigChips('positionChips', state.positions, 'positions');
     renderConfigChips('leaveTypeChips', state.leaveTypes, 'leaveTypes');
@@ -3018,6 +3099,7 @@ async function loadConfigLists(){
     if($('holidayList')) renderHolidaysTab();
     if($('shiftRuleList')) renderShiftRulesAdmin();
     if($('machineCooldownMinutes')) $('machineCooldownMinutes').value = state.machineCooldownMinutes;
+    if($('weekdayAutoStopList')) renderWeekdayAutoStopsAdmin();
   }catch(err){ console.error(err); }
 }
 
@@ -3250,6 +3332,131 @@ if($('saveMachineCooldownBtn')){
       await window.__db.saveConfigObject('machineCooldown', { minutes });
       state.machineCooldownMinutes = minutes;
       toast('Machine re-entry cooldown updated');
+    }catch(err){ console.error(err); toast('Could not save — check your connection'); }
+  });
+}
+
+const WEEKDAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+function resetWeekdayAutoStopForm(){
+  state.editingWeekdayAutoStopIdx = null;
+  $('weekdayAutoStopFormTitle').textContent = 'Add a Rule';
+  $('cancelWeekdayAutoStopEditBtn').style.display = 'none';
+  $('wasEffectiveDate').value = dateToStr(new Date());
+  $('wasWeekday').value = '4';
+  $('wasReason').innerHTML = reasonOptionsHtml('');
+  $('wasDayHours').value = '';
+  $('wasDayMachineHours').value = '';
+  $('wasNightHours').value = '';
+  $('wasNightMachineHours').value = '';
+}
+function renderWeekdayAutoStopsList(){
+  const box = $('weekdayAutoStopList');
+  const list = state.weekdayAutoStops || [];
+  if(!list.length){ box.innerHTML = '<div class="empty-state">No weekly automatic stop rules yet.</div>'; return; }
+  const todayStr = dateToStr(new Date());
+  const sorted = list.slice().sort((a,b) => (a.effectiveDate < b.effectiveDate ? 1 : (a.effectiveDate > b.effectiveDate ? -1 : 0)));
+  const activeToday = getWeekdayAutoStopRule(todayStr);
+  box.innerHTML = sorted.map((r) => {
+    const idx = list.indexOf(r);
+    const isActive = r === activeToday;
+    return `
+    <div class="card" style="margin-bottom:10px;">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px;">
+        <div>
+          <div style="font-weight:600; font-size:13px;">Every ${WEEKDAY_NAMES[r.weekday] || '—'} \u2014 ${(r.reason || '').replace(/^\d+\s*/, '')}${isActive ? ' <span class="badge badge-approved">Active Now</span>' : ''}</div>
+          <div class="hint" style="text-align:left; margin-left:0; margin-top:4px;">From ${fmtDate(r.effectiveDate)} &middot; Day: ${r.day.hours}h auto-stop, ${r.day.machineHours}h machine hours &middot; Night: ${r.night.hours}h auto-stop, ${r.night.machineHours}h machine hours</div>
+        </div>
+        <div style="display:flex; gap:6px; flex-shrink:0;">
+          <button class="mini-icon-btn edit-was-btn" data-idx="${idx}" title="Edit">${MINI_EDIT_ICON}</button>
+          <button class="mini-icon-btn delete-was-btn" data-idx="${idx}" title="Delete">&times;</button>
+        </div>
+      </div>
+    </div>
+  `;
+  }).join('');
+  box.querySelectorAll('.edit-was-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const r = (state.weekdayAutoStops || [])[Number(btn.dataset.idx)];
+      if(!r) return;
+      state.editingWeekdayAutoStopIdx = Number(btn.dataset.idx);
+      $('weekdayAutoStopFormTitle').textContent = 'Edit Rule';
+      $('cancelWeekdayAutoStopEditBtn').style.display = 'inline-flex';
+      $('wasEffectiveDate').value = r.effectiveDate || '';
+      $('wasWeekday').value = String(r.weekday);
+      $('wasReason').innerHTML = reasonOptionsHtml(r.reason || '');
+      $('wasDayHours').value = r.day.hours;
+      $('wasDayMachineHours').value = r.day.machineHours;
+      $('wasNightHours').value = r.night.hours;
+      $('wasNightMachineHours').value = r.night.machineHours;
+      window.scrollTo(0,0);
+    });
+  });
+  box.querySelectorAll('.delete-was-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if(!requireDb()) return;
+      if(!confirm('Delete this weekly automatic stop rule?')) return;
+      const idx = Number(btn.dataset.idx);
+      const remaining = (state.weekdayAutoStops || []).filter((_,i) => i !== idx);
+      try{
+        await window.__db.saveConfigList('weekdayAutoStops', remaining);
+        state.weekdayAutoStops = remaining;
+        if(state.editingWeekdayAutoStopIdx === idx) resetWeekdayAutoStopForm();
+        renderWeekdayAutoStopsList();
+        toast('Rule deleted');
+      }catch(err){ console.error(err); toast('Could not delete — check your connection'); }
+    });
+  });
+}
+function renderWeekdayAutoStopsAdmin(){
+  resetWeekdayAutoStopForm();
+  renderWeekdayAutoStopsList();
+}
+if($('cancelWeekdayAutoStopEditBtn')){
+  $('cancelWeekdayAutoStopEditBtn').addEventListener('click', resetWeekdayAutoStopForm);
+}
+if($('saveWeekdayAutoStopBtn')){
+  $('saveWeekdayAutoStopBtn').addEventListener('click', async () => {
+    if(!requireDb()) return;
+    const effectiveDate = $('wasEffectiveDate').value;
+    const weekday = Number($('wasWeekday').value);
+    const reason = $('wasReason').value;
+    const dayHours = Number($('wasDayHours').value);
+    const dayMachineHours = Number($('wasDayMachineHours').value);
+    const nightHours = Number($('wasNightHours').value);
+    const nightMachineHours = Number($('wasNightMachineHours').value);
+    if(!effectiveDate){ toast('Please choose an effective date'); return; }
+    if(!reason){ toast('Please choose a stop reason'); return; }
+    if(!isFinite(dayHours) || dayHours < 0 || !isFinite(nightHours) || nightHours < 0){
+      toast('Please enter 0 or more for both Auto-Stop Hours fields'); return;
+    }
+    if(!isFinite(dayMachineHours) || dayMachineHours <= 0 || !isFinite(nightMachineHours) || nightMachineHours <= 0){
+      toast('Please enter both Machine Hours fields as a number greater than 0'); return;
+    }
+    const rule = {
+      effectiveDate,
+      weekday,
+      reason,
+      day: { hours: dayHours, machineHours: dayMachineHours },
+      night: { hours: nightHours, machineHours: nightMachineHours }
+    };
+    const editIdx = state.editingWeekdayAutoStopIdx;
+    let updated = (state.weekdayAutoStops || []).slice();
+    if(editIdx !== null && editIdx !== undefined && updated[editIdx]){
+      updated[editIdx] = rule;
+    } else {
+      // One rule per weekday PER effective date — a new rule landing on a
+      // date that already has one for this weekday overwrites it; anything
+      // with a different effective date is kept as its own history entry,
+      // the same way the main Shift Rules track changes over time.
+      updated = updated.filter(r => !(Number(r.weekday) === weekday && r.effectiveDate === effectiveDate));
+      updated.push(rule);
+    }
+    try{
+      await window.__db.saveConfigList('weekdayAutoStops', updated);
+      state.weekdayAutoStops = updated;
+      resetWeekdayAutoStopForm();
+      renderWeekdayAutoStopsList();
+      toast('Weekly automatic stop rule saved');
     }catch(err){ console.error(err); toast('Could not save — check your connection'); }
   });
 }
@@ -4025,12 +4232,40 @@ function shiftBoundsFromRule(rule){
 // a 6:30-6:30 shift is 12 hours for attendance purposes, but the machine
 // only counts 11.5 productive hours, accounting for an untracked break).
 // Set independently per Day/Night in Admin > Shift & Timing; defaults to
-// 11.5 for older saved rules that predate this field.
+// 11.5 for older saved rules that predate this field. A Weekly Automatic
+// Stop rule (e.g. every Thursday) can override this further for its one
+// day of the week — checked first, since it's more specific.
 function machineHoursForDate(dateStr, shiftName){
+  const weekdayRule = getWeekdayAutoStopRule(dateStr);
+  if(weekdayRule){
+    const cfg = shiftName === 'Night' ? weekdayRule.night : weekdayRule.day;
+    const hrs = Number(cfg && cfg.machineHours);
+    if(isFinite(hrs) && hrs > 0) return hrs;
+  }
   const rule = getShiftRuleForDate(dateStr);
   const cfg = shiftName === 'Night' ? rule.night : rule.day;
   const hrs = Number(cfg && cfg.machineHours);
   return isFinite(hrs) && hrs > 0 ? hrs : 11.5;
+}
+// Weekly Automatic Stop — e.g. every Thursday, every running machine gets a
+// fixed cleaning stop (separate hours for Day/Night) that both earns the
+// Operator picks (if the chosen reason has a picks/hour rate set) and
+// reduces that day's Machine Working Hours above. This does NOT write a
+// stop into any actual reading — it's added live wherever picks/hours are
+// calculated, so changing it later immediately applies everywhere,
+// including to past Thursdays (there's no effective-dating on this one,
+// unlike the main Shift Rules — keep that in mind if you change it).
+function getWeekdayAutoStopRule(dateStr){
+  const list = state.weekdayAutoStops || [];
+  const d = new Date(dateStr + 'T00:00:00');
+  const weekday = d.getDay(); // 0=Sunday ... 6=Saturday
+  // Only rules already in effect on this date apply — this is what makes a
+  // newly-added rule start from the date you add it (or a future date you
+  // choose) rather than reaching back over already-corrected past reports.
+  const candidates = list.filter(r => Number(r.weekday) === weekday && r.effectiveDate && r.effectiveDate <= dateStr);
+  if(!candidates.length) return null;
+  candidates.sort((a,b) => (a.effectiveDate < b.effectiveDate ? 1 : (a.effectiveDate > b.effectiveDate ? -1 : 0)));
+  return candidates[0];
 }
 // Day runs from that date's configured Day start to Day end; Night runs
 // the rest of the clock. Anytime before Day's start still belongs to the
@@ -4557,12 +4792,12 @@ async function loadApprovals(){
             <label>Stop Time &amp; Reason <span style="text-transform:none; font-weight:400; color:var(--muted);">(optional — add more than one if there were several stoppages)</span></label>
           </div>
           <div class="stopReasonBoxes" data-id="${r._id}">
-            ${[0,1,2,3].map(i => `
+            ${(() => { const seeds = stopBoxSeeds(r); return [0,1,2,3].map(i => `
               <div class="row-2" style="margin-bottom:8px;">
-                <input type="text" inputmode="decimal" class="editStopTimeInput${i}" placeholder="Stop Time / Hour" value="${i===0 ? (Number(r.stopTime) ? r.stopTime : '') : ''}" ${locked?'disabled':''}>
-                <select class="editReasonInput${i}" ${locked?'disabled':''}>${reasonOptionsHtml(i===0 ? r.reason : '')}</select>
+                <input type="text" inputmode="decimal" class="editStopTimeInput${i}" placeholder="Stop Time / Hour" value="${seeds[i] ? seeds[i].hours : ''}" ${locked?'disabled':''}>
+                <select class="editReasonInput${i}" ${locked?'disabled':''}>${reasonOptionsHtml(seeds[i] ? seeds[i].reason : '')}</select>
               </div>
-            `).join('')}
+            `).join(''); })()}
           </div>
           ${badge ? `<div>${badge}</div>` : ''}
         </div>
@@ -4630,6 +4865,7 @@ function openRowActionsMenu(id){
     <div class="row-actions-sheet">
       <h2 style="margin-top:0;">${row.machine} \u2014 ${fmtDate(row.date)}</h2>
       <p class="sub">${row.shift} shift &middot; ${row.photoType} Photo &middot; Reading ${row.reading}</p>
+      <p class="hint" style="text-align:left; margin-left:0; margin-top:-8px;">Real entry date &amp; time: <b style="color:var(--text-strong);">${fmtTs(row.timestamp)}</b></p>
       ${notes.length ? `<div class="card" style="margin-bottom:14px; font-size:13px;">${notes.join('<br>')}</div>` : ''}
       ${row.photoDataUrl ? `<button class="btn btn-ghost" id="rowActionPhoto">View Photo</button>` : ''}
       <button class="btn btn-ghost" id="rowActionEdit">Edit Entry</button>
@@ -4662,10 +4898,11 @@ async function decideReading(id, status){
   // (Earned Picks, Report, Excel export) already relies on: total time
   // stopped, and every reason given, joined together.
   const boxWrap = document.querySelector(`.stopReasonBoxes[data-id="${id}"]`);
-  let newStopTime = null, newReason = null;
+  let newStopTime = null, newReason = null, newBreakdown = null;
   if(boxWrap){
     let totalStop = 0, anyStopEntered = false;
     const reasons = [];
+    const breakdown = [];
     for(let i=0;i<4;i++){
       const stopEl = boxWrap.querySelector(`.editStopTimeInput${i}`);
       const reasonEl = boxWrap.querySelector(`.editReasonInput${i}`);
@@ -4675,12 +4912,14 @@ async function decideReading(id, status){
         if(!isValidNumber(stopVal)){ toast('Stop Time / Hour must be a number'); stopEl.focus(); return; }
         anyStopEntered = true;
         totalStop += Number(stopVal);
+        if(Number(stopVal) !== 0) breakdown.push({ reason: reasonVal || '—', hours: Number(stopVal) });
       }
       if(reasonVal) reasons.push(reasonVal);
     }
     if(anyStopEntered || reasons.length){
       newStopTime = String(totalStop);
       newReason = reasons.join('; ');
+      newBreakdown = breakdown;
     }
   }
 
@@ -4704,6 +4943,7 @@ async function decideReading(id, status){
     if(newReading){ updates.reading = newReading; updates.correctedBySupervisor = true; }
     if(newStopTime !== null) updates.stopTime = newStopTime;
     if(newReason !== null) updates.reason = newReason || '—';
+    if(newBreakdown !== null) updates.stopBreakdown = newBreakdown;
     await window.__db.updateReading(id, updates);
     toast(status === 'approved' ? 'Entry approved' : 'Entry rejected — sent back to the operator to fix and resubmit');
     loadApprovals();
@@ -4790,6 +5030,7 @@ async function loadReport(){
           machineNum: Number(m) || 0,
           machine: machineName(m) || cur.machineName,
           date: cur.date, shift: cur.shift,
+          timestamp: cur.timestamp,
           prevReading: prev ? prev.reading : '—', reading: cur.reading,
           diff: diff === null ? '—' : diff,
           flag,
@@ -4888,7 +5129,7 @@ $('reportFromDate').addEventListener('change', loadReport);
 
 // ---- Admin: add a manually-entered reading (e.g. an entry the operator forgot) ----
 $('addManualEntryBtn').addEventListener('click', async () => {
-  $('reportEditPanel').style.display = 'none';
+  closeReportEditModal();
   const panel = $('manualEntryPanel');
   const opening = panel.style.display === 'none';
   if(!opening){ panel.style.display = 'none'; return; }
@@ -4958,8 +5199,13 @@ async function saveManualEntry(){
 }
 
 // ---- Admin: edit or delete an existing reading (fixes duplicate/wrong entries) ----
+function closeReportEditModal(){
+  const el = $('reportEditBackdrop');
+  if(el) el.remove();
+}
 async function openReportEditPanel(id){
   $('manualEntryPanel').style.display = 'none';
+  closeReportEditModal();
   const r = lastReportRows.find(x => x.id === id);
   if(!r){ toast('Could not find that entry'); return; }
   if(!state.users || state.users.length === 0){
@@ -4967,70 +5213,110 @@ async function openReportEditPanel(id){
   }
   const operators = (state.users || []).filter(u => (u.role === 'operator' || u.role === 'supervisor') && !isExitedEmployee(u)).sort((a,b) => a.name.localeCompare(b.name));
   const opOpts = operators.map(u => `<option value="${u.loginId}" ${u.loginId===r.enteredById?'selected':''}>${u.name} (${u.loginId})</option>`).join('');
-  const panel = $('reportEditPanel');
-  panel.innerHTML = `
-    <h2 style="margin-top:0;">Edit Entry <span style="text-transform:none; font-weight:400; color:var(--muted); font-size:12px;">${r.machine}</span></h2>
-    ${r.photoDataUrl ? `<img src="${r.photoDataUrl}" class="approve-photo" id="re-photo">` : '<p class="hint" style="text-align:left; margin-left:0;">No photo was attached to this entry.</p>'}
-    <div class="row-2">
-      <div class="field"><label>Date</label><input type="date" id="re-date" value="${r.date}"></div>
-      <div class="field"><label>Shift</label>
-        <select id="re-shift">
-          <option value="Day" ${r.shift==='Day'?'selected':''}>Day</option>
-          <option value="Night" ${r.shift==='Night'?'selected':''}>Night</option>
+  const backdrop = document.createElement('div');
+  backdrop.className = 'edit-modal-backdrop';
+  backdrop.id = 'reportEditBackdrop';
+  backdrop.innerHTML = `
+    <div class="edit-modal-sheet">
+      <h2 style="margin-top:0;">Edit Entry <span style="text-transform:none; font-weight:400; color:var(--muted); font-size:12px;">${r.machine}</span></h2>
+      ${r.photoDataUrl ? `<img src="${r.photoDataUrl}" class="approve-photo" id="re-photo">` : '<p class="hint" style="text-align:left; margin-left:0;">No photo was attached to this entry.</p>'}
+      <div class="row-2">
+        <div class="field"><label>Date</label><input type="date" id="re-date" value="${r.date}"></div>
+        <div class="field"><label>Shift</label>
+          <select id="re-shift">
+            <option value="Day" ${r.shift==='Day'?'selected':''}>Day</option>
+            <option value="Night" ${r.shift==='Night'?'selected':''}>Night</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label>This Photo Is</label>
+        <select id="re-photoType">
+          <option value="start" ${r.photoType==='Starting'?'selected':''}>Starting Photo</option>
+          <option value="end" ${r.photoType!=='Starting'?'selected':''}>Ending Photo</option>
         </select>
+        <div class="hint">Only Ending photos count toward Earned Picks — Starting photos are backup only.</div>
+      </div>
+      <div class="field" style="margin-bottom:8px;">
+        <label>Reading</label>
+        <input type="text" inputmode="numeric" id="re-reading" value="${r.reading}">
+      </div>
+      <div class="field" style="margin-bottom:6px;">
+        <label>Stop Time &amp; Reason <span style="text-transform:none; font-weight:400; color:var(--muted);">(optional — add more than one if there were several stoppages)</span></label>
+      </div>
+      <div class="stopReasonBoxes" id="re-stopReasonBoxes">
+        ${(() => { const seeds = stopBoxSeeds(r); return [0,1,2,3].map(i => `
+          <div class="row-2" style="margin-bottom:8px;">
+            <input type="text" inputmode="decimal" class="re-stopTimeInput${i}" placeholder="Stop Time / Hour" value="${seeds[i] ? seeds[i].hours : ''}">
+            <select class="re-reasonInput${i}">${reasonOptionsHtml(seeds[i] ? seeds[i].reason : '')}</select>
+          </div>
+        `).join(''); })()}
+      </div>
+      <div class="field"><label>Remarks</label><input type="text" id="re-remarks" value="${r.remarks}"></div>
+      <div class="row-2">
+        <button class="btn btn-ghost" id="re-cancel">Cancel</button>
+        <button class="btn btn-primary" id="re-save">Save Changes</button>
+      </div>
+      <div style="border-top:1px solid var(--line); margin-top:16px; padding-top:14px;">
+        <div class="sub" style="margin-top:0; font-weight:600; color:var(--text); text-transform:none;">Transfer Picks to Another Operator</div>
+        <p class="hint" style="text-align:left; margin-left:0;">Use this when a machine's assignment changed and this reading's picks belong on someone else's account — not for fixing a typed-in value.</p>
+        <div class="field"><label>Operator</label><select id="re-operator">${opOpts}</select></div>
+        <button class="btn btn-ghost" id="re-transfer">Transfer This Entry</button>
       </div>
     </div>
-    <div class="field">
-      <label>This Photo Is</label>
-      <select id="re-photoType">
-        <option value="start" ${r.photoType==='Starting'?'selected':''}>Starting Photo</option>
-        <option value="end" ${r.photoType!=='Starting'?'selected':''}>Ending Photo</option>
-      </select>
-      <div class="hint">Only Ending photos count toward Earned Picks — Starting photos are backup only.</div>
-    </div>
-    <div class="grid-2">
-      <div class="field"><label>Reading</label><input type="text" inputmode="numeric" id="re-reading" value="${r.reading}"></div>
-      <div class="field"><label>Stop Time / Hour</label><input type="text" inputmode="decimal" id="re-stopTime" value="${r.stopTime}"></div>
-    </div>
-    <div class="field"><label>Reason</label><select id="re-reason">${reasonOptionsHtml(r.reason)}</select></div>
-    <div class="field"><label>Remarks</label><input type="text" id="re-remarks" value="${r.remarks}"></div>
-    <div class="row-2">
-      <button class="btn btn-ghost" id="re-cancel">Cancel</button>
-      <button class="btn btn-primary" id="re-save">Save Changes</button>
-    </div>
-    <div style="border-top:1px solid var(--line); margin-top:16px; padding-top:14px;">
-      <div class="sub" style="margin-top:0; font-weight:600; color:var(--text); text-transform:none;">Transfer Picks to Another Operator</div>
-      <p class="hint" style="text-align:left; margin-left:0;">Use this when a machine's assignment changed and this reading's picks belong on someone else's account — not for fixing a typed-in value.</p>
-      <div class="field"><label>Operator</label><select id="re-operator">${opOpts}</select></div>
-      <button class="btn btn-ghost" id="re-transfer">Transfer This Entry</button>
-    </div>
   `;
+  backdrop.addEventListener('click', (e) => { if(e.target === backdrop) closeReportEditModal(); });
+  document.body.appendChild(backdrop);
   if(r.photoDataUrl) $('re-photo').addEventListener('click', () => openLightbox(r.photoDataUrl));
-  $('re-cancel').addEventListener('click', () => { panel.style.display = 'none'; });
+  $('re-cancel').addEventListener('click', closeReportEditModal);
   $('re-save').addEventListener('click', () => saveReportEdit(id));
   $('re-transfer').addEventListener('click', () => transferReportEntry(id, r.enteredById));
-  panel.style.display = 'block';
 }
 
 async function saveReportEdit(id){
+  // Up to 4 Stop Time / Reason pairs, same combining rule as the
+  // Supervisor's approval screen: total time stopped, and every reason
+  // given, joined together into the single stopTime/reason fields
+  // everything else (Earned Picks, Report, Excel export) relies on — plus
+  // a precise breakdown of each box's own hours+reason, saved alongside so
+  // Earned Picks can price each portion at its own reason's rate instead
+  // of losing that detail once combined into one string.
+  const boxWrap = $('re-stopReasonBoxes');
+  let stopTime = '0', reason = '—', breakdown = [];
+  if(boxWrap){
+    let totalStop = 0;
+    const reasons = [];
+    for(let i=0;i<4;i++){
+      const stopEl = boxWrap.querySelector(`.re-stopTimeInput${i}`);
+      const reasonEl = boxWrap.querySelector(`.re-reasonInput${i}`);
+      const stopVal = stopEl ? stopEl.value.trim() : '';
+      const reasonVal = reasonEl ? reasonEl.value : '';
+      if(stopVal !== ''){
+        if(!isValidNumber(stopVal)){ toast('Stop Time / Hour must be a number'); stopEl.focus(); return; }
+        totalStop += Number(stopVal);
+        if(Number(stopVal) !== 0) breakdown.push({ reason: reasonVal || '—', hours: Number(stopVal) });
+      }
+      if(reasonVal) reasons.push(reasonVal);
+    }
+    stopTime = String(totalStop);
+    reason = reasons.length ? reasons.join('; ') : '—';
+  }
   const updates = {
     date: $('re-date').value,
     shift: $('re-shift').value,
     reading: $('re-reading').value.trim(),
     photoType: $('re-photoType').value,
-    stopTime: $('re-stopTime').value.trim() || '0',
-    reason: $('re-reason').value || '—',
+    stopTime, reason, stopBreakdown: breakdown,
     remarks: $('re-remarks').value.trim(),
     adminNote: `Edited by ${state.user.name} on ${fmtDateFromTs(Date.now())}`
   };
   if(!updates.date){ toast('Pick a date'); return; }
   if(!updates.reading){ toast('Reading cannot be empty'); return; }
   if(!isValidNumber(updates.reading)){ toast('Reading must be a number'); return; }
-  if(!isValidNumber(updates.stopTime)){ toast('Stop Time / Hour must be a number'); return; }
   if(!requireDb()) return;
   try{
     await window.__db.updateReading(id, updates);
-    $('reportEditPanel').style.display = 'none';
+    closeReportEditModal();
     toast('Entry updated');
     loadReport();
   }catch(err){ console.error(err); toast('Could not save — check your connection'); }
@@ -5049,7 +5335,7 @@ async function transferReportEntry(id, prevOperatorId){
       operatorName: newOp ? newOp.name : newOperatorId,
       adminNote: `Transferred from ${prevOperatorId || 'unknown'} to ${newOperatorId} by ${state.user.name} on ${fmtDateFromTs(Date.now())}`
     });
-    $('reportEditPanel').style.display = 'none';
+    closeReportEditModal();
     toast('Entry transferred');
     loadReport();
   }catch(err){ console.error(err); toast('Could not transfer — check your connection'); }
@@ -5113,11 +5399,32 @@ function renderPicksReport(containerId, allRecords, operatorId, fromDate, toDate
   const byKey = {};
   filtered.forEach(r => {
     const key = r.date + '|' + r.machine;
-    if(!byKey[key]) byKey[key] = { date: r.date, machine: r.machine, picks: 0, stopHours: 0, stopPicks: 0 };
+    if(!byKey[key]) byKey[key] = { date: r.date, machine: r.machine, picks: 0, stopHours: 0, stopPicks: 0, shiftsSeen: new Set() };
     byKey[key].picks += r._diff;
     const hrs = Number(r.stopTime) || 0;
     byKey[key].stopHours += hrs;
-    byKey[key].stopPicks += hrs * stopReasonRate(r.reason);
+    byKey[key].stopPicks += computeStopPicks(r);
+    byKey[key].shiftsSeen.add(r.shift);
+  });
+  // Weekly Automatic Stop (e.g. every Thursday) — added here, live, on top
+  // of whatever was actually logged, for whichever shift(s) this operator
+  // genuinely has a reading for that day at that machine. This never
+  // touches the stored reading itself, which is exactly why it doesn't
+  // also reduce Operator Efficiency — that reads stopTime straight from
+  // the document, and Machine Working Hours already accounts for this
+  // separately (see machineHoursForDate).
+  Object.values(byKey).forEach(row => {
+    const auto = getWeekdayAutoStopRule(row.date);
+    if(!auto) return;
+    const rate = stopReasonRate(auto.reason);
+    if(row.shiftsSeen.has('Day') && Number(auto.day.hours) > 0){
+      row.stopHours += Number(auto.day.hours);
+      row.stopPicks += Number(auto.day.hours) * rate;
+    }
+    if(row.shiftsSeen.has('Night') && Number(auto.night.hours) > 0){
+      row.stopHours += Number(auto.night.hours);
+      row.stopPicks += Number(auto.night.hours) * rate;
+    }
   });
   const rows = Object.values(byKey).sort((a,b) =>
     a.date === b.date ? machineName(a.machine).localeCompare(machineName(b.machine)) : b.date.localeCompare(a.date)
@@ -8026,4 +8333,3 @@ window.addEventListener('pageshow', (event) => {
 </script>
 </body>
 </html>
-<!-- GitHub Pages automatic update test -->
