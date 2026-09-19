@@ -614,11 +614,18 @@
   table.report-table{ width:100%; border-collapse: collapse; font-size: 12px; }
   table.report-table th{ text-align:left; padding: 9px 7px; color: var(--muted); text-transform:uppercase; font-size: 9.5px; letter-spacing:0.05em; border-bottom: 1px solid var(--line); position: sticky; top:0; background: var(--panel-2); }
   table.report-table td{ padding: 10px 7px; border-bottom: 1px solid var(--line); white-space:nowrap; color: var(--text); }
-  table.report-table-compact{ width:100%; table-layout:auto; font-size:11px; }
-  table.report-table-compact th{ padding:6px 2px; font-size:8.5px; }
-  table.report-table-compact td{ padding:6px 2px; white-space:nowrap; text-overflow:ellipsis; overflow:hidden; max-width:44px; }
-  table.report-table-compact td:first-child, table.report-table-compact th:first-child{ max-width:82px; }
-  table.report-table-compact td:last-child, table.report-table-compact th:last-child{ width:42px; max-width:42px; overflow:visible; }
+  table.report-table-compact{ width:100%; table-layout:auto; font-size:10.5px; }
+  table.report-table-compact th{ padding:6px 1.5px; font-size:8px; }
+  table.report-table-compact td{ padding:6px 1.5px; white-space:nowrap; text-overflow:ellipsis; overflow:hidden; max-width:32px; }
+  table.report-table-compact tbody tr:not(.date-group-row) td:first-child{
+    max-width:66px; position:sticky; left:0; z-index:1; background:#fff; box-shadow: 1px 0 0 var(--line);
+  }
+  table.report-table-compact th:first-child{
+    max-width:66px; position:sticky; left:0; z-index:2; box-shadow: 1px 0 0 var(--line);
+  }
+  table.report-table-compact td:last-child, table.report-table-compact th:last-child{ width:28px; max-width:28px; overflow:visible; }
+  table.report-table-compact .mini-icon-btn.has-note{ position:relative; }
+  table.report-table-compact .mini-icon-btn.has-note::after{ content:''; position:absolute; top:-2px; right:-2px; width:7px; height:7px; border-radius:50%; background:var(--amber); border:1.5px solid #fff; }
   table.report-table-compact .mini-icon-btn{ width:20px; height:20px; margin-left:2px; }
   table.report-table-compact .mini-icon-btn svg{ width:10px; height:10px; }
   .date-group-row td{
@@ -5194,7 +5201,7 @@ async function loadReport(){
       else if(r.status === 'rejected'){ statusIcon = ICON_STATUS_REJECTED; statusTitle = 'Rejected' + (r.approvedBy && r.approvedBy !== '—' ? ' by ' + r.approvedBy : ''); }
 
       const notes = [r.remarks, r.supervisorRemarks, r.adminNote].filter(Boolean);
-      const noteCell = notes.length ? `<span title="${notes.join(' \u2014 ').replace(/"/g,'&quot;')}">${ICON_NOTE}</span>` : '';
+      const noteTitle = notes.length ? notes.join(' \u2014 ').replace(/"/g,'&quot;') : '';
 
       html += `<tr>
         <td title="${r.machine} (ID ${r.machineId})">${r.machineId ? r.machineId + ' ' : ''}${r.machine}</td>
@@ -5206,7 +5213,7 @@ async function loadReport(){
         <td title="${r.reason}">${reasonNum}</td>
         <td title="${byTitle}">${firstName}</td>
         <td title="${statusTitle}">${statusIcon}</td>
-        ${isAdmin ? `<td style="white-space:nowrap;">${noteCell}<button class="mini-icon-btn rowMenuBtn" data-id="${r.id}" title="More"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></button></td>` : (noteCell ? `<td>${noteCell}</td>` : '<td></td>')}
+        ${isAdmin ? `<td style="text-align:center;"><button class="mini-icon-btn rowMenuBtn${notes.length ? ' has-note' : ''}" data-id="${r.id}" title="${notes.length ? 'Has a note: ' + noteTitle : 'More'}"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></button></td>` : (notes.length ? `<td><span title="${noteTitle}">${ICON_NOTE}</span></td>` : '<td></td>')}
       </tr>`;
     });
     html += '</tbody></table></div>';
