@@ -2041,7 +2041,12 @@ function buildDiffSequenceByMachine(records){
     for(let i=0;i<list.length;i++){
       const cur = list[i];
       const prev = i>0 ? list[i-1] : null;
-      cur._diff = prev ? (Number(cur.reading) - Number(prev.reading)) : 0;
+      // A reading marked resetPoint means the physical meter was reset right
+      // at this reading — Admin marked it after the fact once they noticed
+      // it diffing to a huge negative number. Its own diff is always 0, no
+      // matter what came before it; every reading after it still diffs
+      // normally against it, exactly like the machine-level baseline does.
+      cur._diff = (prev && !cur.resetPoint) ? (Number(cur.reading) - Number(prev.reading)) : 0;
     }
     result[mid] = list.filter(r => !r._isBaseline);
   });
@@ -2924,6 +2929,7 @@ function toggleMachineEditPanel(id){
         <input type="date" class="em-baseline-date" value="${m.baselineDate||''}">
       </div>
       <div class="hint" style="text-align:left; margin-left:0;">Changing this resets where picks are counted from — future readings diff against this value and date instead of the reading history before it.</div>
+      <div class="em-baseline-preview hint" style="text-align:left; margin-left:0; margin-top:6px;"></div>
     </div>
     <div class="row-2">
       <button class="btn btn-ghost btn-sm em-cancel">Cancel</button>
@@ -2932,11 +2938,74 @@ function toggleMachineEditPanel(id){
   `;
   panel.querySelector('.em-cancel').addEventListener('click', () => { panel.style.display = 'none'; });
   panel.querySelector('.em-save').addEventListener('click', () => saveMachineEdit(id, panel));
+  const updateBaselinePreview = () => renderBaselinePreview(panel, id);
+  panel.querySelector('.em-baseline').addEventListener('input', updateBaselinePreview);
+  panel.querySelector('.em-baseline-date').addEventListener('input', updateBaselinePreview);
+  updateBaselinePreview();
   panel.style.display = 'block';
+}
+
+// Simulates this machine's whole diff chain with a PROPOSED Counter
+// Reading, exactly the way buildDiffSequenceByMachine does it for real —
+// and returns the first reading (if any) that would come out with a
+// negative diff. Checking the full chain, not just the one reading right
+// after the new baseline, is what catches a reset dated even one day late:
+// that mistake actually breaks the REAL reading sitting just BEFORE the
+// baseline (it ends up diffing against the old pre-reset number instead),
+// which a narrower check would miss entirely.
+function checkBaselinePlacement(allReadings, machineId, baselineReading, baselineDate){
+  const approved = (allReadings || []).filter(r =>
+    String(r.machine) === String(machineId) && r.status === 'approved' && r.photoType !== 'start'
+  );
+  const list = approved.slice();
+  list.push({ date: baselineDate || '0000-01-01', shift: '__baseline__', reading: baselineReading, timestamp: -Infinity, _isBaseline: true });
+  list.sort(chronoCompare);
+  for(let i=1;i<list.length;i++){
+    const cur = list[i], prev = list[i-1];
+    if(cur._isBaseline) continue;
+    const diff = Number(cur.reading) - Number(prev.reading);
+    if(diff < 0) return { date: cur.date, shift: cur.shift, reading: cur.reading, diff };
+  }
+  return null;
+}
+async function renderBaselinePreview(panel, id){
+  const box = panel.querySelector('.em-baseline-preview');
+  if(!box) return;
+  const baselineVal = panel.querySelector('.em-baseline').value.trim();
+  const baselineDate = panel.querySelector('.em-baseline-date').value;
+  if(!baselineVal){ box.textContent = ''; return; }
+  if(!baselineDate){ box.textContent = 'Pick the date the physical reset happened.'; box.style.color = ''; return; }
+  if(!isValidNumber(baselineVal)){ box.textContent = ''; return; }
+  box.textContent = 'Checking against this machine\'s reading history…';
+  box.style.color = '';
+  let allReadings;
+  try{
+    allReadings = await window.__db.loadReadings();
+  }catch(err){ console.error(err); box.textContent = ''; return; }
+  const problem = checkBaselinePlacement(allReadings, id, baselineVal, baselineDate);
+  if(problem){
+    box.innerHTML = `<b style="color:var(--danger);">This would make the ${fmtDate(problem.date)} ${problem.shift} reading (${problem.reading}) diff to ${problem.diff} picks — negative. This date doesn't line up with where the readings actually switch from big pre-reset numbers to small post-reset ones — check the exact date the counter first showed a small number.</b>`;
+    box.style.color = 'var(--danger)';
+    return;
+  }
+  box.textContent = 'Looks correct — no existing reading would come out with a negative diff from this reset.';
+  box.style.color = 'var(--ok)';
 }
 
 async function saveMachineEdit(id, panel){
   const baselineReading = panel.querySelector('.em-baseline').value.trim();
+  const baselineDate = baselineReading ? (panel.querySelector('.em-baseline-date').value || new Date().toISOString().slice(0,10)) : null;
+  if(baselineReading){
+    if(!isValidNumber(baselineReading)){ toast('Counter Reading must be a number'); return; }
+    try{
+      const allReadings = await window.__db.loadReadings();
+      const problem = checkBaselinePlacement(allReadings, id, baselineReading, baselineDate);
+      if(problem){
+        toast(`Can't save — the ${fmtDate(problem.date)} ${problem.shift} reading (${problem.reading}) would diff to ${problem.diff} picks (negative). This date doesn't match where the readings switch from big to small numbers — check the reading history and try a different date.`);
+        return;
+      }
+    }catch(err){ console.error(err); toast('Could not verify against reading history — check your connection'); return; }
+  }
   const updates = {
     name: panel.querySelector('.em-name').value.trim(),
     department: panel.querySelector('.em-dept').value,
@@ -2946,7 +3015,7 @@ async function saveMachineEdit(id, panel){
     picksPerCm: panel.querySelector('.em-picks').value.trim(),
     cartPicks: panel.querySelector('.em-cart').value.trim(),
     baselineReading: baselineReading || null,
-    baselineDate: baselineReading ? (panel.querySelector('.em-baseline-date').value || new Date().toISOString().slice(0,10)) : null
+    baselineDate
   };
   if(!updates.name){ toast('Machine name cannot be empty'); return; }
   if(!requireDb()) return;
@@ -4863,11 +4932,12 @@ function openRowActionsMenu(id){
   backdrop.className = 'row-actions-backdrop';
   backdrop.innerHTML = `
     <div class="row-actions-sheet">
-      <h2 style="margin-top:0;">${row.machine} \u2014 ${fmtDate(row.date)}</h2>
+      <h2 style="margin-top:0;">${row.machine} \u2014 ${fmtDate(row.date)} ${row.resetPoint ? '<span class="badge badge-approved">Reset Point</span>' : ''}</h2>
       <p class="sub">${row.shift} shift &middot; ${row.photoType} Photo &middot; Reading ${row.reading}</p>
       <p class="hint" style="text-align:left; margin-left:0; margin-top:-8px;">Real entry date &amp; time: <b style="color:var(--text-strong);">${fmtTs(row.timestamp)}</b></p>
       ${notes.length ? `<div class="card" style="margin-bottom:14px; font-size:13px;">${notes.join('<br>')}</div>` : ''}
       ${row.photoDataUrl ? `<button class="btn btn-ghost" id="rowActionPhoto">View Photo</button>` : ''}
+      <button class="btn btn-ghost" id="rowActionResetPoint">${row.resetPoint ? 'Remove Reset Point' : 'Mark as Meter Reset Point'}</button>
       <button class="btn btn-ghost" id="rowActionEdit">Edit Entry</button>
       <button class="btn btn-danger" id="rowActionDelete">Delete Entry</button>
       <button class="btn btn-primary" id="rowActionCancel" style="margin-bottom:0;">Cancel</button>
@@ -4876,9 +4946,29 @@ function openRowActionsMenu(id){
   document.body.appendChild(backdrop);
   const photoBtn = backdrop.querySelector('#rowActionPhoto');
   if(photoBtn) photoBtn.addEventListener('click', () => { backdrop.remove(); openLightbox(row.photoDataUrl); });
+  backdrop.querySelector('#rowActionResetPoint').addEventListener('click', () => { backdrop.remove(); toggleResetPoint(id, row.resetPoint); });
   backdrop.querySelector('#rowActionEdit').addEventListener('click', () => { backdrop.remove(); openReportEditPanel(id); });
   backdrop.querySelector('#rowActionDelete').addEventListener('click', () => { backdrop.remove(); deleteReportRow(id); });
   backdrop.querySelector('#rowActionCancel').addEventListener('click', () => backdrop.remove());
+}
+
+// The fast, foolproof fix for a machine that got physically reset without
+// warning: mark the FIRST reading that shows the new small counter value as
+// the reset point, directly — instead of separately opening Edit Machine
+// and having to figure out a matching date. Its own diff becomes 0
+// automatically, no matter what came before it, and everything after it
+// keeps diffing normally against it.
+async function toggleResetPoint(id, currentlySet){
+  if(!requireDb()) return;
+  const confirmMsg = currentlySet
+    ? 'Remove the reset-point mark from this reading? It will go back to diffing normally against whatever came before it.'
+    : 'Mark this reading as the meter reset point? Its own diff becomes 0, and every later reading for this machine will diff against it instead of whatever came before — use this on the exact reading where the physical counter was reset.';
+  if(!confirm(confirmMsg)) return;
+  try{
+    await window.__db.updateReading(id, { resetPoint: !currentlySet });
+    toast(currentlySet ? 'Reset point removed' : 'Marked as reset point');
+    loadReport();
+  }catch(err){ console.error(err); toast('Could not save — check your connection'); }
 }
 
 async function decideReading(id, status){
@@ -5031,6 +5121,7 @@ async function loadReport(){
           machine: machineName(m) || cur.machineName,
           date: cur.date, shift: cur.shift,
           timestamp: cur.timestamp,
+          resetPoint: !!cur.resetPoint,
           prevReading: prev ? prev.reading : '—', reading: cur.reading,
           diff: diff === null ? '—' : diff,
           flag,
@@ -5108,7 +5199,7 @@ async function loadReport(){
         <td title="${r.machine} (ID ${r.machineId})">${r.machineId ? r.machineId + ' ' : ''}${r.machine}</td>
         <td title="${shiftTitle}">${shiftLetter}<span style="color:var(--muted); font-size:9px;">${photoTypeLetter}</span></td>
         <td>${r.prevReading}</td><td>${r.reading}</td>
-        <td class="${diffClass}">${r.diff}</td>
+        <td class="${diffClass}" title="${r.resetPoint ? 'Meter reset point — diffs from 0 here' : ''}">${r.diff}${r.resetPoint ? ' \u21bb' : ''}</td>
         ${showFlags ? `<td>${flagCell}</td>` : ''}
         <td>${r.stopTime}</td>
         <td title="${r.reason}">${reasonNum}</td>
@@ -5229,6 +5320,13 @@ async function openReportEditPanel(id){
           </select>
         </div>
       </div>
+      <div class="field" style="background:var(--panel-2); border-radius:10px; padding:10px 12px;">
+        <label style="display:flex; align-items:center; gap:8px; font-weight:400; text-transform:none; cursor:pointer;">
+          <input type="checkbox" id="re-resetPoint" style="width:auto;" ${r.resetPoint ? 'checked' : ''}>
+          Meter Reset Point — the physical counter was reset right at this reading
+        </label>
+        <div class="hint" style="text-align:left; margin-left:0;">This reading's own diff becomes 0 no matter what came before it — every later reading for this machine still diffs normally against it.</div>
+      </div>
       <div class="field">
         <label>This Photo Is</label>
         <select id="re-photoType">
@@ -5306,6 +5404,7 @@ async function saveReportEdit(id){
     shift: $('re-shift').value,
     reading: $('re-reading').value.trim(),
     photoType: $('re-photoType').value,
+    resetPoint: $('re-resetPoint').checked,
     stopTime, reason, stopBreakdown: breakdown,
     remarks: $('re-remarks').value.trim(),
     adminNote: `Edited by ${state.user.name} on ${fmtDateFromTs(Date.now())}`
