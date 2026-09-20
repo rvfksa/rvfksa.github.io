@@ -936,25 +936,20 @@
       <div class="field">
         <label>This Photo Is <span style="text-transform:none; font-weight:400; color:var(--muted);">(automatic, based on your shift and the time)</span></label>
         <div class="phototype-btn photoType-btn active" id="photoTypeDisplay" style="cursor:default;">Starting Photo</div>
-        <div class="hint">Take one at the start of your shift and one at the end — the Ending photo is what counts toward picks; the Starting photo is just a backup in case the Ending one is missing, blurry, or unclear.</div>
       </div>
 
       <div class="field">
         <label>Date <span style="text-transform:none; font-weight:400; color:var(--muted);">(automatic, based on your shift)</span></label>
         <div class="phototype-btn" id="dateDisplay" style="cursor:default;">—</div>
         <input type="hidden" id="dateSelect">
-        <div class="hint">Set automatically so it's never wrong to pick — a Day-shift Starting photo always uses today's real date; a Night shift correctly rolls back to the day it started if you're logging after midnight.</div>
       </div>
 
-      <!-- Stop Time and Reason moved to the Supervisor's approval screen —
-           removed here for now, may come back to the operator form later. -->
+      <!-- Stop Time, Reason, and Remarks moved to the Supervisor's approval
+           screen — removed here for now, may come back to the operator
+           form later. -->
       <input type="hidden" id="stopTimeInput" value="">
       <input type="hidden" id="reasonSelect" value="">
-
-      <div class="field">
-        <label for="remarksInput">Remarks <span style="text-transform:none; font-weight:400; color:var(--muted);">(optional — extra detail on the stoppage)</span></label>
-        <textarea id="remarksInput" rows="3" placeholder="e.g. waited on spare part after electrical repair" style="width:100%; background:var(--panel); border:1.5px solid var(--line); border-radius:13px; padding:12px 14px; font-size:14px; font-family:'Inter',sans-serif; color:var(--text); box-shadow:var(--shadow); resize:vertical;"></textarea>
-      </div>
+      <input type="hidden" id="remarksInput" value="">
 
       <button class="btn btn-primary" id="submitBtn">Submit Reading</button>
     </section>
@@ -4839,7 +4834,6 @@ async function loadApprovals(){
             <label>Date</label>
             ${isAdminViewer ? `
             <input type="date" class="editDateInput" data-id="${r._id}" value="${r.date}">
-            <div class="hint">Exactly what was entered — free to change to any date, since a Delayed entry can sit waiting for outside sign-off for a while before you get to it.</div>
             ` : `
             <input type="text" value="${fmtDate(r.date)}" disabled>
             <input type="hidden" class="editDateInput" data-id="${r._id}" value="${r.date}">
@@ -4885,22 +4879,17 @@ async function loadApprovals(){
           <b style="font-family:Oswald,sans-serif; font-size:12px; letter-spacing:.04em; text-transform:uppercase; color:var(--danger);">Delayed — Admin Only</b>
           <div style="margin-top:4px; font-size:12.5px; color:var(--text);">This entry passed its approval deadline. Only Admin can edit or decide it now.</div>
         </div>` : `
-        <div class="field" style="margin-bottom:8px;">
-          <label>Note for final report / admin <span style="text-transform:none; font-weight:400; color:var(--muted);">(optional — required if rejecting, so the operator knows what to fix)</span></label>
-          <textarea class="supervisorRemarkInput" data-id="${r._id}" rows="2" placeholder="e.g. confirmed with operator, matches photo" style="width:100%; background:var(--panel); border:1.5px solid var(--line); border-radius:13px; padding:10px 12px; font-size:13.5px; font-family:'Inter',sans-serif; color:var(--text); resize:vertical;"></textarea>
-        </div>`}
+        <input type="hidden" class="supervisorRemarkInput" data-id="${r._id}" value="">`}
         <div class="meta-small">Submitted: ${fmtTs(r.timestamp)}</div>
         ${locked ? '' : `
         <div class="approve-actions">
           <button class="btn btn-approve btn-sm approveBtn" data-id="${r._id}">Approve</button>
-          <button class="btn btn-danger btn-sm rejectBtn" data-id="${r._id}">Reject</button>
         </div>`}
       `;
       body.appendChild(item);
     });
     body.querySelectorAll('.approve-photo').forEach(img => img.addEventListener('click', () => openLightbox(img.dataset.full)));
     body.querySelectorAll('.approveBtn').forEach(b => b.addEventListener('click', () => decideReading(b.dataset.id, 'approved')));
-    body.querySelectorAll('.rejectBtn').forEach(b => b.addEventListener('click', () => decideReading(b.dataset.id, 'rejected')));
     // Difference updates live as the Supervisor corrects the Reading, so the
     // number they're judging is never stale by the time they hit Approve (item 4).
     body.querySelectorAll('.editReadingInput').forEach(inp => {
@@ -5021,7 +5010,7 @@ async function decideReading(id, status){
     }
   }
 
-  if(status === 'rejected' && !supervisorNote){ toast('Add a short note explaining what needs fixing before rejecting'); return; }
+
   if(newReading && !isValidNumber(newReading)){ toast('Reading must be a number'); return; }
 
   try{
