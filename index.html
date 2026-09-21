@@ -39,7 +39,8 @@
      ============================================================ */
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
   import {
-    getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc,
+    initializeFirestore, persistentLocalCache, persistentSingleTabManager,
+    doc, getDoc, setDoc, updateDoc, deleteDoc,
     collection, addDoc, getDocs, query, orderBy, onSnapshot
   } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
   import {
@@ -64,7 +65,9 @@
   try {
     if (firebaseConfig.apiKey && !firebaseConfig.apiKey.startsWith('PASTE_')) {
       const app = initializeApp(firebaseConfig);
-      db = getFirestore(app);
+      db = initializeFirestore(app, {
+        localCache: persistentLocalCache({ tabManager: persistentSingleTabManager() })
+      });
       auth = getAuth(app);
       dbReady = true;
       // Firebase Auth restores its own signed-in session from local storage
@@ -133,6 +136,39 @@
   const vacationsCache = makeCachedCollection('vacations');
   const violationsCache = makeCachedCollection('violations');
   const leaveRequestsCache = makeCachedCollection('leaveRequests');
+
+  // Same idea as makeCachedCollection above, but for a single document
+  // (config/machines is one doc holding the whole machines list, not a
+  // collection) — kept live via onSnapshot so a repeat visit can render
+  // from the on-device copy instantly instead of waiting on the network.
+  function makeCachedDoc(collectionName, docId, fallback){
+    let cachedValue = null;
+    let firstSnapshot = null;
+    let unsub = null;
+    function start(){
+      if (unsub || !dbReady) return;
+      const ref = doc(db, collectionName, docId);
+      firstSnapshot = new Promise(resolve => {
+        let settled = false;
+        unsub = onSnapshot(ref, (snap) => {
+          cachedValue = snap.exists() ? snap.data() : fallback;
+          if(!settled){ settled = true; resolve(cachedValue); }
+        }, (err) => {
+          console.error(collectionName + '/' + docId + ' live cache error', err);
+          if(!settled){ settled = true; resolve(cachedValue !== null ? cachedValue : fallback); }
+        });
+      });
+    }
+    return {
+      warm(){ start(); },
+      async get(){
+        if (!dbReady) throw new Error('NOT_CONFIGURED');
+        start();
+        return cachedValue !== null ? cachedValue : firstSnapshot;
+      }
+    };
+  }
+  const machinesDocCache = makeCachedDoc('config', 'machines', null);
 
   window.__db = {
     ready: () => dbReady,
@@ -259,16 +295,15 @@
     /* ---------- machines (single config doc) ---------- */
     async getMachines() {
       if (!dbReady) throw new Error('NOT_CONFIGURED');
-      const ref = doc(db, "config", "machines");
-      const snap = await getDoc(ref);
-      if (snap.exists()) return snap.data().list || [];
+      const data = await machinesDocCache.get();
+      if (data && data.list) return data.list;
       // seed defaults on first run
       const seed = [];
       for (let i = 1; i <= 20; i++) seed.push({
         id: String(i), name: 'MACHINE - ' + i, department: '', status: 'running',
         widthCm: '', speed: '', picksPerCm: '', cartPicks: ''
       });
-      await setDoc(ref, { list: seed });
+      await setDoc(doc(db, "config", "machines"), { list: seed });
       return seed;
     },
     async saveMachines(list) {
@@ -2128,7 +2163,11 @@ async function init(){
     return;
   }
   try{
-    const u = await window.__db.getUser(savedId);
+    const [u, machines] = await Promise.all([
+      window.__db.getUser(savedId),
+      window.__db.getMachines(),
+      loadConfigLists()
+    ]);
     if(!u){ localStorage.removeItem('mr_loginId'); localStorage.removeItem('mr_loginTs'); showScreen('screen-auth'); return; }
     if(isExitedEmployee(u)){
       localStorage.removeItem('mr_loginId'); localStorage.removeItem('mr_loginTs');
@@ -2138,6 +2177,7 @@ async function init(){
       return;
     }
     state.user = u;
+    state.machines = machines;
     localStorage.setItem('mr_loginTs', String(Date.now())); // sliding window: refresh the remember-me clock on each successful load
     await afterLogin();
   }catch(err){
@@ -2151,8 +2191,6 @@ async function init(){
 }
 
 async function afterLogin(){
-  const [machines] = await Promise.all([window.__db.getMachines(), loadConfigLists()]);
-  state.machines = machines;
   renderWho();
   renderNav();
   route();
@@ -2356,7 +2394,13 @@ async function doLogin(){
 
     // Now signed in (or running on the temporary fallback above) — safe to
     // read the full profile, since every other collection requires it.
-    const u = await window.__db.getUser(id);
+    // Machines/config don't depend on the profile itself, so they're
+    // fetched in parallel here too instead of waiting for it first.
+    const [u, machines] = await Promise.all([
+      window.__db.getUser(id),
+      window.__db.getMachines(),
+      loadConfigLists()
+    ]);
     if(!u){ toast('No account found with that ID — register instead'); window.__db.authSignOut(); return; }
     if(isExitedEmployee(u)){ toast('This account no longer has access — contact Admin'); window.__db.authSignOut(); return; }
 
@@ -2373,6 +2417,7 @@ async function doLogin(){
     }
 
     state.user = u;
+    state.machines = machines;
     localStorage.setItem('mr_loginId', id);
     localStorage.setItem('mr_loginTs', String(Date.now()));
     $('loginPasswordInput').value = '';
@@ -2450,6 +2495,8 @@ $('registerBtn').addEventListener('click', async () => {
     }
     await window.__db.createUser(user);
     state.user = user;
+    state.machines = await window.__db.getMachines();
+    await loadConfigLists();
     localStorage.setItem('mr_loginId', loginId);
     localStorage.setItem('mr_loginTs', String(Date.now()));
     toast(isFirstUser ? 'Welcome! You are the first user and are now Admin. Default password: 123456' : 'Account created — default password is 123456. Waiting for Admin to set your role.');
@@ -4117,6 +4164,13 @@ async function setupSelectScreen(){
   const role = state.user.role;
   let available;
   const cooldownMinutes = isFinite(state.machineCooldownMinutes) ? state.machineCooldownMinutes : 30;
+  // Hide the form (and its Continue button) immediately, before the async
+  // work below — if this screen was visited before, the form and its
+  // button would otherwise stay visible and clickable while the dropdown
+  // below gets cleared out and repopulated, leaving a brief window where
+  // Continue could be tapped with no machine actually selected. That's
+  // exactly what produced an entry with a blank machine field.
+  $('selectFormWrap').style.display = 'none';
   if(role === 'operator' || role === 'supervisor'){
     const assigned = state.user.assignedMachines || [];
     available = state.machines.filter(m => assigned.includes(m.id));
@@ -4431,7 +4485,9 @@ document.querySelectorAll('.shift-btn').forEach(btn => {
 });
 
 $('goToCaptureBtn').addEventListener('click', () => {
-  state.machine = $('machineSelect').value;
+  const chosen = $('machineSelect').value;
+  if(!chosen){ toast('Please select a machine first'); return; }
+  state.machine = chosen;
   $('captureTitle').textContent = 'Capture Meter — ' + machineName(state.machine);
   showScreen('screen-capture');
 });
@@ -5308,6 +5364,12 @@ async function openReportEditPanel(id){
     <div class="edit-modal-sheet">
       <h2 style="margin-top:0;">Edit Entry <span style="text-transform:none; font-weight:400; color:var(--muted); font-size:12px;">${r.machine}</span></h2>
       ${r.photoDataUrl ? `<img src="${r.photoDataUrl}" class="approve-photo" id="re-photo">` : '<p class="hint" style="text-align:left; margin-left:0;">No photo was attached to this entry.</p>'}
+      <div class="field">
+        <label>Machine</label>
+        <select id="re-machine">
+          ${state.machines.map(m => `<option value="${m.id}" ${String(m.id)===String(r.machineId)?'selected':''}>${m.id} \u2014 ${m.name}</option>`).join('')}
+        </select>
+      </div>
       <div class="row-2">
         <div class="field"><label>Date</label><input type="date" id="re-date" value="${r.date}"></div>
         <div class="field"><label>Shift</label>
@@ -5397,6 +5459,7 @@ async function saveReportEdit(id){
     reason = reasons.length ? reasons.join('; ') : '—';
   }
   const updates = {
+    machine: $('re-machine').value,
     date: $('re-date').value,
     shift: $('re-shift').value,
     reading: $('re-reading').value.trim(),
@@ -5406,6 +5469,7 @@ async function saveReportEdit(id){
     remarks: $('re-remarks').value.trim(),
     adminNote: `Edited by ${state.user.name} on ${fmtDateFromTs(Date.now())}`
   };
+  if(!updates.machine){ toast('Please select a machine'); return; }
   if(!updates.date){ toast('Pick a date'); return; }
   if(!updates.reading){ toast('Reading cannot be empty'); return; }
   if(!isValidNumber(updates.reading)){ toast('Reading must be a number'); return; }
