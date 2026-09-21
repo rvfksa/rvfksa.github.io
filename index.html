@@ -111,11 +111,26 @@
         : collection(db, name);
       firstSnapshot = new Promise(resolve => {
         let settled = false;
+        let offlineTimer = null;
         unsub = onSnapshot(ref, (snap) => {
           const out = [];
           snap.forEach(d => out.push(includeId ? { _id: d.id, ...d.data() } : d.data()));
           cachedRows = out;
-          if(!settled){ settled = true; resolve(out); }
+          const serverConfirmed = !snap.metadata.fromCache;
+          if(settled) return; // already resolved — cachedRows above still stays current for future .get() calls
+          if(serverConfirmed){
+            settled = true;
+            if(offlineTimer) clearTimeout(offlineTimer);
+            resolve(out);
+          } else if(!offlineTimer){
+            // First snapshot is only the on-device copy, which can be
+            // stale or incomplete — give the server a moment to confirm
+            // before trusting it, so a fresh page load never shows an old
+            // cached snapshot as if it were current data.
+            offlineTimer = setTimeout(() => {
+              if(!settled){ settled = true; resolve(cachedRows); }
+            }, 2500);
+          }
         }, (err) => {
           console.error(name + ' live cache error', err);
           if(!settled){ settled = true; resolve(cachedRows || []); }
@@ -150,9 +165,20 @@
       const ref = doc(db, collectionName, docId);
       firstSnapshot = new Promise(resolve => {
         let settled = false;
+        let offlineTimer = null;
         unsub = onSnapshot(ref, (snap) => {
           cachedValue = snap.exists() ? snap.data() : fallback;
-          if(!settled){ settled = true; resolve(cachedValue); }
+          const serverConfirmed = !snap.metadata.fromCache;
+          if(settled) return;
+          if(serverConfirmed){
+            settled = true;
+            if(offlineTimer) clearTimeout(offlineTimer);
+            resolve(cachedValue);
+          } else if(!offlineTimer){
+            offlineTimer = setTimeout(() => {
+              if(!settled){ settled = true; resolve(cachedValue !== null ? cachedValue : fallback); }
+            }, 2500);
+          }
         }, (err) => {
           console.error(collectionName + '/' + docId + ' live cache error', err);
           if(!settled){ settled = true; resolve(cachedValue !== null ? cachedValue : fallback); }
@@ -2106,6 +2132,15 @@ function fmtDateFromTs(ts){
 // callers should prefer this over any name snapshotted onto a reading at
 // submission time, so renaming a machine in Admin instantly shows up
 // everywhere that machine's readings are displayed (item 1).
+// Every screen that lists machines (Admin, My Status, Dashboard) should
+// show them in the same order — by ID number — rather than whatever order
+// they happen to sit in the database (usually just the order they were
+// added in). Routing every assignment through this one helper means
+// there's exactly one place that decides the order, instead of needing to
+// sort separately on every screen that displays the list.
+function setMachinesSorted(list){
+  state.machines = (list || []).slice().sort((a,b) => (Number(a.id)||0) - (Number(b.id)||0));
+}
 function machineName(id){
   const m = state.machines.find(x => String(x.id) === String(id));
   return m ? m.name : ('Machine ' + id);
@@ -2177,7 +2212,7 @@ async function init(){
       return;
     }
     state.user = u;
-    state.machines = machines;
+    setMachinesSorted(machines);
     localStorage.setItem('mr_loginTs', String(Date.now())); // sliding window: refresh the remember-me clock on each successful load
     await afterLogin();
   }catch(err){
@@ -2417,7 +2452,7 @@ async function doLogin(){
     }
 
     state.user = u;
-    state.machines = machines;
+    setMachinesSorted(machines);
     localStorage.setItem('mr_loginId', id);
     localStorage.setItem('mr_loginTs', String(Date.now()));
     $('loginPasswordInput').value = '';
@@ -2495,7 +2530,7 @@ $('registerBtn').addEventListener('click', async () => {
     }
     await window.__db.createUser(user);
     state.user = user;
-    state.machines = await window.__db.getMachines();
+    setMachinesSorted(await window.__db.getMachines());
     await loadConfigLists();
     localStorage.setItem('mr_loginId', loginId);
     localStorage.setItem('mr_loginTs', String(Date.now()));
@@ -2897,7 +2932,7 @@ async function loadMachinesForAdmin(){
   body.innerHTML = '<div class="empty-state">Loading machines…</div>';
   if(!requireDb()) return;
   try{
-    state.machines = await window.__db.getMachines();
+    setMachinesSorted(await window.__db.getMachines());
     renderMachinesList();
   }catch(err){ console.error(err); body.innerHTML = '<div class="empty-state">Could not load machines.</div>'; }
 }
@@ -3072,7 +3107,7 @@ async function saveMachineEdit(id, panel){
   const list = state.machines.map(m => String(m.id) === String(id) ? Object.assign({}, m, updates) : m);
   try{
     await window.__db.saveMachines(list);
-    state.machines = list;
+    setMachinesSorted(list);
     renderMachinesList();
     toast('Machine updated');
   }catch(err){ console.error(err); toast('Could not save — check your connection'); }
@@ -3095,7 +3130,7 @@ $('addMachineBtn').addEventListener('click', async () => {
   const list = state.machines.concat([{ id, name, department, widthCm, speed, shiftRun, picksPerCm, cartPicks, status: 'running', baselineReading: baselineReading || null, baselineDate: baselineReading ? baselineDate : null }]);
   try{
     await window.__db.saveMachines(list);
-    state.machines = list;
+    setMachinesSorted(list);
     $('newMachineId').value = ''; $('newMachineName').value = '';
     $('newMachineWidth').value = ''; $('newMachineSpeed').value = ''; $('newMachineShiftRun').value = 'Both';
     $('newMachinePicks').value = ''; $('newMachineCart').value = '';
@@ -3139,7 +3174,7 @@ async function confirmMachineStop(id){
   });
   try{
     await window.__db.saveMachines(list);
-    state.machines = list;
+    setMachinesSorted(list);
     renderMachinesList();
   }catch(err){ console.error(err); toast('Could not save — check your connection'); }
 }
@@ -3152,7 +3187,7 @@ async function setMachineRunning(id){
   });
   try{
     await window.__db.saveMachines(list);
-    state.machines = list;
+    setMachinesSorted(list);
     renderMachinesList();
   }catch(err){ console.error(err); toast('Could not save — check your connection'); }
 }
@@ -3162,7 +3197,7 @@ async function removeMachine(id){
   const list = state.machines.filter(m => String(m.id) !== String(id));
   try{
     await window.__db.saveMachines(list);
-    state.machines = list;
+    setMachinesSorted(list);
     renderMachinesList();
     toast('Machine removed');
   }catch(err){ console.error(err); toast('Could not save — check your connection'); }
