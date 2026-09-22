@@ -6895,13 +6895,19 @@ function renderIqamaTab(){
   wireDocThumbs();
 }
 function wireDocSectionEditBtns(){
-  document.querySelectorAll('.docSectionEditBtn').forEach(btn => btn.addEventListener('click', () => {
-    docSectionEditing[btn.dataset.kind] = true;
-    btn.dataset.kind === 'passport' ? renderPassportTab() : renderIqamaTab();
-  }));
+  document.querySelectorAll('.docSectionEditBtn:not([data-wired])').forEach(btn => {
+    btn.dataset.wired = '1';
+    btn.addEventListener('click', () => {
+      docSectionEditing[btn.dataset.kind] = true;
+      btn.dataset.kind === 'passport' ? renderPassportTab() : renderIqamaTab();
+    });
+  });
 }
 function wireDocThumbs(){
-  document.querySelectorAll('.docThumb').forEach(img => img.addEventListener('click', () => openLightbox(img.dataset.src)));
+  document.querySelectorAll('.docThumb:not([data-wired])').forEach(img => {
+    img.dataset.wired = '1';
+    img.addEventListener('click', () => openLightbox(img.dataset.src));
+  });
 }
 function wireDocSave(kind, keys){
   const btn = $('doc-'+kind+'-save');
