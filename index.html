@@ -4850,7 +4850,11 @@ async function loadApprovals(){
         if(!hasApprovalsPhoto(m.id, shift, 'start')) gaps.push('Starting');
         if(!hasApprovalsPhoto(m.id, shift, 'end')) gaps.push('Ending');
         if(gaps.length){
-          const line = m.name + ' — ' + gaps.join(' & ') + ' Photo not logged';
+          const badges = gaps.map(g => `<span style="display:inline-block; min-width:52px; text-align:center; background:#fff; border:1px solid var(--warn); color:var(--warn); border-radius:9999px; padding:2px 8px; font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.03em;">${g}</span>`).join('<span style="width:5px; display:inline-block;"></span>');
+          const line = `<div style="display:flex; align-items:center; justify-content:space-between; gap:8px; padding:5px 0;">
+            <span style="font-weight:700; font-size:12.5px; white-space:nowrap;">${m.name}</span>
+            <span style="display:flex; flex-shrink:0;">${badges}</span>
+          </div>`;
           (shift === 'Day' ? missingDay : missingNight).push(line);
         }
       });
@@ -4861,9 +4865,9 @@ async function loadApprovals(){
       // instead of one long list where the same machine's Day and Night
       // rows sat confusingly one after another.
       const col = (title, items) => `
-        <div style="flex:1; min-width:150px;">
-          <div style="font-size:10px; text-transform:uppercase; letter-spacing:.04em; color:var(--warn); font-weight:700; margin-bottom:6px;">${title}</div>
-          ${items.length ? `<div style="font-size:12.5px; line-height:1.8;">${items.join('<br>')}</div>` : `<div style="font-size:12px; color:var(--muted);">All caught up.</div>`}
+        <div style="flex:1; min-width:180px;">
+          <div style="font-size:10px; text-transform:uppercase; letter-spacing:.04em; color:var(--warn); font-weight:700; margin-bottom:4px;">${title}</div>
+          ${items.length ? `<div>${items.join('<div style="border-top:1px solid rgba(0,0,0,0.06);"></div>')}</div>` : `<div style="font-size:12px; color:var(--muted);">All caught up.</div>`}
         </div>`;
       missingBody.innerHTML = `<div class="card" style="border-color:var(--warn); background:var(--warn-soft);">
         <b style="font-family:Oswald,sans-serif; font-size:12.5px; letter-spacing:.04em; text-transform:uppercase; color:var(--warn);">Needs data — ${fmtDate(checkDate)}</b>
