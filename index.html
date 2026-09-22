@@ -1023,10 +1023,7 @@
         <h1 style="text-align:center;">Reading Logged</h1>
         <p class="sub" style="text-align:center;" id="successSub">Saved. Your supervisor will review and approve this entry.</p>
         <div class="success-summary" id="successSummary"></div>
-        <div class="row-2">
-          <button class="btn btn-ghost" id="anotherMachineBtn">Next machine</button>
-          <button class="btn btn-primary" id="sameMachineBtn">Log again</button>
-        </div>
+        <button class="btn btn-primary" id="anotherMachineBtn">Log Another Reading</button>
       </div>
     </section>
 
@@ -4729,8 +4726,9 @@ function showSuccess(record){
   `;
   showScreen('screen-success');
 }
+// Always routes back through the machine list — no shortcut exists anymore
+// that can skip past its cooldown protection.
 $('anotherMachineBtn').addEventListener('click', () => goTo('select'));
-$('sameMachineBtn').addEventListener('click', () => { showScreen('screen-capture'); });
 
 /* ============================================================
    APPROVALS (supervisor / admin)
@@ -4866,7 +4864,7 @@ async function loadApprovals(){
       // rows sat confusingly one after another.
       const col = (title, items) => `
         <div style="flex:1; min-width:180px;">
-          <div style="font-size:10px; text-transform:uppercase; letter-spacing:.04em; color:var(--warn); font-weight:700; margin-bottom:4px;">${title}</div>
+          <div style="font-size:10px; text-transform:uppercase; letter-spacing:.04em; color:var(--warn); font-weight:700; margin-bottom:4px;">${title} (${items.length})</div>
           ${items.length ? `<div>${items.join('<div style="border-top:1px solid rgba(0,0,0,0.06);"></div>')}</div>` : `<div style="font-size:12px; color:var(--muted);">All caught up.</div>`}
         </div>`;
       missingBody.innerHTML = `<div class="card" style="border-color:var(--warn); background:var(--warn-soft);">
