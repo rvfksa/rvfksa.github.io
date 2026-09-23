@@ -39,7 +39,7 @@
      ============================================================ */
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
   import {
-    initializeFirestore, persistentLocalCache, persistentMultipleTabManager,
+    getFirestore,
     doc, getDoc, setDoc, updateDoc, deleteDoc,
     collection, addDoc, getDocs, query, orderBy, onSnapshot
   } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -65,9 +65,7 @@
   try {
     if (firebaseConfig.apiKey && !firebaseConfig.apiKey.startsWith('PASTE_')) {
       const app = initializeApp(firebaseConfig);
-      db = initializeFirestore(app, {
-        localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
-      });
+      db = getFirestore(app);
       auth = getAuth(app);
       dbReady = true;
       // Firebase Auth restores its own signed-in session from local storage
