@@ -2581,22 +2581,26 @@ async function loadUsersForAdmin(){
   }catch(err){ console.error(err); body.innerHTML = '<div class="empty-state">Could not load users.</div>'; }
 }
 $('refreshUsersBtn').addEventListener('click', loadUsersForAdmin);
-if(window.__db.onUsersChange){
-  window.__db.onUsersChange((users) => {
-    const usersTabOpen = $('screen-admin').classList.contains('active') && $('admin-users').classList.contains('active');
-    if(usersTabOpen && state.user && state.user.role === 'admin'){
-      state.users = users;
-      renderUsersList();
-    }
-  });
-}
-if(window.__db.onReadingsChange){
-  window.__db.onReadingsChange(() => {
-    if(!state.user) return;
-    if($('screen-approvals').classList.contains('active')) loadApprovals();
-    if($('screen-report').classList.contains('active')) loadReport();
-  });
-}
+(async function registerLiveRefreshHandlers(){
+  await waitForDb(4000);
+  if(!window.__db) return;
+  if(window.__db.onUsersChange){
+    window.__db.onUsersChange((users) => {
+      const usersTabOpen = $('screen-admin').classList.contains('active') && $('admin-users').classList.contains('active');
+      if(usersTabOpen && state.user && state.user.role === 'admin'){
+        state.users = users;
+        renderUsersList();
+      }
+    });
+  }
+  if(window.__db.onReadingsChange){
+    window.__db.onReadingsChange(() => {
+      if(!state.user) return;
+      if($('screen-approvals').classList.contains('active')) loadApprovals();
+      if($('screen-report').classList.contains('active')) loadReport();
+    });
+  }
+})();
 $('userSearchInput').addEventListener('input', renderUsersList);
 $('userFilterToggleBtn').addEventListener('click', () => {
   const panel = $('userFilterPanel');
