@@ -40,7 +40,7 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
   import {
     getFirestore,
-    doc, getDoc, setDoc, updateDoc, deleteDoc,
+    doc, getDoc, setDoc, updateDoc, deleteDoc, writeBatch,
     collection, addDoc, getDocs, query, where, orderBy, onSnapshot
   } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
   import {
@@ -282,6 +282,31 @@
       if (!dbReady) throw new Error('NOT_CONFIGURED');
       const snap = await getDoc(doc(db, "photoBlobs", id));
       return snap.exists() ? snap.data().data : null;
+    },
+    // Admin-triggered cleanup of old reading photos (Admin > Shift & Timing
+    // > Clean Up Old Reading Photos). `items` is [{readingId, blobId}], with
+    // blobId only present for entries that were already migrated on
+    // approval — for those, the small blob record is deleted too. For
+    // entries still holding the original embedded photo (never migrated),
+    // clearing photoDataUrl on the reading itself is the whole cleanup.
+    // Nothing else on the reading is touched — every number, date, and
+    // shift stays exactly as it was. Processed in chunks safely under
+    // Firestore's 500-operation batch limit, reporting progress as it goes
+    // since a large date range can mean thousands of documents.
+    async cleanupPhotos(items, onProgress) {
+      if (!dbReady) throw new Error('NOT_CONFIGURED');
+      const CHUNK = 200; // each item is up to 2 ops (update + optional blob delete) — 200x2=400, safely under Firestore's 500-op batch limit
+      for (let i = 0; i < items.length; i += CHUNK) {
+        const chunk = items.slice(i, i + CHUNK);
+        const batch = writeBatch(db);
+        chunk.forEach(item => {
+          batch.update(doc(db, "readings", item.readingId), { photoDataUrl: null });
+          if (item.blobId) batch.delete(doc(db, "photoBlobs", item.blobId));
+        });
+        await batch.commit();
+        if (onProgress) onProgress(Math.min(i + CHUNK, items.length), items.length);
+      }
+      allReadingsCache = null; allReadingsPromise = null;
     },
     // Live-watches one user doc so a change an Admin makes (role, pages, machines,
     // profile) reaches that person's own open session immediately instead of
@@ -1336,6 +1361,17 @@
           <p class="hint" style="text-align:left; margin-left:0;">e.g. 26 means each cycle runs the 26th of one month through the 25th of the next.</p>
         </div>
         <button class="btn btn-primary" id="saveSalaryCycleBtn" style="margin-top:12px;">Save</button>
+
+        <div class="sub" style="margin-top:24px; font-weight:600; color:var(--text); text-transform:none;">Clean Up Old Reading Photos</div>
+        <p class="sub" style="margin-top:0;">Removes the PHOTO from readings in the date range below — the date, shift, reading value, diff, stop time, and everything else about the entry stays exactly as it is, permanently, for your records. Only the photo itself is deleted, to free up space once entries are old enough that nobody needs to look at the photo anymore. <b style="color:var(--danger);">This cannot be undone</b> — once a photo is deleted here, it's gone.</p>
+        <div class="card">
+          <div class="row-2">
+            <div class="field" style="margin-bottom:0;"><label for="cleanupFromDate">From</label><input type="date" id="cleanupFromDate"></div>
+            <div class="field" style="margin-bottom:0;"><label for="cleanupToDate">To</label><input type="date" id="cleanupToDate"></div>
+          </div>
+        </div>
+        <button class="btn btn-ghost" id="previewCleanupBtn" style="margin-top:12px;">Preview</button>
+        <div id="cleanupPreviewResult" style="margin-top:10px;"></div>
       </div>
 
       <div class="auth-pane" id="admin-execaccess">
@@ -3613,6 +3649,46 @@ if($('saveSalaryCycleBtn')){
       state.salaryCycleStartDay = startDay;
       toast('Salary cycle updated');
     }catch(err){ console.error(err); toast('Could not save — check your connection'); }
+  });
+}
+
+if($('previewCleanupBtn')){
+  $('previewCleanupBtn').addEventListener('click', async () => {
+    if(!requireDb()) return;
+    const from = $('cleanupFromDate').value;
+    const to = $('cleanupToDate').value;
+    const resultBox = $('cleanupPreviewResult');
+    if(!from || !to){ toast('Please set both dates'); return; }
+    if(from > to){ toast('From date must be on or before the To date'); return; }
+    resultBox.innerHTML = '<div class="hint" style="text-align:left; margin-left:0;">Checking…</div>';
+    try{
+      const all = await window.__db.loadAllReadingsEver();
+      const matches = all.filter(r => r.date >= from && r.date <= to && r.photoDataUrl);
+      if(matches.length === 0){
+        resultBox.innerHTML = '<div class="hint" style="text-align:left; margin-left:0;">No photos found in that range — nothing to clean up.</div>';
+        return;
+      }
+      resultBox.innerHTML = `
+        <div class="card" style="border-color:var(--danger);">
+          <b style="color:var(--danger);">${matches.length} photo${matches.length===1?'':'s'} found</b> from ${fmtDate(from)} to ${fmtDate(to)}.
+          <p class="sub" style="margin-top:6px;">Deleting is permanent. The readings themselves (date, shift, values) are kept — only the photos go.</p>
+          <button class="btn btn-danger" id="confirmCleanupBtn" style="margin-top:8px;">Delete ${matches.length} Photo${matches.length===1?'':'s'}</button>
+          <div id="cleanupProgress" class="hint" style="text-align:left; margin-left:0; margin-top:8px;"></div>
+        </div>`;
+      $('confirmCleanupBtn').addEventListener('click', async () => {
+        if(!confirm(`Permanently delete ${matches.length} photo(s) from ${fmtDate(from)} to ${fmtDate(to)}? This cannot be undone.`)) return;
+        $('confirmCleanupBtn').disabled = true;
+        const progressEl = $('cleanupProgress');
+        const items = matches.map(r => ({ readingId: r._id, blobId: isPhotoBlobRef(r.photoDataUrl) ? r.photoDataUrl : null }));
+        try{
+          await window.__db.cleanupPhotos(items, (done, total) => {
+            progressEl.textContent = `Deleting… ${done} of ${total}`;
+          });
+          resultBox.innerHTML = `<div class="hint" style="text-align:left; margin-left:0; color:var(--ok);">Done — ${matches.length} photo(s) deleted.</div>`;
+          toast('Cleanup complete');
+        }catch(err){ console.error(err); toast('Could not finish cleanup — check your connection'); $('confirmCleanupBtn').disabled = false; }
+      });
+    }catch(err){ console.error(err); resultBox.innerHTML = ''; toast('Could not check — check your connection'); }
   });
 }
 
