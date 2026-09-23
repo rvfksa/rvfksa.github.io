@@ -41,7 +41,7 @@
   import {
     getFirestore,
     doc, getDoc, setDoc, updateDoc, deleteDoc,
-    collection, addDoc, getDocs, query, orderBy, onSnapshot
+    collection, addDoc, getDocs, query, where, orderBy, onSnapshot
   } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
   import {
     getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword,
@@ -98,16 +98,35 @@
   // immediately, with no network wait at all. Firestore keeps it
   // updated in the background automatically, so nothing ever goes
   // stale the way a plain one-time cache would.
-  function makeCachedCollection(name, { orderByField, includeId = true } = {}){
+  // A plain "YYYY-MM-DD" cutoff string N days back from right now — used to
+  // scope a live cache to only recent documents instead of a collection's
+  // entire history, which is what actually keeps a fast-growing collection
+  // fast to sync on every login.
+  function recentWindowDaysCutoffStr(days){
+    const d = new Date();
+    d.setDate(d.getDate() - days);
+    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  }
+  function makeCachedCollection(name, { orderByField, includeId = true, recentWindowField = null, recentWindowDays = 60 } = {}){
     let cachedRows = null;
     let firstSnapshot = null;
     let unsub = null;
     let listeners = [];
     function start(){
       if (unsub || !dbReady) return;
-      const ref = orderByField
-        ? query(collection(db, name), orderBy(orderByField))
-        : collection(db, name);
+      let ref;
+      if(recentWindowField){
+        // Filtering AND ordering on the SAME field is what lets this run
+        // without needing a manually-created composite index in Firebase —
+        // mixing a filter on one field with orderBy on a different field
+        // is what would require one.
+        const cutoff = recentWindowDaysCutoffStr(recentWindowDays);
+        ref = query(collection(db, name), where(recentWindowField, '>=', cutoff), orderBy(recentWindowField));
+      } else {
+        ref = orderByField
+          ? query(collection(db, name), orderBy(orderByField))
+          : collection(db, name);
+      }
       firstSnapshot = new Promise(resolve => {
         let settled = false;
         let offlineTimer = null;
@@ -152,7 +171,30 @@
       onChange(fn){ listeners.push(fn); }
     };
   }
-  const readingsCache = makeCachedCollection('readings', { orderByField: 'timestamp' });
+  const readingsCache = makeCachedCollection('readings', { recentWindowField: 'date', recentWindowDays: 60 });
+  // Full, uncapped history — used ONLY by the handful of screens that
+  // genuinely need every reading ever logged for correctness (Report,
+  // Dashboard, and the admin tools that check a machine's whole reading
+  // history for a reset). This is a plain one-time fetch, cached after the
+  // first call in a session so repeat visits are instant — it deliberately
+  // does NOT stay live the way the 60-day window above does, since these
+  // are occasional/deliberate lookups, not something that needs to update
+  // itself second by second.
+  let allReadingsCache = null;
+  let allReadingsPromise = null;
+  async function loadAllReadingsEver(){
+    if(!dbReady) throw new Error('NOT_CONFIGURED');
+    if(allReadingsCache) return allReadingsCache;
+    if(!allReadingsPromise){
+      allReadingsPromise = getDocs(collection(db, 'readings')).then(snap => {
+        const out = [];
+        snap.forEach(d => out.push({ _id: d.id, ...d.data() }));
+        allReadingsCache = out;
+        return out;
+      }).catch(err => { allReadingsPromise = null; throw err; });
+    }
+    return allReadingsPromise;
+  }
   const usersCache = makeCachedCollection('users', { includeId: false });
   const vacationsCache = makeCachedCollection('vacations');
   const violationsCache = makeCachedCollection('violations');
@@ -225,6 +267,21 @@
     },
     async listUsers() {
       return usersCache.get();
+    },
+    /* ---------- photo blobs (Iqama/Passport/Vacation/Violation attachments) ----------
+       Saved as their own small document instead of embedded directly in the
+       Iqama/Passport/Vacation/Violation record, so listing those doesn't
+       also download every attached photo — only fetched when someone
+       actually clicks to view one. */
+    async savePhotoBlob(dataUrl) {
+      if (!dbReady) throw new Error('NOT_CONFIGURED');
+      const ref = await addDoc(collection(db, "photoBlobs"), { data: dataUrl, createdAt: Date.now() });
+      return ref.id;
+    },
+    async getPhotoBlob(id) {
+      if (!dbReady) throw new Error('NOT_CONFIGURED');
+      const snap = await getDoc(doc(db, "photoBlobs", id));
+      return snap.exists() ? snap.data().data : null;
     },
     // Live-watches one user doc so a change an Admin makes (role, pages, machines,
     // profile) reaches that person's own open session immediately instead of
@@ -347,22 +404,34 @@
     async saveReading(record) {
       if (!dbReady) throw new Error('NOT_CONFIGURED');
       const ref = await addDoc(collection(db, "readings"), record);
+      allReadingsCache = null; allReadingsPromise = null;
       return ref.id;
     },
     async loadReadings() {
       return readingsCache.get();
     },
+    async getReading(id) {
+      if (!dbReady) throw new Error('NOT_CONFIGURED');
+      const snap = await getDoc(doc(db, "readings", id));
+      return snap.exists() ? { _id: snap.id, ...snap.data() } : null;
+    },
+    async loadAllReadingsEver() {
+      return loadAllReadingsEver();
+    },
     async updateReading(id, updates) {
       if (!dbReady) throw new Error('NOT_CONFIGURED');
       await updateDoc(doc(db, "readings", id), updates);
+      allReadingsCache = null; allReadingsPromise = null;
     },
     async deleteReading(id) {
       if (!dbReady) throw new Error('NOT_CONFIGURED');
       await deleteDoc(doc(db, "readings", id));
+      allReadingsCache = null; allReadingsPromise = null;
     },
     async addReading(record) {
       if (!dbReady) throw new Error('NOT_CONFIGURED');
       const ref = await addDoc(collection(db, "readings"), record);
+      allReadingsCache = null; allReadingsPromise = null;
       return ref.id;
     },
 
@@ -3105,7 +3174,7 @@ async function renderBaselinePreview(panel, id){
   box.style.color = '';
   let allReadings;
   try{
-    allReadings = await window.__db.loadReadings();
+    allReadings = await window.__db.loadAllReadingsEver();
   }catch(err){ console.error(err); box.textContent = ''; return; }
   const problem = checkBaselinePlacement(allReadings, id, baselineVal, baselineDate);
   if(problem){
@@ -3123,7 +3192,7 @@ async function saveMachineEdit(id, panel){
   if(baselineReading){
     if(!isValidNumber(baselineReading)){ toast('Counter Reading must be a number'); return; }
     try{
-      const allReadings = await window.__db.loadReadings();
+      const allReadings = await window.__db.loadAllReadingsEver();
       const problem = checkBaselinePlacement(allReadings, id, baselineReading, baselineDate);
       if(problem){
         toast(`Can't save — the ${fmtDate(problem.date)} ${problem.shift} reading (${problem.reading}) would diff to ${problem.diff} picks (negative). This date doesn't match where the readings switch from big to small numbers — check the reading history and try a different date.`);
@@ -4144,7 +4213,7 @@ async function saveStopReasonEdit(index, newName, newPicksPerHour){
     state.stopReasons = list;
     stopReasonEditIdx = null;
     if(newName !== oldName){
-      const readings = await window.__db.loadReadings();
+      const readings = await window.__db.loadAllReadingsEver();
       await Promise.all(readings.filter(r => r.reason === oldName).map(r => window.__db.updateReading(r._id, { reason: newName })));
     }
     renderStopReasonChips();
@@ -4591,7 +4660,7 @@ $('backToSelectBtn').addEventListener('click', () => {
 $('fileInput').addEventListener('change', (e) => {
   const file = e.target.files[0];
   if(!file) return;
-  compressImageSafe(file).then(dataUrl => {
+  compressImageSafe(file, 150000).then(dataUrl => {
     state.photoDataUrl = dataUrl;
     goToReview();
   }).catch(() => {
@@ -4603,8 +4672,8 @@ $('fileInput').addEventListener('change', (e) => {
 // Firestore rejects any single document over ~1MB. A raw phone photo, even resized,
 // can occasionally still land close to that once base64-encoded. This shrinks in
 // steps until it's safely under the limit, so a save never silently fails on photo size.
-function compressImageSafe(file){
-  const MAX_CHARS = 300000; // ~300KB of base64 — a user doc can hold an iqama AND passport attachment together, so keep each one lean
+function compressImageSafe(file, maxChars){
+  const MAX_CHARS = maxChars || 300000; // ~300KB of base64 — a user doc can hold an iqama AND passport attachment together, so keep each one lean
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (ev) => {
@@ -5061,6 +5130,24 @@ async function loadApprovals(){
 $('refreshApprovalsBtn').addEventListener('click', loadApprovals);
 $('missingCheckDate').addEventListener('change', loadApprovals);
 
+// Existing Iqama/Passport/Vacation/Violation records have the photo
+// embedded directly (a "data:image/..." URL) — nothing about those
+// changes. New ones going forward store just a short reference ID instead,
+// resolved on demand via getPhotoBlob. This one check is what lets every
+// display path handle both kinds without needing any data migration.
+function isPhotoBlobRef(value){
+  return !!value && typeof value === 'string' && !value.startsWith('data:');
+}
+async function openPhotoRef(value){
+  if(!value) return;
+  if(!isPhotoBlobRef(value)){ openLightbox(value); return; }
+  if(!requireDb()) return;
+  try{
+    const dataUrl = await window.__db.getPhotoBlob(value);
+    if(!dataUrl){ toast('Could not find that photo'); return; }
+    openLightbox(dataUrl);
+  }catch(err){ console.error(err); toast('Could not load photo — check your connection'); }
+}
 function openLightbox(src){
   const box = document.createElement('div');
   box.className = 'lightbox';
@@ -5095,7 +5182,7 @@ function openRowActionsMenu(id){
   backdrop.addEventListener('click', (e) => { if(e.target === backdrop) backdrop.remove(); });
   document.body.appendChild(backdrop);
   const photoBtn = backdrop.querySelector('#rowActionPhoto');
-  if(photoBtn) photoBtn.addEventListener('click', () => { backdrop.remove(); openLightbox(row.photoDataUrl); });
+  if(photoBtn) photoBtn.addEventListener('click', () => { backdrop.remove(); openPhotoRef(row.photoDataUrl); });
   backdrop.querySelector('#rowActionResetPoint').addEventListener('click', () => { backdrop.remove(); toggleResetPoint(id, row.resetPoint); });
   backdrop.querySelector('#rowActionEdit').addEventListener('click', () => { backdrop.remove(); openReportEditPanel(id); });
   backdrop.querySelector('#rowActionDelete').addEventListener('click', () => { backdrop.remove(); deleteReportRow(id); });
@@ -5184,6 +5271,23 @@ async function decideReading(id, status){
     if(newStopTime !== null) updates.stopTime = newStopTime;
     if(newReason !== null) updates.reason = newReason || '—';
     if(newBreakdown !== null) updates.stopBreakdown = newBreakdown;
+    // Once approved, the photo no longer needs to travel along with this
+    // entry in every future bulk load (Approvals, Report, Dashboard) — only
+    // PENDING entries need their photo immediately visible. Moving it to
+    // its own small record now is what keeps every future load fast,
+    // regardless of how many months of approved history accumulate. If
+    // anything here fails, the approval still goes through — the photo
+    // just stays embedded as it would have before this change, which is
+    // safe, just not yet lightened.
+    if(status === 'approved'){
+      try{
+        const current = await window.__db.getReading(id);
+        if(current && current.photoDataUrl && !isPhotoBlobRef(current.photoDataUrl)){
+          const ref = await window.__db.savePhotoBlob(current.photoDataUrl);
+          updates.photoDataUrl = ref;
+        }
+      }catch(err){ console.error('Photo migration on approve failed (non-fatal):', err); }
+    }
     await window.__db.updateReading(id, updates);
     toast(status === 'approved' ? 'Entry approved' : 'Entry rejected — sent back to the operator to fix and resubmit');
     loadApprovals();
@@ -5200,7 +5304,7 @@ async function loadReport(){
   body.innerHTML = '<div class="empty-state">Loading log…</div>';
   if(!requireDb()){ body.innerHTML = '<div class="empty-state">Database isn\'t connected yet.<br>Open the file and paste your free Firebase config in — see the setup note at the top of the script.</div>'; return; }
   try{
-    const allRecords = await window.__db.loadReadings();
+    const allRecords = await window.__db.loadAllReadingsEver();
     const fromDate = $('reportFromDate').value;
     const toDate = $('reportToDate').value;
 
@@ -5460,7 +5564,11 @@ async function openReportEditPanel(id){
   backdrop.innerHTML = `
     <div class="edit-modal-sheet">
       <h2 style="margin-top:0;">Edit Entry <span style="text-transform:none; font-weight:400; color:var(--muted); font-size:12px;">${r.machine}</span></h2>
-      ${r.photoDataUrl ? `<img src="${r.photoDataUrl}" class="approve-photo" id="re-photo">` : '<p class="hint" style="text-align:left; margin-left:0;">No photo was attached to this entry.</p>'}
+      ${r.photoDataUrl
+        ? (isPhotoBlobRef(r.photoDataUrl)
+            ? `<button class="btn btn-ghost" id="re-photo" style="margin-bottom:10px;">View Photo</button>`
+            : `<img src="${r.photoDataUrl}" class="approve-photo" id="re-photo">`)
+        : '<p class="hint" style="text-align:left; margin-left:0;">No photo was attached to this entry.</p>'}
       <div class="field">
         <label>Machine</label>
         <select id="re-machine">
@@ -5521,7 +5629,7 @@ async function openReportEditPanel(id){
   `;
   backdrop.addEventListener('click', (e) => { if(e.target === backdrop) closeReportEditModal(); });
   document.body.appendChild(backdrop);
-  if(r.photoDataUrl) $('re-photo').addEventListener('click', () => openLightbox(r.photoDataUrl));
+  if(r.photoDataUrl) $('re-photo').addEventListener('click', () => openPhotoRef(r.photoDataUrl));
   $('re-cancel').addEventListener('click', closeReportEditModal);
   $('re-save').addEventListener('click', () => saveReportEdit(id));
   $('re-transfer').addEventListener('click', () => transferReportEntry(id, r.enteredById));
@@ -5823,7 +5931,7 @@ async function loadPicksForApprovals(){
     if(prevVal && selectable.some(u => u.loginId === prevVal)) sel.value = prevVal;
     else if(selectable.length) sel.value = selectable[0].loginId;
     if(selectable.length === 0){ $('picksBody').innerHTML = '<div class="empty-state">No operators or supervisors to show yet.</div>'; return; }
-    const all = await window.__db.loadReadings();
+    const all = await window.__db.loadAllReadingsEver();
     renderPicksReport('picksBody', all, sel.value, $('picksFrom').value, $('picksTo').value);
   }catch(err){ console.error(err); $('picksBody').innerHTML = '<div class="empty-state">Could not load.</div>'; }
 }
@@ -6658,7 +6766,7 @@ function docBlock(kind, title, fields, attachmentUrl){
     return `<div class="card card-with-actions">
       ${canEdit ? `<div class="mini-icon-row"><button class="mini-icon-btn docSectionEditBtn" data-kind="${kind}" title="Edit ${title}">${MINI_EDIT_ICON}</button></div>` : ''}
       ${fields.map(f => fieldRow(f.label, f.type === 'date' ? fmtDate(d[f.key]) : d[f.key])).join('')}
-      ${d.attachment ? `<div style="margin-top:10px;"><img src="${d.attachment}" style="max-width:100%; border-radius:10px; cursor:zoom-in;" class="docThumb" data-src="${d.attachment}"></div>` : '<div class="sub">No document attached.</div>'}
+      ${d.attachment ? `<button class="btn btn-ghost docViewBtn" data-ref="${d.attachment}" style="margin-top:10px;">View Document</button>` : '<div class="sub">No document attached.</div>'}
     </div>`;
   }
   return `<div class="grid-2">
@@ -6667,7 +6775,7 @@ function docBlock(kind, title, fields, attachmentUrl){
   <div class="field">
     <label>Attachment</label>
     <input type="file" accept="image/*" id="doc-${kind}-file">
-    ${d.attachment ? `<img src="${d.attachment}" style="max-width:160px; border-radius:10px; margin-top:8px;">` : ''}
+    ${d.attachment ? `<button class="btn btn-ghost docViewBtn" data-ref="${d.attachment}" style="margin-top:8px;">View Current Document</button>` : ''}
   </div>
   <button class="btn btn-primary" id="doc-${kind}-save">Save ${title}</button>`;
 }
@@ -6682,6 +6790,7 @@ function renderPassportTab(){
   if(state.profileEditMode || docSectionEditing.passport) wireDocSave('passport', ['firstName','lastName','passportNo','issueDate','expiryDate','dob']);
   wireDocSectionEditBtns();
   wireDocThumbs();
+  wireDocViewBtns();
   // Hidden from everyone by default — only Admin, plus whoever Admin
   // explicitly added under Admin > Passport Access, can see either section
   // below. The two sections behave differently on purpose:
@@ -6977,6 +7086,7 @@ function renderIqamaTab(){
   if(state.profileEditMode || docSectionEditing.iqama) wireDocSave('iqama', ['no','expiry']);
   wireDocSectionEditBtns();
   wireDocThumbs();
+  wireDocViewBtns();
 }
 function wireDocSectionEditBtns(){
   document.querySelectorAll('.docSectionEditBtn:not([data-wired])').forEach(btn => {
@@ -6993,6 +7103,12 @@ function wireDocThumbs(){
     img.addEventListener('click', () => openLightbox(img.dataset.src));
   });
 }
+function wireDocViewBtns(){
+  document.querySelectorAll('.docViewBtn:not([data-wired])').forEach(btn => {
+    btn.dataset.wired = '1';
+    btn.addEventListener('click', () => openPhotoRef(btn.dataset.ref));
+  });
+}
 function wireDocSave(kind, keys){
   const btn = $('doc-'+kind+'-save');
   if(!btn) return;
@@ -7000,8 +7116,8 @@ function wireDocSave(kind, keys){
     const d = {};
     keys.forEach(k => d[k] = $('doc-'+kind+'-'+k).value.trim());
     const fileInput = $('doc-'+kind+'-file');
-    const finish = async (attachment) => {
-      if(attachment) d.attachment = attachment;
+    const finish = async (attachmentRef) => {
+      if(attachmentRef) d.attachment = attachmentRef;
       else { const existing = (profileCache.user.profile||{})[kind]||{}; if(existing.attachment) d.attachment = existing.attachment; }
       const p = Object.assign({}, profileCache.user.profile || {}, { [kind]: d });
       try{
@@ -7013,7 +7129,12 @@ function wireDocSave(kind, keys){
       }catch(err){ console.error(err); toast('Could not save — check your connection'); }
     };
     if(fileInput.files && fileInput.files[0]){
-      compressImageSafe(fileInput.files[0]).then(finish);
+      if(!requireDb()) return;
+      try{
+        const dataUrl = await compressImageSafe(fileInput.files[0]);
+        const ref = await window.__db.savePhotoBlob(dataUrl);
+        finish(ref);
+      }catch(err){ console.error(err); toast('Could not upload photo — try a smaller image'); }
     } else finish(null);
   });
 }
@@ -7050,7 +7171,7 @@ function renderVacationTab(){
         ${fieldRow('Status', v.ticket.status)}
         ${fieldRow('Departure', v.ticket.departureTime)}
         ${fieldRow('Arrival', v.ticket.arrivalTime)}
-        ${v.ticket.attachment ? `<img src="${v.ticket.attachment}" class="docThumb" data-src="${v.ticket.attachment}" style="max-width:100%; border-radius:10px; margin-top:8px; cursor:zoom-in;">` : ''}
+        ${v.ticket.attachment ? `<button class="btn btn-ghost docViewBtn" data-ref="${v.ticket.attachment}" style="margin-top:8px;">View Ticket</button>` : ''}
       ` : (v.ticket ? '<div class="sub">Ticket details are only visible once the CEO approves.</div>' : '')}
       ${(isCeo && v.ticket && !v.ticket.ceoApproved) ? `<button class="btn btn-approve btn-sm ceoApproveTicket" data-id="${v._id}" style="margin-top:10px;">Approve Ticket for Employee to See</button>` : ''}
     </div>`;
@@ -7085,6 +7206,7 @@ function renderVacationTab(){
   }
   el.innerHTML = html;
   wireDocThumbs();
+  wireDocViewBtns();
   el.querySelectorAll('.ceoApproveTicket').forEach(btn => btn.addEventListener('click', () => approveTicket(btn.dataset.id)));
   if(state.profileEditMode){
     $('addVacationBtn').addEventListener('click', addVacation);
@@ -7188,8 +7310,10 @@ async function addVacation(){
   try{
     let record;
     if(fileInput.files && fileInput.files[0]){
+      if(!requireDb()) return;
       const dataUrl = await compressImageSafe(fileInput.files[0]);
-      record = buildRecord(dataUrl);
+      const ref = await window.__db.savePhotoBlob(dataUrl);
+      record = buildRecord(ref);
     } else record = buildRecord(null);
     await window.__db.saveVacation(record);
     toast('Vacation added');
@@ -7217,7 +7341,7 @@ function renderViolationsTab(){
       ${fieldRow('Date', fmtDate(v.date))}
       ${fieldRow('Reason', v.reason)}
       ${fieldRow('Money Deduction', v.deduction && v.deduction.yes ? ('Yes — ' + v.deduction.amount) : 'No')}
-      ${(v.attachments||[]).length ? '<div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;">' + v.attachments.map(a=>`<img src="${a}" class="docThumb" data-src="${a}" style="width:70px; height:70px; object-fit:cover; border-radius:8px; cursor:zoom-in;">`).join('') + '</div>' : ''}
+      ${(v.attachments||[]).length ? '<div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;">' + v.attachments.map((a,i)=>`<button class="btn btn-ghost btn-sm docViewBtn" data-ref="${a}">View Attachment ${i+1}</button>`).join('') + '</div>' : ''}
     </div>`;
   });
   if(state.profileEditMode){
@@ -7234,6 +7358,7 @@ function renderViolationsTab(){
   }
   el.innerHTML = html;
   wireDocThumbs();
+  wireDocViewBtns();
   if(state.profileEditMode){
     $('viol-deduction').addEventListener('change', () => { $('viol-amountField').style.display = $('viol-deduction').value === 'yes' ? 'block' : 'none'; });
     $('addViolationBtn').addEventListener('click', addViolation);
@@ -7282,7 +7407,9 @@ async function saveViolationEdit(id){
 async function addViolation(){
   const files = Array.from($('viol-files').files || []).slice(0,3);
   try{
-    const attachments = await Promise.all(files.map(f => compressImageSafe(f)));
+    if(files.length && !requireDb()) return;
+    const compressed = await Promise.all(files.map(f => compressImageSafe(f)));
+    const attachments = await Promise.all(compressed.map(dataUrl => window.__db.savePhotoBlob(dataUrl)));
     const record = {
       employeeId: profileCache.user.loginId,
       date: $('viol-date').value, reason: $('viol-reason').value.trim(),
@@ -7536,7 +7663,7 @@ async function loadCeoDashboard(){
 
     const users = await window.__db.listUsers();
     state.users = users;
-    const records = await window.__db.loadReadings();
+    const records = await window.__db.loadAllReadingsEver();
     state.cachedRecords = records;
 
     renderEmployeeOverviewBox(users);
