@@ -39,7 +39,7 @@
      ============================================================ */
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
   import {
-    initializeFirestore, persistentLocalCache, persistentSingleTabManager,
+    initializeFirestore, persistentLocalCache, persistentMultiTabManager,
     doc, getDoc, setDoc, updateDoc, deleteDoc,
     collection, addDoc, getDocs, query, orderBy, onSnapshot
   } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -66,7 +66,7 @@
     if (firebaseConfig.apiKey && !firebaseConfig.apiKey.startsWith('PASTE_')) {
       const app = initializeApp(firebaseConfig);
       db = initializeFirestore(app, {
-        localCache: persistentLocalCache({ tabManager: persistentSingleTabManager() })
+        localCache: persistentLocalCache({ tabManager: persistentMultiTabManager() })
       });
       auth = getAuth(app);
       dbReady = true;
@@ -104,6 +104,7 @@
     let cachedRows = null;
     let firstSnapshot = null;
     let unsub = null;
+    let listeners = [];
     function start(){
       if (unsub || !dbReady) return;
       const ref = orderByField
@@ -116,6 +117,12 @@
           const out = [];
           snap.forEach(d => out.push(includeId ? { _id: d.id, ...d.data() } : d.data()));
           cachedRows = out;
+          // Tell anyone who registered interest (see onChange below) that
+          // fresh data just came in — e.g. so an already-open Admin Users
+          // screen can redraw itself the moment a new registration lands,
+          // instead of only ever showing what was there when it first
+          // opened until someone manually hits Refresh.
+          listeners.forEach(fn => { try{ fn(out); }catch(e){ console.error(e); } });
           const serverConfirmed = !snap.metadata.fromCache;
           if(settled) return; // already resolved — cachedRows above still stays current for future .get() calls
           if(serverConfirmed){
@@ -143,7 +150,8 @@
         if (!dbReady) throw new Error('NOT_CONFIGURED');
         start();
         return cachedRows !== null ? cachedRows : firstSnapshot;
-      }
+      },
+      onChange(fn){ listeners.push(fn); }
     };
   }
   const readingsCache = makeCachedCollection('readings', { orderByField: 'timestamp' });
@@ -449,7 +457,12 @@
       vacationsCache.warm();
       violationsCache.warm();
       leaveRequestsCache.warm();
-    }
+    },
+    // Lets the Admin Users screen redraw itself the instant a new
+    // registration (or any user change) comes in, instead of only ever
+    // showing what was loaded when the screen was first opened.
+    onUsersChange(fn){ usersCache.onChange(fn); },
+    onReadingsChange(fn){ readingsCache.onChange(fn); }
   };
 </script>
 <style>
@@ -1245,6 +1258,17 @@
           <button class="btn btn-ghost" id="cancelWeekdayAutoStopEditBtn" style="margin-top:6px; display:none;">Cancel Edit</button>
         </div>
         <div id="weekdayAutoStopList"></div>
+
+        <div class="sub" style="margin-top:24px; font-weight:600; color:var(--text); text-transform:none;">Salary Cycle (Earned Picks default range)</div>
+        <p class="sub" style="margin-top:0;">My Status defaults its Earned Picks range to the current salary cycle instead of showing every pick ever earned — so an Operator sees exactly what counts toward their next payment, without needing to know how to use the date filter themselves. This only sets the DEFAULT dates shown; anyone can still pick a different range manually.</p>
+        <div class="card">
+          <div class="field" style="margin-bottom:0;">
+            <label for="salaryCycleStartDay">Cycle Start Day (of the month)</label>
+            <input type="number" id="salaryCycleStartDay" min="1" max="31" step="1" placeholder="e.g. 26">
+          </div>
+          <p class="hint" style="text-align:left; margin-left:0;">e.g. 26 means each cycle runs the 26th of one month through the 25th of the next.</p>
+        </div>
+        <button class="btn btn-primary" id="saveSalaryCycleBtn" style="margin-top:12px;">Save</button>
       </div>
 
       <div class="auth-pane" id="admin-execaccess">
@@ -2016,6 +2040,7 @@ let state = {
   shiftRules: [],   // Admin-configurable, effective-dated history of shift start/end + operator/supervisor grace periods (see Admin > Shift & Timing)
   machineCooldownMinutes: 30, // Admin-configurable "machine disappears from the list for X minutes after logging" setting (see Admin > Shift & Timing)
   weekdayAutoStops: [], // Admin-configurable "every Thursday, X hours auto-stop for cleaning" rules (see Admin > Shift & Timing)
+  salaryCycleStartDay: 26, // Admin-configurable salary cycle start day (e.g. 26th-25th) — sets My Status's default Earned Picks date range
   editingWeekdayAutoStopIdx: null,
   editingShiftRuleDate: null, // effectiveDate of the shift rule currently open for editing in that form, if any
   execViewTarget: null,  // loginId Executive Management is currently drilled into (read-only)
@@ -2558,6 +2583,22 @@ async function loadUsersForAdmin(){
   }catch(err){ console.error(err); body.innerHTML = '<div class="empty-state">Could not load users.</div>'; }
 }
 $('refreshUsersBtn').addEventListener('click', loadUsersForAdmin);
+if(window.__db.onUsersChange){
+  window.__db.onUsersChange((users) => {
+    const usersTabOpen = $('screen-admin').classList.contains('active') && $('admin-users').classList.contains('active');
+    if(usersTabOpen && state.user && state.user.role === 'admin'){
+      state.users = users;
+      renderUsersList();
+    }
+  });
+}
+if(window.__db.onReadingsChange){
+  window.__db.onReadingsChange(() => {
+    if(!state.user) return;
+    if($('screen-approvals').classList.contains('active')) loadApprovals();
+    if($('screen-report').classList.contains('active')) loadReport();
+  });
+}
 $('userSearchInput').addEventListener('input', renderUsersList);
 $('userFilterToggleBtn').addEventListener('click', () => {
   const panel = $('userFilterPanel');
@@ -3211,7 +3252,7 @@ async function loadConfigLists(){
     // These 9 reads are all independent — firing them together instead of
     // one-after-another is most of why login used to feel slow (it was
     // waiting on 8+ sequential round-trips before showing anything).
-    const [departments, positions, leaveTypes, salaryComponents, premiumTiers, stopReasonsRaw, execVisibility, passportAccess, holidaysObj, shiftRules, machineCooldownObj, weekdayAutoStops] = await Promise.all([
+    const [departments, positions, leaveTypes, salaryComponents, premiumTiers, stopReasonsRaw, execVisibility, passportAccess, holidaysObj, shiftRules, machineCooldownObj, weekdayAutoStops, salaryCycleObj] = await Promise.all([
       window.__db.getConfigList('departments', ['Weaving','Maintenance','HR','Accounts','Quality']),
       window.__db.getConfigList('positions', ['Machine Operator','Supervisor','Instructor','Manager']),
       window.__db.getConfigList('leaveTypes', ['Sick','Umrah','Annual','Compensatory','Exit Request','Other']),
@@ -3223,7 +3264,8 @@ async function loadConfigLists(){
       window.__db.getConfigObject('holidays', {}),
       window.__db.getConfigList('shiftRules', [makeDefaultShiftRule()]),
       window.__db.getConfigObject('machineCooldown', { minutes: 30 }),
-      window.__db.getConfigList('weekdayAutoStops', [])
+      window.__db.getConfigList('weekdayAutoStops', []),
+      window.__db.getConfigObject('salaryCycle', { startDay: 26 })
     ]);
     state.departments = departments;
     state.positions = positions;
@@ -3237,6 +3279,7 @@ async function loadConfigLists(){
     state.shiftRules = (shiftRules && shiftRules.length) ? shiftRules : [makeDefaultShiftRule()];
     state.machineCooldownMinutes = (machineCooldownObj && isFinite(Number(machineCooldownObj.minutes))) ? Number(machineCooldownObj.minutes) : 30;
     state.weekdayAutoStops = weekdayAutoStops || [];
+    state.salaryCycleStartDay = (salaryCycleObj && isFinite(Number(salaryCycleObj.startDay)) && Number(salaryCycleObj.startDay) >= 1 && Number(salaryCycleObj.startDay) <= 31) ? Number(salaryCycleObj.startDay) : 26;
     renderConfigChips('deptChips', state.departments, 'departments');
     renderConfigChips('positionChips', state.positions, 'positions');
     renderConfigChips('leaveTypeChips', state.leaveTypes, 'leaveTypes');
@@ -3251,6 +3294,7 @@ async function loadConfigLists(){
     if($('shiftRuleList')) renderShiftRulesAdmin();
     if($('machineCooldownMinutes')) $('machineCooldownMinutes').value = state.machineCooldownMinutes;
     if($('weekdayAutoStopList')) renderWeekdayAutoStopsAdmin();
+    if($('salaryCycleStartDay')) $('salaryCycleStartDay').value = state.salaryCycleStartDay;
   }catch(err){ console.error(err); }
 }
 
@@ -3483,6 +3527,20 @@ if($('saveMachineCooldownBtn')){
       await window.__db.saveConfigObject('machineCooldown', { minutes });
       state.machineCooldownMinutes = minutes;
       toast('Machine re-entry cooldown updated');
+    }catch(err){ console.error(err); toast('Could not save — check your connection'); }
+  });
+}
+if($('saveSalaryCycleBtn')){
+  $('saveSalaryCycleBtn').addEventListener('click', async () => {
+    if(!requireDb()) return;
+    const startDay = Number($('salaryCycleStartDay').value);
+    if(!isFinite(startDay) || startDay < 1 || startDay > 31){
+      toast('Please enter a day between 1 and 31'); return;
+    }
+    try{
+      await window.__db.saveConfigObject('salaryCycle', { startDay });
+      state.salaryCycleStartDay = startDay;
+      toast('Salary cycle updated');
     }catch(err){ console.error(err); toast('Could not save — check your connection'); }
   });
 }
@@ -5709,9 +5767,31 @@ function renderEfficiencyBox(elId, records, operatorId, fromDate, toDate, assign
   <div class="hint">Efficiency = productive time \u00f7 total shift time, across every machine you ran in this range. Only completed shifts (with an Ending photo) count — one still in progress isn't held against you until it's finished.</div>`;
 }
 
+// The salary cycle an arbitrary date falls into, e.g. startDay=26 means
+// each cycle runs from the 26th of one month through the 25th of the
+// next. Used to default My Status's Earned Picks range to "what counts
+// toward my next salary" instead of an all-time total, since most
+// Operators wouldn't otherwise know to set the date filter themselves.
+function computeSalaryCycle(now, startDay){
+  const day = now.getDate();
+  let m = now.getMonth();
+  let y = now.getFullYear();
+  if(day < startDay){
+    m -= 1;
+    if(m < 0){ m = 11; y -= 1; }
+  }
+  const start = new Date(y, m, startDay);
+  const end = new Date(y, m + 1, startDay - 1);
+  return { start: dateToStr(start), end: dateToStr(end) };
+}
 async function loadMyPicksReport(){
   if(!requireDb()) return;
   const targetId = state.execViewTarget || state.user.loginId;
+  if(!$('myPicksFrom').value && !$('myPicksTo').value){
+    const cycle = computeSalaryCycle(new Date(), state.salaryCycleStartDay || 26);
+    $('myPicksFrom').value = cycle.start;
+    $('myPicksTo').value = cycle.end;
+  }
   try{
     const all = await window.__db.loadReadings();
     renderPicksReport('myPicksBody', all, targetId, $('myPicksFrom').value, $('myPicksTo').value);
