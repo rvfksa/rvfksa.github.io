@@ -553,6 +553,18 @@
     async saveMachines(list) {
       if (!dbReady) throw new Error('NOT_CONFIGURED');
       await setDoc(doc(db, "config", "machines"), { list });
+      // Automatic backup — every real save also updates a separate,
+      // always-current copy, so there's never a need to remember to
+      // download one manually. This never runs from a read, only ever
+      // right after a real, intentional save succeeds.
+      try{ await setDoc(doc(db, "config", "machinesBackup"), { list, savedAt: Date.now() }); }
+      catch(err){ console.error('Auto-backup of machines failed (non-fatal — main save already succeeded):', err); }
+    },
+    async getMachinesBackup() {
+      if (!dbReady) throw new Error('NOT_CONFIGURED');
+      const snap = await getDoc(doc(db, "config", "machinesBackup"));
+      if (!snap.exists()) return null;
+      return snap.data();
     },
 
     /* ---------- readings ---------- */
@@ -1408,13 +1420,18 @@
       </div>
 
       <div class="auth-pane" id="admin-machines">
-        <div style="text-align:right; margin-bottom:8px; display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap;">
-          <button class="btn btn-ghost" id="downloadMachinesBackupBtn" style="font-size:12px; padding:6px 10px;">Download Backup</button>
-          <label class="btn btn-ghost" for="restoreMachinesFileInput" style="font-size:12px; padding:6px 10px; margin:0; cursor:pointer;">Restore From Backup File</label>
-          <input type="file" id="restoreMachinesFileInput" accept="application/json" style="display:none;">
+        <div class="card" style="margin-bottom:16px;">
+          <b>Restore Machines</b>
+          <p class="sub" style="margin-top:6px; margin-bottom:10px;">Every time your machine list is saved, a backup copy is kept automatically — no need to remember to download anything. If your machine list is ever showing wrong or blank details, restore it here.</p>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button class="btn btn-primary" id="restoreAutoBackupBtn" style="font-size:13px; padding:8px 14px;">Restore From Latest Auto-Backup</button>
+            <button class="btn btn-ghost" id="downloadMachinesBackupBtn" style="font-size:13px; padding:8px 14px;">Download Backup To My Computer</button>
+            <label class="btn btn-ghost" for="restoreMachinesFileInput" style="font-size:13px; padding:8px 14px; margin:0; cursor:pointer;">Restore From My Own Backup File</label>
+            <input type="file" id="restoreMachinesFileInput" accept="application/json" style="display:none;">
+          </div>
+          <button class="btn btn-ghost" id="useSeptemberBackupLink" style="font-size:12px; padding:6px 12px; margin-top:10px;">Or Use The Original September 2026 Snapshot Instead</button>
         </div>
         <div id="restoreMissingResult"></div>
-        <div class="sub" style="margin-top:-4px; margin-bottom:12px;">Don't have a backup file yet? <a href="#" id="useSeptemberBackupLink">Use the September 2026 snapshot</a> as a one-time starting point.</div>
         <div class="grid-2">
           <div class="field"><label for="newMachineId">New Machine ID</label><input type="text" id="newMachineId" placeholder="e.g. 21"></div>
           <div class="field"><label for="newMachineName">New Machine Name</label><input type="text" id="newMachineName" placeholder="e.g. MACHINE - 21"></div>
@@ -3628,6 +3645,27 @@ function renderRestorePreview(resultBox, plan){
       toast('Machines restored');
       if($('screen-admin').classList.contains('active') && $('admin-machines').classList.contains('active')) loadMachinesForAdmin();
     }catch(err){ console.error(err); toast('Could not restore — check your connection'); }
+  });
+}
+if($('restoreAutoBackupBtn')){
+  $('restoreAutoBackupBtn').addEventListener('click', async () => {
+    if(!requireDb()) return;
+    const resultBox = $('restoreMissingResult');
+    resultBox.innerHTML = '<div class="hint" style="text-align:left; margin-left:0;">Checking…</div>';
+    try{
+      const backup = await window.__db.getMachinesBackup();
+      if(!backup || !backup.list || !backup.list.length){
+        resultBox.innerHTML = '<div class="hint" style="text-align:left; margin-left:0;">No auto-backup found yet — one gets created the next time your machine list is saved (e.g. adding or editing a machine).</div>';
+        return;
+      }
+      const current = await window.__db.getMachines();
+      const when = backup.savedAt ? new Date(backup.savedAt).toLocaleString() : 'an earlier save';
+      resultBox.innerHTML = `<div class="hint" style="text-align:left; margin-left:0; margin-bottom:8px;">Using the backup saved ${when}.</div>`;
+      const plan = computeMachineRestorePlan(current, backup.list);
+      const preview = document.createElement('div');
+      resultBox.appendChild(preview);
+      renderRestorePreview(preview, plan);
+    }catch(err){ console.error(err); resultBox.innerHTML = ''; toast('Could not check — check your connection'); }
   });
 }
 if($('useSeptemberBackupLink')){
