@@ -1324,11 +1324,6 @@
       </div>
 
       <div class="auth-pane" id="admin-machines">
-        <div class="card" style="border-color:var(--danger); margin-bottom:16px;">
-          <b>Restore Machines (Sep 2026 backup)</b>
-          <p class="sub" style="margin-top:6px;">Restores your 42 machines (name, department, shift, width, speed, picks/cm) — use this only if your machine list currently shows 20 generic placeholders instead of your real machines. This replaces whatever is currently in the machine list. "Cart Picks" isn't included in this backup and may need re-entering afterward if any machine had one set.</p>
-          <button class="btn btn-danger" id="restoreMachinesBtn" style="margin-top:8px;">Restore My 42 Machines</button>
-        </div>
         <div class="grid-2">
           <div class="field"><label for="newMachineId">New Machine ID</label><input type="text" id="newMachineId" placeholder="e.g. 21"></div>
           <div class="field"><label for="newMachineName">New Machine Name</label><input type="text" id="newMachineName" placeholder="e.g. MACHINE - 21"></div>
@@ -3402,63 +3397,6 @@ async function saveMachineEdit(id, panel){
   }catch(err){ console.error(err); toast('Could not save — check your connection'); }
 }
 
-const MACHINE_BACKUP_SEP2026 = [
-  {"id":"1","name":"RVF 1","department":"RVF","status":"running","shiftRun":"Day","widthCm":"140","speed":"170","picksPerCm":"12.2","cartPicks":""},
-  {"id":"3","name":"RVF 3","department":"RVF","status":"running","shiftRun":"Both","widthCm":"140","speed":"170","picksPerCm":"12.2","cartPicks":""},
-  {"id":"5","name":"RVF 5","department":"RVF","status":"running","shiftRun":"Both","widthCm":"200","speed":"170","picksPerCm":"16","cartPicks":""},
-  {"id":"6","name":"RVF 6","department":"RVF","status":"running","shiftRun":"Both","widthCm":"200","speed":"170","picksPerCm":"12.5","cartPicks":""},
-  {"id":"7","name":"RVF 7","department":"RVF","status":"running","shiftRun":"Both","widthCm":"200","speed":"170","picksPerCm":"11","cartPicks":""},
-  {"id":"8","name":"RVF 8","department":"RVF","status":"running","shiftRun":"Day","widthCm":"140","speed":"160","picksPerCm":"12.2","cartPicks":""},
-  {"id":"10","name":"RVF 10","department":"RVF","status":"running","shiftRun":"Both","widthCm":"140","speed":"170","picksPerCm":"18","cartPicks":""},
-  {"id":"12","name":"RVF 12","department":"RVF","status":"running","shiftRun":"Both","widthCm":"200","speed":"170","picksPerCm":"16","cartPicks":""},
-  {"id":"13","name":"RVF 13","department":"RVF","status":"running","shiftRun":"Day","widthCm":"200","speed":"170","picksPerCm":"11","cartPicks":""},
-  {"id":"14","name":"RVF 14","department":"RVF","status":"running","shiftRun":"Both","widthCm":"200","speed":"170","picksPerCm":"12.5","cartPicks":""},
-  {"id":"19","name":"RVF 19","department":"RVF","status":"running","shiftRun":"Both","widthCm":"200","speed":"170","picksPerCm":"16","cartPicks":""},
-  {"id":"20","name":"RVF 20","department":"RVF","status":"running","shiftRun":"Both","widthCm":"200","speed":"170","picksPerCm":"16","cartPicks":""},
-  {"id":"21","name":"RVF 21","department":"RVF","status":"running","shiftRun":"Day","widthCm":"200","speed":"170","picksPerCm":"12.5","cartPicks":""},
-  {"id":"26","name":"RVF 26","department":"RVF","status":"running","shiftRun":"Day","widthCm":"200","speed":"170","picksPerCm":"11","cartPicks":""},
-  {"id":"27","name":"RVF 27","department":"RVF","status":"running","shiftRun":"Day","widthCm":"200","speed":"170","picksPerCm":"11","cartPicks":""},
-  {"id":"28","name":"RVF 28","department":"RVF","status":"running","shiftRun":"Day","widthCm":"200","speed":"160","picksPerCm":"12.5","cartPicks":""},
-  {"id":"29","name":"RVF 29","department":"RVF","status":"running","shiftRun":"Day","widthCm":"200","speed":"170","picksPerCm":"12.5","cartPicks":""},
-  {"id":"30","name":"RVF 30","department":"RVF","status":"running","shiftRun":"Both","widthCm":"200","speed":"170","picksPerCm":"12.5","cartPicks":""},
-  {"id":"31","name":"RVF 31","department":"RVF","status":"running","shiftRun":"Both","widthCm":"200","speed":"170","picksPerCm":"12.5","cartPicks":""},
-  {"id":"32","name":"RVF 32","department":"RVF","status":"running","shiftRun":"Day","widthCm":"200","speed":"170","picksPerCm":"12.5","cartPicks":""},
-  {"id":"33","name":"RVF 33","department":"RVF","status":"running","shiftRun":"Both","widthCm":"200","speed":"150","picksPerCm":"12.5","cartPicks":""},
-  {"id":"34","name":"RVF 34","department":"RVF","status":"running","shiftRun":"Both","widthCm":"200","speed":"150","picksPerCm":"12.5","cartPicks":""},
-  {"id":"35","name":"RVF 35","department":"RVF","status":"running","shiftRun":"Both","widthCm":"200","speed":"150","picksPerCm":"12.5","cartPicks":""},
-  {"id":"36","name":"RVF 36","department":"RVF","status":"running","shiftRun":"Day","widthCm":"200","speed":"170","picksPerCm":"12.5","cartPicks":""},
-  {"id":"37","name":"RVF 37","department":"RVF","status":"running","shiftRun":"Both","widthCm":"200","speed":"170","picksPerCm":"12.5","cartPicks":""},
-  {"id":"38","name":"RVF 38","department":"RVF","status":"running","shiftRun":"Both","widthCm":"200","speed":"170","picksPerCm":"12.5","cartPicks":""},
-  {"id":"39","name":"RVF 39","department":"RVF","status":"running","shiftRun":"Day","widthCm":"200","speed":"170","picksPerCm":"12.5","cartPicks":""},
-  {"id":"40","name":"RVF 40","department":"RVF","status":"running","shiftRun":"Both","widthCm":"200","speed":"150","picksPerCm":"12.5","cartPicks":""},
-  {"id":"41","name":"RVF 41","department":"RVF","status":"running","shiftRun":"Both","widthCm":"200","speed":"150","picksPerCm":"12.5","cartPicks":""},
-  {"id":"42","name":"RVF 42","department":"RVF","status":"running","shiftRun":"Both","widthCm":"200","speed":"150","picksPerCm":"12.5","cartPicks":""},
-  {"id":"43","name":"RVF 43","department":"RVF","status":"running","shiftRun":"Both","widthCm":"200","speed":"170","picksPerCm":"12.5","cartPicks":""},
-  {"id":"44","name":"RVF 44","department":"RVF","status":"running","shiftRun":"Both","widthCm":"200","speed":"170","picksPerCm":"12.5","cartPicks":""},
-  {"id":"46","name":"RVF 46","department":"RVF","status":"running","shiftRun":"Both","widthCm":"200","speed":"170","picksPerCm":"12.5","cartPicks":""},
-  {"id":"47","name":"RVF 47","department":"RVF","status":"running","shiftRun":"Day","widthCm":"200","speed":"170","picksPerCm":"12.5","cartPicks":""},
-  {"id":"48","name":"RVF 48","department":"RVF","status":"running","shiftRun":"Day","widthCm":"200","speed":"170","picksPerCm":"12.5","cartPicks":""},
-  {"id":"49","name":"RVF 49","department":"RVF","status":"running","shiftRun":"Day","widthCm":"200","speed":"170","picksPerCm":"12.5","cartPicks":""},
-  {"id":"50","name":"RVF 50","department":"RVF","status":"running","shiftRun":"Both","widthCm":"200","speed":"170","picksPerCm":"12.5","cartPicks":""},
-  {"id":"51","name":"RVF 51","department":"RVF","status":"running","shiftRun":"Both","widthCm":"200","speed":"170","picksPerCm":"12.5","cartPicks":""},
-  {"id":"53","name":"RVF 53","department":"RVF","status":"running","shiftRun":"Both","widthCm":"200","speed":"170","picksPerCm":"11","cartPicks":""},
-  {"id":"54","name":"RVF 54","department":"RVF","status":"running","shiftRun":"Both","widthCm":"200","speed":"170","picksPerCm":"12.5","cartPicks":""},
-  {"id":"55","name":"RVF 55","department":"RVF","status":"running","shiftRun":"Both","widthCm":"200","speed":"170","picksPerCm":"12.5","cartPicks":""},
-  {"id":"56","name":"RVF 56","department":"RVF","status":"running","shiftRun":"Both","widthCm":"200","speed":"170","picksPerCm":"11","cartPicks":""}
-];
-if($('restoreMachinesBtn')){
-  $('restoreMachinesBtn').addEventListener('click', async () => {
-    if(!requireDb()) return;
-    if(!confirm(`This will replace your CURRENT machine list with the ${MACHINE_BACKUP_SEP2026.length}-machine Sep 2026 backup. Continue?`)) return;
-    try{
-      await window.__db.saveMachines(MACHINE_BACKUP_SEP2026);
-      toast(`Restored ${MACHINE_BACKUP_SEP2026.length} machines`);
-      setMachinesSorted(await window.__db.getMachines());
-      if($('screen-admin').classList.contains('active') && $('admin-machines').classList.contains('active')) loadMachinesForAdmin();
-    }catch(err){ console.error(err); toast('Could not restore — check your connection'); }
-  });
-}
-
 $('addMachineBtn').addEventListener('click', async () => {
   const id = $('newMachineId').value.trim();
   const name = $('newMachineName').value.trim();
@@ -5322,6 +5260,7 @@ async function loadApprovals(){
       const isAdminViewer = state.user.role === 'admin';
       const item = document.createElement('div');
       item.className = 'approve-item';
+      item.dataset.id = r._id;
       item.innerHTML = `
         <div class="top">
           <div class="mc">${machineName(r.machine) || r.machineName}</div>
@@ -5488,6 +5427,17 @@ async function toggleResetPoint(id, currentlySet){
   }catch(err){ console.error(err); toast('Could not save — check your connection'); }
 }
 
+// Removes one just-decided entry's row directly, instead of reloading the
+// whole Approvals list — the rest of the queue stays exactly as it was,
+// nothing flickers or re-fetches, and whatever was next simply moves up.
+function removeApprovalRowLocally(id){
+  const body = $('approvalsBody');
+  const row = body.querySelector(`.approve-item[data-id="${id}"]`);
+  if(row) row.remove();
+  if(!body.querySelector('.approve-item')){
+    body.innerHTML = '<div class="empty-state">No entries waiting for approval right now.</div>';
+  }
+}
 async function decideReading(id, status){
   if(!requireDb()) return;
   const dateInput = document.querySelector(`.editDateInput[data-id="${id}"]`);
@@ -5555,7 +5505,7 @@ async function decideReading(id, status){
     // action that matters most, so it never waits on anything else.
     await window.__db.updateReading(id, updates);
     toast(status === 'approved' ? 'Entry approved' : 'Entry rejected — sent back to the operator to fix and resubmit');
-    loadApprovals();
+    removeApprovalRowLocally(id);
     // Only once the approval itself is safely saved does the photo get
     // migrated to its own lightweight record — entirely in the background,
     // after the Supervisor has already moved on. If this fails or is slow
