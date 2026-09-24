@@ -41,7 +41,7 @@
   import {
     getFirestore,
     doc, getDoc, setDoc, updateDoc, deleteDoc, writeBatch,
-    collection, addDoc, getDocs, query, where, orderBy, onSnapshot
+    collection, addDoc, getDocs, query, where, orderBy, onSnapshot, getCountFromServer
   } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
   import {
     getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword,
@@ -107,7 +107,7 @@
     d.setDate(d.getDate() - days);
     return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
   }
-  function makeCachedCollection(name, { orderByField, includeId = true, recentWindowField = null, recentWindowDays = 60 } = {}){
+  function makeCachedCollection(name, { orderByField, includeId = true, recentWindowField = null, recentWindowDays = 60, buildQuery = null } = {}){
     let cachedRows = null;
     let firstSnapshot = null;
     let unsub = null;
@@ -115,7 +115,9 @@
     function start(){
       if (unsub || !dbReady) return;
       let ref;
-      if(recentWindowField){
+      if(buildQuery){
+        ref = buildQuery();
+      } else if(recentWindowField){
         // Filtering AND ordering on the SAME field is what lets this run
         // without needing a manually-created composite index in Firebase —
         // mixing a filter on one field with orderBy on a different field
@@ -171,7 +173,36 @@
       onChange(fn){ listeners.push(fn); }
     };
   }
-  const readingsCache = makeCachedCollection('readings', { recentWindowField: 'date', recentWindowDays: 60 });
+  // Plain "YYYY-MM-DD" for today / yesterday, used to scope the live
+  // "recent readings" cache below. Computed once when the cache starts —
+  // if a session is left open across midnight, a page refresh naturally
+  // re-establishes it with the correct dates; this is a deliberate,
+  // acceptable tradeoff for not re-subscribing continuously.
+  function todayStr(){
+    const d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  }
+  function yesterdayStr(){
+    const d = new Date();
+    d.setDate(d.getDate() - 1);
+    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  }
+  // Only what genuinely needs to update itself in real time stays live:
+  //  - pendingReadingsCache: every not-yet-decided entry, whatever its
+  //    date — this is what Approvals watches, so a Supervisor sees new
+  //    submissions appear and decided ones disappear without refreshing.
+  //  - recentReadingsCache: just today's and yesterday's readings — this
+  //    is what Report's default view and the machine cooldown check use.
+  // Both are dramatically smaller than watching the whole recent history
+  // live, which was the actual cost driver: every logged-in session paid
+  // to keep thousands of documents synced continuously, even for people
+  // who never opened Report at all.
+  const pendingReadingsCache = makeCachedCollection('readings', {
+    buildQuery: () => query(collection(db, 'readings'), where('status', '==', 'pending'))
+  });
+  const recentReadingsCache = makeCachedCollection('readings', {
+    buildQuery: () => query(collection(db, 'readings'), where('date', 'in', [todayStr(), yesterdayStr()]))
+  });
   // Full, uncapped history — used ONLY by the handful of screens that
   // genuinely need every reading ever logged for correctness (Report,
   // Dashboard, and the admin tools that check a machine's whole reading
@@ -267,6 +298,11 @@
     },
     async listUsers() {
       return usersCache.get();
+    },
+    async countUsersDirectly() {
+      if (!dbReady) throw new Error('NOT_CONFIGURED');
+      const snap = await getCountFromServer(collection(db, "users"));
+      return snap.data().count;
     },
     /* ---------- photo blobs (Iqama/Passport/Vacation/Violation attachments) ----------
        Saved as their own small document instead of embedded directly in the
@@ -411,7 +447,19 @@
       if (!dbReady) throw new Error('NOT_CONFIGURED');
       const data = await machinesDocCache.get();
       if (data && data.list) return data.list;
-      // seed defaults on first run
+      // The live cache came back empty — but that can also just mean it
+      // hasn't heard back from the server yet (e.g. under heavy load with
+      // many people logging in at once), NOT that the document is
+      // genuinely missing. Do one more direct, definitive check before
+      // ever seeding brand-new defaults, so a slow moment can never be
+      // mistaken for "this is a fresh setup" and overwrite a real,
+      // already-configured machine list.
+      const directSnap = await getDoc(doc(db, "config", "machines"));
+      if (directSnap.exists()) {
+        const directData = directSnap.data();
+        if (directData && directData.list) return directData.list;
+      }
+      // Confirmed, for real this time — seed defaults on first run.
       const seed = [];
       for (let i = 1; i <= 20; i++) seed.push({
         id: String(i), name: 'MACHINE - ' + i, department: '', status: 'running',
@@ -432,8 +480,33 @@
       allReadingsCache = null; allReadingsPromise = null;
       return ref.id;
     },
-    async loadReadings() {
-      return readingsCache.get();
+    async loadPendingReadings() {
+      return pendingReadingsCache.get();
+    },
+    async loadRecentReadings() {
+      return recentReadingsCache.get();
+    },
+    // Used only for the machine cooldown check — one operator's own
+    // history, fetched fresh each time they open the machine list rather
+    // than kept live. A pure equality filter on operatorId only, so it
+    // never needs a composite index, and it's naturally tiny (one person's
+    // own submissions) regardless of how large the company's total data
+    // grows or how many other people are using the app at the same time.
+    async loadMyReadingHistory(operatorId) {
+      if (!dbReady) throw new Error('NOT_CONFIGURED');
+      const q = query(collection(db, 'readings'), where('operatorId', '==', operatorId));
+      const snap = await getDocs(q);
+      const out = [];
+      snap.forEach(d => out.push({ _id: d.id, ...d.data() }));
+      return out;
+    },
+    async loadReadingsInRange(fromStr, toStr) {
+      if (!dbReady) throw new Error('NOT_CONFIGURED');
+      const q = query(collection(db, 'readings'), where('date', '>=', fromStr), where('date', '<=', toStr));
+      const snap = await getDocs(q);
+      const out = [];
+      snap.forEach(d => out.push({ _id: d.id, ...d.data() }));
+      return out;
     },
     async getReading(id) {
       if (!dbReady) throw new Error('NOT_CONFIGURED');
@@ -539,12 +612,21 @@
       return leaveRequestsCache.get();
     },
 
-    // Kicks off all five background listeners at once (called right after
+    // Kicks off the background listeners at once (called right after
     // login) so their data is usually already sitting in memory by the time
-    // someone actually opens Report / Approvals / Dashboard / Employees —
-    // deliberately not awaited by the caller, it just warms things up.
-    warmCaches(){
-      readingsCache.warm();
+    // someone actually opens Report / Approvals / Employees — deliberately
+    // not awaited by the caller, it just warms things up. Pending entries
+    // and today/yesterday's readings only stay live for Admin and
+    // Supervisor — the only roles that ever open Approvals or Report — so
+    // an Operator (the large majority of users) never pays for a
+    // company-wide listener they have no use for. Everything else (Report's
+    // other date ranges, Dashboard, My Status) is fetched fresh only when
+    // actually needed, not kept running continuously.
+    warmCaches(role){
+      if(role === 'admin' || role === 'supervisor'){
+        pendingReadingsCache.warm();
+        recentReadingsCache.warm();
+      }
       usersCache.warm();
       vacationsCache.warm();
       violationsCache.warm();
@@ -554,7 +636,7 @@
     // registration (or any user change) comes in, instead of only ever
     // showing what was loaded when the screen was first opened.
     onUsersChange(fn){ usersCache.onChange(fn); },
-    onReadingsChange(fn){ readingsCache.onChange(fn); }
+    onReadingsChange(fn){ pendingReadingsCache.onChange(fn); recentReadingsCache.onChange(fn); }
   };
 </script>
 <style>
@@ -1529,7 +1611,7 @@
           <input type="date" id="reportFromDate" title="From">
           <input type="date" id="reportToDate" title="To">
         </div>
-        <div class="hint">Leave both blank to show every entry ever logged.</div>
+        <div class="hint">Shows today and yesterday by default — clear both fields to see every entry ever logged instead.</div>
       </div>
 
       <div class="report-toolbar">
@@ -2161,6 +2243,30 @@ function showScreen(id){
   $(id).classList.add('active');
   window.scrollTo(0,0);
 }
+// Ensures `fn` runs at most once every `waitMs`, no matter how many times
+// it's triggered in that window — but always runs once more after the last
+// trigger, so nothing gets permanently missed, just batched together. This
+// is what lets a screen auto-refresh on new data without the read cost
+// multiplying by how many people are logged in times how often data
+// changes — it caps it at "at most once per window, per open screen",
+// regardless of how busy the system gets.
+function throttle(fn, waitMs){
+  let lastRun = 0, timer = null;
+  return function throttled(...args){
+    const now = Date.now();
+    const remaining = waitMs - (now - lastRun);
+    if(remaining <= 0){
+      lastRun = now;
+      fn(...args);
+    } else if(!timer){
+      timer = setTimeout(() => {
+        timer = null;
+        lastRun = Date.now();
+        fn(...args);
+      }, remaining);
+    }
+  };
+}
 function toast(msg){
   const t = $('toast'); t.textContent = msg; t.classList.add('show');
   setTimeout(()=> t.classList.remove('show'), 2400);
@@ -2359,7 +2465,7 @@ async function afterLogin(){
   // background right away (not awaited) — by the time the person actually
   // taps into Report, Approvals, Dashboard, or Employees, the data is
   // usually already sitting in memory instead of triggering a fresh fetch.
-  window.__db.warmCaches();
+  window.__db.warmCaches(state.user.role);
 
   // Keep this session's copy of the user doc live — fixes admin edits (role,
   // pages, machines, HR profile) not showing up until the person logs back in.
@@ -2620,8 +2726,19 @@ $('registerBtn').addEventListener('click', async () => {
       // migrating) and to see whether this is the very first account ever.
       existingProfile = await window.__db.getUser(loginId);
       if(!existingProfile){
-        const allUsers = await window.__db.listUsers();
-        isFirstUser = allUsers.length === 0;
+        // Deliberately NOT the live cache here — that can come back empty
+        // during a connectivity or quota problem, which was previously (and
+        // dangerously) being read as "zero users exist yet, so this one
+        // must be the first admin." This direct count either gives a real
+        // answer or throws — and a failure here must NEVER be treated as
+        // "so it must be zero". Fails safe to 'pending' every time.
+        try{
+          const count = await window.__db.countUsersDirectly();
+          isFirstUser = count === 0;
+        }catch(err){
+          console.error('Could not verify first-user status — defaulting to pending for safety:', err);
+          isFirstUser = false;
+        }
       }
     }
     if(existingProfile){
@@ -2699,10 +2816,16 @@ $('refreshUsersBtn').addEventListener('click', loadUsersForAdmin);
     });
   }
   if(window.__db.onReadingsChange){
+    const throttledApprovalsRefresh = throttle(() => { if($('screen-approvals').classList.contains('active')) loadApprovals(); }, 12000);
+    const throttledReportRefresh = throttle(() => { if($('screen-report').classList.contains('active')) loadReport(); }, 20000);
+    const throttledDashboardRefresh = throttle(() => { if($('screen-ceo').classList.contains('active')) loadCeoDashboard(); }, 45000);
+    const throttledMyStatusRefresh = throttle(() => { if($('screen-mystatus').classList.contains('active')) loadMyStatus(); }, 20000);
     window.__db.onReadingsChange(() => {
       if(!state.user) return;
-      if($('screen-approvals').classList.contains('active')) loadApprovals();
-      if($('screen-report').classList.contains('active')) loadReport();
+      throttledApprovalsRefresh();
+      throttledReportRefresh();
+      throttledDashboardRefresh();
+      throttledMyStatusRefresh();
     });
   }
 })();
@@ -4421,7 +4544,7 @@ async function setupSelectScreen(){
     // mistake. It comes back on its own once the cooldown is up. Length
     // is set from Admin > Shift & Timing > Machine Re-entry Cooldown.
     try{
-      const all = await window.__db.loadReadings();
+      const all = await window.__db.loadMyReadingHistory(state.user.loginId);
       const cutoff = Date.now() - cooldownMinutes*60*1000;
       const recentMachineIds = new Set(
         all.filter(r => r.operatorId === state.user.loginId && r.timestamp > cutoff).map(r => String(r.machine))
@@ -5021,7 +5144,10 @@ async function loadApprovals(){
   if(!requireDb()) return;
   try{
     if(!state.users || state.users.length === 0) state.users = await window.__db.listUsers();
-    const all = await window.__db.loadReadings();
+    const [pendingLive, all] = await Promise.all([
+      window.__db.loadPendingReadings(),
+      window.__db.loadAllReadingsEver()
+    ]);
 
     /* ---- missing entries for chosen date ---- */
     const dateInput = $('missingCheckDate');
@@ -5085,7 +5211,7 @@ async function loadApprovals(){
 
     /* ---- pending queue with diff flags + photo ---- */
     const stats = buildMachineStats(all);
-    let pending = all.filter(r => r.status === 'pending');
+    let pending = pendingLive.slice();
     if(state.user.role === 'supervisor'){
       // Scoped by each operator's own "Log Reading Approver" (Direct
       // Supervisor) setting on their profile, not by shared machines/shifts
@@ -5347,26 +5473,27 @@ async function decideReading(id, status){
     if(newStopTime !== null) updates.stopTime = newStopTime;
     if(newReason !== null) updates.reason = newReason || '—';
     if(newBreakdown !== null) updates.stopBreakdown = newBreakdown;
-    // Once approved, the photo no longer needs to travel along with this
-    // entry in every future bulk load (Approvals, Report, Dashboard) — only
-    // PENDING entries need their photo immediately visible. Moving it to
-    // its own small record now is what keeps every future load fast,
-    // regardless of how many months of approved history accumulate. If
-    // anything here fails, the approval still goes through — the photo
-    // just stays embedded as it would have before this change, which is
-    // safe, just not yet lightened.
-    if(status === 'approved'){
-      try{
-        const current = await window.__db.getReading(id);
-        if(current && current.photoDataUrl && !isPhotoBlobRef(current.photoDataUrl)){
-          const ref = await window.__db.savePhotoBlob(current.photoDataUrl);
-          updates.photoDataUrl = ref;
-        }
-      }catch(err){ console.error('Photo migration on approve failed (non-fatal):', err); }
-    }
+    // The core approval goes through FIRST, on its own — this is the one
+    // action that matters most, so it never waits on anything else.
     await window.__db.updateReading(id, updates);
     toast(status === 'approved' ? 'Entry approved' : 'Entry rejected — sent back to the operator to fix and resubmit');
     loadApprovals();
+    // Only once the approval itself is safely saved does the photo get
+    // migrated to its own lightweight record — entirely in the background,
+    // after the Supervisor has already moved on. If this fails or is slow
+    // for any reason, the approval already succeeded regardless; the photo
+    // just stays embedded as it would have before this feature existed.
+    if(status === 'approved'){
+      (async () => {
+        try{
+          const current = await window.__db.getReading(id);
+          if(current && current.photoDataUrl && !isPhotoBlobRef(current.photoDataUrl)){
+            const ref = await window.__db.savePhotoBlob(current.photoDataUrl);
+            await window.__db.updateReading(id, { photoDataUrl: ref });
+          }
+        }catch(err){ console.error('Background photo migration failed (non-fatal, approval already saved):', err); }
+      })();
+    }
   }catch(err){ console.error(err); toast('Could not save — check your connection'); }
 }
 
@@ -5381,6 +5508,12 @@ async function loadReport(){
   if(!requireDb()){ body.innerHTML = '<div class="empty-state">Database isn\'t connected yet.<br>Open the file and paste your free Firebase config in — see the setup note at the top of the script.</div>'; return; }
   try{
     const allRecords = await window.__db.loadAllReadingsEver();
+    if(!$('reportFromDate').value && !$('reportToDate').value){
+      const today = new Date();
+      const yesterday = new Date(today); yesterday.setDate(yesterday.getDate() - 1);
+      $('reportFromDate').value = dateToStr(yesterday);
+      $('reportToDate').value = dateToStr(today);
+    }
     const fromDate = $('reportFromDate').value;
     const toDate = $('reportToDate').value;
 
@@ -5979,10 +6112,11 @@ async function loadMyPicksReport(){
     $('myPicksTo').value = cycle.end;
   }
   try{
-    const all = await window.__db.loadReadings();
-    renderPicksReport('myPicksBody', all, targetId, $('myPicksFrom').value, $('myPicksTo').value);
+    const from = $('myPicksFrom').value, to = $('myPicksTo').value;
+    const all = await window.__db.loadReadingsInRange(from, to);
+    renderPicksReport('myPicksBody', all, targetId, from, to);
     const targetUser = (state.users || []).find(u => u.loginId === targetId) || (targetId === state.user.loginId ? state.user : null);
-    renderEfficiencyBox('myEfficiencyBox', all, targetId, $('myPicksFrom').value, $('myPicksTo').value, targetUser ? targetUser.assignedShift : null);
+    renderEfficiencyBox('myEfficiencyBox', all, targetId, from, to, targetUser ? targetUser.assignedShift : null);
   }catch(err){ console.error(err); $('myPicksBody').innerHTML = '<div class="empty-state">Could not load.</div>'; }
 }
 $('myPicksFrom').addEventListener('change', () => { resetPagination('myPicksBodyPagination'); loadMyPicksReport(); });
@@ -6036,8 +6170,10 @@ async function loadMyStatus(){
   if(!requireDb()) return;
   try{
     const targetUser = viewingOther ? ((state.users || []).find(u => u.loginId === targetId) || await window.__db.getUser(targetId)) : state.user;
-    const all = await window.__db.loadReadings();
-    const mine = all.filter(r => r.operatorId === targetId);
+    const [mine, allOnDate] = await Promise.all([
+      window.__db.loadMyReadingHistory(targetId),
+      window.__db.loadReadingsInRange(checkDate, checkDate)
+    ]);
     const assignedIds = (targetUser && targetUser.assignedMachines) || [];
     const myMachines = state.machines.filter(m => assignedIds.includes(m.id));
 
@@ -6051,7 +6187,6 @@ async function loadMyStatus(){
        this operator's own entries. A machine can be assigned to more than
        one person, and once anybody logs it for a shift, nobody else needs
        to (item 3). ---- */
-    const allOnDate = all.filter(r => r.date === checkDate);
     const missing = [];
     const fixedShift = (targetUser && (targetUser.assignedShift === 'Day' || targetUser.assignedShift === 'Night')) ? targetUser.assignedShift : null;
     const hasPhoto = (machineId, shift, type) => allOnDate.some(r =>
