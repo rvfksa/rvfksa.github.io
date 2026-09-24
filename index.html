@@ -1408,6 +1408,13 @@
       </div>
 
       <div class="auth-pane" id="admin-machines">
+        <div style="text-align:right; margin-bottom:8px; display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap;">
+          <button class="btn btn-ghost" id="downloadMachinesBackupBtn" style="font-size:12px; padding:6px 10px;">Download Backup</button>
+          <label class="btn btn-ghost" for="restoreMachinesFileInput" style="font-size:12px; padding:6px 10px; margin:0; cursor:pointer;">Restore From Backup File</label>
+          <input type="file" id="restoreMachinesFileInput" accept="application/json" style="display:none;">
+        </div>
+        <div id="restoreMissingResult"></div>
+        <div class="sub" style="margin-top:-4px; margin-bottom:12px;">Don't have a backup file yet? <a href="#" id="useSeptemberBackupLink">Use the September 2026 snapshot</a> as a one-time starting point.</div>
         <div class="grid-2">
           <div class="field"><label for="newMachineId">New Machine ID</label><input type="text" id="newMachineId" placeholder="e.g. 21"></div>
           <div class="field"><label for="newMachineName">New Machine Name</label><input type="text" id="newMachineName" placeholder="e.g. MACHINE - 21"></div>
@@ -3533,6 +3540,144 @@ async function saveMachineEdit(id, panel){
     toast('Machine updated');
     recalculateMachineDiffs(id).catch(err => console.error('Background recalculation after baseline change failed (non-fatal):', err));
   }catch(err){ console.error(err); toast('Could not save — check your connection'); }
+}
+
+const MACHINE_BACKUP_SEP2026 = [
+  {"id":"1","name":"RVF 1","department":"RVF","status":"running","shiftRun":"Day","widthCm":"140","speed":"170","picksPerCm":"12.2","cartPicks":""},
+  {"id":"3","name":"RVF 3","department":"RVF","status":"running","shiftRun":"Both","widthCm":"140","speed":"170","picksPerCm":"12.2","cartPicks":""},
+  {"id":"5","name":"RVF 5","department":"RVF","status":"running","shiftRun":"Both","widthCm":"200","speed":"170","picksPerCm":"16","cartPicks":""},
+  {"id":"6","name":"RVF 6","department":"RVF","status":"running","shiftRun":"Both","widthCm":"200","speed":"170","picksPerCm":"12.5","cartPicks":""},
+  {"id":"7","name":"RVF 7","department":"RVF","status":"running","shiftRun":"Both","widthCm":"200","speed":"170","picksPerCm":"11","cartPicks":""},
+  {"id":"8","name":"RVF 8","department":"RVF","status":"running","shiftRun":"Day","widthCm":"140","speed":"160","picksPerCm":"12.2","cartPicks":""},
+  {"id":"10","name":"RVF 10","department":"RVF","status":"running","shiftRun":"Both","widthCm":"140","speed":"170","picksPerCm":"18","cartPicks":""},
+  {"id":"12","name":"RVF 12","department":"RVF","status":"running","shiftRun":"Both","widthCm":"200","speed":"170","picksPerCm":"16","cartPicks":""},
+  {"id":"13","name":"RVF 13","department":"RVF","status":"running","shiftRun":"Day","widthCm":"200","speed":"170","picksPerCm":"11","cartPicks":""},
+  {"id":"14","name":"RVF 14","department":"RVF","status":"running","shiftRun":"Both","widthCm":"200","speed":"170","picksPerCm":"12.5","cartPicks":""},
+  {"id":"19","name":"RVF 19","department":"RVF","status":"running","shiftRun":"Both","widthCm":"200","speed":"170","picksPerCm":"16","cartPicks":""},
+  {"id":"20","name":"RVF 20","department":"RVF","status":"running","shiftRun":"Both","widthCm":"200","speed":"170","picksPerCm":"16","cartPicks":""},
+  {"id":"21","name":"RVF 21","department":"RVF","status":"running","shiftRun":"Day","widthCm":"200","speed":"170","picksPerCm":"12.5","cartPicks":""},
+  {"id":"26","name":"RVF 26","department":"RVF","status":"running","shiftRun":"Day","widthCm":"200","speed":"170","picksPerCm":"11","cartPicks":""},
+  {"id":"27","name":"RVF 27","department":"RVF","status":"running","shiftRun":"Day","widthCm":"200","speed":"170","picksPerCm":"11","cartPicks":""},
+  {"id":"28","name":"RVF 28","department":"RVF","status":"running","shiftRun":"Day","widthCm":"200","speed":"160","picksPerCm":"12.5","cartPicks":""},
+  {"id":"29","name":"RVF 29","department":"RVF","status":"running","shiftRun":"Day","widthCm":"200","speed":"170","picksPerCm":"12.5","cartPicks":""},
+  {"id":"30","name":"RVF 30","department":"RVF","status":"running","shiftRun":"Both","widthCm":"200","speed":"170","picksPerCm":"12.5","cartPicks":""},
+  {"id":"31","name":"RVF 31","department":"RVF","status":"running","shiftRun":"Both","widthCm":"200","speed":"170","picksPerCm":"12.5","cartPicks":""},
+  {"id":"32","name":"RVF 32","department":"RVF","status":"running","shiftRun":"Day","widthCm":"200","speed":"170","picksPerCm":"12.5","cartPicks":""},
+  {"id":"33","name":"RVF 33","department":"RVF","status":"running","shiftRun":"Both","widthCm":"200","speed":"150","picksPerCm":"12.5","cartPicks":""},
+  {"id":"34","name":"RVF 34","department":"RVF","status":"running","shiftRun":"Both","widthCm":"200","speed":"150","picksPerCm":"12.5","cartPicks":""},
+  {"id":"35","name":"RVF 35","department":"RVF","status":"running","shiftRun":"Both","widthCm":"200","speed":"150","picksPerCm":"12.5","cartPicks":""},
+  {"id":"36","name":"RVF 36","department":"RVF","status":"running","shiftRun":"Day","widthCm":"200","speed":"170","picksPerCm":"12.5","cartPicks":""},
+  {"id":"37","name":"RVF 37","department":"RVF","status":"running","shiftRun":"Both","widthCm":"200","speed":"170","picksPerCm":"12.5","cartPicks":""},
+  {"id":"38","name":"RVF 38","department":"RVF","status":"running","shiftRun":"Both","widthCm":"200","speed":"170","picksPerCm":"12.5","cartPicks":""},
+  {"id":"39","name":"RVF 39","department":"RVF","status":"running","shiftRun":"Day","widthCm":"200","speed":"170","picksPerCm":"12.5","cartPicks":""},
+  {"id":"40","name":"RVF 40","department":"RVF","status":"running","shiftRun":"Both","widthCm":"200","speed":"150","picksPerCm":"12.5","cartPicks":""},
+  {"id":"41","name":"RVF 41","department":"RVF","status":"running","shiftRun":"Both","widthCm":"200","speed":"150","picksPerCm":"12.5","cartPicks":""},
+  {"id":"42","name":"RVF 42","department":"RVF","status":"running","shiftRun":"Both","widthCm":"200","speed":"150","picksPerCm":"12.5","cartPicks":""},
+  {"id":"43","name":"RVF 43","department":"RVF","status":"running","shiftRun":"Both","widthCm":"200","speed":"170","picksPerCm":"12.5","cartPicks":""},
+  {"id":"44","name":"RVF 44","department":"RVF","status":"running","shiftRun":"Both","widthCm":"200","speed":"170","picksPerCm":"12.5","cartPicks":""},
+  {"id":"46","name":"RVF 46","department":"RVF","status":"running","shiftRun":"Both","widthCm":"200","speed":"170","picksPerCm":"12.5","cartPicks":""},
+  {"id":"47","name":"RVF 47","department":"RVF","status":"running","shiftRun":"Day","widthCm":"200","speed":"170","picksPerCm":"12.5","cartPicks":""},
+  {"id":"48","name":"RVF 48","department":"RVF","status":"running","shiftRun":"Day","widthCm":"200","speed":"170","picksPerCm":"12.5","cartPicks":""},
+  {"id":"49","name":"RVF 49","department":"RVF","status":"running","shiftRun":"Day","widthCm":"200","speed":"170","picksPerCm":"12.5","cartPicks":""},
+  {"id":"50","name":"RVF 50","department":"RVF","status":"running","shiftRun":"Both","widthCm":"200","speed":"170","picksPerCm":"12.5","cartPicks":""},
+  {"id":"51","name":"RVF 51","department":"RVF","status":"running","shiftRun":"Both","widthCm":"200","speed":"170","picksPerCm":"12.5","cartPicks":""},
+  {"id":"53","name":"RVF 53","department":"RVF","status":"running","shiftRun":"Both","widthCm":"200","speed":"170","picksPerCm":"11","cartPicks":""},
+  {"id":"54","name":"RVF 54","department":"RVF","status":"running","shiftRun":"Both","widthCm":"200","speed":"170","picksPerCm":"12.5","cartPicks":""},
+  {"id":"55","name":"RVF 55","department":"RVF","status":"running","shiftRun":"Both","widthCm":"200","speed":"170","picksPerCm":"12.5","cartPicks":""},
+  {"id":"56","name":"RVF 56","department":"RVF","status":"running","shiftRun":"Both","widthCm":"200","speed":"170","picksPerCm":"11","cartPicks":""}
+];
+// Shared by both the file-based restore and the one-time September
+// fallback below — never depends on how many machines exist, so it works
+// correctly whether there are 42 or 420. A machine only counts as an
+// untouched, genuine wipe-placeholder if it matches that exact shape —
+// name literally "MACHINE - <id>" with no department set, precisely what
+// the old bug wrote. Anything an Admin has actually edited, however
+// slightly, no longer matches this and is left alone.
+function computeMachineRestorePlan(current, backupList){
+  const isPlaceholder = (m) => m && m.name === ('MACHINE - ' + m.id) && (!m.department || m.department === '');
+  const currentById = {};
+  current.forEach(m => { currentById[String(m.id)] = m; });
+  const toAdd = [], toReplace = [], untouched = [];
+  backupList.forEach(b => {
+    const existing = currentById[String(b.id)];
+    if(!existing) toAdd.push(b);
+    else if(isPlaceholder(existing)) toReplace.push(b);
+    else untouched.push(b);
+  });
+  const replaceIds = new Set(toReplace.map(m => String(m.id)));
+  const kept = current.filter(m => !replaceIds.has(String(m.id)));
+  return { toAdd, toReplace, untouched, finalList: kept.concat(toAdd, toReplace) };
+}
+function renderRestorePreview(resultBox, plan){
+  if(plan.toAdd.length === 0 && plan.toReplace.length === 0){
+    resultBox.innerHTML = '<div class="hint" style="text-align:left; margin-left:0; color:var(--ok);">Every machine in this backup already has real data here — nothing to restore.</div>';
+    return;
+  }
+  resultBox.innerHTML = `
+    <div class="card" style="margin-bottom:12px;">
+      ${plan.toAdd.length ? `<div><b>${plan.toAdd.length} missing</b> — will be added: ${plan.toAdd.map(m=>m.name).join(', ')}</div>` : ''}
+      ${plan.toReplace.length ? `<div style="margin-top:6px;"><b>${plan.toReplace.length} blank placeholder${plan.toReplace.length===1?'':'s'}</b> — will be filled in with real data: ${plan.toReplace.map(m=>m.name).join(', ')}</div>` : ''}
+      ${plan.untouched.length ? `<div style="margin-top:6px;" class="sub">${plan.untouched.length} already have real data and won't be touched.</div>` : ''}
+      <button class="btn btn-primary" id="confirmRestoreBtn" style="margin-top:8px;">Restore ${plan.toAdd.length + plan.toReplace.length} Machine${(plan.toAdd.length+plan.toReplace.length)===1?'':'s'}</button>
+    </div>`;
+  $('confirmRestoreBtn').addEventListener('click', async () => {
+    try{
+      await window.__db.saveMachines(plan.finalList);
+      setMachinesSorted(plan.finalList);
+      resultBox.innerHTML = `<div class="hint" style="text-align:left; margin-left:0; color:var(--ok);">Restored ${plan.toAdd.length + plan.toReplace.length} machine(s).</div>`;
+      toast('Machines restored');
+      if($('screen-admin').classList.contains('active') && $('admin-machines').classList.contains('active')) loadMachinesForAdmin();
+    }catch(err){ console.error(err); toast('Could not restore — check your connection'); }
+  });
+}
+if($('useSeptemberBackupLink')){
+  $('useSeptemberBackupLink').addEventListener('click', async (e) => {
+    e.preventDefault();
+    if(!requireDb()) return;
+    try{
+      const current = await window.__db.getMachines();
+      renderRestorePreview($('restoreMissingResult'), computeMachineRestorePlan(current, MACHINE_BACKUP_SEP2026));
+    }catch(err){ console.error(err); toast('Could not check — check your connection'); }
+  });
+}
+if($('downloadMachinesBackupBtn')){
+  $('downloadMachinesBackupBtn').addEventListener('click', async () => {
+    if(!requireDb()) return;
+    try{
+      const current = await window.__db.getMachines();
+      const blob = new Blob([JSON.stringify(current, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const stamp = new Date().toISOString().slice(0,10);
+      a.href = url;
+      a.download = `machines-backup-${stamp}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      toast(`Downloaded ${current.length} machine(s)`);
+    }catch(err){ console.error(err); toast('Could not download — check your connection'); }
+  });
+}
+if($('restoreMachinesFileInput')){
+  $('restoreMachinesFileInput').addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if(!file) return;
+    if(!requireDb()) return;
+    const resultBox = $('restoreMissingResult');
+    try{
+      const text = await file.text();
+      const backupList = JSON.parse(text);
+      if(!Array.isArray(backupList) || !backupList.every(m => m && m.id && m.name)){
+        toast('That file doesn\'t look like a machines backup');
+        e.target.value = '';
+        return;
+      }
+      const current = await window.__db.getMachines();
+      renderRestorePreview(resultBox, computeMachineRestorePlan(current, backupList));
+    }catch(err){ console.error(err); toast('Could not read that file'); }
+    e.target.value = '';
+  });
 }
 
 $('addMachineBtn').addEventListener('click', async () => {
