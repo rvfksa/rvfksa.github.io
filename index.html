@@ -387,6 +387,18 @@
       snap.forEach(d => out.push({ _id: d.id, ...d.data() }));
       return out;
     },
+    // Same summaries, queried company-wide by date range instead of by one
+    // operator — used by Dashboard's Production and Performance sections,
+    // which need everyone's totals for a period, not one person's history.
+    // A pure range filter on 'date' alone, so no composite index needed.
+    async loadSummariesInRange(fromStr, toStr) {
+      if (!dbReady) throw new Error('NOT_CONFIGURED');
+      const q = query(collection(db, 'operatorMachineDaySummaries'), where('date', '>=', fromStr), where('date', '<=', toStr));
+      const snap = await getDocs(q);
+      const out = [];
+      snap.forEach(d => out.push({ _id: d.id, ...d.data() }));
+      return out;
+    },
     // Rebuilds every operator+date summary for ONE machine from a freshly
     // computed set, and removes any that no longer have a matching entry
     // (e.g. because a reading was edited onto a different date or
@@ -521,26 +533,22 @@
       if (!dbReady) throw new Error('NOT_CONFIGURED');
       const data = await machinesDocCache.get();
       if (data && data.list) return data.list;
-      // The live cache came back empty — but that can also just mean it
-      // hasn't heard back from the server yet (e.g. under heavy load with
-      // many people logging in at once), NOT that the document is
-      // genuinely missing. Do one more direct, definitive check before
-      // ever seeding brand-new defaults, so a slow moment can never be
-      // mistaken for "this is a fresh setup" and overwrite a real,
-      // already-configured machine list.
+      // The live cache came back empty — check directly once before
+      // concluding there's really nothing there.
       const directSnap = await getDoc(doc(db, "config", "machines"));
       if (directSnap.exists()) {
         const directData = directSnap.data();
         if (directData && directData.list) return directData.list;
       }
-      // Confirmed, for real this time — seed defaults on first run.
-      const seed = [];
-      for (let i = 1; i <= 20; i++) seed.push({
-        id: String(i), name: 'MACHINE - ' + i, department: '', status: 'running',
-        widthCm: '', speed: '', picksPerCm: '', cartPicks: ''
-      });
-      await setDoc(doc(db, "config", "machines"), { list: seed });
-      return seed;
+      // Genuinely nothing stored yet — this function's only job is to
+      // READ, so it returns an empty list and stops there. It must NEVER
+      // write anything to Firestore under any circumstance, no matter how
+      // confident the check above seems: a read function that can write
+      // is a read function that can, under some timing nobody has
+      // predicted yet, silently destroy real data. An Admin adds machines
+      // explicitly with the Add Machine button; nothing here ever does it
+      // automatically.
+      return [];
     },
     async saveMachines(list) {
       if (!dbReady) throw new Error('NOT_CONFIGURED');
@@ -628,7 +636,10 @@
       const ref = doc(db, "config", key);
       const snap = await getDoc(ref);
       if (snap.exists()) return snap.data().list || [];
-      await setDoc(ref, { list: defaults || [] });
+      // Nothing stored yet — return the defaults in memory only. This
+      // function's job is to READ; it must never write anything to
+      // Firestore, so a not-yet-created config document can never be
+      // mistaken for permission to overwrite whatever is actually there.
       return defaults || [];
     },
     async saveConfigList(key, list) {
@@ -641,7 +652,6 @@
       const ref = doc(db, "config", key);
       const snap = await getDoc(ref);
       if (snap.exists()) return Object.assign({}, defaults, snap.data().data || {});
-      await setDoc(ref, { data: defaults || {} });
       return defaults || {};
     },
     async saveConfigObject(key, obj) {
