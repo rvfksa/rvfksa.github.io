@@ -226,6 +226,14 @@
     }
     return allReadingsPromise;
   }
+  // Whenever EITHER live cache detects any change — a new submission, an
+  // approval, an edit — the full-history cache is no longer trustworthy,
+  // regardless of whose browser made the change. Without this, a change
+  // from a different person's device would never invalidate this cache,
+  // so Report/Dashboard/My Status could refresh their screen but silently
+  // keep showing the same stale numbers underneath.
+  pendingReadingsCache.onChange(() => { allReadingsCache = null; allReadingsPromise = null; });
+  recentReadingsCache.onChange(() => { allReadingsCache = null; allReadingsPromise = null; });
   const usersCache = makeCachedCollection('users', { includeId: false });
   const vacationsCache = makeCachedCollection('vacations');
   const violationsCache = makeCachedCollection('violations');
@@ -343,6 +351,72 @@
         if (onProgress) onProgress(Math.min(i + CHUNK, items.length), items.length);
       }
       allReadingsCache = null; allReadingsPromise = null;
+    },
+    // Persists pre-calculated production numbers (diff) directly onto each
+    // reading document — this is what lets Report/Dashboard/Picks read an
+    // already-correct number instead of recalculating from a machine's
+    // entire history every time they're viewed. `updates` is
+    // [{ id, diff }]. One plain update per document, so the full 500-op
+    // Firestore batch limit applies directly.
+    async batchUpdateDiffs(updates) {
+      if (!dbReady) throw new Error('NOT_CONFIGURED');
+      const CHUNK = 400;
+      for (let i = 0; i < updates.length; i += CHUNK) {
+        const chunk = updates.slice(i, i + CHUNK);
+        const batch = writeBatch(db);
+        chunk.forEach(u => batch.update(doc(db, "readings", u.id), { diff: u.diff }));
+        await batch.commit();
+      }
+      allReadingsCache = null; allReadingsPromise = null;
+    },
+    // One small document per operator+date+machine — this is what lets My
+    // Status and the Picks Report read a handful of tiny pre-summed rows
+    // instead of fetching and re-summing an operator's whole reading
+    // history every time. `picks` is a final, permanent number (meter
+    // readings never change retroactively). `stopBreakdown` deliberately
+    // stays as reason+hours pairs rather than a final picks-value, since
+    // stop-reason rates are admin-editable — the value they're worth is
+    // always computed live from this breakdown, never baked in, so a rate
+    // change is instantly reflected everywhere without needing to touch
+    // any stored summary.
+    async loadOperatorSummaries(operatorId) {
+      if (!dbReady) throw new Error('NOT_CONFIGURED');
+      const q = query(collection(db, 'operatorMachineDaySummaries'), where('operatorId', '==', operatorId));
+      const snap = await getDocs(q);
+      const out = [];
+      snap.forEach(d => out.push({ _id: d.id, ...d.data() }));
+      return out;
+    },
+    // Rebuilds every operator+date summary for ONE machine from a freshly
+    // computed set, and removes any that no longer have a matching entry
+    // (e.g. because a reading was edited onto a different date or
+    // reassigned to a different machine). `computed` is
+    // [{ operatorId, date, picks, stopBreakdown, shifts }].
+    async syncMachineSummaries(machineId, computed) {
+      if (!dbReady) throw new Error('NOT_CONFIGURED');
+      const mid = String(machineId);
+      const existingSnap = await getDocs(query(collection(db, 'operatorMachineDaySummaries'), where('machine', '==', mid)));
+      const existingIds = new Set();
+      existingSnap.forEach(d => existingIds.add(d.id));
+      const computedIds = new Set(computed.map(c => `${c.operatorId}_${c.date}_${mid}`));
+      const ops = [];
+      computed.forEach(c => {
+        ops.push({ type: 'set', id: `${c.operatorId}_${c.date}_${mid}`, data: {
+          operatorId: c.operatorId, date: c.date, machine: mid,
+          picks: c.picks, stopBreakdown: c.stopBreakdown, shifts: c.shifts
+        }});
+      });
+      existingIds.forEach(id => { if(!computedIds.has(id)) ops.push({ type: 'delete', id }); });
+      const CHUNK = 400;
+      for (let i = 0; i < ops.length; i += CHUNK) {
+        const chunk = ops.slice(i, i + CHUNK);
+        const batch = writeBatch(db);
+        chunk.forEach(op => {
+          const ref = doc(db, 'operatorMachineDaySummaries', op.id);
+          if(op.type === 'set') batch.set(ref, op.data); else batch.delete(ref);
+        });
+        await batch.commit();
+      }
     },
     // Live-watches one user doc so a change an Admin makes (role, pages, machines,
     // profile) reaches that person's own open session immediately instead of
@@ -1470,6 +1544,11 @@
         </div>
         <button class="btn btn-ghost" id="previewCleanupBtn" style="margin-top:12px;">Preview</button>
         <div id="cleanupPreviewResult" style="margin-top:10px;"></div>
+
+        <div class="sub" style="margin-top:24px; font-weight:600; color:var(--text); text-transform:none;">Calculate Production Numbers (one-time)</div>
+        <p class="sub" style="margin-top:0;">Pre-calculates and saves each approved reading's production number, plus a small summary per employee per day — so Report, Dashboard, My Status, and Picks can all read an already-correct result instead of recalculating your entire history every time they're opened. Run this once now to cover existing entries — going forward, every new approval, edit, or reset keeps this up to date automatically. Safe to run more than once; it only ever changes what's actually wrong or missing.</p>
+        <button class="btn btn-primary" id="runDiffMigrationBtn">Calculate Now</button>
+        <div id="diffMigrationProgress" class="hint" style="text-align:left; margin-left:0; margin-top:8px;"></div>
       </div>
 
       <div class="auth-pane" id="admin-execaccess">
@@ -2160,16 +2239,24 @@ function stopReasonRate(reasonField){
 // reasons are named as a reasonable estimate — far better than those
 // entries silently earning 0 just because stopReasonRate can't match a
 // combined "01 X; 02 Y" string to any single configured reason.
-function computeStopPicks(r){
-  if(Array.isArray(r.stopBreakdown) && r.stopBreakdown.length){
-    return r.stopBreakdown.reduce((sum, b) => sum + (Number(b.hours) || 0) * stopReasonRate(b.reason), 0);
-  }
+// Normalizes one reading's stop time into [{reason, hours}, ...] pairs,
+// without applying any rate — prefers the precise per-reason breakdown
+// saved alongside newer entries; for older entries with only a combined
+// stopTime + reason string, splits the total hours evenly across however
+// many reasons are named. Shared by computeStopPicks (below) and the
+// employee summary system, so both always agree on what one reading's
+// stop time actually breaks down into.
+function extractStopBreakdown(r){
+  if(Array.isArray(r.stopBreakdown) && r.stopBreakdown.length) return r.stopBreakdown;
   const totalHours = Number(r.stopTime) || 0;
-  if(!totalHours || !r.reason || r.reason === '—') return 0;
+  if(!totalHours || !r.reason || r.reason === '—') return [];
   const reasonNames = r.reason.split(';').map(s => s.trim()).filter(Boolean);
-  if(reasonNames.length <= 1) return totalHours * stopReasonRate(r.reason);
+  if(reasonNames.length <= 1) return [{ reason: r.reason, hours: totalHours }];
   const perReasonHours = totalHours / reasonNames.length;
-  return reasonNames.reduce((sum, name) => sum + perReasonHours * stopReasonRate(name), 0);
+  return reasonNames.map(name => ({ reason: name, hours: perReasonHours }));
+}
+function computeStopPicks(r){
+  return extractStopBreakdown(r).reduce((sum, b) => sum + (Number(b.hours) || 0) * stopReasonRate(b.reason), 0);
 }
 // What to put in each of the 4 Stop Time & Reason boxes when opening an
 // EXISTING entry for editing. Prefers the precise per-box breakdown saved
@@ -2362,6 +2449,48 @@ function buildDiffSequenceByMachine(records){
     result[mid] = list.filter(r => !r._isBaseline);
   });
   return result;
+}
+// Recalculates one machine's entire diff chain and persists any changed
+// values directly onto each reading document — this is the background
+// recalculation itself. Reuses buildDiffSequenceByMachine completely
+// unchanged, so this can never disagree with what Report/Approvals compute
+// live; it only decides which of the already-correct numbers need to be
+// written down. Only documents whose stored diff actually changed get
+// written, so editing one old entry doesn't rewrite an entire machine's
+// history if most of it was already correct. Runs in the background after
+// any approval, edit, reset, or delete affecting this machine — never
+// blocks the action that triggered it, and a failure here never undoes
+// that action, since the live calculation remains correct either way as a
+// fallback.
+async function recalculateMachineDiffs(machineId){
+  try{
+    const records = await window.__db.loadReadingsForMachines([machineId]);
+    const byMachine = buildDiffSequenceByMachine(records);
+    const chain = byMachine[machineId] || byMachine[String(machineId)] || [];
+    const updates = [];
+    chain.forEach(r => {
+      const stored = (r.diff === undefined || r.diff === null) ? null : Number(r.diff);
+      if(stored !== r._diff) updates.push({ id: r._id, diff: r._diff });
+    });
+    if(updates.length) await window.__db.batchUpdateDiffs(updates);
+
+    // Same chain, grouped by operator+date, to rebuild this machine's
+    // employee-facing summaries in the same pass.
+    const byOpDate = {};
+    chain.forEach(r => {
+      if(!r.operatorId) return;
+      const key = r.operatorId + '|' + r.date;
+      if(!byOpDate[key]) byOpDate[key] = { operatorId: r.operatorId, date: r.date, picks: 0, stopBreakdown: [], shifts: new Set() };
+      byOpDate[key].picks += r._diff;
+      byOpDate[key].stopBreakdown.push(...extractStopBreakdown(r));
+      byOpDate[key].shifts.add(r.shift);
+    });
+    const computed = Object.values(byOpDate).map(s => ({
+      operatorId: s.operatorId, date: s.date, picks: s.picks,
+      stopBreakdown: s.stopBreakdown, shifts: Array.from(s.shifts)
+    }));
+    await window.__db.syncMachineSummaries(machineId, computed);
+  }catch(err){ console.error('Background diff recalculation failed for machine', machineId, '(non-fatal — live calculations remain correct):', err); }
 }
 function fmtTs(ts){
   if(!ts) return '—';
@@ -3392,6 +3521,7 @@ async function saveMachineEdit(id, panel){
     setMachinesSorted(list);
     renderMachinesList();
     toast('Machine updated');
+    recalculateMachineDiffs(id).catch(err => console.error('Background recalculation after baseline change failed (non-fatal):', err));
   }catch(err){ console.error(err); toast('Could not save — check your connection'); }
 }
 
@@ -3826,6 +3956,26 @@ if($('previewCleanupBtn')){
         }catch(err){ console.error(err); toast('Could not finish cleanup — check your connection'); $('confirmCleanupBtn').disabled = false; }
       });
     }catch(err){ console.error(err); resultBox.innerHTML = ''; toast('Could not check — check your connection'); }
+  });
+}
+
+if($('runDiffMigrationBtn')){
+  $('runDiffMigrationBtn').addEventListener('click', async () => {
+    if(!requireDb()) return;
+    const btn = $('runDiffMigrationBtn');
+    const progressEl = $('diffMigrationProgress');
+    btn.disabled = true;
+    const machines = state.machines || [];
+    if(machines.length === 0){ toast('No machines to calculate'); btn.disabled = false; return; }
+    for(let i = 0; i < machines.length; i++){
+      progressEl.textContent = `Calculating… machine ${i+1} of ${machines.length} (${machines[i].name})`;
+      try{
+        await recalculateMachineDiffs(machines[i].id);
+      }catch(err){ console.error('Migration failed for machine', machines[i].id, err); }
+    }
+    progressEl.innerHTML = `<span style="color:var(--ok);">Done — ${machines.length} machine(s) calculated.</span>`;
+    toast('Calculation complete');
+    btn.disabled = false;
   });
 }
 
@@ -5418,10 +5568,14 @@ async function toggleResetPoint(id, currentlySet){
     ? 'Remove the reset-point mark from this reading? It will go back to diffing normally against whatever came before it.'
     : 'Mark this reading as the meter reset point? Its own diff becomes 0, and every later reading for this machine will diff against it instead of whatever came before — use this on the exact reading where the physical counter was reset.';
   if(!confirm(confirmMsg)) return;
+  const row = lastReportRows.find(x => x.id === id);
   try{
     await window.__db.updateReading(id, { resetPoint: !currentlySet });
     toast(currentlySet ? 'Reset point removed' : 'Marked as reset point');
     loadReport();
+    if(row && row.machine){
+      recalculateMachineDiffs(row.machine).catch(err => console.error('Background recalculation after reset-point toggle failed (non-fatal):', err));
+    }
   }catch(err){ console.error(err); toast('Could not save — check your connection'); }
 }
 
@@ -5504,11 +5658,13 @@ async function decideReading(id, status){
     await window.__db.updateReading(id, updates);
     toast(status === 'approved' ? 'Entry approved' : 'Entry rejected — sent back to the operator to fix and resubmit');
     removeApprovalRowLocally(id);
-    // Only once the approval itself is safely saved does the photo get
-    // migrated to its own lightweight record — entirely in the background,
-    // after the Supervisor has already moved on. If this fails or is slow
-    // for any reason, the approval already succeeded regardless; the photo
-    // just stays embedded as it would have before this feature existed.
+    // Everything below runs in the background, after the Supervisor has
+    // already moved on — migrating the photo to its own lightweight record,
+    // and recalculating this machine's production numbers so Report and
+    // Dashboard can read an already-correct result instead of
+    // recalculating it themselves every time. If any of this fails or is
+    // slow, the approval already succeeded regardless; nothing here can
+    // undo it, and the live calculations remain correct as a fallback.
     if(status === 'approved'){
       (async () => {
         try{
@@ -5517,7 +5673,8 @@ async function decideReading(id, status){
             const ref = await window.__db.savePhotoBlob(current.photoDataUrl);
             await window.__db.updateReading(id, { photoDataUrl: ref });
           }
-        }catch(err){ console.error('Background photo migration failed (non-fatal, approval already saved):', err); }
+          if(current && current.machine) await recalculateMachineDiffs(current.machine);
+        }catch(err){ console.error('Background post-approval work failed (non-fatal, approval already saved):', err); }
       })();
     }
   }catch(err){ console.error(err); toast('Could not save — check your connection'); }
@@ -5775,6 +5932,7 @@ async function saveManualEntry(){
     $('manualEntryPanel').style.display = 'none';
     toast('Entry added');
     loadReport();
+    recalculateMachineDiffs(machine).catch(err => console.error('Background recalculation after manual entry failed (non-fatal):', err));
   }catch(err){ console.error(err); toast('Could not save — check your connection'); }
 }
 
@@ -5871,6 +6029,8 @@ async function openReportEditPanel(id){
 }
 
 async function saveReportEdit(id){
+  const original = lastReportRows.find(x => x.id === id);
+  const originalMachine = original ? original.machine : null;
   // Up to 4 Stop Time / Reason pairs, same combining rule as the
   // Supervisor's approval screen: total time stopped, and every reason
   // given, joined together into the single stopTime/reason fields
@@ -5919,6 +6079,18 @@ async function saveReportEdit(id){
     closeReportEditModal();
     toast('Entry updated');
     loadReport();
+    // Recalculates in the background, after the Admin has already moved
+    // on — this entry's reading, date, or machine may have changed, which
+    // can shift every entry chronologically after it for whichever
+    // machine(s) are involved.
+    (async () => {
+      try{
+        await recalculateMachineDiffs(updates.machine);
+        if(originalMachine && String(originalMachine) !== String(updates.machine)){
+          await recalculateMachineDiffs(originalMachine);
+        }
+      }catch(err){ console.error('Background recalculation after edit failed (non-fatal):', err); }
+    })();
   }catch(err){ console.error(err); toast('Could not save — check your connection'); }
 }
 
@@ -5944,10 +6116,15 @@ async function transferReportEntry(id, prevOperatorId){
 async function deleteReportRow(id){
   if(!confirm('Delete this entry permanently? This cannot be undone.')) return;
   if(!requireDb()) return;
+  const row = lastReportRows.find(x => x.id === id);
+  const machineId = row ? row.machine : null;
   try{
     await window.__db.deleteReading(id);
     toast('Entry deleted');
     loadReport();
+    if(machineId){
+      recalculateMachineDiffs(machineId).catch(err => console.error('Background recalculation after delete failed (non-fatal):', err));
+    }
   }catch(err){ console.error(err); toast('Could not delete — check your connection'); }
 }
 
@@ -5957,6 +6134,19 @@ async function deleteReportRow(id){
    view and the supervisor/admin "Earned Picks" view on Approvals)
    ============================================================ */
 function computeApprovedDiffs(allRecords){
+  const relevant = allRecords.filter(r => r.status === 'approved' && r.photoType !== 'start');
+  const allPreCalculated = relevant.length > 0 && relevant.every(r => r.diff !== undefined && r.diff !== null && r.diff !== '');
+  if(allPreCalculated){
+    // Fast path — every entry already has its production number saved and
+    // kept current by the background recalculation system, so there's no
+    // need to re-walk the chain or have fetched anything beyond exactly
+    // what's being shown.
+    return relevant.map(r => Object.assign({}, r, { _diff: Number(r.diff) }));
+  }
+  // Fallback — something here hasn't been pre-calculated yet (the one-time
+  // migration hasn't been run, or a background recalculation for a very
+  // recent change hasn't finished) — compute it live instead, exactly as
+  // this always has. Never silently trusts an incomplete data set.
   const byMachine = buildDiffSequenceByMachine(allRecords);
   let out = [];
   Object.values(byMachine).forEach(list => { out = out.concat(list); });
@@ -6006,13 +6196,53 @@ function renderPicksReport(containerId, allRecords, operatorId, fromDate, toDate
     byKey[key].stopPicks += computeStopPicks(r);
     byKey[key].shiftsSeen.add(r.shift);
   });
-  // Weekly Automatic Stop (e.g. every Thursday) — added here, live, on top
-  // of whatever was actually logged, for whichever shift(s) this operator
-  // genuinely has a reading for that day at that machine. This never
-  // touches the stored reading itself, which is exactly why it doesn't
-  // also reduce Operator Efficiency — that reads stopTime straight from
-  // the document, and Machine Working Hours already accounts for this
-  // separately (see machineHoursForDate).
+  applyWeeklyAutoStop(byKey);
+  const rows = Object.values(byKey).sort((a,b) =>
+    a.date === b.date ? machineName(a.machine).localeCompare(machineName(b.machine)) : b.date.localeCompare(a.date)
+  );
+  renderPicksRowsTable(containerId, rows, (p) => {
+    paginationState[containerId + 'Pagination'] = p;
+    renderPicksReport(containerId, allRecords, operatorId, fromDate, toDate);
+  });
+}
+// Same end result as renderPicksReport above, built from the small
+// pre-aggregated summary documents instead of raw readings — each summary
+// is already one date+machine row, so there's no chain to walk and no
+// per-reading loop needed. Falls back to renderPicksReport (unchanged)
+// whenever summaries aren't available for any reason.
+function renderPicksReportFromSummaries(containerId, summaries, operatorId, fromDate, toDate){
+  const box = $(containerId);
+  if(!operatorId){ box.innerHTML = '<div class="empty-state">No one to show yet.</div>'; return; }
+  let filtered = summaries;
+  if(fromDate) filtered = filtered.filter(s => s.date >= fromDate);
+  if(toDate) filtered = filtered.filter(s => s.date <= toDate);
+  if(filtered.length === 0){ box.innerHTML = '<div class="empty-state">No approved entries in this range.</div>'; $(containerId + 'Pagination').innerHTML = ''; return; }
+  const byKey = {};
+  filtered.forEach(s => {
+    const key = s.date + '|' + s.machine;
+    const stopHours = (s.stopBreakdown || []).reduce((sum, b) => sum + (Number(b.hours) || 0), 0);
+    const stopPicks = (s.stopBreakdown || []).reduce((sum, b) => sum + (Number(b.hours) || 0) * stopReasonRate(b.reason), 0);
+    byKey[key] = { date: s.date, machine: s.machine, picks: s.picks, stopHours, stopPicks, shiftsSeen: new Set(s.shifts || []) };
+  });
+  applyWeeklyAutoStop(byKey);
+  const rows = Object.values(byKey).sort((a,b) =>
+    a.date === b.date ? machineName(a.machine).localeCompare(machineName(b.machine)) : b.date.localeCompare(a.date)
+  );
+  renderPicksRowsTable(containerId, rows, (p) => {
+    paginationState[containerId + 'Pagination'] = p;
+    renderPicksReportFromSummaries(containerId, summaries, operatorId, fromDate, toDate);
+  });
+}
+// Weekly Automatic Stop (e.g. every Thursday) — added here, live, on top of
+// whatever was actually logged, for whichever shift(s) this operator
+// genuinely has a reading for that day at that machine. This never touches
+// the stored reading (or summary) itself, which is exactly why it doesn't
+// also reduce Operator Efficiency — that reads stopTime straight from the
+// document, and Machine Working Hours already accounts for this separately
+// (see machineHoursForDate). Always computed live from current config, on
+// both the raw-records and summary-based paths, so an admin's rule change
+// is instantly reflected everywhere.
+function applyWeeklyAutoStop(byKey){
   Object.values(byKey).forEach(row => {
     const auto = getWeekdayAutoStopRule(row.date);
     if(!auto) return;
@@ -6026,9 +6256,9 @@ function renderPicksReport(containerId, allRecords, operatorId, fromDate, toDate
       row.stopPicks += Number(auto.night.hours) * rate;
     }
   });
-  const rows = Object.values(byKey).sort((a,b) =>
-    a.date === b.date ? machineName(a.machine).localeCompare(machineName(b.machine)) : b.date.localeCompare(a.date)
-  );
+}
+function renderPicksRowsTable(containerId, rows, onPageChange){
+  const box = $(containerId);
   let running = 0;
   rows.forEach(row => { running += row.picks + row.stopPicks; });
 
@@ -6047,10 +6277,7 @@ function renderPicksReport(containerId, allRecords, operatorId, fromDate, toDate
   });
   box.innerHTML = `<div class="table-scroll"><table class="report-table"><thead><tr><th>Date</th><th>Machine</th><th>Machine Reading</th><th>Stopped Time</th><th>Earned Picks from Stop</th><th>Total</th></tr></thead><tbody>${rowsHtml}</tbody></table></div>
     <div class="card row" style="margin-top:10px;"><span class="k">Total Picks (selected range)</span><span><b>${Math.round(running).toLocaleString()}</b></span></div>`;
-  renderPaginationControls(containerId + 'Pagination', rows.length, perPage, (p) => {
-    paginationState[containerId + 'Pagination'] = p;
-    renderPicksReport(containerId, allRecords, operatorId, fromDate, toDate);
-  });
+  renderPaginationControls(containerId + 'Pagination', rows.length, perPage, onPageChange);
 }
 
 function computeOperatorEfficiency(records, operatorId, fromDate, toDate, assignedShift){
@@ -6140,10 +6367,12 @@ async function loadMyPicksReport(){
   try{
     const from = $('myPicksFrom').value, to = $('myPicksTo').value;
     const targetUser = (state.users || []).find(u => u.loginId === targetId) || (targetId === state.user.loginId ? state.user : null);
-    const assignedIds = (targetUser && targetUser.assignedMachines) || [];
-    const all = await window.__db.loadReadingsForMachines(assignedIds);
-    renderPicksReport('myPicksBody', all, targetId, from, to);
-    renderEfficiencyBox('myEfficiencyBox', all, targetId, from, to, targetUser ? targetUser.assignedShift : null);
+    const [summaries, myHistory] = await Promise.all([
+      window.__db.loadOperatorSummaries(targetId),
+      window.__db.loadMyReadingHistory(targetId)
+    ]);
+    renderPicksReportFromSummaries('myPicksBody', summaries, targetId, from, to);
+    renderEfficiencyBox('myEfficiencyBox', myHistory, targetId, from, to, targetUser ? targetUser.assignedShift : null);
   }catch(err){ console.error(err); $('myPicksBody').innerHTML = '<div class="empty-state">Could not load.</div>'; }
 }
 $('myPicksFrom').addEventListener('change', () => { resetPagination('myPicksBodyPagination'); loadMyPicksReport(); });
@@ -6169,10 +6398,8 @@ async function loadPicksForApprovals(){
     else if(selectable.length) sel.value = selectable[0].loginId;
     if(selectable.length === 0){ $('picksBody').innerHTML = '<div class="empty-state">No operators or supervisors to show yet.</div>'; return; }
     const targetId = sel.value;
-    const targetUser = selectable.find(u => u.loginId === targetId);
-    const assignedIds = (targetUser && targetUser.assignedMachines) || [];
-    const all = await window.__db.loadReadingsForMachines(assignedIds);
-    renderPicksReport('picksBody', all, targetId, $('picksFrom').value, $('picksTo').value);
+    const summaries = await window.__db.loadOperatorSummaries(targetId);
+    renderPicksReportFromSummaries('picksBody', summaries, targetId, $('picksFrom').value, $('picksTo').value);
   }catch(err){ console.error(err); $('picksBody').innerHTML = '<div class="empty-state">Could not load.</div>'; }
 }
 $('picksEmployeeSelect').addEventListener('change', () => { resetPagination('picksBodyPagination'); loadPicksForApprovals(); });
