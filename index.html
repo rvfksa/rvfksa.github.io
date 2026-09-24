@@ -2832,13 +2832,11 @@ $('refreshUsersBtn').addEventListener('click', loadUsersForAdmin);
     });
   }
   if(window.__db.onReadingsChange){
-    const throttledApprovalsRefresh = throttle(() => { if($('screen-approvals').classList.contains('active')) loadApprovals(); }, 12000);
     const throttledReportRefresh = throttle(() => { if($('screen-report').classList.contains('active')) loadReport(); }, 20000);
     const throttledDashboardRefresh = throttle(() => { if($('screen-ceo').classList.contains('active')) loadCeoDashboard(); }, 45000);
     const throttledMyStatusRefresh = throttle(() => { if($('screen-mystatus').classList.contains('active')) loadMyStatus(); }, 20000);
     window.__db.onReadingsChange(() => {
       if(!state.user) return;
-      throttledApprovalsRefresh();
       throttledReportRefresh();
       throttledDashboardRefresh();
       throttledMyStatusRefresh();
