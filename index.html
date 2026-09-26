@@ -6136,7 +6136,7 @@ async function loadReport(){
     const today = new Date();
     const todayStr = today.getFullYear() + '-' + pad(today.getMonth()+1) + '-' + pad(today.getDate());
     $('statEntries').textContent = records.length;
-    $('statMachines').textContent = Object.keys(byMachine).length;
+    $('statMachines').textContent = new Set(records.map(r => r.machine)).size;
     $('statToday').textContent = records.filter(r => r.date === todayStr).length;
 
     const isAdmin = state.user.role === 'admin';
@@ -8511,13 +8511,29 @@ async function loadCeoDashboard(){
 
     const users = await window.__db.listUsers();
     state.users = users;
-    const records = await window.__db.loadAllReadingsEver();
-    state.cachedRecords = records;
+    state.cachedRecords = null; // only fetched lazily now, by the drill-down click handler
+
+    // One fetch, wide enough to cover everything Production, the 12-month
+    // chart, and Performance could need — the 12-month chart always needs
+    // the last 12 months; a custom range on either section could ask for
+    // something else entirely, so the earliest of all three is used as the
+    // starting point. Filtered down separately by each section afterward.
+    const now = new Date();
+    const twelveMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 11, 1);
+    const twelveMonthsAgoStr = twelveMonthsAgo.getFullYear() + '-' + pad(twelveMonthsAgo.getMonth()+1) + '-' + pad(twelveMonthsAgo.getDate());
+    const todayStr = now.getFullYear() + '-' + pad(now.getMonth()+1) + '-' + pad(now.getDate());
+    const dashRange = computeDashboardRange();
+    const perfRange = computePerfRange();
+    const effectiveFrom = [twelveMonthsAgoStr, dashRange.fromDate, perfRange.fromDate].sort()[0];
+    const effectiveTo = todayStr;
+    state.cachedSummaries = await window.__db.loadSummariesInRange(effectiveFrom, effectiveTo);
+    state.cachedSummariesFrom = effectiveFrom;
+    state.cachedSummariesTo = effectiveTo;
 
     renderEmployeeOverviewBox(users);
     renderDocumentRenewalsBox(users);
-    renderMachineProductionBox();
-    renderPerformanceBox();
+    await renderMachineProductionBox();
+    await renderPerformanceBox();
 
     // machines by department (kept as its own small section — useful factory-floor view)
     const byDept = {};
@@ -9189,10 +9205,52 @@ function computeProductionForRange(records, fromDate, toDate, department, machin
   });
   return { overallSqm, byDept, byMachine, skippedNoSpec };
 }
+// Same result as computeProductionForRange above, built from the small
+// pre-aggregated summary documents instead of raw readings — this is what
+// lets Dashboard read a handful of tiny rows instead of your entire
+// reading history every time it's opened. Each summary is already one
+// operator+date+machine's total picks, so there's no per-reading loop or
+// chain-walk needed at all.
+function computeProductionForRangeFromSummaries(summaries, fromDate, toDate, department, machineFilter){
+  let filtered = summaries.filter(s => (!fromDate || s.date >= fromDate) && (!toDate || s.date <= toDate));
+  if(machineFilter) filtered = filtered.filter(s => String(s.machine) === String(machineFilter));
+  let overallSqm = 0;
+  const byDept = {};
+  const byMachine = {};
+  let skippedNoSpec = 0;
+  filtered.forEach(s => {
+    const m = state.machines.find(x => String(x.id) === String(s.machine));
+    if(department && (!m || m.department !== department)) return;
+    const sqm = machineSqm(s.picks, m);
+    if(sqm <= 0 && s.picks > 0 && m && (!m.widthCm || !m.picksPerCm)) skippedNoSpec++;
+    overallSqm += sqm;
+    const dept = (m && m.department) || 'Unassigned';
+    byDept[dept] = (byDept[dept] || 0) + sqm;
+    if(s.picks > 0) byMachine[s.machine] = (byMachine[s.machine] || 0) + s.picks;
+  });
+  return { overallSqm, byDept, byMachine, skippedNoSpec };
+}
 
-function renderMachineProductionBox(){
+// If a date filter asks for something outside what's currently cached in
+// state.cachedSummaries, this re-fetches a range wide enough to cover both
+// the old and new needs — without this, widening a Dashboard filter after
+// the initial load could silently show incomplete numbers, with no error
+// to indicate anything was missed.
+async function ensureSummariesCover(fromDate, toDate){
+  if(state.cachedSummariesFrom && state.cachedSummariesTo &&
+     state.cachedSummariesFrom <= fromDate && state.cachedSummariesTo >= toDate){
+    return; // already covers it
+  }
+  const newFrom = (state.cachedSummariesFrom && state.cachedSummariesFrom < fromDate) ? state.cachedSummariesFrom : fromDate;
+  const newTo = (state.cachedSummariesTo && state.cachedSummariesTo > toDate) ? state.cachedSummariesTo : toDate;
+  state.cachedSummaries = await window.__db.loadSummariesInRange(newFrom, newTo);
+  state.cachedSummariesFrom = newFrom;
+  state.cachedSummariesTo = newTo;
+}
+async function renderMachineProductionBox(){
   const range = computeDashboardRange();
-  const records = state.cachedRecords || [];
+  await ensureSummariesCover(range.fromDate, range.toDate);
+  const summaries = state.cachedSummaries || [];
 
   const deptSel = $('dashDeptFilter');
   if(deptSel.options.length <= 1) deptSel.innerHTML = '<option value="">All</option>' + state.departments.map(d=>`<option>${d}</option>`).join('');
@@ -9214,7 +9272,7 @@ function renderMachineProductionBox(){
   if(machDrillKind && machDrillKind !== 'stopped') renderMachineDrillList(scopedMachines, range);
   renderStoppedDetail(machDrillKind === 'stopped', range, stoppedList);
 
-  const { overallSqm, byDept, skippedNoSpec } = computeProductionForRange(records, range.fromDate, range.toDate, range.department, range.machine);
+  const { overallSqm, byDept, skippedNoSpec } = computeProductionForRangeFromSummaries(summaries, range.fromDate, range.toDate, range.department, range.machine);
   $('kpiProduction').textContent = overallSqm.toLocaleString(undefined,{maximumFractionDigits:1}) + ' m\u00B2';
   const skipNote = $('prodSkipNote');
   if(skippedNoSpec){ skipNote.style.display = 'block'; skipNote.textContent = `${skippedNoSpec} entr${skippedNoSpec===1?'y':'ies'} skipped — set Width & Picks/cm on those machines.`; }
@@ -9236,13 +9294,20 @@ function renderMachineProductionBox(){
 // get a simple ID/name/department/status list.
 let machDrillKind = null;
 document.querySelectorAll('.machHealthStat').forEach(card => {
-  card.addEventListener('click', () => {
+  card.addEventListener('click', async () => {
     const kind = card.dataset.kind;
     const isOpen = (kind === 'stopped') ? $('ceoStoppedDetail').style.display === 'block' : $('machDrillList').style.display === 'block';
     if(isOpen && machDrillKind === kind){ machDrillKind = null; $('machDrillList').style.display = 'none'; $('ceoStoppedDetail').style.display = 'none'; return; }
     machDrillKind = kind;
     $('machDrillList').style.display = kind === 'stopped' ? 'none' : 'block';
-    renderMachineProductionBox();
+    // Only fetched here, lazily, the first time someone actually drills in
+    // for this level of detail — not on every Dashboard visit, since most
+    // visits never need it.
+    if(kind !== 'stopped' && !state.cachedRecords){
+      $('machDrillList').innerHTML = '<div class="empty-state">Loading…</div>';
+      state.cachedRecords = await window.__db.loadAllReadingsEver();
+    }
+    await renderMachineProductionBox();
   });
 });
 function renderMachineDrillList(scopedMachines, range){
@@ -9331,14 +9396,13 @@ function renderMachineDrillList(scopedMachines, range){
 }
 
 function render12MonthProduction(){
-  const records = state.cachedRecords || [];
-  const allDiffs = computeApprovedDiffs(records);
+  const summaries = state.cachedSummaries || [];
   const monthTotals = {};
-  allDiffs.forEach(r => {
-    const m = state.machines.find(x => String(x.id) === String(r.machine));
-    const sqm = machineSqm(r._diff, m);
+  summaries.forEach(s => {
+    const m = state.machines.find(x => String(x.id) === String(s.machine));
+    const sqm = machineSqm(s.picks, m);
     if(sqm <= 0) return;
-    const monthKey = r.date.slice(0,7);
+    const monthKey = s.date.slice(0,7);
     monthTotals[monthKey] = (monthTotals[monthKey] || 0) + sqm;
   });
   const now = new Date();
@@ -9476,9 +9540,10 @@ $('perfFilterToggle').addEventListener('click', (e) => {
   $(id).addEventListener('change', renderPerformanceBox);
 });
 
-function renderPerformanceBox(){
+async function renderPerformanceBox(){
   const range = computePerfRange();
-  const records = state.cachedRecords || [];
+  await ensureSummariesCover(range.fromDate, range.toDate);
+  const summaries = state.cachedSummaries || [];
 
   const deptSel = $('perfDeptFilter');
   if(deptSel.options.length <= 1) deptSel.innerHTML = '<option value="">All</option>' + state.departments.map(d=>`<option>${d}</option>`).join('');
@@ -9490,15 +9555,15 @@ function renderPerformanceBox(){
   $('kpiEfficiency').textContent = scopedMachines.length ? Math.round((runningCount / scopedMachines.length) * 100) + '%' : '0%';
 
   // Top / lowest 5 operators by picks earned, scoped to date + department + machine
-  let diffs = computeApprovedDiffs(records).filter(r => r.date >= range.fromDate && r.date <= range.toDate);
-  if(range.machine) diffs = diffs.filter(r => String(r.machine) === String(range.machine));
-  if(range.department) diffs = diffs.filter(r => { const m = state.machines.find(x => String(x.id) === String(r.machine)); return m && m.department === range.department; });
+  let scoped = summaries.filter(s => s.date >= range.fromDate && s.date <= range.toDate);
+  if(range.machine) scoped = scoped.filter(s => String(s.machine) === String(range.machine));
+  if(range.department) scoped = scoped.filter(s => { const m = state.machines.find(x => String(x.id) === String(s.machine)); return m && m.department === range.department; });
   const byOperator = {};
-  diffs.forEach(r => {
-    if(r._diff <= 0 || !r.operatorId) return;
-    const op = (state.users || []).find(u => u.loginId === r.operatorId);
+  scoped.forEach(s => {
+    if(s.picks <= 0 || !s.operatorId) return;
+    const op = (state.users || []).find(u => u.loginId === s.operatorId);
     if(op && isExitedEmployee(op)) return; // excluded everywhere, including past performance history
-    byOperator[r.operatorId] = (byOperator[r.operatorId] || 0) + r._diff;
+    byOperator[s.operatorId] = (byOperator[s.operatorId] || 0) + s.picks;
   });
   const opEntries = Object.entries(byOperator).sort((a,b) => b[1]-a[1]);
   const nameFor = (id) => { const u = (state.users||[]).find(x => x.loginId === id); return u ? u.name : id; };
@@ -9510,21 +9575,22 @@ function renderPerformanceBox(){
     title: nameFor(id), sub: `${id} \u00B7 ${val.toLocaleString()} picks`
   }), 'No approved readings in this range yet.');
 
-  // Top 5 reasons for stops, same scope
+  // Top 5 reasons for stops, same scope — tallied from each summary's own
+  // stored breakdown rather than a raw reading's single reason/stopTime.
   const reasonBox = $('ceoTopStopReason');
-  let stopRows = records.filter(r => r.date >= range.fromDate && r.date <= range.toDate && r.reason && r.reason !== '—' && Number(r.stopTime) > 0);
-  if(range.machine) stopRows = stopRows.filter(r => String(r.machine) === String(range.machine));
-  if(range.department) stopRows = stopRows.filter(r => { const m = state.machines.find(x => String(x.id) === String(r.machine)); return m && m.department === range.department; });
-  if(stopRows.length === 0){
+  const byReason = {};
+  scoped.forEach(s => {
+    (s.stopBreakdown || []).forEach(b => {
+      if(!b.reason || b.reason === '—' || !(Number(b.hours) > 0)) return;
+      if(!byReason[b.reason]) byReason[b.reason] = { count: 0, hours: 0 };
+      byReason[b.reason].count++;
+      byReason[b.reason].hours += Number(b.hours) || 0;
+    });
+  });
+  if(Object.keys(byReason).length === 0){
     reasonBox.innerHTML = '<div class="empty-state">No stop entries in this range.</div>';
     return;
   }
-  const byReason = {};
-  stopRows.forEach(r => {
-    if(!byReason[r.reason]) byReason[r.reason] = { count: 0, hours: 0 };
-    byReason[r.reason].count++;
-    byReason[r.reason].hours += Number(r.stopTime) || 0;
-  });
   const ranked = Object.entries(byReason).sort((a,b) => b[1].hours - a[1].hours).slice(0, 5);
   renderRankedList('ceoTopStopReason', ranked, ([reason, stats]) => ({
     title: reason, sub: `${stats.hours.toFixed(1)} stop hours across ${stats.count} entr${stats.count===1?'y':'ies'}`
