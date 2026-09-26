@@ -40,7 +40,7 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
   import {
     getFirestore,
-    doc, getDoc, setDoc, updateDoc, deleteDoc, writeBatch,
+    doc, getDoc, setDoc, updateDoc, deleteDoc, writeBatch, runTransaction,
     collection, addDoc, getDocs, query, where, orderBy, onSnapshot, getCountFromServer
   } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
   import {
@@ -428,6 +428,98 @@
           if(op.type === 'set') batch.set(ref, op.data); else batch.delete(ref);
         });
         await batch.commit();
+      }
+    },
+    // A tiny, single-document pointer to the chronologically last APPROVED
+    // reading for one machine — this is what lets a normal approval skip
+    // fetching that machine's entire history just to compute one new
+    // diff. Kept up to date by both the fast path below and the full
+    // recalculation (recalculateMachineDiffs), so the two never disagree.
+    async getMachineLastApproved(machineId) {
+      if (!dbReady) throw new Error('NOT_CONFIGURED');
+      const snap = await getDoc(doc(db, 'machineLastApproved', String(machineId)));
+      return snap.exists() ? snap.data() : null;
+    },
+    async setMachineLastApproved(machineId, data) {
+      if (!dbReady) throw new Error('NOT_CONFIGURED');
+      await setDoc(doc(db, 'machineLastApproved', String(machineId)), data);
+    },
+    async clearMachineLastApproved(machineId) {
+      if (!dbReady) throw new Error('NOT_CONFIGURED');
+      await deleteDoc(doc(db, 'machineLastApproved', String(machineId)));
+    },
+    // The fast path itself. Returns true if it successfully handled
+    // everything (diff + summary + pointer, all updated); returns false
+    // whenever it isn't confident this is the simple case, so the caller
+    // falls back to the full, always-correct recalculation instead. Never
+    // guesses — every condition it can't verify safely just means "let the
+    // slower path handle it."
+    async fastApproveUpdate(machineId, reading){
+      if (!dbReady) throw new Error('NOT_CONFIGURED');
+      const mid = String(machineId);
+      const SHIFT_ORDER = { 'Day': 0, 'Night': 1 };
+      const chronoCmp = (a, b) => {
+        if(a.date !== b.date) return a.date < b.date ? -1 : 1;
+        const so = (SHIFT_ORDER[a.shift] ?? 2) - (SHIFT_ORDER[b.shift] ?? 2);
+        if(so !== 0) return so;
+        return (a.timestamp||0) - (b.timestamp||0);
+      };
+      const pointer = await getDoc(doc(db, 'machineLastApproved', mid));
+      const last = pointer.exists() ? pointer.data() : null;
+      // Out of order (a backdated/backlog approval) — not the simple case,
+      // let the full recalculation handle it correctly.
+      if(last && chronoCmp(reading, last) < 0) return false;
+      // Two entries at the exact same date+shift+timestamp for one machine
+      // should never happen — safest to fall back rather than guess.
+      if(last && chronoCmp(reading, last) === 0) return false;
+      // No existing pointer means this could be this machine's very first
+      // approved reading ever — which may need to diff against a
+      // configured baseline, something this fast path has no visibility
+      // into. Rather than guessing, fall back to the full recalculation,
+      // which correctly knows about and applies baselines. This only ever
+      // happens once per machine, so it costs nothing meaningful overall.
+      if(!last) return false;
+      const diff = reading.resetPoint ? 0 : (Number(reading.reading) - Number(last.reading));
+      try{
+        await updateDoc(doc(db, 'readings', reading._id), { diff });
+        if(reading.operatorId){
+          const summaryId = `${reading.operatorId}_${reading.date}_${mid}`;
+          const breakdown = (Array.isArray(reading.stopBreakdown) && reading.stopBreakdown.length)
+            ? reading.stopBreakdown
+            : (Number(reading.stopTime) > 0 && reading.reason && reading.reason !== '—' ? [{ reason: reading.reason, hours: Number(reading.stopTime) }] : []);
+          // A transaction here (rather than a plain read-then-write) is
+          // what keeps this correct even in the rare case of two shifts
+          // for the same operator+machine+day being approved at nearly
+          // the same moment by different people.
+          await runTransaction(db, async (tx) => {
+            const summaryRef = doc(db, 'operatorMachineDaySummaries', summaryId);
+            const existing = await tx.get(summaryRef);
+            if(existing.exists()){
+              const cur = existing.data();
+              const shifts = Array.isArray(cur.shifts) ? cur.shifts.slice() : [];
+              if(!shifts.includes(reading.shift)) shifts.push(reading.shift);
+              tx.set(summaryRef, {
+                operatorId: reading.operatorId, date: reading.date, machine: mid,
+                picks: (Number(cur.picks) || 0) + diff,
+                stopBreakdown: (Array.isArray(cur.stopBreakdown) ? cur.stopBreakdown : []).concat(breakdown),
+                shifts
+              });
+            } else {
+              tx.set(summaryRef, {
+                operatorId: reading.operatorId, date: reading.date, machine: mid,
+                picks: diff, stopBreakdown: breakdown, shifts: [reading.shift]
+              });
+            }
+          });
+        }
+        await setDoc(doc(db, 'machineLastApproved', mid), {
+          reading: reading.reading, date: reading.date, shift: reading.shift,
+          timestamp: reading.timestamp, readingId: reading._id
+        });
+        return true;
+      }catch(err){
+        console.error('Fast-path approval update failed, falling back to full recalculation:', err);
+        return false;
       }
     },
     // Live-watches one user doc so a change an Admin makes (role, pages, machines,
@@ -1746,6 +1838,7 @@
       <div class="report-toolbar">
         <button class="btn btn-ghost" id="refreshReportBtn">Refresh</button>
         <button class="btn btn-primary" id="exportBtn">Export to Excel</button>
+        <button class="btn btn-ghost" id="reviewUnusualBtn" style="display:none;">Review Unusual Entries (All Machines)</button>
         <button class="btn btn-ghost" id="addManualEntryBtn" style="display:none;">Add Manual Entry</button>
       </div>
 
@@ -2524,6 +2617,19 @@ async function recalculateMachineDiffs(machineId){
       stopBreakdown: s.stopBreakdown, shifts: Array.from(s.shifts)
     }));
     await window.__db.syncMachineSummaries(machineId, computed);
+
+    // Keep the fast-path pointer in sync with reality — the full
+    // recalculation is authoritative, so whatever it finds as the true
+    // chronologically-last entry is what the pointer should reflect too.
+    if(chain.length){
+      const lastEntry = chain[chain.length - 1];
+      await window.__db.setMachineLastApproved(machineId, {
+        reading: lastEntry.reading, date: lastEntry.date, shift: lastEntry.shift,
+        timestamp: lastEntry.timestamp, readingId: lastEntry._id
+      });
+    } else {
+      await window.__db.clearMachineLastApproved(machineId);
+    }
   }catch(err){ console.error('Background diff recalculation failed for machine', machineId, '(non-fatal — live calculations remain correct):', err); }
 }
 function fmtTs(ts){
@@ -3922,6 +4028,11 @@ function renderGraceFieldsHtml(){
         <div class="field" style="margin-bottom:0;"><input type="number" id="${ids.minutes}" min="0" step="5" placeholder="e.g. 60"></div>
         <div class="field" style="margin-bottom:0;"><input type="time" id="${ids.clock}"></div>
       </div>
+      ${c.role === 'operator' ? `
+      <label style="display:flex; align-items:center; gap:8px; font-weight:400; text-transform:none; font-size:13px; cursor:pointer; margin-top:10px;">
+        <input type="checkbox" id="${ids.mode}_block" style="width:auto;">
+        Actually stop late submissions (not just label them "Logged Late")
+      </label>` : ''}
     </div>`;
   }).join('');
 }
@@ -3949,6 +4060,10 @@ function populateShiftRuleForm(rule){
     if(radio) radio.checked = true;
     $(ids.minutes).value = (cfg.minutes !== undefined && cfg.minutes !== null) ? cfg.minutes : 60;
     $(ids.clock).value = cfg.clock || '';
+    if(c.role === 'operator'){
+      const blockEl = $(ids.mode + '_block');
+      if(blockEl) blockEl.checked = !!cfg.blockSubmission;
+    }
     updateGraceModeUI(c.role, c.shift);
   });
 }
@@ -4061,7 +4176,8 @@ if($('saveShiftRuleBtn')){
       if(mode === 'clock' && timeStrToHours(clock) === null){
         toast(`Please set a valid clock time for: ${c.label}`); return;
       }
-      grace[c.role][c.shift] = { mode, minutes: isFinite(minutes) && minutes >= 0 ? minutes : 60, clock: clock || '00:00' };
+      const blockEl = c.role === 'operator' ? $(ids.mode + '_block') : null;
+      grace[c.role][c.shift] = { mode, minutes: isFinite(minutes) && minutes >= 0 ? minutes : 60, clock: clock || '00:00', blockSubmission: blockEl ? blockEl.checked : false };
     }
 
     const rule = {
@@ -5328,6 +5444,20 @@ function goToReview(){
 $('retakeBtn').addEventListener('click', () => { showScreen('screen-capture'); });
 
 /* ---------- submit ---------- */
+// Whether an Operator (or Supervisor logging a reading themselves) should
+// be stopped outright from submitting right now for this date/shift —
+// only true when the Admin has explicitly turned on "Actually stop late
+// submissions" for that shift, AND the deadline has passed. Admin is
+// always exempt, since Add Manual Entry exists specifically for
+// after-the-fact corrections.
+function shouldBlockLateSubmission(date, shift){
+  if(state.user.role === 'admin') return false;
+  const rule = getShiftRuleForDate(date);
+  const shiftKey = (shift === 'Night') ? 'night' : 'day';
+  const cfg = rule.grace && rule.grace.operator && rule.grace.operator[shiftKey];
+  if(!cfg || !cfg.blockSubmission) return false;
+  return Date.now() > computeGraceDeadline({ date, shift }, 'operator').getTime();
+}
 $('submitBtn').addEventListener('click', async () => {
   const reading = $('readingInput').value.trim();
   const date = $('dateSelect').value;
@@ -5340,6 +5470,10 @@ $('submitBtn').addEventListener('click', async () => {
   if(!isValidNumber(reading)){ toast('Meter Reading must be a number'); $('readingInput').focus(); return; }
   if(stopTime !== '' && !isValidNumber(stopTime)){ toast('Stop Time / Hour must be a number'); $('stopTimeInput').focus(); return; }
   if(hasStop && !reason){ toast('A stop time was entered — please select a reason'); $('reasonSelect').focus(); return; }
+  if(shouldBlockLateSubmission(date, state.shift)){
+    toast(`The deadline for logging ${state.shift} shift has passed — this can no longer be submitted. Contact your Supervisor or Admin.`);
+    return;
+  }
   if(!requireDb()) return;
 
   const btn = $('submitBtn'); btn.disabled = true; btn.textContent = 'Saving...';
@@ -5866,7 +6000,10 @@ async function decideReading(id, status){
             const ref = await window.__db.savePhotoBlob(current.photoDataUrl);
             await window.__db.updateReading(id, { photoDataUrl: ref });
           }
-          if(current && current.machine) await recalculateMachineDiffs(current.machine);
+          if(current && current.machine){
+            const handled = await window.__db.fastApproveUpdate(current.machine, current);
+            if(!handled) await recalculateMachineDiffs(current.machine);
+          }
         }catch(err){ console.error('Background post-approval work failed (non-fatal, approval already saved):', err); }
       })();
     }
@@ -5877,6 +6014,79 @@ async function decideReading(id, status){
    REPORT
    ============================================================ */
 let lastReportRows = [];
+
+// The reference chain every record diffs against is APPROVED readings
+// (plus a machine's baseline, if set) only — pending/rejected entries
+// never enter the chain, but still get a prev/diff computed by finding
+// where they'd slot into that chain chronologically. `allRecords` supplies
+// this full context; `recordsToShow` is whichever subset should actually
+// become row objects (Report filters this by date/role; Review Unusual
+// Entries passes every record, then filters by flag afterward).
+function buildReportRows(allRecords, recordsToShow){
+  const chainByMachine = buildDiffSequenceByMachine(allRecords);
+  const fullChainByMachine = {};
+  Object.keys(chainByMachine).forEach(m => {
+    const list = chainByMachine[m].slice();
+    const mObj = state.machines.find(x => String(x.id) === String(m));
+    if(mObj && mObj.baselineReading !== undefined && mObj.baselineReading !== null && String(mObj.baselineReading) !== ''){
+      list.unshift({ date: mObj.baselineDate || '0000-01-01', shift: '__baseline__', reading: mObj.baselineReading, _isBaseline: true });
+    }
+    fullChainByMachine[m] = list;
+  });
+  function findPrevIn(machineId, record){
+    const chain = fullChainByMachine[machineId] || [];
+    let prev = null;
+    chain.forEach(entry => { if(chronoCompare(entry, record) < 0) prev = entry; });
+    return prev;
+  }
+  function avgBeforeIn(machineId, record){
+    const chain = chainByMachine[machineId] || [];
+    const diffs = chain.filter(e => chronoCompare(e, record) < 0).map(e => e._diff);
+    return diffs.length ? diffs.reduce((a,b)=>a+b,0)/diffs.length : null;
+  }
+
+  const byMachine = {};
+  recordsToShow.slice().sort(chronoCompare).forEach(r => { if(!byMachine[r.machine]) byMachine[r.machine] = []; byMachine[r.machine].push(r); });
+
+  const rows = [];
+  Object.keys(byMachine).forEach(m => {
+    const list = byMachine[m];
+    list.forEach((cur) => {
+      const prev = findPrevIn(m, cur);
+      const diff = prev ? (Number(cur.reading) - Number(prev.reading)) : null;
+      let flag = '';
+      if(diff !== null){
+        const avg = avgBeforeIn(m, cur);
+        if(diff < 0) flag = 'down';
+        else if(diff === 0) flag = 'idle';
+        else if(avg !== null && avg !== 0 && Math.abs(diff-avg) > Math.abs(avg)*0.4) flag = 'unusual';
+      }
+      rows.push({
+        id: cur._id,
+        machineId: m,
+        machineNum: Number(m) || 0,
+        machine: machineName(m) || cur.machineName,
+        date: cur.date, shift: cur.shift,
+        timestamp: cur.timestamp,
+        resetPoint: !!cur.resetPoint,
+        prevReading: prev ? prev.reading : '—', reading: cur.reading,
+        diff: diff === null ? '—' : diff,
+        flag,
+        stopTime: cur.stopTime, reason: cur.reason,
+        remarks: cur.remarks || '',
+        supervisorRemarks: cur.supervisorRemarks || '',
+        enteredBy: cur.operatorName || cur.operatorId || '—',
+        enteredById: cur.operatorId || '—',
+        status: cur.status || 'approved',
+        approvedBy: cur.approvedByName || (cur.status === 'pending' ? '—' : '—'),
+        adminNote: cur.adminNote || '',
+        photoDataUrl: cur.photoDataUrl || null,
+        photoType: cur.photoType === 'start' ? 'Starting' : 'Ending'
+      });
+    });
+  });
+  return rows;
+}
 
 async function loadReport(){
   const body = $('reportBody');
@@ -5893,32 +6103,6 @@ async function loadReport(){
     const fromDate = $('reportFromDate').value;
     const toDate = $('reportToDate').value;
 
-    // The reference chain every record diffs against is APPROVED readings
-    // (plus a machine's baseline, if set) only — pending/rejected entries
-    // never enter the chain, but still get a prev/diff computed by finding
-    // where they'd slot into that chain chronologically.
-    const chainByMachine = buildDiffSequenceByMachine(allRecords); // approved-only, real entries, each with ._diff
-    const fullChainByMachine = {};
-    Object.keys(chainByMachine).forEach(m => {
-      const list = chainByMachine[m].slice();
-      const mObj = state.machines.find(x => String(x.id) === String(m));
-      if(mObj && mObj.baselineReading !== undefined && mObj.baselineReading !== null && String(mObj.baselineReading) !== ''){
-        list.unshift({ date: mObj.baselineDate || '0000-01-01', shift: '__baseline__', reading: mObj.baselineReading, _isBaseline: true });
-      }
-      fullChainByMachine[m] = list;
-    });
-    function findPrevIn(machineId, record){
-      const chain = fullChainByMachine[machineId] || [];
-      let prev = null;
-      chain.forEach(entry => { if(chronoCompare(entry, record) < 0) prev = entry; });
-      return prev;
-    }
-    function avgBeforeIn(machineId, record){
-      const chain = chainByMachine[machineId] || [];
-      const diffs = chain.filter(e => chronoCompare(e, record) < 0).map(e => e._diff);
-      return diffs.length ? diffs.reduce((a,b)=>a+b,0)/diffs.length : null;
-    }
-
     let records = allRecords.slice();
     if(state.user.role === 'operator'){
       records = records.filter(r => r.operatorId === state.user.loginId);
@@ -5934,49 +6118,9 @@ async function loadReport(){
       lastReportRows = [];
       return;
     }
-    records.sort(chronoCompare);
 
-    const byMachine = {};
-    records.forEach(r => { if(!byMachine[r.machine]) byMachine[r.machine] = []; byMachine[r.machine].push(r); });
-
-    const rows = [];
     const showFlags = state.user.role === 'admin' || state.user.role === 'supervisor';
-    Object.keys(byMachine).forEach(m => {
-      const list = byMachine[m];
-      list.forEach((cur) => {
-        const prev = findPrevIn(m, cur);
-        const diff = prev ? (Number(cur.reading) - Number(prev.reading)) : null;
-        let flag = '';
-        if(diff !== null){
-          const avg = avgBeforeIn(m, cur);
-          if(diff < 0) flag = 'down';
-          else if(diff === 0) flag = 'idle';
-          else if(avg !== null && avg !== 0 && Math.abs(diff-avg) > Math.abs(avg)*0.4) flag = 'unusual';
-        }
-        rows.push({
-          id: cur._id,
-          machineId: m,
-          machineNum: Number(m) || 0,
-          machine: machineName(m) || cur.machineName,
-          date: cur.date, shift: cur.shift,
-          timestamp: cur.timestamp,
-          resetPoint: !!cur.resetPoint,
-          prevReading: prev ? prev.reading : '—', reading: cur.reading,
-          diff: diff === null ? '—' : diff,
-          flag,
-          stopTime: cur.stopTime, reason: cur.reason,
-          remarks: cur.remarks || '',
-          supervisorRemarks: cur.supervisorRemarks || '',
-          enteredBy: cur.operatorName || cur.operatorId || '—',
-          enteredById: cur.operatorId || '—',
-          status: cur.status || 'approved',
-          approvedBy: cur.approvedByName || (cur.status === 'pending' ? '—' : '—'),
-          adminNote: cur.adminNote || '',
-          photoDataUrl: cur.photoDataUrl || null,
-          photoType: cur.photoType === 'start' ? 'Starting' : 'Ending'
-        });
-      });
-    });
+    const rows = buildReportRows(allRecords, records);
 
     // ---- organize: newest date first, then Day before Night, then machine number ascending ----
     // this is the layout that keeps every date together as a block and avoids manual re-sorting
@@ -5997,6 +6141,7 @@ async function loadReport(){
 
     const isAdmin = state.user.role === 'admin';
     $('addManualEntryBtn').style.display = isAdmin ? 'inline-flex' : 'none';
+    $('reviewUnusualBtn').style.display = showFlags ? 'inline-flex' : 'none';
     const colCount = 8 + (showFlags ? 1 : 0) + (isAdmin ? 1 : 0);
     let html = '<div class="table-scroll"><table class="report-table report-table-compact"><thead><tr>' +
       '<th>Mc</th><th>Sh</th><th>Prev</th><th>New</th><th>Diff</th>' +
@@ -6058,6 +6203,48 @@ $('refreshReportBtn').addEventListener('click', loadReport);
 $('reportFromDate').addEventListener('change', loadReport);
 
 // ---- Admin: add a manually-entered reading (e.g. an entry the operator forgot) ----
+async function loadUnusualEntries(){
+  if(!requireDb()) return;
+  const backdrop = document.createElement('div');
+  backdrop.className = 'edit-modal-backdrop';
+  backdrop.id = 'unusualEntriesBackdrop';
+  backdrop.innerHTML = `<div class="edit-modal-sheet">
+    <h2 style="margin-top:0;">Review Unusual Entries — All Machines</h2>
+    <p class="hint" style="text-align:left; margin-left:0;">Every entry flagged as went-down, no-change, or unusually different from that machine's normal amount — across your whole history, not just what Report is currently showing.</p>
+    <div id="unusualEntriesBody"><div class="empty-state">Checking every machine…</div></div>
+    <button class="btn btn-ghost" id="unusualEntriesClose" style="margin-top:12px;">Close</button>
+  </div>`;
+  backdrop.addEventListener('click', (e) => { if(e.target === backdrop) backdrop.remove(); });
+  document.body.appendChild(backdrop);
+  $('unusualEntriesClose').addEventListener('click', () => backdrop.remove());
+  try{
+    const allRecords = await window.__db.loadAllReadingsEver();
+    const rows = buildReportRows(allRecords, allRecords).filter(r => r.flag);
+    lastReportRows = rows;
+    rows.sort((a,b) => b.date.localeCompare(a.date));
+    const body = $('unusualEntriesBody');
+    if(rows.length === 0){
+      body.innerHTML = '<div class="empty-state">Nothing flagged — every machine looks consistent with its usual pattern.</div>';
+      return;
+    }
+    const flagLabel = { down: 'Went down', idle: 'No change', unusual: 'Unusual amount' };
+    body.innerHTML = `<div class="hint" style="text-align:left; margin-left:0; margin-bottom:10px;">${rows.length} flagged entr${rows.length===1?'y':'ies'}.</div>` +
+      rows.map(r => `
+        <div class="card" style="margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; gap:10px;">
+          <div>
+            <b>${r.machine}</b> — ${fmtDate(r.date)}, ${r.shift}
+            <div class="hint" style="text-align:left; margin-left:0;">${r.prevReading} → ${r.reading} (diff ${r.diff}) · ${flagLabel[r.flag] || r.flag}</div>
+          </div>
+          <button class="btn btn-ghost unusualEditBtn" data-id="${r.id}">Edit</button>
+        </div>`).join('');
+    body.querySelectorAll('.unusualEditBtn').forEach(btn => {
+      btn.addEventListener('click', () => { backdrop.remove(); openReportEditPanel(btn.dataset.id); });
+    });
+  }catch(err){ console.error(err); $('unusualEntriesBody').innerHTML = '<div class="empty-state">Could not load — check your connection.</div>'; }
+}
+if($('reviewUnusualBtn')){
+  $('reviewUnusualBtn').addEventListener('click', loadUnusualEntries);
+}
 $('addManualEntryBtn').addEventListener('click', async () => {
   closeReportEditModal();
   const panel = $('manualEntryPanel');
@@ -6180,8 +6367,8 @@ async function openReportEditPanel(id){
       <div class="field">
         <label>This Photo Is</label>
         <select id="re-photoType">
-          <option value="start" ${r.photoType==='Starting'?'selected':''}>Starting Photo</option>
-          <option value="end" ${r.photoType!=='Starting'?'selected':''}>Ending Photo</option>
+          <option value="start" ${r.photoType==='start'?'selected':''}>Starting Photo</option>
+          <option value="end" ${r.photoType!=='start'?'selected':''}>Ending Photo</option>
         </select>
         <div class="hint">Only Ending photos count toward Earned Picks — Starting photos are backup only.</div>
       </div>
