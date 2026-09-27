@@ -7285,11 +7285,13 @@ $('savePasswordBtn').addEventListener('click', async () => {
   try{
     const result = await window.__db.authChangePassword(pw);
     if(!result.ok){
-      if(result.code === 'requires-recent-login'){
+      if(result.code === 'auth/requires-recent-login'){
         toast('For security, please log out and back in before changing your password');
+      } else if(result.code === 'auth/weak-password'){
+        toast('That password is too weak — please choose a stronger one');
       } else {
-        console.error(result.error);
-        toast('Could not update password — check your connection');
+        console.error(result.code, result.error);
+        toast('Could not update password — please try again');
       }
       return;
     }
