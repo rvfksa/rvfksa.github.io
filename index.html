@@ -2789,7 +2789,7 @@ function refreshMachineNumbers(machineId){
   if(machineId === null || machineId === undefined || machineId === '') return Promise.resolve(true);
   const warn = () => toast('Saved, but some totals could not be updated. Check your connection, then press "Refresh All Calculations" (Admin → Shift & Timing).');
   return recalculateMachineDiffs(machineId)
-    .then(ok => { if(ok !== true) warn(); return ok === true; })
+    .then(ok => { if(ok !== true) warn(); else toast('Totals updated everywhere'); return ok === true; })
     .catch(err => { console.error('Update after a change failed for machine', machineId, err); warn(); return false; });
 }
 async function recalculateMachineDiffs(machineId, stats){
