@@ -448,6 +448,38 @@
       if (!dbReady) throw new Error('NOT_CONFIGURED');
       await deleteDoc(doc(db, 'machineLastApproved', String(machineId)));
     },
+    // One small document per machine holding that machine's production
+    // (in picks) for every month: { machine, months: { '2026-09': 123456 } }.
+    // This is what lets the Dashboard's 12-month chart read roughly one
+    // document per machine — the same ~40 reads whether the app has been
+    // running for a month or for five years — instead of every daily
+    // summary in the year. Rebuilt in full by every full recalculation
+    // and kept current by the fast path in the same transaction as the
+    // employee summary.
+    async setMachineMonthly(machineId, months) {
+      if (!dbReady) throw new Error('NOT_CONFIGURED');
+      await setDoc(doc(db, 'machineMonthly', String(machineId)), { machine: String(machineId), months });
+    },
+    async loadMachineMonthly() {
+      if (!dbReady) throw new Error('NOT_CONFIGURED');
+      const snap = await getDocs(collection(db, 'machineMonthly'));
+      const out = {};
+      snap.forEach(d => { out[d.id] = (d.data().months) || {}; });
+      return out;
+    },
+    // Set only by the explicit one-time "Calculate Now" button, and only
+    // after every machine was built without a single failure — until it
+    // exists, the Dashboard keeps using the daily summaries instead of
+    // trusting monthly totals that might be incomplete.
+    async getMonthlyRollupsReady() {
+      if (!dbReady) throw new Error('NOT_CONFIGURED');
+      const snap = await getDoc(doc(db, 'config', 'monthlyRollupsReady'));
+      return snap.exists();
+    },
+    async setMonthlyRollupsReady() {
+      if (!dbReady) throw new Error('NOT_CONFIGURED');
+      await setDoc(doc(db, 'config', 'monthlyRollupsReady'), { builtAt: Date.now() });
+    },
     // The fast path itself. Returns true if it successfully handled
     // everything (diff + summary + pointer, all updated); returns false
     // whenever it isn't confident this is the simple case, so the caller
@@ -456,6 +488,11 @@
     // slower path handle it."
     async fastApproveUpdate(machineId, reading){
       if (!dbReady) throw new Error('NOT_CONFIGURED');
+      // A Starting photo is never part of a machine's production chain —
+      // the full calculation leaves it out — so approving one changes no
+      // diff, no employee summary, no monthly total and not the pointer.
+      // Treat it as fully handled rather than counting it as a reading.
+      if(reading.photoType === 'start') return true;
       const mid = String(machineId);
       const SHIFT_ORDER = { 'Day': 0, 'Night': 1 };
       const chronoCmp = (a, b) => {
@@ -479,6 +516,11 @@
       // which correctly knows about and applies baselines. This only ever
       // happens once per machine, so it costs nothing meaningful overall.
       if(!last) return false;
+      // A pointer written before the running total existed can't be
+      // extended incrementally — let the full recalculation handle this
+      // one approval (it writes the running total), then the fast path
+      // resumes. Only ever routes to the slower, always-correct path.
+      if(typeof last.diffSum !== 'number' || typeof last.diffCount !== 'number') return false;
       const diff = reading.resetPoint ? 0 : (Number(reading.reading) - Number(last.reading));
       try{
         await updateDoc(doc(db, 'readings', reading._id), { diff });
@@ -493,7 +535,23 @@
           // the same moment by different people.
           await runTransaction(db, async (tx) => {
             const summaryRef = doc(db, 'operatorMachineDaySummaries', summaryId);
+            const monthlyRef = doc(db, 'machineMonthly', mid);
+            // All reads first, then all writes (a Firestore transaction rule).
             const existing = await tx.get(summaryRef);
+            const monthlySnap = await tx.get(monthlyRef);
+            // No monthly document means this machine hasn't been through a
+            // full recalculation since monthly totals existed — abort to the
+            // full path (which builds it) instead of guessing.
+            if(!monthlySnap.exists()) throw new Error('MONTHLY_NOT_READY');
+            const oldGroup = existing.exists() ? (Number(existing.data().picks) || 0) : 0;
+            const newGroup = oldGroup + diff;
+            // The month total counts each operator-day's picks only when
+            // positive (exactly how the Dashboard chart has always treated
+            // a negative day), so it moves by the change in that positive part.
+            const delta = Math.max(newGroup, 0) - Math.max(oldGroup, 0);
+            const monthKey = String(reading.date).slice(0, 7);
+            const months = monthlySnap.data().months || {};
+            const curMonth = Number(months[monthKey]) || 0;
             if(existing.exists()){
               const cur = existing.data();
               const shifts = Array.isArray(cur.shifts) ? cur.shifts.slice() : [];
@@ -510,11 +568,13 @@
                 picks: diff, stopBreakdown: breakdown, shifts: [reading.shift]
               });
             }
+            tx.set(monthlyRef, { months: { [monthKey]: curMonth + delta } }, { merge: true });
           });
         }
         await setDoc(doc(db, 'machineLastApproved', mid), {
           reading: reading.reading, date: reading.date, shift: reading.shift,
-          timestamp: reading.timestamp, readingId: reading._id
+          timestamp: reading.timestamp, readingId: reading._id,
+          diffSum: last.diffSum + diff, diffCount: last.diffCount + 1
         });
         return true;
       }catch(err){
@@ -684,6 +744,23 @@
       const snap = await getDocs(q);
       const out = [];
       snap.forEach(d => out.push({ _id: d.id, ...d.data() }));
+      return out;
+    },
+    // Narrow version of the above for the machine-list cooldown check,
+    // which only ever cares about the last half hour or so: one operator's
+    // entries on a handful of specific calendar dates, not their entire
+    // history (which grows every single day). Only equality filters, so it
+    // is served by Firestore's automatic single-field indexes — no
+    // manually created index needed, and no way for this to fail with a
+    // missing-index error.
+    async loadMyReadingsOnDates(operatorId, dates) {
+      if (!dbReady) throw new Error('NOT_CONFIGURED');
+      const out = [];
+      await Promise.all(dates.map(async (d) => {
+        const q = query(collection(db, 'readings'), where('operatorId', '==', operatorId), where('date', '==', d));
+        const snap = await getDocs(q);
+        snap.forEach(x => out.push({ _id: x.id, ...x.data() }));
+      }));
       return out;
     },
     async loadReadingsInRange(fromStr, toStr) {
@@ -2011,6 +2088,10 @@
       <h1 id="ceoWelcomeH1">Welcome Back! 👋</h1>
       <p class="sub" style="margin-bottom:20px;">Here's a summary of your dashboard for today. Tap any number to see the details behind it.</p>
 
+      <div class="report-toolbar" style="margin-bottom:16px;">
+        <button class="btn btn-ghost" id="refreshCeoBtn">Refresh</button>
+      </div>
+
       <div id="employeeOverviewMountCeo"></div>
 
       <div id="documentRenewalsMountCeo">
@@ -2589,7 +2670,22 @@ function buildDiffSequenceByMachine(records){
 // blocks the action that triggered it, and a failure here never undoes
 // that action, since the live calculation remains correct either way as a
 // fallback.
+// Monthly production for one machine, from its operator-day groups: each
+// group's picks count only when positive, exactly as the Dashboard's
+// 12-month chart has always treated a day whose meter net-decreased. One
+// definition, used by the full rebuild here; the fast path applies the
+// same rule incrementally.
+function monthlyTotalsFromGroups(groups){
+  const months = {};
+  groups.forEach(g => {
+    if(!(g.picks > 0)) return;
+    const key = String(g.date).slice(0, 7);
+    months[key] = (months[key] || 0) + g.picks;
+  });
+  return months;
+}
 async function recalculateMachineDiffs(machineId){
+  let ok = true; // false if anything failed, so the one-time build can tell
   try{
     const records = await window.__db.loadReadingsForMachines([machineId]);
     const byMachine = buildDiffSequenceByMachine(records);
@@ -2618,19 +2714,31 @@ async function recalculateMachineDiffs(machineId){
     }));
     await window.__db.syncMachineSummaries(machineId, computed);
 
+    // Monthly totals for the Dashboard's 12-month chart — rebuilt from
+    // scratch each time, so a stale month can never survive a recalculation.
+    // In its own protected step: a problem here must never stop the
+    // summaries above or the pointer below from being updated.
+    try{
+      await window.__db.setMachineMonthly(machineId, monthlyTotalsFromGroups(computed));
+    }catch(err){ ok = false; console.error('Monthly total update failed for machine', machineId, '(non-fatal):', err); }
+
     // Keep the fast-path pointer in sync with reality — the full
     // recalculation is authoritative, so whatever it finds as the true
     // chronologically-last entry is what the pointer should reflect too.
     if(chain.length){
       const lastEntry = chain[chain.length - 1];
+      const mObj = state.machines.find(x => String(x.id) === String(machineId));
+      const ds = diffStatsForChain(chain, mObj);
       await window.__db.setMachineLastApproved(machineId, {
         reading: lastEntry.reading, date: lastEntry.date, shift: lastEntry.shift,
-        timestamp: lastEntry.timestamp, readingId: lastEntry._id
+        timestamp: lastEntry.timestamp, readingId: lastEntry._id,
+        diffSum: ds.sum, diffCount: ds.count
       });
     } else {
       await window.__db.clearMachineLastApproved(machineId);
     }
-  }catch(err){ console.error('Background diff recalculation failed for machine', machineId, '(non-fatal — live calculations remain correct):', err); }
+  }catch(err){ ok = false; console.error('Background diff recalculation failed for machine', machineId, '(non-fatal — live calculations remain correct):', err); }
+  return ok;
 }
 function fmtTs(ts){
   if(!ts) return '—';
@@ -3098,17 +3206,6 @@ $('refreshUsersBtn').addEventListener('click', loadUsersForAdmin);
         state.users = users;
         renderUsersList();
       }
-    });
-  }
-  if(window.__db.onReadingsChange){
-    const throttledReportRefresh = throttle(() => { if($('screen-report').classList.contains('active')) loadReport(); }, 20000);
-    const throttledDashboardRefresh = throttle(() => { if($('screen-ceo').classList.contains('active')) loadCeoDashboard(); }, 45000);
-    const throttledMyStatusRefresh = throttle(() => { if($('screen-mystatus').classList.contains('active')) loadMyStatus(); }, 20000);
-    window.__db.onReadingsChange(() => {
-      if(!state.user) return;
-      throttledReportRefresh();
-      throttledDashboardRefresh();
-      throttledMyStatusRefresh();
     });
   }
 })();
@@ -4276,14 +4373,37 @@ if($('runDiffMigrationBtn')){
     btn.disabled = true;
     const machines = state.machines || [];
     if(machines.length === 0){ toast('No machines to calculate'); btn.disabled = false; return; }
+    const failed = [];
     for(let i = 0; i < machines.length; i++){
       progressEl.textContent = `Calculating… machine ${i+1} of ${machines.length} (${machines[i].name})`;
+      let okRes = false;
       try{
-        await recalculateMachineDiffs(machines[i].id);
+        okRes = await recalculateMachineDiffs(machines[i].id);
       }catch(err){ console.error('Migration failed for machine', machines[i].id, err); }
+      if(okRes !== true) failed.push(machines[i].name);
     }
-    progressEl.innerHTML = `<span style="color:var(--ok);">Done — ${machines.length} machine(s) calculated.</span>`;
-    toast('Calculation complete');
+    const showResult = (msg, color) => {
+      const span = document.createElement('span');
+      span.style.color = color; span.textContent = msg;
+      progressEl.innerHTML = ''; progressEl.appendChild(span);
+    };
+    if(failed.length){
+      // Nothing is marked ready, so the Dashboard keeps using its current
+      // method until a run finishes with every machine succeeding.
+      showResult(`Finished, but ${failed.length} machine(s) had a problem: ${failed.join(', ')}. Nothing was lost — please tap the button again.`, 'var(--danger)');
+      toast('Some machines had a problem — please run again');
+    } else {
+      let markerOk = true;
+      try{ await window.__db.setMonthlyRollupsReady(); }
+      catch(err){ markerOk = false; console.error('Could not mark monthly totals ready', err); }
+      if(markerOk){
+        showResult(`Done — ${machines.length} machine(s) calculated.`, 'var(--ok)');
+        toast('Calculation complete');
+      } else {
+        showResult('Calculated, but could not finish the last step — please tap the button again.', 'var(--danger)');
+        toast('Please run again');
+      }
+    }
     btn.disabled = false;
   });
 }
@@ -5017,8 +5137,12 @@ async function setupSelectScreen(){
     // mistake. It comes back on its own once the cooldown is up. Length
     // is set from Admin > Shift & Timing > Machine Re-entry Cooldown.
     try{
-      const all = await window.__db.loadMyReadingHistory(state.user.loginId);
-      const cutoff = Date.now() - cooldownMinutes*60*1000;
+      const nowMs = Date.now();
+      const cutoff = nowMs - cooldownMinutes*60*1000;
+      const lookupDates = cooldownLookupDates(cutoff, nowMs);
+      const all = lookupDates
+        ? await window.__db.loadMyReadingsOnDates(state.user.loginId, lookupDates)
+        : await window.__db.loadMyReadingHistory(state.user.loginId);
       const recentMachineIds = new Set(
         all.filter(r => r.operatorId === state.user.loginId && r.timestamp > cutoff).map(r => String(r.machine))
       );
@@ -5239,6 +5363,27 @@ function getShiftContext(now){
   return { date: d, shift: 'Night' };
 }
 function dateToStr(d){ return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()); }
+// Which calendar dates could hold an entry logged inside the cooldown
+// window (cutoffMs → nowMs)? An entry's stored date is the shift's date,
+// which for a night-shift entry logged after midnight is the PREVIOUS
+// calendar day — hence starting one day before the cutoff's own date.
+// Returns null when the window spans an unusually large number of days
+// (a very long cooldown setting), in which case the caller simply falls
+// back to reading the operator's whole history, exactly as before — so
+// this can only ever be equal to, or cheaper than, the old behavior.
+function cooldownLookupDates(cutoffMs, nowMs){
+  const start = new Date(cutoffMs);
+  start.setHours(12, 0, 0, 0);            // noon avoids daylight-saving edge cases when stepping days
+  start.setDate(start.getDate() - 1);
+  const end = new Date(nowMs);
+  end.setHours(12, 0, 0, 0);
+  const dates = [];
+  for(let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)){
+    dates.push(dateToStr(d));
+    if(dates.length > 4) return null;
+  }
+  return dates;
+}
 // Fully automatic now, no manual choice — this is what actually fixes the
 // "picked Next Day by mistake on an Ending photo" problem, since there's no
 // longer a Next Day option to mistakenly pick at all.
@@ -5347,30 +5492,27 @@ $('fileInput').addEventListener('change', (e) => {
 function compressImageSafe(file, maxChars){
   const MAX_CHARS = maxChars || 300000; // ~300KB of base64 — a user doc can hold an iqama AND passport attachment together, so keep each one lean
   return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const img = new Image();
-      img.onload = () => {
-        const attempts = [ [900, 0.68], [700, 0.6], [560, 0.5], [420, 0.42] ];
-        let result = null;
-        for(const [maxDim, quality] of attempts){
-          let w = img.width, h = img.height;
-          if(w > h && w > maxDim){ h = Math.round(h * maxDim / w); w = maxDim; }
-          else if(h > maxDim){ w = Math.round(w * maxDim / h); h = maxDim; }
-          const canvas = document.createElement('canvas');
-          canvas.width = w; canvas.height = h;
-          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-          const dataUrl = canvas.toDataURL('image/jpeg', quality);
-          result = dataUrl;
-          if(dataUrl.length <= MAX_CHARS) break;
-        }
-        resolve(result);
-      };
-      img.onerror = reject;
-      img.src = ev.target.result;
+    const img = new Image();
+    const objectUrl = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl); // release the original photo from memory as soon as it's decoded — no need to hold onto it any longer
+      const attempts = [ [900, 0.68], [700, 0.6], [560, 0.5], [420, 0.42] ];
+      let result = null;
+      for(const [maxDim, quality] of attempts){
+        let w = img.width, h = img.height;
+        if(w > h && w > maxDim){ h = Math.round(h * maxDim / w); w = maxDim; }
+        else if(h > maxDim){ w = Math.round(w * maxDim / h); h = maxDim; }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        const dataUrl = canvas.toDataURL('image/jpeg', quality);
+        result = dataUrl;
+        if(dataUrl.length <= MAX_CHARS) break;
+      }
+      resolve(result);
     };
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
+    img.onerror = (err) => { URL.revokeObjectURL(objectUrl); reject(err); };
+    img.src = objectUrl;
   });
 }
 
@@ -5507,6 +5649,12 @@ $('submitBtn').addEventListener('click', async () => {
       photoDropped = true;
     }
     await window.__db.saveReading(record);
+    if(selfApprove){
+      // Auto-approved, so it never goes through the approval step that
+      // normally keeps stored diffs, summaries and the machine pointer
+      // current — do that here instead, in the background.
+      recalculateMachineDiffs(record.machine).catch(err => console.error('Background recalculation after admin entry failed (non-fatal):', err));
+    }
     if(photoDropped) toast('Saved, but the photo was too large to attach — reading was still recorded');
     showSuccess(record);
   }catch(err){
@@ -5552,15 +5700,25 @@ $('anotherMachineBtn').addEventListener('click', () => goTo('select'));
 /* ============================================================
    APPROVALS (supervisor / admin)
    ============================================================ */
+// The single definition of "which of a machine's diffs count toward its
+// usual amount, and what do they add up to" — used both by the live
+// calculation (buildMachineStats) and by the running total stored on each
+// machine's pointer document, so the two can never drift apart. Without a
+// baseline, the chain's very first entry has no real previous reading, so
+// its diff is only a placeholder 0 and is left out.
+function diffStatsForChain(list, mObj){
+  const hasBaseline = mObj && mObj.baselineReading !== undefined && mObj.baselineReading !== null && String(mObj.baselineReading) !== '';
+  const diffs = list.map(r => r._diff).slice(hasBaseline ? 0 : 1);
+  return { sum: diffs.reduce((a,b)=>a+b,0), count: diffs.length };
+}
 function buildMachineStats(all){
   const byMachine = buildDiffSequenceByMachine(all);
   const stats = {};
   Object.keys(byMachine).forEach(m => {
     const list = byMachine[m];
     const mObj = state.machines.find(x => String(x.id) === String(m));
-    const hasBaseline = mObj && mObj.baselineReading !== undefined && mObj.baselineReading !== null && String(mObj.baselineReading) !== '';
-    const diffs = list.map(r => r._diff).slice(hasBaseline ? 0 : 1); // without a baseline, entry 0's _diff is a placeholder 0, not real data
-    const avg = diffs.length ? diffs.reduce((a,b)=>a+b,0) / diffs.length : null;
+    const ds = diffStatsForChain(list, mObj);
+    const avg = ds.count ? ds.sum / ds.count : null;
     stats[m] = { last: list[list.length-1] || null, avgDiff: avg };
   });
   return stats;
@@ -5623,6 +5781,33 @@ function isLogLate(r){
   return r.timestamp > computeGraceDeadline(r, 'operator').getTime();
 }
 
+// Previous reading + usual amount for each machine that has an entry
+// waiting for approval. Normally read from that machine's own small
+// pointer document (one read per machine, however long its history is).
+// If a machine's pointer is missing or doesn't carry the running total yet
+// (before the one-time "Calculate Now"), that machine alone falls back to
+// reading its own history and using the exact same calculation as before —
+// so the badge can never silently become wrong or disappear, only slower
+// for those machines until they're brought up to date. Only ever reads.
+async function loadApprovalMachineStats(machineIds){
+  const ids = Array.from(new Set((machineIds || []).map(String)));
+  const stats = {};
+  const needHistory = [];
+  await Promise.all(ids.map(async (m) => {
+    let p = null;
+    try{ p = await window.__db.getMachineLastApproved(m); }catch(err){ console.error('Could not read pointer for machine', m, err); }
+    if(p && typeof p.diffSum === 'number' && typeof p.diffCount === 'number'){
+      stats[m] = { last: p, avgDiff: p.diffCount ? p.diffSum / p.diffCount : null };
+    } else {
+      needHistory.push(m);
+    }
+  }));
+  for(let i = 0; i < needHistory.length; i += 10){
+    const recs = await window.__db.loadReadingsForMachines(needHistory.slice(i, i + 10));
+    Object.assign(stats, buildMachineStats(recs));
+  }
+  return stats;
+}
 async function loadApprovals(){
   $('supervisorProfileCard').innerHTML = `
     <div class="row"><span class="k">Name</span><span>${state.user.name}</span></div>
@@ -5635,11 +5820,6 @@ async function loadApprovals(){
   if(!requireDb()) return;
   try{
     if(!state.users || state.users.length === 0) state.users = await window.__db.listUsers();
-    const [pendingLive, all] = await Promise.all([
-      window.__db.loadPendingReadings(),
-      window.__db.loadAllReadingsEver()
-    ]);
-
     /* ---- missing entries for chosen date ---- */
     const dateInput = $('missingCheckDate');
     if(!dateInput.value){
@@ -5647,7 +5827,12 @@ async function loadApprovals(){
       dateInput.value = today.getFullYear() + '-' + pad(today.getMonth()+1) + '-' + pad(today.getDate());
     }
     const checkDate = dateInput.value;
-    const todays = all.filter(r => r.date === checkDate);
+    // Only the chosen date's readings — the "Needs data" panel never looks
+    // at any other day, so there's no reason to download the whole history.
+    const [pendingLive, todays] = await Promise.all([
+      window.__db.loadPendingReadings(),
+      window.__db.loadReadingsInRange(checkDate, checkDate)
+    ]);
     const missingDay = [], missingNight = [];
     const missingScope = (state.user.role === 'supervisor')
       ? state.machines.filter(m => (state.user.assignedMachines || []).includes(m.id))
@@ -5701,7 +5886,6 @@ async function loadApprovals(){
     }
 
     /* ---- pending queue with diff flags + photo ---- */
-    const stats = buildMachineStats(all);
     let pending = pendingLive.slice();
     if(state.user.role === 'supervisor'){
       // Scoped by each operator's own "Log Reading Approver" (Direct
@@ -5715,6 +5899,7 @@ async function loadApprovals(){
     }
     pending.sort((a,b)=> b.timestamp - a.timestamp);
     if(pending.length === 0){ body.innerHTML = '<div class="empty-state">No entries waiting for approval right now.</div>'; return; }
+    const stats = await loadApprovalMachineStats(pending.map(r => r.machine));
     body.innerHTML = '';
     pending.forEach(r => {
       const st = stats[r.machine];
@@ -8514,19 +8699,18 @@ async function loadCeoDashboard(){
     const users = await window.__db.listUsers();
     state.users = users;
     state.cachedRecords = null; // only fetched lazily now, by the drill-down click handler
+    state.cachedMonthly = undefined; // the 12-month chart re-loads its own small data only if that section is opened
 
-    // One fetch, wide enough to cover everything Production, the 12-month
-    // chart, and Performance could need — the 12-month chart always needs
-    // the last 12 months; a custom range on either section could ask for
-    // something else entirely, so the earliest of all three is used as the
-    // starting point. Filtered down separately by each section afterward.
+    // Fetch only what the currently selected Production and Performance
+    // ranges actually need — today, by default. The 12-month chart no
+    // longer rides along on this fetch; it loads separately, from the
+    // small monthly totals, and only if that section is opened. Any later
+    // change to a filter that needs more is handled by ensureSummariesCover.
     const now = new Date();
-    const twelveMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 11, 1);
-    const twelveMonthsAgoStr = twelveMonthsAgo.getFullYear() + '-' + pad(twelveMonthsAgo.getMonth()+1) + '-' + pad(twelveMonthsAgo.getDate());
     const todayStr = now.getFullYear() + '-' + pad(now.getMonth()+1) + '-' + pad(now.getDate());
     const dashRange = computeDashboardRange();
     const perfRange = computePerfRange();
-    const effectiveFrom = [twelveMonthsAgoStr, dashRange.fromDate, perfRange.fromDate].sort()[0];
+    const effectiveFrom = [dashRange.fromDate, perfRange.fromDate].sort()[0];
     const effectiveTo = todayStr;
     state.cachedSummaries = await window.__db.loadSummariesInRange(effectiveFrom, effectiveTo);
     state.cachedSummariesFrom = effectiveFrom;
@@ -8782,6 +8966,13 @@ $('dashFilterToggle').addEventListener('click', (e) => {
   const pop = $('dashFilterPopover');
   const open = pop.classList.toggle('open');
   $('dashFilterToggle').classList.toggle('active', open);
+});
+$('refreshCeoBtn').addEventListener('click', async () => {
+  const btn = $('refreshCeoBtn');
+  const label = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Refreshing…';
+  try{ await loadCeoDashboard(); }
+  finally{ btn.disabled = false; btn.textContent = label; }
 });
 $('dashRangeSelect').addEventListener('change', renderMachineProductionBox);
 $('dashFrom').addEventListener('change', renderMachineProductionBox);
@@ -9397,16 +9588,53 @@ function renderMachineDrillList(scopedMachines, range){
   <div class="hint" style="text-align:left; margin-left:0; margin-top:6px;">Day Shift Hrs = ${expectedDayHrs.toFixed(1)}h &middot; Night Shift Hrs = ${expectedNightHrs.toFixed(1)}h across ${workingDays} working day${workingDays===1?'':'s'} in this range (Fridays/holidays from Admin &gt; Holidays excluded; uses whichever shift hours were in effect on each date).</div>`;
 }
 
-function render12MonthProduction(){
-  const summaries = state.cachedSummaries || [];
+// Month-by-month production in m², for the "Last 12 Months" section.
+// Preferred source: one small monthly-total document per machine (about
+// 40 reads, the same however long the app has been running). Only trusted
+// once the one-time "Calculate Now" has built them for every machine;
+// until then it falls back to the daily summaries for the last 12 months,
+// exactly as before, so the chart is never wrong — only slower.
+async function loadMonthTotalsSqm(){
+  let rollups = state.cachedMonthly;   // undefined = not loaded yet, null = not built yet
+  if(rollups === undefined){
+    try{
+      rollups = (await window.__db.getMonthlyRollupsReady()) ? await window.__db.loadMachineMonthly() : null;
+    }catch(err){ console.error('Could not read monthly totals, using daily summaries instead', err); rollups = null; }
+    state.cachedMonthly = rollups;
+  }
   const monthTotals = {};
-  summaries.forEach(s => {
+  if(rollups){
+    Object.entries(rollups).forEach(([mid, months]) => {
+      const m = state.machines.find(x => String(x.id) === String(mid));
+      Object.entries(months || {}).forEach(([monthKey, picks]) => {
+        const sqm = machineSqm(picks, m);
+        if(sqm <= 0) return;
+        monthTotals[monthKey] = (monthTotals[monthKey] || 0) + sqm;
+      });
+    });
+    return monthTotals;
+  }
+  const now = new Date();
+  const from = new Date(now.getFullYear(), now.getMonth() - 11, 1);
+  await ensureSummariesCover(dateToStr(from), dateToStr(now));
+  (state.cachedSummaries || []).forEach(s => {
     const m = state.machines.find(x => String(x.id) === String(s.machine));
     const sqm = machineSqm(s.picks, m);
     if(sqm <= 0) return;
     const monthKey = s.date.slice(0,7);
     monthTotals[monthKey] = (monthTotals[monthKey] || 0) + sqm;
   });
+  return monthTotals;
+}
+async function render12MonthProduction(){
+  const box = $('prod12Month');
+  // Collapsed by default, and most visits never open it — so nothing at
+  // all is read until it is.
+  if(box.style.display === 'none') return;
+  if(state.cachedMonthly === undefined) box.innerHTML = '<div class="empty-state">Loading…</div>';
+  let monthTotals;
+  try{ monthTotals = await loadMonthTotalsSqm(); }
+  catch(err){ console.error(err); box.innerHTML = '<div class="empty-state">Could not load this. Tap Refresh and try again.</div>'; return; }
   const now = new Date();
   const months = [];
   for(let i=0;i<12;i++){ // latest first
@@ -9437,6 +9665,7 @@ $('prod12MonthToggle').addEventListener('click', () => {
   const open = box.style.display !== 'none';
   box.style.display = open ? 'none' : 'block';
   $('prod12MonthToggleLbl').textContent = open ? 'Show' : 'Hide';
+  if(!open) render12MonthProduction();
 });
 
 // Sums how long a machine sat "stopped" within [fromDate,toDate], split into
