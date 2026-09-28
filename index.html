@@ -6238,9 +6238,17 @@ function buildReportRows(allRecords, recordsToShow){
     const list = byMachine[m];
     list.forEach((cur) => {
       const prev = findPrevIn(m, cur);
-      const diff = prev ? (Number(cur.reading) - Number(prev.reading)) : null;
+      // A meter-reset-point reading counts as 0 in every calculation (the
+      // counter was zeroed, so "reading minus previous" would be a huge,
+      // meaningless negative number). Show it the same way here, so what
+      // this screen says always matches what picks are actually built from
+      // — it used to show the raw subtraction even when the reset was
+      // correctly marked, which made a working reset look like it hadn't
+      // done anything.
+      const isReset = !!cur.resetPoint && cur.photoType !== 'start'; // a Starting photo is never part of the chain, so a mark on one changes nothing
+      const diff = prev ? (isReset ? 0 : (Number(cur.reading) - Number(prev.reading))) : null;
       let flag = '';
-      if(diff !== null){
+      if(diff !== null && !isReset){
         const avg = avgBeforeIn(m, cur);
         if(diff < 0) flag = 'down';
         else if(diff === 0) flag = 'idle';
@@ -6254,6 +6262,7 @@ function buildReportRows(allRecords, recordsToShow){
         date: cur.date, shift: cur.shift,
         timestamp: cur.timestamp,
         resetPoint: !!cur.resetPoint,
+        resetApplied: isReset,
         prevReading: prev ? prev.reading : '—', reading: cur.reading,
         diff: diff === null ? '—' : diff,
         flag,
@@ -6368,7 +6377,7 @@ async function loadReport(){
         <td title="${r.machine} (ID ${r.machineId})">${r.machineId ? r.machineId + ' ' : ''}${r.machine}</td>
         <td title="${shiftTitle}">${shiftLetter}<span style="color:var(--muted); font-size:9px;">${photoTypeLetter}</span></td>
         <td>${r.prevReading}</td><td>${r.reading}</td>
-        <td class="${diffClass}" title="${r.resetPoint ? 'Meter reset point — diffs from 0 here' : ''}">${r.diff}${r.resetPoint ? ' \u21bb' : ''}</td>
+        <td class="${diffClass}" title="${r.resetPoint ? 'Meter reset point — counted as 0 here; the next readings count from this one' : ''}">${r.diff}${r.resetPoint ? ' \u21bb' : ''}</td>
         ${showFlags ? `<td>${flagCell}</td>` : ''}
         <td>${r.stopTime}</td>
         <td title="${r.reason}">${reasonNum}</td>
@@ -7206,9 +7215,9 @@ $('exportBtn').addEventListener('click', () => {
     // of relying on Excel to silently coerce text that looks like a number.
     const prevNum = isValidNumber(r.prevReading) ? Number(r.prevReading) : r.prevReading;
     const curNum = isValidNumber(r.reading) ? Number(r.reading) : r.reading;
-    const hasFormula = typeof prevNum === 'number' && typeof curNum === 'number';
+    const hasFormula = typeof prevNum === 'number' && typeof curNum === 'number' && !r.resetApplied; // a reset row is counted as 0, so it gets that value, not a subtraction formula
     dataRowInfo.push({ aoaIdx: aoa.length, hasFormula, diff: r.diff, status: r.status });
-    aoa.push([r.machine, fmtDate(r.date), r.shift, r.photoType || 'Ending', prevNum, curNum, hasFormula ? null : r.diff, r.stopTime, r.reason, r.remarks || '', r.enteredBy, r.enteredById, r.status, r.approvedBy, r.supervisorRemarks || '']);
+    aoa.push([r.machine, fmtDate(r.date), r.shift, r.photoType || 'Ending', prevNum, curNum, hasFormula ? null : r.diff, r.stopTime, r.reason, (r.resetApplied ? 'Meter reset point' + (r.remarks ? ' — ' + r.remarks : '') : (r.remarks || '')), r.enteredBy, r.enteredById, r.status, r.approvedBy, r.supervisorRemarks || '']);
   });
   const ws = XLSX.utils.aoa_to_sheet(aoa);
   ws['!cols'] = [{wch:12},{wch:12},{wch:8},{wch:10},{wch:14},{wch:14},{wch:11},{wch:14},{wch:20},{wch:24},{wch:16},{wch:12},{wch:10},{wch:16},{wch:24}];
