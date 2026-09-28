@@ -191,8 +191,9 @@
   //  - pendingReadingsCache: every not-yet-decided entry, whatever its
   //    date — this is what Approvals watches, so a Supervisor sees new
   //    submissions appear and decided ones disappear without refreshing.
-  //  - recentReadingsCache: just today's and yesterday's readings — this
-  //    is what Report's default view and the machine cooldown check use.
+  //  - recentReadingsCache: today's and yesterday's readings. No longer started
+  //    at login (the Report and the machine cooldown now have their own, cheaper
+  //    queries); it only starts if something asks for it.
   // Both are dramatically smaller than watching the whole recent history
   // live, which was the actual cost driver: every logged-in session paid
   // to keep thousands of documents synced continuously, even for people
@@ -309,6 +310,7 @@
     encodeHistoryEntry, decodeHistoryEntry,
     readingsVersion: () => readingsVersion,
     bumpReadingsVersion: () => { readingsVersion++; },
+    invalidateReadings: () => { allReadingsCache = null; allReadingsPromise = null; readingsVersion++; },
 
     /* ---------- users ---------- */
     async getUser(loginId) {
@@ -849,6 +851,21 @@
       }));
       return out;
     },
+    // The readings of specific machines for ONE date (any status, any operator) — what
+    // My Status needs to see what is still missing on the operator's OWN machines,
+    // without downloading every machine's readings for the day. One query per machine,
+    // each with only equality filters, so Firestore's automatic single-field indexes
+    // serve it (no manually created index, so it cannot fail with a missing-index error).
+    async loadReadingsForMachinesOnDate(machineIds, date) {
+      if (!dbReady) throw new Error('NOT_CONFIGURED');
+      const out = [];
+      await Promise.all((machineIds || []).map(async (m) => {
+        const q = query(collection(db, 'readings'), where('machine', '==', String(m)), where('date', '==', date));
+        const snap = await getDocs(q);
+        snap.forEach(x => out.push({ _id: x.id, ...x.data() }));
+      }));
+      return out;
+    },
     async loadReadingsInRange(fromStr, toStr) {
       if (!dbReady) throw new Error('NOT_CONFIGURED');
       const q = query(collection(db, 'readings'), where('date', '>=', fromStr), where('date', '<=', toStr));
@@ -989,15 +1006,16 @@
     // Dashboard, My Status) is fetched fresh only when actually needed, not
     // kept running continuously.
     warmCaches(pages){
+      // Only the live "waiting for approval" list is started at login, for the people whose
+      // pages need it (Approvals opens instantly and stays current). The user, vacation,
+      // violation and leave lists, and today/yesterday's readings, start the first time a
+      // page actually asks for them, instead of every login paying for lists most people
+      // never open. Every page that needs one already asks for it itself, so nothing else
+      // changes.
       const needsCompanyWideReadings = pages && (pages.includes('approvals') || pages.includes('report'));
       if(needsCompanyWideReadings){
         pendingReadingsCache.warm();
-        recentReadingsCache.warm();
       }
-      usersCache.warm();
-      vacationsCache.warm();
-      violationsCache.warm();
-      leaveRequestsCache.warm();
     },
     // Lets the Admin Users screen redraw itself the instant a new
     // registration (or any user change) comes in, instead of only ever
@@ -6433,7 +6451,7 @@ async function loadReportSourceRecords(fromDate, toDate){
   // reads are in flight makes what we stored look old, never new.
   const ver = window.__db.readingsVersion ? window.__db.readingsVersion() : -1;
   const key = fromDate + '|' + (toDate || '');
-  if(ver !== -1 && reportSourceCache && reportSourceCache.key === key && reportSourceCache.ver === ver) return reportSourceCache.records;
+  if(ver !== -1 && reportSourceCache && reportSourceCache.key === key && reportSourceCache.ver === ver && (Date.now() - reportSourceCache.at) < 300000) return reportSourceCache.records;   // kept at most 5 minutes
   try{
     if(!(await window.__db.getHistoryDigestReady())) return window.__db.loadAllReadingsEver();
     const inView = await window.__db.loadReadingsInRange(fromDate, toDate || '9999-12-31');
@@ -6450,7 +6468,7 @@ async function loadReportSourceRecords(fromDate, toDate){
       full.forEach(r => { if(r.date < fromDate) older.push(r); });
     }
     const records = inView.concat(older);
-    if(ver !== -1) reportSourceCache = { key, ver, records };
+    if(ver !== -1) reportSourceCache = { key, ver, records, at: Date.now() };
     return records;
   }catch(err){
     console.error('Report: could not use the history digests, reading the full history instead', err);
@@ -6568,7 +6586,7 @@ async function loadReport(){
     }
   }catch(err){ console.error(err); body.innerHTML = '<div class="empty-state">Could not load the log. Pull to refresh and try again.</div>'; }
 }
-$('refreshReportBtn').addEventListener('click', loadReport);
+$('refreshReportBtn').addEventListener('click', () => { if(window.__db.invalidateReadings) window.__db.invalidateReadings(); loadReport(); });   // Refresh always re-reads
 $('reportFromDate').addEventListener('change', loadReport);
 
 // ---- Admin: add a manually-entered reading (e.g. an entry the operator forgot) ----
@@ -7109,7 +7127,7 @@ function computeSalaryCycle(now, startDay){
   const end = new Date(y, m + 1, startDay - 1);
   return { start: dateToStr(start), end: dateToStr(end) };
 }
-async function loadMyPicksReport(){
+async function loadMyPicksReport(alreadyLoadedHistory){
   if(!requireDb()) return;
   const targetId = state.execViewTarget || state.user.loginId;
   if(!$('myPicksFrom').value && !$('myPicksTo').value){
@@ -7120,9 +7138,11 @@ async function loadMyPicksReport(){
   try{
     const from = $('myPicksFrom').value, to = $('myPicksTo').value;
     const targetUser = (state.users || []).find(u => u.loginId === targetId) || (targetId === state.user.loginId ? state.user : null);
+    // When My Status has just loaded this person's history it hands it over; changing the
+    // date range here (no history handed over) loads it itself, exactly as before.
     const [summaries, myHistory] = await Promise.all([
       window.__db.loadOperatorSummaries(targetId),
-      window.__db.loadMyReadingHistory(targetId)
+      Array.isArray(alreadyLoadedHistory) ? alreadyLoadedHistory : window.__db.loadMyReadingHistory(targetId)
     ]);
     renderPicksReportFromSummaries('myPicksBody', summaries, targetId, from, to);
     renderEfficiencyBox('myEfficiencyBox', myHistory, targetId, from, to, targetUser ? targetUser.assignedShift : null);
@@ -7180,12 +7200,15 @@ async function loadMyStatus(){
   if(!requireDb()) return;
   try{
     const targetUser = viewingOther ? ((state.users || []).find(u => u.loginId === targetId) || await window.__db.getUser(targetId)) : state.user;
-    const [mine, allOnDate] = await Promise.all([
-      window.__db.loadMyReadingHistory(targetId),
-      window.__db.loadReadingsInRange(checkDate, checkDate)
-    ]);
     const assignedIds = (targetUser && targetUser.assignedMachines) || [];
     const myMachines = state.machines.filter(m => assignedIds.includes(m.id));
+    // The checklist below only ever looks at THIS person's own machines, so only those
+    // machines' readings for the day are read (from everyone who logged them) — not
+    // every machine in the company.
+    const [mine, allOnDate] = await Promise.all([
+      window.__db.loadMyReadingHistory(targetId),
+      window.__db.loadReadingsForMachinesOnDate(myMachines.map(m => m.id), checkDate)
+    ]);
 
     /* ---- rejected entries needing a fix — shown regardless of the date
        picker above, since a rejection can land on any past date and the
@@ -7227,7 +7250,7 @@ async function loadMyStatus(){
        personal history stay per-operator (item 4) even though the checklist
        above now checks everyone sharing the machine. ---- */
     const onDate = mine.filter(r => r.date === checkDate);
-    loadMyPicksReport();
+    loadMyPicksReport(mine);   // hands over the history just loaded, so it isn't read a second time
     if(onDate.length === 0){
       body.innerHTML = '<div class="empty-state">' + (viewingOther ? 'Nothing submitted' : 'You haven\'t submitted anything') + ' for ' + fmtDate(checkDate) + ' yet.</div>';
       return;
