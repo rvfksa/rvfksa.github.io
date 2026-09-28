@@ -212,6 +212,11 @@
   // are occasional/deliberate lookups, not something that needs to update
   // itself second by second.
   let allReadingsCache = null;
+  // Goes up every time anything makes the in-memory copy of the readings untrustworthy
+  // (any write here, or any change any device's live listeners notice). The Report keeps
+  // what it loaded until this number moves, so revisiting it with nothing changed
+  // costs no reads at all.
+  let readingsVersion = 0;
   let allReadingsPromise = null;
   async function loadAllReadingsEver(){
     if(!dbReady) throw new Error('NOT_CONFIGURED');
@@ -232,8 +237,8 @@
   // from a different person's device would never invalidate this cache,
   // so Report/Dashboard/My Status could refresh their screen but silently
   // keep showing the same stale numbers underneath.
-  pendingReadingsCache.onChange(() => { allReadingsCache = null; allReadingsPromise = null; });
-  recentReadingsCache.onChange(() => { allReadingsCache = null; allReadingsPromise = null; });
+  pendingReadingsCache.onChange(() => { allReadingsCache = null; allReadingsPromise = null; readingsVersion++; });
+  recentReadingsCache.onChange(() => { allReadingsCache = null; allReadingsPromise = null; readingsVersion++; });
   const usersCache = makeCachedCollection('users', { includeId: false });
   const vacationsCache = makeCachedCollection('vacations');
   const violationsCache = makeCachedCollection('violations');
@@ -283,8 +288,27 @@
   }
   const machinesDocCache = makeCachedDoc('config', 'machines', null);
 
+  // One compact line per approved Ending reading — the only things the Report's
+  // "previous reading" and "usual amount" calculation ever looks at. Kept in
+  // ONE document per machine so the Report can learn a machine's whole history
+  // for one read instead of downloading every reading it ever had. The shift
+  // is stored exactly as written, so ordering can never differ from the real
+  // readings'.
+  function encodeHistoryEntry(r){
+    return [r._id, r.date, r.shift, r.timestamp || 0, String(r.reading), r.resetPoint ? 1 : 0].join('|');
+  }
+  function decodeHistoryEntry(str, machineId){
+    const [id, date, shift, ts, reading, reset] = String(str).split('|');
+    const e = { _id: id, machine: String(machineId), status: 'approved', photoType: 'end', date, shift, timestamp: Number(ts), reading };
+    if(reset === '1') e.resetPoint = true;
+    return e;
+  }
+
   window.__db = {
     ready: () => dbReady,
+    encodeHistoryEntry, decodeHistoryEntry,
+    readingsVersion: () => readingsVersion,
+    bumpReadingsVersion: () => { readingsVersion++; },
 
     /* ---------- users ---------- */
     async getUser(loginId) {
@@ -350,7 +374,7 @@
         await batch.commit();
         if (onProgress) onProgress(Math.min(i + CHUNK, items.length), items.length);
       }
-      allReadingsCache = null; allReadingsPromise = null;
+      allReadingsCache = null; allReadingsPromise = null; readingsVersion++;
     },
     // Persists pre-calculated production numbers (diff) directly onto each
     // reading document — this is what lets Report/Dashboard/Picks read an
@@ -367,7 +391,7 @@
         chunk.forEach(u => batch.update(doc(db, "readings", u.id), { diff: u.diff }));
         await batch.commit();
       }
-      allReadingsCache = null; allReadingsPromise = null;
+      allReadingsCache = null; allReadingsPromise = null; readingsVersion++;
     },
     // One small document per operator+date+machine — this is what lets My
     // Status and the Picks Report read a handful of tiny pre-summed rows
@@ -408,17 +432,34 @@
       if (!dbReady) throw new Error('NOT_CONFIGURED');
       const mid = String(machineId);
       const existingSnap = await getDocs(query(collection(db, 'operatorMachineDaySummaries'), where('machine', '==', mid)));
-      const existingIds = new Set();
-      existingSnap.forEach(d => existingIds.add(d.id));
+      const existing = new Map();
+      existingSnap.forEach(d => existing.set(d.id, d.data()));
       const computedIds = new Set(computed.map(c => `${c.operatorId}_${c.date}_${mid}`));
+      // Compares only the fields that are written. Stop entries are compared
+      // as [reason, hours] pairs, so it doesn't matter what order the
+      // database happens to return a map's own keys in — a difference in
+      // key order alone must never count as a change.
+      const breakdownKey = (arr) => JSON.stringify((arr || []).map(b => [String(b.reason), Number(b.hours)]));
+      const sameAsStored = (old, c) => !!old
+        && old.operatorId === c.operatorId && old.date === c.date && String(old.machine) === mid
+        && Number(old.picks) === Number(c.picks)
+        && breakdownKey(old.stopBreakdown) === breakdownKey(c.stopBreakdown)
+        && JSON.stringify((old.shifts || []).slice().sort()) === JSON.stringify((c.shifts || []).slice().sort());
+      // Only the totals that are new or actually different get written (a
+      // typical edit changes one or two out of dozens), and stale ones are
+      // removed. Everything already correct is left completely alone.
       const ops = [];
+      let written = 0, deleted = 0, unchanged = 0;
       computed.forEach(c => {
-        ops.push({ type: 'set', id: `${c.operatorId}_${c.date}_${mid}`, data: {
+        const id = `${c.operatorId}_${c.date}_${mid}`;
+        if(sameAsStored(existing.get(id), c)){ unchanged++; return; }
+        written++;
+        ops.push({ type: 'set', id, data: {
           operatorId: c.operatorId, date: c.date, machine: mid,
           picks: c.picks, stopBreakdown: c.stopBreakdown, shifts: c.shifts
         }});
       });
-      existingIds.forEach(id => { if(!computedIds.has(id)) ops.push({ type: 'delete', id }); });
+      existing.forEach((_, id) => { if(!computedIds.has(id)){ deleted++; ops.push({ type: 'delete', id }); } });
       const CHUNK = 400;
       for (let i = 0; i < ops.length; i += CHUNK) {
         const chunk = ops.slice(i, i + CHUNK);
@@ -429,6 +470,7 @@
         });
         await batch.commit();
       }
+      return { written, deleted, unchanged };
     },
     // A tiny, single-document pointer to the chronologically last APPROVED
     // reading for one machine — this is what lets a normal approval skip
@@ -480,6 +522,39 @@
       if (!dbReady) throw new Error('NOT_CONFIGURED');
       await setDoc(doc(db, 'config', 'monthlyRollupsReady'), { builtAt: Date.now() });
     },
+    // The per-machine history digest (see encodeHistoryEntry above). Rebuilt
+    // in full by every recalculation and appended to, in a transaction, by
+    // the approval fast path. The Report only trusts it once the one-time
+    // "Refresh All Calculations" has built it for every machine and set the
+    // marker below — until then the Report keeps using the full history.
+    async setMachineHistory(machineId, entries) {
+      if (!dbReady) throw new Error('NOT_CONFIGURED');
+      await setDoc(doc(db, 'machineHistory', String(machineId)), { machine: String(machineId), count: entries.length, entries });
+    },
+    async loadMachineHistories(machineIds) {
+      if (!dbReady) throw new Error('NOT_CONFIGURED');
+      const out = {};
+      if (machineIds && machineIds.length) {
+        const ids = machineIds.map(String);
+        for (let i = 0; i < ids.length; i += 30) {
+          const snap = await getDocs(query(collection(db, 'machineHistory'), where('machine', 'in', ids.slice(i, i + 30))));
+          snap.forEach(d => { out[d.id] = d.data().entries || []; });
+        }
+      } else {
+        const snap = await getDocs(collection(db, 'machineHistory'));
+        snap.forEach(d => { out[d.id] = d.data().entries || []; });
+      }
+      return out;
+    },
+    async getHistoryDigestReady() {
+      if (!dbReady) throw new Error('NOT_CONFIGURED');
+      const snap = await getDoc(doc(db, 'config', 'historyDigestReady'));
+      return snap.exists();
+    },
+    async setHistoryDigestReady() {
+      if (!dbReady) throw new Error('NOT_CONFIGURED');
+      await setDoc(doc(db, 'config', 'historyDigestReady'), { builtAt: Date.now() });
+    },
     // The fast path itself. Returns true if it successfully handled
     // everything (diff + summary + pointer, all updated); returns false
     // whenever it isn't confident this is the simple case, so the caller
@@ -523,6 +598,17 @@
       if(typeof last.diffSum !== 'number' || typeof last.diffCount !== 'number') return false;
       const diff = reading.resetPoint ? 0 : (Number(reading.reading) - Number(last.reading));
       try{
+        // Add this approval to the machine's history digest (the Report's
+        // source for "previous reading" and "usual amount"). No digest yet
+        // means this machine hasn't been through a full recalculation since
+        // digests existed — abort to the full path, which builds it.
+        await runTransaction(db, async (tx) => {
+          const historyRef = doc(db, 'machineHistory', mid);
+          const historySnap = await tx.get(historyRef);
+          if(!historySnap.exists()) throw new Error('HISTORY_NOT_READY');
+          const entries = Array.isArray(historySnap.data().entries) ? historySnap.data().entries : [];
+          tx.set(historyRef, { machine: mid, count: entries.length + 1, entries: entries.concat([encodeHistoryEntry(reading)]) });
+        });
         await updateDoc(doc(db, 'readings', reading._id), { diff });
         if(reading.operatorId){
           const summaryId = `${reading.operatorId}_${reading.date}_${mid}`;
@@ -723,7 +809,7 @@
     async saveReading(record) {
       if (!dbReady) throw new Error('NOT_CONFIGURED');
       const ref = await addDoc(collection(db, "readings"), record);
-      allReadingsCache = null; allReadingsPromise = null;
+      allReadingsCache = null; allReadingsPromise = null; readingsVersion++;
       return ref.id;
     },
     async loadPendingReadings() {
@@ -797,17 +883,17 @@
     async updateReading(id, updates) {
       if (!dbReady) throw new Error('NOT_CONFIGURED');
       await updateDoc(doc(db, "readings", id), updates);
-      allReadingsCache = null; allReadingsPromise = null;
+      allReadingsCache = null; allReadingsPromise = null; readingsVersion++;
     },
     async deleteReading(id) {
       if (!dbReady) throw new Error('NOT_CONFIGURED');
       await deleteDoc(doc(db, "readings", id));
-      allReadingsCache = null; allReadingsPromise = null;
+      allReadingsCache = null; allReadingsPromise = null; readingsVersion++;
     },
     async addReading(record) {
       if (!dbReady) throw new Error('NOT_CONFIGURED');
       const ref = await addDoc(collection(db, "readings"), record);
-      allReadingsCache = null; allReadingsPromise = null;
+      allReadingsCache = null; allReadingsPromise = null; readingsVersion++;
       return ref.id;
     },
 
@@ -1748,9 +1834,9 @@
         <button class="btn btn-ghost" id="previewCleanupBtn" style="margin-top:12px;">Preview</button>
         <div id="cleanupPreviewResult" style="margin-top:10px;"></div>
 
-        <div class="sub" style="margin-top:24px; font-weight:600; color:var(--text); text-transform:none;">Calculate Production Numbers (one-time)</div>
-        <p class="sub" style="margin-top:0;">Pre-calculates and saves each approved reading's production number, plus a small summary per employee per day — so Report, Dashboard, My Status, and Picks can all read an already-correct result instead of recalculating your entire history every time they're opened. Run this once now to cover existing entries — going forward, every new approval, edit, or reset keeps this up to date automatically. Safe to run more than once; it only ever changes what's actually wrong or missing.</p>
-        <button class="btn btn-primary" id="runDiffMigrationBtn">Calculate Now</button>
+        <div class="sub" style="margin-top:24px; font-weight:600; color:var(--text); text-transform:none;">Refresh All Calculations</div>
+        <p class="sub" style="margin-top:0;">Every edit already updates the affected machine automatically. Press this if a number in an operator's profile, the Dashboard or Approvals ever looks wrong, or after making a lot of edits &mdash; it re-checks every machine's approved readings and corrects any saved total that doesn't match. It only changes what is actually wrong, so it is safe to press as often as you like, and it tells you exactly what it fixed.</p>
+        <button class="btn btn-primary" id="runDiffMigrationBtn">Refresh All Calculations</button>
         <div id="diffMigrationProgress" class="hint" style="text-align:left; margin-left:0; margin-top:8px;"></div>
       </div>
 
@@ -2684,10 +2770,40 @@ function monthlyTotalsFromGroups(groups){
   });
   return months;
 }
-async function recalculateMachineDiffs(machineId){
+// Turns whatever identifies a machine in the calling code into the machine's
+// real ID. A Report row carries both the ID and only the display NAME
+// ("RVF 42"); the name was once passed by mistake and quietly recalculated a
+// machine that doesn't exist. Accepting either makes that mistake harmless.
+// An ID is returned exactly as given.
+function resolveMachineId(x){
+  if(x === null || x === undefined || x === '') return x;
+  if(state.machines.some(m => String(m.id) === String(x))) return x;
+  const byName = state.machines.find(m => m.name === String(x));
+  return byName ? byName.id : x;
+}
+// Every action that changes a reading calls this. It re-checks ONLY that
+// machine — never the others — and if it cannot finish (a dropped
+// connection, for instance) it says so, instead of leaving a Report that
+// looks right while operator profiles quietly stay out of date.
+function refreshMachineNumbers(machineId){
+  if(machineId === null || machineId === undefined || machineId === '') return Promise.resolve(true);
+  const warn = () => toast('Saved, but some totals could not be updated. Check your connection, then press "Refresh All Calculations" (Admin → Shift & Timing).');
+  return recalculateMachineDiffs(machineId)
+    .then(ok => { if(ok !== true) warn(); return ok === true; })
+    .catch(err => { console.error('Update after a change failed for machine', machineId, err); warn(); return false; });
+}
+async function recalculateMachineDiffs(machineId, stats){
+  machineId = resolveMachineId(machineId);
   let ok = true; // false if anything failed, so the one-time build can tell
   try{
     const records = await window.__db.loadReadingsForMachines([machineId]);
+    // No readings AND not a machine we know: nothing to calculate — most likely
+    // a display name passed in by mistake. Writing summaries or a monthly
+    // document for it would only create junk, so stop here.
+    if(!records.length && !state.machines.some(m => String(m.id) === String(machineId))){
+      console.warn('Skipping recalculation — no readings and no such machine id:', machineId);
+      return true;
+    }
     const byMachine = buildDiffSequenceByMachine(records);
     const chain = byMachine[machineId] || byMachine[String(machineId)] || [];
     const updates = [];
@@ -2696,6 +2812,7 @@ async function recalculateMachineDiffs(machineId){
       if(stored !== r._diff) updates.push({ id: r._id, diff: r._diff });
     });
     if(updates.length) await window.__db.batchUpdateDiffs(updates);
+    if(stats) stats.readingsFixed += updates.length;
 
     // Same chain, grouped by operator+date, to rebuild this machine's
     // employee-facing summaries in the same pass.
@@ -2712,7 +2829,8 @@ async function recalculateMachineDiffs(machineId){
       operatorId: s.operatorId, date: s.date, picks: s.picks,
       stopBreakdown: s.stopBreakdown, shifts: Array.from(s.shifts)
     }));
-    await window.__db.syncMachineSummaries(machineId, computed);
+    const syncRes = await window.__db.syncMachineSummaries(machineId, computed);
+    if(stats && syncRes) stats.summariesFixed += syncRes.written + syncRes.deleted;
 
     // Monthly totals for the Dashboard's 12-month chart — rebuilt from
     // scratch each time, so a stale month can never survive a recalculation.
@@ -2721,6 +2839,13 @@ async function recalculateMachineDiffs(machineId){
     try{
       await window.__db.setMachineMonthly(machineId, monthlyTotalsFromGroups(computed));
     }catch(err){ ok = false; console.error('Monthly total update failed for machine', machineId, '(non-fatal):', err); }
+
+    // The machine's history digest for the Report — rebuilt from the same
+    // chain, in its own protected step for the same reason.
+    try{
+      await window.__db.setMachineHistory(machineId, chain.map(r => window.__db.encodeHistoryEntry(r)));
+    }catch(err){ ok = false; console.error('History digest update failed for machine', machineId, '(non-fatal):', err); }
+    if(window.__db.bumpReadingsVersion) window.__db.bumpReadingsVersion();   // the digest just changed: anything the Report kept is now old
 
     // Keep the fast-path pointer in sync with reality — the full
     // recalculation is authoritative, so whatever it finds as the true
@@ -3758,7 +3883,7 @@ async function saveMachineEdit(id, panel){
     setMachinesSorted(list);
     renderMachinesList();
     toast('Machine updated');
-    recalculateMachineDiffs(id).catch(err => console.error('Background recalculation after baseline change failed (non-fatal):', err));
+    refreshMachineNumbers(id);
   }catch(err){ console.error(err); toast('Could not save — check your connection'); }
 }
 
@@ -4374,11 +4499,12 @@ if($('runDiffMigrationBtn')){
     const machines = state.machines || [];
     if(machines.length === 0){ toast('No machines to calculate'); btn.disabled = false; return; }
     const failed = [];
+    const stats = { readingsFixed: 0, summariesFixed: 0 };
     for(let i = 0; i < machines.length; i++){
-      progressEl.textContent = `Calculating… machine ${i+1} of ${machines.length} (${machines[i].name})`;
+      progressEl.textContent = `Checking… machine ${i+1} of ${machines.length} (${machines[i].name})`;
       let okRes = false;
       try{
-        okRes = await recalculateMachineDiffs(machines[i].id);
+        okRes = await recalculateMachineDiffs(machines[i].id, stats);
       }catch(err){ console.error('Migration failed for machine', machines[i].id, err); }
       if(okRes !== true) failed.push(machines[i].name);
     }
@@ -4394,11 +4520,14 @@ if($('runDiffMigrationBtn')){
       toast('Some machines had a problem — please run again');
     } else {
       let markerOk = true;
-      try{ await window.__db.setMonthlyRollupsReady(); }
-      catch(err){ markerOk = false; console.error('Could not mark monthly totals ready', err); }
+      try{ await window.__db.setMonthlyRollupsReady(); await window.__db.setHistoryDigestReady(); }
+      catch(err){ markerOk = false; console.error('Could not mark the saved totals ready', err); }
       if(markerOk){
-        showResult(`Done — ${machines.length} machine(s) calculated.`, 'var(--ok)');
-        toast('Calculation complete');
+        const fixedAny = stats.readingsFixed + stats.summariesFixed > 0;
+        showResult(fixedAny
+          ? `Done — checked ${machines.length} machine(s) and corrected ${stats.readingsFixed} reading(s) and ${stats.summariesFixed} daily total(s).`
+          : `Done — checked ${machines.length} machine(s). Everything was already correct.`, 'var(--ok)');
+        toast(fixedAny ? 'All calculations refreshed — some numbers were corrected' : 'Everything was already correct');
       } else {
         showResult('Calculated, but could not finish the last step — please tap the button again.', 'var(--danger)');
         toast('Please run again');
@@ -5006,7 +5135,11 @@ async function saveStopReasonEdit(index, newName, newPicksPerHour){
     stopReasonEditIdx = null;
     if(newName !== oldName){
       const readings = await window.__db.loadAllReadingsEver();
-      await Promise.all(readings.filter(r => r.reason === oldName).map(r => window.__db.updateReading(r._id, { reason: newName })));
+      const renamed = readings.filter(r => r.reason === oldName);
+      await Promise.all(renamed.map(r => window.__db.updateReading(r._id, { reason: newName })));
+      // Only the machines that actually had this reason need their stored totals refreshed.
+      const touchedMachines = Array.from(new Set(renamed.map(r => String(r.machine))));
+      for(const mid of touchedMachines) await refreshMachineNumbers(mid);
     }
     renderStopReasonChips();
     populateReasons();
@@ -5653,7 +5786,7 @@ $('submitBtn').addEventListener('click', async () => {
       // Auto-approved, so it never goes through the approval step that
       // normally keeps stored diffs, summaries and the machine pointer
       // current — do that here instead, in the background.
-      recalculateMachineDiffs(record.machine).catch(err => console.error('Background recalculation after admin entry failed (non-fatal):', err));
+      refreshMachineNumbers(record.machine);
     }
     if(photoDropped) toast('Saved, but the photo was too large to attach — reading was still recorded');
     showSuccess(record);
@@ -6085,8 +6218,10 @@ async function toggleResetPoint(id, currentlySet){
     await window.__db.updateReading(id, { resetPoint: !currentlySet });
     toast(currentlySet ? 'Reset point removed' : 'Marked as reset point');
     loadReport();
-    if(row && row.machine){
-      recalculateMachineDiffs(row.machine).catch(err => console.error('Background recalculation after reset-point toggle failed (non-fatal):', err));
+    // row.machine is only the machine's display NAME ("RVF 42"); the
+    // recalculation looks readings up by the machine's ID (row.machineId).
+    if(row && row.machineId){
+      refreshMachineNumbers(row.machineId);
     }
   }catch(err){ console.error(err); toast('Could not save — check your connection'); }
 }
@@ -6256,7 +6391,7 @@ function buildReportRows(allRecords, recordsToShow){
       }
       rows.push({
         id: cur._id,
-        machineId: m,
+        machineId: m, // the real ID — use THIS for lookups; `machine` below is only the display name
         machineNum: Number(m) || 0,
         machine: machineName(m) || cur.machineName,
         date: cur.date, shift: cur.shift,
@@ -6282,12 +6417,51 @@ function buildReportRows(allRecords, recordsToShow){
   return rows;
 }
 
+// What the Report calculates from. Showing two days must not cost the
+// company's whole history, so once every machine's history digest has been
+// built, this reads ONLY the days being viewed (real readings, with photos
+// and all) plus one small digest per machine for everything older — which is
+// all the Report ever needs from the past (each row's previous reading, and
+// the average behind the "unusual" flag). The Report's own row calculation
+// then runs on this unchanged. Anything it can't do exactly falls back to the
+// full history: no digests built yet, the dates cleared to see everything, a
+// machine with no digest, or any read failing.
+let reportSourceCache = null;   // { key, ver, records } — reused only while nothing at all has changed
+async function loadReportSourceRecords(fromDate, toDate){
+  if(!fromDate) return window.__db.loadAllReadingsEver();
+  // Read the change counter BEFORE loading, so a change that lands while the
+  // reads are in flight makes what we stored look old, never new.
+  const ver = window.__db.readingsVersion ? window.__db.readingsVersion() : -1;
+  const key = fromDate + '|' + (toDate || '');
+  if(ver !== -1 && reportSourceCache && reportSourceCache.key === key && reportSourceCache.ver === ver) return reportSourceCache.records;
+  try{
+    if(!(await window.__db.getHistoryDigestReady())) return window.__db.loadAllReadingsEver();
+    const inView = await window.__db.loadReadingsInRange(fromDate, toDate || '9999-12-31');
+    const machineIds = Array.from(new Set(inView.map(r => String(r.machine))));
+    const digests = machineIds.length ? await window.__db.loadMachineHistories(machineIds) : {};
+    const older = [];
+    const noDigest = [];
+    machineIds.forEach(mid => {
+      if(!digests[mid]){ noDigest.push(mid); return; }
+      digests[mid].forEach(line => { const e = window.__db.decodeHistoryEntry(line, mid); if(e.date < fromDate) older.push(e); });
+    });
+    for(let i = 0; i < noDigest.length; i += 10){
+      const full = await window.__db.loadReadingsForMachines(noDigest.slice(i, i + 10));
+      full.forEach(r => { if(r.date < fromDate) older.push(r); });
+    }
+    const records = inView.concat(older);
+    if(ver !== -1) reportSourceCache = { key, ver, records };
+    return records;
+  }catch(err){
+    console.error('Report: could not use the history digests, reading the full history instead', err);
+    return window.__db.loadAllReadingsEver();
+  }
+}
 async function loadReport(){
   const body = $('reportBody');
   body.innerHTML = '<div class="empty-state">Loading log…</div>';
   if(!requireDb()){ body.innerHTML = '<div class="empty-state">Database isn\'t connected yet.<br>Open the file and paste your free Firebase config in — see the setup note at the top of the script.</div>'; return; }
   try{
-    const allRecords = await window.__db.loadAllReadingsEver();
     if(!$('reportFromDate').value && !$('reportToDate').value){
       const today = new Date();
       const yesterday = new Date(today); yesterday.setDate(yesterday.getDate() - 1);
@@ -6296,6 +6470,7 @@ async function loadReport(){
     }
     const fromDate = $('reportFromDate').value;
     const toDate = $('reportToDate').value;
+    const allRecords = await loadReportSourceRecords(fromDate, toDate);
 
     let records = allRecords.slice();
     if(state.user.role === 'operator'){
@@ -6506,7 +6681,7 @@ async function saveManualEntry(){
     $('manualEntryPanel').style.display = 'none';
     toast('Entry added');
     loadReport();
-    recalculateMachineDiffs(machine).catch(err => console.error('Background recalculation after manual entry failed (non-fatal):', err));
+    refreshMachineNumbers(machine);
   }catch(err){ console.error(err); toast('Could not save — check your connection'); }
 }
 
@@ -6604,7 +6779,7 @@ async function openReportEditPanel(id){
 
 async function saveReportEdit(id){
   const original = lastReportRows.find(x => x.id === id);
-  const originalMachine = original ? original.machine : null;
+  const originalMachine = original ? original.machineId : null; // an ID, comparable with the dropdown's value (row.machine is only the display name)
   // Up to 4 Stop Time / Reason pairs, same combining rule as the
   // Supervisor's approval screen: total time stopped, and every reason
   // given, joined together into the single stopTime/reason fields
@@ -6658,17 +6833,16 @@ async function saveReportEdit(id){
     // can shift every entry chronologically after it for whichever
     // machine(s) are involved.
     (async () => {
-      try{
-        await recalculateMachineDiffs(updates.machine);
-        if(originalMachine && String(originalMachine) !== String(updates.machine)){
-          await recalculateMachineDiffs(originalMachine);
-        }
-      }catch(err){ console.error('Background recalculation after edit failed (non-fatal):', err); }
+      await refreshMachineNumbers(updates.machine);
+      if(originalMachine && String(originalMachine) !== String(updates.machine)){
+        await refreshMachineNumbers(originalMachine);
+      }
     })();
   }catch(err){ console.error(err); toast('Could not save — check your connection'); }
 }
 
 async function transferReportEntry(id, prevOperatorId){
+  const transferRow = lastReportRows.find(x => x.id === id); // found before loadReport() replaces the list
   const newOperatorId = $('re-operator').value;
   if(!newOperatorId){ toast('Select an operator'); return; }
   if(newOperatorId === prevOperatorId){ toast('Already on that operator\'s account'); return; }
@@ -6684,6 +6858,11 @@ async function transferReportEntry(id, prevOperatorId){
     closeReportEditModal();
     toast('Entry transferred');
     loadReport();
+    // Picks are stored per operator, so the summaries must be rebuilt or the
+    // profile keeps showing them under the previous operator.
+    if(transferRow && transferRow.machineId){
+      refreshMachineNumbers(transferRow.machineId);
+    }
   }catch(err){ console.error(err); toast('Could not transfer — check your connection'); }
 }
 
@@ -6691,13 +6870,13 @@ async function deleteReportRow(id){
   if(!confirm('Delete this entry permanently? This cannot be undone.')) return;
   if(!requireDb()) return;
   const row = lastReportRows.find(x => x.id === id);
-  const machineId = row ? row.machine : null;
+  const machineId = row ? row.machineId : null; // the ID, not the display name in row.machine
   try{
     await window.__db.deleteReading(id);
     toast('Entry deleted');
     loadReport();
     if(machineId){
-      recalculateMachineDiffs(machineId).catch(err => console.error('Background recalculation after delete failed (non-fatal):', err));
+      refreshMachineNumbers(machineId);
     }
   }catch(err){ console.error(err); toast('Could not delete — check your connection'); }
 }
