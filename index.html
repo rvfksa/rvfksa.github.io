@@ -856,6 +856,23 @@
     async loadPendingReadings() {
       return pendingReadingsCache.get();
     },
+    // A genuine, forced check with the server — bypasses the live cache
+    // entirely. The live listener above is what makes Approvals update
+    // itself while someone is already sitting on the screen, but it has no
+    // way to guarantee it delivers every update instantly, and "Refresh"
+    // meant nothing if that connection ever stalled: it was just re-showing
+    // whatever the cache already had, not actually asking again. This is
+    // used for every open of Approvals and every press of its Refresh
+    // button, so those two actions always reflect what's really on the
+    // server, regardless of the live connection's state.
+    async loadPendingReadingsFresh() {
+      if (!dbReady) throw new Error('NOT_CONFIGURED');
+      const q = query(collection(db, 'readings'), where('status', '==', 'pending'));
+      const snap = await getDocs(q);
+      const out = [];
+      snap.forEach(d => out.push({ _id: d.id, ...d.data() }));
+      return out;
+    },
     async loadRecentReadings() {
       return recentReadingsCache.get();
     },
@@ -6037,7 +6054,7 @@ async function loadApprovals(){
     // Only the chosen date's readings — the "Needs data" panel never looks
     // at any other day, so there's no reason to download the whole history.
     const [pendingLive, todays] = await Promise.all([
-      window.__db.loadPendingReadings(),
+      window.__db.loadPendingReadingsFresh(),   // a forced check with the server — see its own comment for why
       window.__db.loadReadingsInRange(checkDate, checkDate)
     ]);
     const missingDay = [], missingNight = [];
