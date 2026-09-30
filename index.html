@@ -241,9 +241,41 @@
   pendingReadingsCache.onChange(() => { allReadingsCache = null; allReadingsPromise = null; readingsVersion++; });
   recentReadingsCache.onChange(() => { allReadingsCache = null; allReadingsPromise = null; readingsVersion++; });
   const usersCache = makeCachedCollection('users', { includeId: false });
-  const vacationsCache = makeCachedCollection('vacations');
-  const violationsCache = makeCachedCollection('violations');
-  const leaveRequestsCache = makeCachedCollection('leaveRequests');
+  // A separate, plain one-time read of the same collection for every screen
+  // that just needs "the current list of people" (My Status, Approvals'
+  // employee picker, Leave, Employees) and never watches for live changes —
+  // only the Admin > Users screen genuinely needs the live version above,
+  // via listUsers()/onUsersChange. This one is invalidated on every write
+  // to the users collection, so it can never go stale within a session.
+  const usersOnceCache = makeOnceCache('users', { includeId: false });
+  // Vacations, violations and leave requests: nothing in the app ever
+  // subscribes to these three changing live (unlike users, readings, which
+  // genuinely have a live consumer) — so a permanently open connection for
+  // each was pure overhead. These are now a plain one-time read per
+  // session, invalidated on any write to that collection, exactly like the
+  // full-history reading cache above.
+  function makeOnceCache(name, { includeId = true } = {}){
+    let cache = null, pending = null;
+    return {
+      async get(){
+        if (!dbReady) throw new Error('NOT_CONFIGURED');
+        if (cache) return cache;
+        if (!pending){
+          pending = getDocs(collection(db, name)).then(snap => {
+            const out = [];
+            snap.forEach(d => out.push(includeId ? { _id: d.id, ...d.data() } : d.data()));
+            cache = out;
+            return out;
+          }).catch(err => { pending = null; throw err; });
+        }
+        return pending;
+      },
+      invalidate(){ cache = null; pending = null; }
+    };
+  }
+  const vacationsCache = makeOnceCache('vacations');
+  const violationsCache = makeOnceCache('violations');
+  const leaveRequestsCache = makeOnceCache('leaveRequests');
 
   // Same idea as makeCachedCollection above, but for a single document
   // (config/machines is one doc holding the whole machines list, not a
@@ -321,17 +353,24 @@
     async createUser(user) {
       if (!dbReady) throw new Error('NOT_CONFIGURED');
       await setDoc(doc(db, "users", user.loginId), user);
+      usersOnceCache.invalidate();
     },
     async updateUser(loginId, updates) {
       if (!dbReady) throw new Error('NOT_CONFIGURED');
       await updateDoc(doc(db, "users", loginId), updates);
+      usersOnceCache.invalidate();
     },
     async deleteUser(loginId) {
       if (!dbReady) throw new Error('NOT_CONFIGURED');
       await deleteDoc(doc(db, "users", loginId));
+      usersOnceCache.invalidate();
     },
     async listUsers() {
       return usersCache.get();
+    },
+    // Plain one-time read — see usersOnceCache above.
+    async listUsersOnce() {
+      return usersOnceCache.get();
     },
     async countUsersDirectly() {
       if (!dbReady) throw new Error('NOT_CONFIGURED');
@@ -947,15 +986,18 @@
     async saveVacation(record) {
       if (!dbReady) throw new Error('NOT_CONFIGURED');
       const ref = await addDoc(collection(db, "vacations"), record);
+      vacationsCache.invalidate();
       return ref.id;
     },
     async updateVacation(id, updates) {
       if (!dbReady) throw new Error('NOT_CONFIGURED');
       await updateDoc(doc(db, "vacations", id), updates);
+      vacationsCache.invalidate();
     },
     async deleteVacation(id) {
       if (!dbReady) throw new Error('NOT_CONFIGURED');
       await deleteDoc(doc(db, "vacations", id));
+      vacationsCache.invalidate();
     },
     async listVacations(employeeId) {
       const out = await vacationsCache.get();
@@ -966,15 +1008,18 @@
     async saveViolation(record) {
       if (!dbReady) throw new Error('NOT_CONFIGURED');
       const ref = await addDoc(collection(db, "violations"), record);
+      violationsCache.invalidate();
       return ref.id;
     },
     async updateViolation(id, updates) {
       if (!dbReady) throw new Error('NOT_CONFIGURED');
       await updateDoc(doc(db, "violations", id), updates);
+      violationsCache.invalidate();
     },
     async deleteViolation(id) {
       if (!dbReady) throw new Error('NOT_CONFIGURED');
       await deleteDoc(doc(db, "violations", id));
+      violationsCache.invalidate();
     },
     async listViolations(employeeId) {
       const out = await violationsCache.get();
@@ -985,11 +1030,13 @@
     async saveLeaveRequest(record) {
       if (!dbReady) throw new Error('NOT_CONFIGURED');
       const ref = await addDoc(collection(db, "leaveRequests"), record);
+      leaveRequestsCache.invalidate();
       return ref.id;
     },
     async updateLeaveRequest(id, updates) {
       if (!dbReady) throw new Error('NOT_CONFIGURED');
       await updateDoc(doc(db, "leaveRequests", id), updates);
+      leaveRequestsCache.invalidate();
     },
     async listLeaveRequests() {
       return leaveRequestsCache.get();
@@ -1475,6 +1522,7 @@
         <div class="hint">Your password will be set to <b>123456</b> — change it from Profile after logging in.</div>
       </div>
     </section>
+    <div class="buildStamp" style="text-align:center; margin:10px 0 0; font-size:10px; letter-spacing:.02em; opacity:.35; color:var(--muted, #64748b);"></div>
 
     <!-- PENDING -->
     <section class="screen" id="screen-pending">
@@ -2793,6 +2841,14 @@ function monthlyTotalsFromGroups(groups){
 // ("RVF 42"); the name was once passed by mistake and quietly recalculated a
 // machine that doesn't exist. Accepting either makes that mistake harmless.
 // An ID is returned exactly as given.
+// A device can keep running an older cached copy of the app for a while
+// after a new upload, since browsers, installed apps and hosting all cache
+// pages. This tiny label at the bottom of the login screen shows when this
+// copy was last updated — a device showing an older date/time hasn't picked
+// up the latest upload yet. Display only; it changes nothing about how the
+// app works.
+const APP_BUILD = 'Last updated 30 Sep 2026, 7:22 AM';
+document.querySelectorAll('.buildStamp').forEach(el => { el.textContent = APP_BUILD; });
 function resolveMachineId(x){
   if(x === null || x === undefined || x === '') return x;
   if(state.machines.some(m => String(m.id) === String(x))) return x;
@@ -4970,7 +5026,7 @@ function configElIdFor(key){
 }
 async function cascadeConfigRename(key, oldVal, newVal){
   if(key === 'departments'){
-    const users = await window.__db.listUsers();
+    const users = await window.__db.listUsersOnce();
     await Promise.all(users.filter(u => u.department === oldVal).map(u => window.__db.updateUser(u.loginId, { department: newVal })));
     const machines = await window.__db.getMachines();
     let changed = false;
@@ -4980,13 +5036,13 @@ async function cascadeConfigRename(key, oldVal, newVal){
     });
     if(changed) await window.__db.saveMachines(updated);
   } else if(key === 'positions'){
-    const users = await window.__db.listUsers();
+    const users = await window.__db.listUsersOnce();
     await Promise.all(users.filter(u => u.profile && u.profile.position === oldVal).map(u => window.__db.updateUser(u.loginId, { 'profile.position': newVal })));
   } else if(key === 'leaveTypes'){
     const requests = await window.__db.listLeaveRequests();
     await Promise.all(requests.filter(r => r.type === oldVal).map(r => window.__db.updateLeaveRequest(r._id, { type: newVal })));
   } else if(key === 'salaryComponents'){
-    const users = await window.__db.listUsers();
+    const users = await window.__db.listUsersOnce();
     await Promise.all(users.filter(u => u.profile && u.profile.salary && u.profile.salary.components &&
       Object.prototype.hasOwnProperty.call(u.profile.salary.components, oldVal)).map(u => {
         const comps = Object.assign({}, u.profile.salary.components);
@@ -5970,7 +6026,7 @@ async function loadApprovals(){
   body.innerHTML = '<div class="empty-state">Loading entries…</div>';
   if(!requireDb()) return;
   try{
-    if(!state.users || state.users.length === 0) state.users = await window.__db.listUsers();
+    if(!state.users || state.users.length === 0) state.users = await window.__db.listUsersOnce();
     /* ---- missing entries for chosen date ---- */
     const dateInput = $('missingCheckDate');
     if(!dateInput.value){
@@ -6638,7 +6694,7 @@ $('addManualEntryBtn').addEventListener('click', async () => {
   const opening = panel.style.display === 'none';
   if(!opening){ panel.style.display = 'none'; return; }
   if(!state.users || state.users.length === 0){
-    try{ state.users = await window.__db.listUsers(); }catch(err){ console.error(err); }
+    try{ state.users = await window.__db.listUsersOnce(); }catch(err){ console.error(err); }
   }
   const machineOpts = state.machines.map(m => `<option value="${m.id}">${m.name}</option>`).join('');
   const operators = (state.users || []).filter(u => (u.role === 'operator' || u.role === 'supervisor') && !isExitedEmployee(u)).sort((a,b) => a.name.localeCompare(b.name));
@@ -6714,7 +6770,7 @@ async function openReportEditPanel(id){
   const r = lastReportRows.find(x => x.id === id);
   if(!r){ toast('Could not find that entry'); return; }
   if(!state.users || state.users.length === 0){
-    try{ state.users = await window.__db.listUsers(); }catch(err){ console.error(err); }
+    try{ state.users = await window.__db.listUsersOnce(); }catch(err){ console.error(err); }
   }
   const operators = (state.users || []).filter(u => (u.role === 'operator' || u.role === 'supervisor') && !isExitedEmployee(u)).sort((a,b) => a.name.localeCompare(b.name));
   const opOpts = operators.map(u => `<option value="${u.loginId}" ${u.loginId===r.enteredById?'selected':''}>${u.name} (${u.loginId})</option>`).join('');
@@ -7154,7 +7210,7 @@ $('myPicksTo').addEventListener('change', () => { resetPagination('myPicksBodyPa
 async function loadPicksForApprovals(){
   if(!requireDb()) return;
   try{
-    const users = (state.users && state.users.length) ? state.users : await window.__db.listUsers();
+    const users = (state.users && state.users.length) ? state.users : await window.__db.listUsersOnce();
     state.users = users;
     let selectable = users.filter(u => (u.role === 'operator' || u.role === 'supervisor') && !isExitedEmployee(u));
     if(state.user.role === 'supervisor'){
@@ -7585,7 +7641,7 @@ $('coreEditCancelBtn').addEventListener('click', () => { $('coreInfoEditPanel').
 // those are a record of what happened, not a live reference to the person.
 async function cascadeEmployeeIdRename(oldId, newId, newName){
   try{
-    const allUsers = await window.__db.listUsers();
+    const allUsers = await window.__db.listUsersOnce();
     const approverUpdates = allUsers.filter(u =>
       u.loginId !== newId && u.profile && Array.isArray(u.profile.approvers) &&
       u.profile.approvers.some(a => a.loginId === oldId)
@@ -8777,7 +8833,7 @@ async function loadLeavePage(){
   $('applyLeaveBtn').style.display = viewingOther ? 'none' : '';
   try{
     const all = await window.__db.listLeaveRequests();
-    if(!state.users || state.users.length === 0) state.users = await window.__db.listUsers();
+    if(!state.users || state.users.length === 0) state.users = await window.__db.listUsersOnce();
     leaveCache.mine = all.filter(r => r.employeeId === targetId);
     leaveCache.forMeToApprove = viewingOther ? [] : all.filter(r =>
       (r.status === 'pending_1st' && r.approver1 && r.approver1.loginId === state.user.loginId) ||
@@ -8907,7 +8963,7 @@ async function loadCeoDashboard(){
     mountDocumentRenewals('documentRenewalsMountCeo');
     $('ceoWelcomeH1').textContent = `Welcome Back, ${(state.user.name||'').split(' ')[0]}! \uD83D\uDC4B`;
 
-    const users = await window.__db.listUsers();
+    const users = await window.__db.listUsersOnce();
     state.users = users;
     state.cachedRecords = null; // only fetched lazily now, by the drill-down click handler
     state.cachedMonthly = undefined; // the 12-month chart re-loads its own small data only if that section is opened
@@ -8957,7 +9013,7 @@ async function loadEmployeesPage(){
   try{
     mountEmployeeOverview('employeeOverviewMountEmployees');
     mountDocumentRenewals('documentRenewalsMountEmployees');
-    const users = await window.__db.listUsers();
+    const users = await window.__db.listUsersOnce();
     state.users = users;
     renderEmployeeOverviewBox(users);
     renderDocumentRenewalsBox(users);
@@ -10074,7 +10130,7 @@ document.addEventListener('click', (e) => {
 async function loadAccountsPage(){
   if(!requireDb()) return;
   try{
-    const users = await window.__db.listUsers();
+    const users = await window.__db.listUsersOnce();
     state.users = users;
     const withProfile = users.filter(u => u.role !== 'pending');
     const body = $('accountsBody');
