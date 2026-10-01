@@ -41,7 +41,7 @@
   import {
     getFirestore,
     doc, getDoc, setDoc, updateDoc, deleteDoc, writeBatch, runTransaction,
-    collection, addDoc, getDocs, query, where, orderBy, onSnapshot, getCountFromServer
+    collection, addDoc, getDocs, getDocsFromServer, query, where, orderBy, onSnapshot, getCountFromServer
   } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
   import {
     getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword,
@@ -868,10 +868,22 @@
     async loadPendingReadingsFresh() {
       if (!dbReady) throw new Error('NOT_CONFIGURED');
       const q = query(collection(db, 'readings'), where('status', '==', 'pending'));
-      const snap = await getDocs(q);
-      const out = [];
-      snap.forEach(d => out.push({ _id: d.id, ...d.data() }));
-      return out;
+      // Plain getDocs() is documented to sometimes answer from the local
+      // cache even when it's trying to reach the server — exactly the gap
+      // that let a stale list sit there until a full logout. getDocsFromServer
+      // skips the cache entirely and forces a real round-trip, so this can
+      // only ever show the true current list or openly fail — never quietly
+      // show an old one. On the rare genuine connection failure, fall back to
+      // the live cache's last known state rather than breaking the screen.
+      try {
+        const snap = await getDocsFromServer(q);
+        const out = [];
+        snap.forEach(d => out.push({ _id: d.id, ...d.data() }));
+        return out;
+      } catch (err) {
+        console.error('Could not reach the server for a fresh pending-entries check, showing the last known list', err);
+        return pendingReadingsCache.get();
+      }
     },
     async loadRecentReadings() {
       return recentReadingsCache.get();
@@ -1538,8 +1550,8 @@
         <button class="btn btn-primary" id="registerBtn">Create Account</button>
         <div class="hint">Your password will be set to <b>123456</b> — change it from Profile after logging in.</div>
       </div>
+      <div class="buildStamp" style="text-align:center; margin:10px 0 0; font-size:10px; letter-spacing:.02em; opacity:.35; color:var(--muted, #64748b);"></div>
     </section>
-    <div class="buildStamp" style="text-align:center; margin:10px 0 0; font-size:10px; letter-spacing:.02em; opacity:.35; color:var(--muted, #64748b);"></div>
 
     <!-- PENDING -->
     <section class="screen" id="screen-pending">
