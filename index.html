@@ -1342,6 +1342,8 @@
     font-weight:600; letter-spacing:0.04em; text-transform:uppercase; font-size:11px;
     padding: 8px 10px; border-bottom: 1px solid var(--line);
   }
+  table.report-table tr.review-prev-row td{ background:var(--panel-2, #f4f5fb) !important; }
+  table.report-table tr.has-review-reason td{ border-bottom:none; }
   table.report-table tr:last-child td{ border-bottom:none; }
   table.report-table tr:nth-child(even){ background: var(--row-alt); }
   .diff-pos{ color: var(--ok); font-family:'JetBrains Mono', monospace; font-weight:600; }
@@ -1389,6 +1391,17 @@
   }
   .lightbox-close:hover{ background: rgba(255,255,255,0.28); }
   .lightbox-close:active{ transform: translateY(1px) scale(0.96); }
+  .lb-zoom{ position:absolute; bottom:22px; left:50%; transform:translateX(-50%); display:flex; gap:8px; z-index:2; }
+  .lb-zoom button{ min-width:48px; height:44px; padding:0 14px; border-radius:22px; background:rgba(255,255,255,0.18); border:1px solid rgba(255,255,255,0.55); color:#fff; font-size:20px; font-weight:600; line-height:1; cursor:pointer; }
+  .lb-zoom button:active{ transform:translateY(1px) scale(0.96); }
+  .lb-zoom .lb-zoom-reset{ font-size:13px; min-width:64px; }
+  .lc-overlay{ position:fixed; inset:0; z-index:200; background:#000; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+  .lc-video{ width:100%; flex:1; min-height:0; object-fit:contain; background:#000; }
+  .lc-bar{ display:flex; gap:12px; width:100%; max-width:420px; padding:12px 16px 4px; box-sizing:border-box; }
+  .lc-bar .btn{ flex:1; margin:0; }
+  .lc-bar .btn-ghost{ background:#fff; }
+  .lc-hint{ color:#cbd5e1; font-size:12px; padding:4px 16px 8px; text-align:center; }
+  .lc-switch{ color:#94a3b8; font-size:12px; margin-bottom:18px; border-bottom:1px dashed #64748b; cursor:pointer; }
   .row-actions-backdrop{ position:fixed; inset:0; background:rgba(15,23,42,0.45); z-index:100; display:flex; align-items:flex-end; justify-content:center; }
   .row-actions-sheet{ background:#fff; width:100%; max-width:420px; border-radius:18px 18px 0 0; padding:18px 16px calc(18px + env(safe-area-inset-bottom)); box-shadow:0 -6px 24px rgba(0,0,0,0.18); }
   .edit-modal-backdrop{ position:fixed; inset:0; background:rgba(15,23,42,0.55); z-index:110; display:flex; align-items:center; justify-content:center; padding:16px; }
@@ -1624,6 +1637,11 @@
         </label>
         <input type="file" id="fileInput" accept="image/*" capture="environment" style="display:none;">
       </div>
+
+      <div id="captureResumeNote" class="card" style="display:none; margin-top:16px; text-align:left;">
+        <div class="hint" style="margin:0; text-align:left;">Your phone closed the page while the camera was open, so the photo wasn't saved. Please take it again. If this keeps happening, use the light camera below &mdash; it takes the photo without leaving this page, which is easier on phones that are short on memory.</div>
+      </div>
+      <div class="link-row" style="margin-top:16px;"><a id="lightCameraBtn">Phone slow, or the page restarts? Use the light camera</a></div>
 
       <div class="link-row" style="margin-top:20px;"><a id="backToSelectBtn">&larr; back</a></div>
     </section>
@@ -2090,7 +2108,8 @@
           <input type="date" id="reportFromDate" title="From">
           <input type="date" id="reportToDate" title="To">
         </div>
-        <div class="hint">Shows today and yesterday by default — clear both fields to see every entry ever logged instead.</div>
+        <button class="btn btn-primary" id="showReportBtn" style="margin-top:10px;">Show</button>
+        <div class="hint">Pick both dates, then press Show. Shows today and yesterday by default — clear both fields to see every entry ever logged instead.</div>
       </div>
 
       <div class="report-toolbar">
@@ -2102,6 +2121,7 @@
 
       <div id="manualEntryPanel" class="card" style="display:none; margin-bottom:14px;"></div>
 
+      <div id="reportReviewBanner" style="display:none;"></div>
       <div id="reportBody"></div>
     </section>
 
@@ -3177,6 +3197,7 @@ function route(){
   const pages = userPages(state.user);
   if((state.user.role === 'pending' || !state.user.role) && pages.length === 0){ showScreen('screen-pending'); return; }
   if(pages.length === 0){ showScreen('screen-pending'); return; }
+  if(maybeResumeCapture()) return;   // the phone closed the page during the camera step: go back to it
   // land on the most relevant page for the role, falling back to the first assigned page
   const priority = ['ceo','admin','approvals','select','profile'];
   const first = priority.find(p => pages.includes(p)) || pages[0];
@@ -3184,11 +3205,12 @@ function route(){
 }
 
 function goTo(key){
+  clearCaptureDraft();   // they chose to leave the camera step
   markNavActive(key);
   if(key === 'admin'){ showScreen('screen-admin'); loadUsersForAdmin(); loadMachinesForAdmin(); loadConfigLists(); }
   else if(key === 'approvals'){ showScreen('screen-approvals'); loadApprovals(); loadPicksForApprovals(); }
   else if(key === 'select'){ showScreen('screen-select'); setupSelectScreen(); }
-  else if(key === 'report'){ showScreen('screen-report'); loadReport(); }
+  else if(key === 'report'){ exitReportReview(); showScreen('screen-report'); loadReport(); }
   else if(key === 'mystatus'){ showScreen('screen-mystatus'); loadMyStatus(); }
   else if(key === 'profile'){ showScreen('screen-profile'); loadProfile(state.user.loginId); }
   else if(key === 'leave'){ showScreen('screen-leave'); loadLeavePage(); }
@@ -3200,6 +3222,7 @@ function goTo(key){
 $('logoutBtn').addEventListener('click', () => {
   localStorage.removeItem('mr_loginId');
   localStorage.removeItem('mr_loginTs');
+  clearCaptureDraft();
   if(state.unwatchUser){ state.unwatchUser(); state.unwatchUser = null; }
   state.user = null;
   window.__db.authSignOut();
@@ -3509,6 +3532,19 @@ function renderUsersList(){
   renderUserRows($('usersActiveBody'), active);
 }
 
+// The options for the Department box in a person's edit panel: the Admin-configured list, plus
+// their current value if it isn't one of those (so just saving never silently changes it).
+function userDeptOptions(u){
+  const esc = (t) => String(t).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+  const cur = u.department || '';
+  const list = state.departments || [];
+  const opts = [];
+  if(!cur) opts.push('<option value="" selected>Not set</option>');
+  else if(!list.includes(cur)) opts.push(`<option value="${esc(cur)}" selected>${esc(cur)} (not in the department list)</option>`);
+  list.forEach(d => opts.push(`<option value="${esc(d)}" ${d === cur ? 'selected' : ''}>${esc(d)}</option>`));
+  return opts.join('');
+}
+
 function renderUserRows(container, users){
   container.innerHTML = '';
   users.forEach(u => {
@@ -3536,11 +3572,19 @@ function renderUserRows(container, users){
     const approverWarnTag = (!isExitedEmployee(u) && (staleApproverCount || staleDirectSupervisor))
       ? `<span class="badge badge-rejected" style="margin-left:6px;">${staleDirectSupervisor ? 'Supervisor No Longer Employed' : 'Approver No Longer Employed'}</span>` : '';
     const completion = profileCompletionPct(u);
+    // The shift they work, so it can be seen without opening each person. Operators and
+    // supervisors: the shift set next to Assigned Machines. Everyone else: the Shift chosen in their
+    // Profile, if one is selected (nothing is shown if not). It is already on the person's record,
+    // so showing it costs no reads.
+    const otherShift = (u.profile && (u.profile.shiftPref === 'Day' || u.profile.shiftPref === 'Night')) ? u.profile.shiftPref : '';
+    const shiftTag = (u.role === 'operator' || u.role === 'supervisor')
+      ? ` &middot; <b>${u.assignedShift === 'Day' ? 'Day shift' : (u.assignedShift === 'Night' ? 'Night shift' : 'Both shifts')}</b>`
+      : (otherShift ? ` &middot; <b>${otherShift} shift</b>` : '');
     row.innerHTML = `
       <div class="top">
         <div>
           <div class="nm">${u.name} <span class="badge ${badgeClass}">${ROLE_LABEL[u.role] || u.role}</span>${statusTag}${approverWarnTag}</div>
-          <div class="meta">ID: ${u.loginId} &middot; ${u.department}</div>
+          <div class="meta">ID: ${u.loginId} &middot; ${u.department || '—'}${shiftTag}</div>
           ${(u.role === 'operator' || u.role === 'supervisor') ? `<div class="meta">Machines: ${machinesTxt}</div>` : ''}
           <div class="meta" style="font-size:11px; color:${completion>=80?'var(--ok, #2f9e57)':(completion>=40?'var(--muted)':'var(--danger)')};">Profile ${completion}% complete</div>
         </div>
@@ -3568,8 +3612,12 @@ function renderUserRows(container, users){
             </select>
           </div>
         </div>
+        <div class="field">
+          <label>Department <span style="text-transform:none; font-weight:400; color:var(--muted);">(saved for this person &mdash; shown on their card and used by the Department filter at the top)</span></label>
+          <select class="deptSelect" data-id="${u.loginId}">${userDeptOptions(u)}</select>
+        </div>
         <div class="field machineAssignField" id="machineField-${u.loginId}" style="display:${(u.role==='operator'||u.role==='supervisor')?'block':'none'};">
-          <label>Filter by Department first</label>
+          <label>Filter by Department first <span style="text-transform:none; font-weight:400; color:var(--muted);">(only narrows the machine list below &mdash; it does not change anyone's department)</span></label>
           <select class="machineDeptFilter" data-id="${u.loginId}"><option value="">All Departments</option></select>
           <label style="margin-top:10px;">Assigned Machines <span style="text-transform:none; font-weight:400; color:var(--muted);">(machines they can log readings for)</span></label>
           <div class="checkbox-grid" id="grid-${u.loginId}"></div>
@@ -3606,7 +3654,7 @@ function renderUserRows(container, users){
       const panel = $('edit-' + u.loginId);
       const opening = panel.style.display === 'none';
       panel.style.display = opening ? 'block' : 'none';
-      if(opening){ buildMachineGrid(u); buildPagesGrid(u); buildDeptFilter(u); }
+      if(opening){ u._machinePicks = null; buildMachineGrid(u); buildPagesGrid(u); buildDeptFilter(u); }   // start from what is saved each time it is opened
     });
     container.appendChild(row);
   });
@@ -3683,12 +3731,17 @@ function buildMachineGrid(u, deptFilter){
   const grid = $('grid-' + u.loginId);
   if(!grid) return;
   grid.innerHTML = '';
-  const assigned = u.assignedMachines || [];
+  // The ticks are kept as one list per person, not read back from whatever is on screen: switching
+  // the department filter used to throw away ticks made a moment earlier, and Save only kept the
+  // machines currently showing — so a person's machines in other departments were silently dropped.
+  if(!u._machinePicks) u._machinePicks = new Set(u.assignedMachines || []);
+  const assigned = u._machinePicks;
   const list = deptFilter ? state.machines.filter(m => m.department === deptFilter) : state.machines;
   if(list.length === 0){ grid.innerHTML = '<span style="font-size:11.5px; color:var(--muted);">No machines in this department.</span>'; return; }
   list.forEach(m => {
     const lbl = document.createElement('label');
-    lbl.innerHTML = `<input type="checkbox" value="${m.id}" ${assigned.includes(m.id) ? 'checked' : ''}> ${m.name}`;
+    lbl.innerHTML = `<input type="checkbox" value="${m.id}" ${assigned.has(m.id) ? 'checked' : ''}> ${m.name}`;
+    lbl.querySelector('input').addEventListener('change', (e) => { if(e.target.checked) assigned.add(m.id); else assigned.delete(m.id); });
     grid.appendChild(lbl);
   });
 }
@@ -3716,13 +3769,18 @@ async function saveUserEdits(loginId){
   let assignedMachines = [];
   if(role === 'operator' || role === 'supervisor'){
     const grid = $('grid-' + loginId);
-    assignedMachines = Array.from(grid.querySelectorAll('input[type=checkbox]:checked')).map(cb => cb.value);
+    const picks = (state.users.find(x => x.loginId === loginId) || {})._machinePicks;
+    assignedMachines = picks
+      ? state.machines.filter(m => picks.has(m.id)).map(m => m.id)   // every tick, including machines the department filter is hiding (same order as before; machines that no longer exist drop out, as before)
+      : Array.from(grid.querySelectorAll('input[type=checkbox]:checked')).map(cb => cb.value);
   }
   const pagesGrid = $('pages-' + loginId);
   const pages = Array.from(pagesGrid.querySelectorAll('input[type=checkbox]:checked')).map(cb => cb.value);
   try{
     const existing = state.users.find(x => x.loginId === loginId) || {};
     const profile = Object.assign({}, existing.profile || {}, { employmentStatus });
+    // Operators/supervisors: the Profile's own Shift value follows the one chosen here (it is part of the same save)
+    if(role === 'operator' || role === 'supervisor') profile.shiftPref = (assignedShift === 'Day' || assignedShift === 'Night') ? assignedShift : '';
     // Exit/Terminated means the passport can no longer be sitting in the
     // office safe with everyone else's — it leaves with the employee, so
     // flip this automatically rather than relying on Admin to remember.
@@ -3736,7 +3794,10 @@ async function saveUserEdits(loginId){
         pendingLocationChange: null
       });
     }
-    await window.__db.updateUser(loginId, { role, assignedMachines, assignedShift, pages, profile });
+    const update = { role, assignedMachines, assignedShift, pages, profile };
+    const deptBox = document.querySelector(`.deptSelect[data-id="${loginId}"]`);
+    if(deptBox && deptBox.value !== (existing.department || '')) update.department = deptBox.value;   // only written when it was actually changed
+    await window.__db.updateUser(loginId, update);
     // Keep the security-rules role lookup current the moment Admin changes
     // it — otherwise it would only catch up the next time this person logs
     // in, which could be a while for someone who stays signed in for days.
@@ -3744,7 +3805,7 @@ async function saveUserEdits(loginId){
     toast('User updated');
     const wasExitedBefore = existing.profile && (existing.profile.employmentStatus === 'terminated' || existing.profile.employmentStatus === 'final_exit');
     if(state.user.loginId === loginId){
-      state.user.role = role; state.user.assignedMachines = assignedMachines; state.user.assignedShift = assignedShift; state.user.pages = pages; state.user.profile = profile;
+      state.user.role = role; state.user.assignedMachines = assignedMachines; state.user.assignedShift = assignedShift; state.user.pages = pages; state.user.profile = profile; if('department' in update) state.user.department = update.department;
       renderWho(); renderNav(); route();
     }
     await loadUsersForAdmin();
@@ -5704,6 +5765,7 @@ $('goToCaptureBtn').addEventListener('click', () => {
   state.machine = chosen;
   $('captureTitle').textContent = 'Capture Meter — ' + machineName(state.machine);
   showScreen('screen-capture');
+  saveCaptureDraft();
 });
 $('backToSelectBtn').addEventListener('click', () => {
   goTo('select');
@@ -5807,6 +5869,7 @@ function setPhotoType(type){
 }
 
 function goToReview(){
+  clearCaptureDraft();   // the photo arrived: nothing left to pick up
   $('capturedImg').src = state.photoDataUrl;
   $('readingInput').value = '';
   $('stopTimeInput').value = '';
@@ -5819,7 +5882,109 @@ function goToReview(){
   showScreen('screen-review');
   setTimeout(()=> $('readingInput').focus(), 250);
 }
-$('retakeBtn').addEventListener('click', () => { showScreen('screen-capture'); });
+$('retakeBtn').addEventListener('click', () => { showScreen('screen-capture'); saveCaptureDraft(); });
+
+/* ---------- picking up the camera step if the phone closes the page ---------- */
+// Phones that are short on memory (or storage) can shut this page down while the camera
+// app is open; on coming back the page starts again from the beginning and the photo is
+// lost. This keeps the one thing that CAN be kept — which machine and shift they were on —
+// so they land back on the camera step instead of choosing everything again. Saved on this
+// phone only (nothing is sent anywhere), expires after 20 minutes, and is cleared as soon
+// as a photo arrives, they go back, or they log out.
+function saveCaptureDraft(){
+  if(!state.user || !state.machine) return;
+  try{ localStorage.setItem('rvfCaptureDraft', JSON.stringify({ u: state.user.loginId, machine: state.machine, shift: state.shift, at: Date.now() })); }catch(e){}
+}
+function clearCaptureDraft(){
+  try{ localStorage.removeItem('rvfCaptureDraft'); }catch(e){}
+  const note = document.getElementById('captureResumeNote');
+  if(note) note.style.display = 'none';
+}
+function maybeResumeCapture(){
+  let d = null;
+  try{ d = JSON.parse(localStorage.getItem('rvfCaptureDraft') || 'null'); }catch(e){}
+  if(!d || !state.user) return false;
+  if(!(state.machines || []).length) return false;   // machine list not loaded yet: leave the draft alone
+  const fresh = d.at && (Date.now() - d.at) < 20 * 60 * 1000;
+  const mine = d.u === state.user.loginId;
+  const known = state.machines.some(m => String(m.id) === String(d.machine));
+  const allowed = userPages(state.user).includes('select');
+  if(!(fresh && mine && known && allowed)){ clearCaptureDraft(); return false; }
+  state.machine = d.machine;
+  state.shift = d.shift === 'Night' ? 'Night' : 'Day';
+  $('captureTitle').textContent = 'Capture Meter — ' + machineName(state.machine);
+  markNavActive('select');
+  showScreen('screen-capture');
+  const note = $('captureResumeNote'); if(note) note.style.display = 'block';
+  saveCaptureDraft();   // still on the camera step: if the phone closes the page again, pick it up again
+  return true;
+}
+
+/* ---------- light camera: take the photo without leaving the page ---------- */
+// "Take Photo" hands over to the phone's camera app, and on phones short on memory the
+// browser can shut this page down while it is away. This takes the photo inside the page
+// instead, at a modest size (the app shrinks every photo to about 900px anyway), so nothing
+// is left behind and very little memory is used. Only used when chosen; once it has worked on
+// a phone, Take Photo opens it directly on that phone (with a way back to the camera app).
+async function openLightCamera(){
+  const forget = () => { try{ localStorage.removeItem('rvfLightCamera'); }catch(e){} };
+  if(!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)){
+    forget(); toast('This phone cannot use the light camera — please use Take Photo');
+    return;
+  }
+  let stream = null;
+  const overlay = document.createElement('div');
+  overlay.className = 'lc-overlay';
+  overlay.innerHTML = `<video class="lc-video" playsinline muted autoplay></video>
+    <div class="lc-bar"><button type="button" class="btn btn-ghost lc-cancel">Cancel</button><button type="button" class="btn btn-primary lc-shoot">Take photo</button></div>
+    <div class="lc-hint">Line the meter display up in the picture, hold steady, then tap Take photo.</div>
+    <a class="lc-switch">Use the phone's camera app instead</a>`;
+  const video = overlay.querySelector('.lc-video');
+  const stop = () => {
+    try{ if(stream) stream.getTracks().forEach(t => t.stop()); }catch(e){}
+    stream = null;
+    try{ video.srcObject = null; }catch(e){}
+    overlay.remove();
+  };
+  overlay.querySelector('.lc-cancel').addEventListener('click', stop);
+  overlay.querySelector('.lc-switch').addEventListener('click', () => { forget(); stop(); toast('Take Photo will use the phone\'s camera app again'); });
+  document.body.appendChild(overlay);
+  try{
+    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false });
+    video.srcObject = stream;
+    try{ const pl = video.play(); if(pl && pl.catch) pl.catch(() => {}); }catch(e){}
+  }catch(err){
+    console.error(err);
+    stop(); forget();
+    toast('Could not open the light camera — please use Take Photo');
+    return;
+  }
+  overlay.querySelector('.lc-shoot').addEventListener('click', () => {
+    const vw = video.videoWidth, vh = video.videoHeight;
+    if(!vw || !vh){ toast('The camera is not ready yet — wait a moment and try again'); return; }
+    const scale = Math.min(1, 1280 / Math.max(vw, vh));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(vw * scale); canvas.height = Math.round(vh * scale);
+    const ctx = canvas.getContext('2d');
+    if(!ctx){ toast('Could not capture — please use Take Photo'); return; }
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    canvas.toBlob(blob => {
+      canvas.width = canvas.height = 0;   // give the picture's memory back straight away
+      stop();
+      if(!blob){ toast('Could not capture — please use Take Photo'); return; }
+      try{ localStorage.setItem('rvfLightCamera', '1'); }catch(e){}   // it worked on this phone: use it by default from now on
+      compressImageSafe(blob, 150000).then(dataUrl => { state.photoDataUrl = dataUrl; goToReview(); }).catch(() => { toast('Could not read that photo — try again'); });
+    }, 'image/jpeg', 0.85);
+  });
+}
+$('lightCameraBtn').addEventListener('click', openLightCamera);
+document.querySelector('label[for="fileInput"]').addEventListener('click', (e) => {
+  let on = false; try{ on = localStorage.getItem('rvfLightCamera') === '1'; }catch(err){}
+  if(!on) return;     // everyone else: Take Photo works exactly as before
+  e.preventDefault();
+  openLightCamera();
+});
+
 
 /* ---------- submit ---------- */
 // Whether an Operator (or Supervisor logging a reading themselves) should
@@ -6078,6 +6243,10 @@ async function loadApprovals(){
       (type === 'end' ? r.photoType !== 'start' : r.photoType === 'start')
     );
     missingScope.forEach(m => {
+      // A machine that is permanently stopped will never produce a reading, so
+      // there is nothing for it to be "missing". (A temporary stop still shows,
+      // since its Starting/Ending entries are still expected.)
+      if(m.status === 'stopped' && m.stopType === 'permanent') return;
       const shiftScope = (state.user.role === 'supervisor' && (state.user.assignedShift === 'Day' || state.user.assignedShift === 'Night'))
         ? state.user.assignedShift : null;
       ['Day', 'Night'].forEach(shift => {
@@ -6268,9 +6437,82 @@ function openLightbox(src){
   box.className = 'lightbox';
   box.innerHTML = `<img src="${src}"><button type="button" class="lightbox-close" aria-label="Close" title="Close"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg></button>`;
   const close = () => box.remove();
-  box.addEventListener('click', (e) => { if(e.target === box) close(); });
+  const zoom = attachLightboxZoom(box);   // pinch, double-tap, drag, + / − buttons, mouse wheel
+  box.addEventListener('click', (e) => { if(e.target === box && !zoom.recentGesture()) close(); });
   box.querySelector('.lightbox-close').addEventListener('click', close);
   document.body.appendChild(box);
+}
+
+// Where the picture ends up after zooming to `newScale` around the point (fx, fy), measured from
+// the centre of the viewer: the point stays under the finger, and the picture can never be dragged
+// off the screen. Plain arithmetic, so it can be checked on its own.
+function lightboxZoomAt(view, newScale, fx, fy, boxW, boxH, imgW, imgH, panX, panY){
+  const s = Math.min(6, Math.max(1, newScale));
+  let tx = fx - (fx - view.tx) * (s / view.s) + (panX || 0);
+  let ty = fy - (fy - view.ty) * (s / view.s) + (panY || 0);
+  const limX = Math.max(0, (imgW * s - boxW) / 2), limY = Math.max(0, (imgH * s - boxH) / 2);
+  tx = Math.max(-limX, Math.min(limX, tx));
+  ty = Math.max(-limY, Math.min(limY, ty));
+  return { s, tx, ty };
+}
+function attachLightboxZoom(box){
+  const img = box.querySelector('img');
+  box.insertAdjacentHTML('beforeend', `<div class="lb-zoom"><button type="button" class="lb-zoom-out" aria-label="Zoom out">&minus;</button><button type="button" class="lb-zoom-reset" aria-label="Reset zoom">100%</button><button type="button" class="lb-zoom-in" aria-label="Zoom in">+</button></div>`);
+  const resetBtn = box.querySelector('.lb-zoom-reset');
+  img.style.touchAction = 'none'; img.style.userSelect = 'none'; img.style.willChange = 'transform';
+  const view = { s: 1, tx: 0, ty: 0 };
+  let lastGesture = 0;
+  const apply = () => { img.style.transform = `translate(${view.tx}px, ${view.ty}px) scale(${view.s})`; resetBtn.textContent = Math.round(view.s * 100) + '%'; };
+  const setView = (ns, cx, cy, panX, panY) => {
+    const r = box.getBoundingClientRect();
+    const next = lightboxZoomAt(view, ns, cx === undefined ? 0 : cx - (r.left + r.width / 2), cy === undefined ? 0 : cy - (r.top + r.height / 2), box.clientWidth, box.clientHeight, img.clientWidth, img.clientHeight, panX, panY);
+    view.s = next.s; view.tx = next.tx; view.ty = next.ty; apply();
+  };
+  box.querySelector('.lb-zoom-in').addEventListener('click', () => setView(view.s * 1.5));
+  box.querySelector('.lb-zoom-out').addEventListener('click', () => setView(view.s / 1.5));
+  resetBtn.addEventListener('click', () => setView(1));
+  box.addEventListener('wheel', (e) => { e.preventDefault(); setView(view.s * (e.deltaY < 0 ? 1.2 : 1 / 1.2), e.clientX, e.clientY); }, { passive: false });
+  const pts = new Map();
+  let pinch = null, drag = null, moved = false, lastTapAt = 0, lastTapX = 0, lastTapY = 0;
+  const two = () => { const [a, b] = Array.from(pts.values()); return { dist: Math.hypot(a.x - b.x, a.y - b.y) || 1, cx: (a.x + b.x) / 2, cy: (a.y + b.y) / 2 }; };
+  img.addEventListener('pointerdown', (e) => {
+    pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    try{ img.setPointerCapture(e.pointerId); }catch(_){}
+    if(pts.size === 1){ moved = false; drag = { x: e.clientX, y: e.clientY, tx: view.tx, ty: view.ty }; }
+    if(pts.size === 2){ const t = two(); pinch = { dist: t.dist, s: view.s, cx: t.cx, cy: t.cy }; drag = null; moved = true; }
+  });
+  img.addEventListener('pointermove', (e) => {
+    if(!pts.has(e.pointerId)) return;
+    pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if(pts.size >= 2 && pinch){
+      const t = two();
+      setView(pinch.s * t.dist / pinch.dist, t.cx, t.cy, t.cx - pinch.cx, t.cy - pinch.cy);
+      pinch.cx = t.cx; pinch.cy = t.cy;
+    } else if(drag && view.s > 1){
+      const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+      if(Math.abs(dx) + Math.abs(dy) > 4) moved = true;
+      const next = lightboxZoomAt({ s: view.s, tx: drag.tx + dx, ty: drag.ty + dy }, view.s, 0, 0, box.clientWidth, box.clientHeight, img.clientWidth, img.clientHeight);
+      view.tx = next.tx; view.ty = next.ty; apply();
+    }
+  });
+  const end = (e) => {
+    if(!pts.has(e.pointerId)) return;
+    pts.delete(e.pointerId);
+    if(moved) lastGesture = Date.now();
+    if(pts.size < 2) pinch = null;
+    if(pts.size === 1){ const p = Array.from(pts.values())[0]; drag = { x: p.x, y: p.y, tx: view.tx, ty: view.ty }; }
+    if(pts.size === 0){
+      drag = null;
+      if(!moved){
+        const now = Date.now();
+        if(now - lastTapAt < 300 && Math.hypot(e.clientX - lastTapX, e.clientY - lastTapY) < 30){
+          setView(view.s > 1.01 ? 1 : 2.5, e.clientX, e.clientY); lastTapAt = 0;   // double-tap: zoom in on that spot, or back out
+        } else { lastTapAt = now; lastTapX = e.clientX; lastTapY = e.clientY; }
+      }
+    }
+  };
+  img.addEventListener('pointerup', end); img.addEventListener('pointercancel', end);
+  return { recentGesture: () => Date.now() - lastGesture < 350 };
 }
 
 // A single "⋯" button on each Admin report row opens this instead of
@@ -6279,6 +6521,7 @@ function openLightbox(src){
 function openRowActionsMenu(id){
   const row = lastReportRows.find(x => x.id === id);
   if(!row) return;
+  if(reportReview) reportReview.touched.add(id);   // unusual-entries view: re-read this row after any change
   const notes = [row.remarks, row.supervisorRemarks, row.adminNote].filter(Boolean);
   const backdrop = document.createElement('div');
   backdrop.className = 'row-actions-backdrop';
@@ -6288,6 +6531,8 @@ function openRowActionsMenu(id){
       <p class="sub">${row.shift} shift &middot; ${row.photoType} Photo &middot; Reading ${row.reading}</p>
       <p class="hint" style="text-align:left; margin-left:0; margin-top:-8px;">Real entry date &amp; time: <b style="color:var(--text-strong);">${fmtTs(row.timestamp)}</b></p>
       ${notes.length ? `<div class="card" style="margin-bottom:14px; font-size:13px;">${notes.join('<br>')}</div>` : ''}
+      ${reportReview && row.reviewReason ? `<div class="card" style="margin-bottom:14px; font-size:13px;">${row.reviewReason}</div>` : ''}
+      ${reportReview && row.reviewReason && state.user.role === 'admin' ? (row.reviewOk ? `<button class="btn btn-ghost" id="rowActionRemoveOk">Remove OK mark</button>` : `<button class="btn btn-ghost" id="rowActionMarkOk">Mark as OK \u2014 not unusual</button>`) : ''}
       ${row.photoDataUrl ? `<button class="btn btn-ghost" id="rowActionPhoto">View Photo</button>` : ''}
       <button class="btn btn-ghost" id="rowActionResetPoint">${row.resetPoint ? 'Remove Reset Point' : 'Mark as Meter Reset Point'}</button>
       <button class="btn btn-ghost" id="rowActionEdit">Edit Entry</button>
@@ -6302,6 +6547,10 @@ function openRowActionsMenu(id){
   backdrop.querySelector('#rowActionEdit').addEventListener('click', () => { backdrop.remove(); openReportEditPanel(id); });
   backdrop.querySelector('#rowActionDelete').addEventListener('click', () => { backdrop.remove(); deleteReportRow(id); });
   backdrop.querySelector('#rowActionCancel').addEventListener('click', () => backdrop.remove());
+  const markOkBtn = backdrop.querySelector('#rowActionMarkOk');
+  if(markOkBtn) markOkBtn.addEventListener('click', () => { backdrop.remove(); setReviewOk(id, true); });
+  const removeOkBtn = backdrop.querySelector('#rowActionRemoveOk');
+  if(removeOkBtn) removeOkBtn.addEventListener('click', () => { backdrop.remove(); setReviewOk(id, false); });
 }
 
 // The fast, foolproof fix for a machine that got physically reset without
@@ -6437,6 +6686,9 @@ async function decideReading(id, status){
    REPORT
    ============================================================ */
 let lastReportRows = [];
+// Set only while the Report is showing "Review Unusual Entries": the whole
+// history held in memory, plus the ids of rows opened since the last refresh.
+let reportReview = null;
 
 // The reference chain every record diffs against is APPROVED readings
 // (plus a machine's baseline, if set) only — pending/rejected entries
@@ -6546,7 +6798,7 @@ async function loadReportSourceRecords(fromDate, toDate){
     const noDigest = [];
     machineIds.forEach(mid => {
       if(!digests[mid]){ noDigest.push(mid); return; }
-      digests[mid].forEach(line => { const e = window.__db.decodeHistoryEntry(line, mid); if(e.date < fromDate) older.push(e); });
+      digests[mid].forEach(line => { const e = window.__db.decodeHistoryEntry(line, mid); if(e.date < fromDate){ e._fromDigest = true; older.push(e); } });
     });
     for(let i = 0; i < noDigest.length; i += 10){
       const full = await window.__db.loadReadingsForMachines(noDigest.slice(i, i + 10));
@@ -6560,7 +6812,86 @@ async function loadReportSourceRecords(fromDate, toDate){
     return window.__db.loadAllReadingsEver();
   }
 }
+// Draws the Report table for a ready-made list of rows. This is the Report's own
+// drawing code, moved here unchanged so the "unusual entries" view can show the
+// very same table (same columns, same row menu with View Photo / Edit / Reset /
+// Delete) for just its rows.
+function drawReportTable(rows){
+  const body = $('reportBody');
+  const showFlags = state.user.role === 'admin' || state.user.role === 'supervisor';
+  const isAdmin = state.user.role === 'admin';
+  $('addManualEntryBtn').style.display = isAdmin ? 'inline-flex' : 'none';
+  $('reviewUnusualBtn').style.display = showFlags ? 'inline-flex' : 'none';
+  const colCount = 8 + (showFlags ? 1 : 0) + (isAdmin ? 1 : 0);
+  let html = '<div class="table-scroll"><table class="report-table report-table-compact"><thead><tr>' +
+    '<th>Mc</th><th>Sh</th><th>Prev</th><th>New</th><th>Diff</th>' +
+    (showFlags ? '<th></th>' : '') +
+    '<th>Stop</th><th>Rsn</th><th>By</th><th></th>' +
+    (isAdmin ? '<th></th>' : '') +
+    '</tr></thead><tbody>';
+  let lastDate = null;
+  rows.forEach(r => {
+    if(!r.reviewCompanion && r.date !== lastDate){
+      lastDate = r.date;
+      html += `<tr class="date-group-row"><td colspan="${colCount}">${fmtDate(r.date)}</td></tr>`;
+    }
+    const diffClass = (typeof r.diff === 'number') ? (r.diff >= 0 ? 'diff-pos' : 'diff-neg') : '';
+    const shiftLetter = r.shift === 'Day' ? 'D' : 'N';
+    const photoTypeLetter = r.photoType === 'Starting' ? 'S' : 'E';
+    const shiftTitle = r.shift + ' shift \u2014 ' + r.photoType + ' Photo';
+
+    let flagCell = '';
+    if(showFlags){
+      if(r.flag === 'down') flagCell = `<span title="Reading went down">${ICON_FLAG_DOWN}</span>`;
+      else if(r.flag === 'idle') flagCell = `<span title="No change since last reading">${ICON_FLAG_IDLE}</span>`;
+      else if(r.flag === 'unusual') flagCell = `<span title="Unusual jump vs recent average">${ICON_FLAG_WARN}</span>`;
+    }
+
+    const reasonNum = (r.reason && r.reason !== '—') ? r.reason.split(' ')[0] : '—';
+
+    const firstName = (r.enteredBy || '—').split(' ')[0];
+    const byTitle = `${r.enteredBy} (${r.enteredById})`;
+
+    let statusIcon = ICON_STATUS_PENDING, statusTitle = 'Pending approval';
+    if(r.status === 'approved'){ statusIcon = ICON_STATUS_APPROVED; statusTitle = 'Approved' + (r.approvedBy && r.approvedBy !== '—' ? ' by ' + r.approvedBy : ''); }
+    else if(r.status === 'rejected'){ statusIcon = ICON_STATUS_REJECTED; statusTitle = 'Rejected' + (r.approvedBy && r.approvedBy !== '—' ? ' by ' + r.approvedBy : ''); }
+
+    const notes = [r.remarks, r.supervisorRemarks, r.adminNote].filter(Boolean);
+    const noteTitle = notes.length ? notes.join(' \u2014 ').replace(/"/g,'&quot;') : '';
+
+    if(r.reviewCompanion){
+      html += `<tr class="review-prev-label"><td colspan="${colCount + 1}" style="white-space:normal; max-width:none; width:auto; overflow:visible; text-overflow:clip; position:static; box-shadow:none; background:var(--panel-2, #f4f5fb); border-bottom:none; padding:7px 8px 1px 8px; font-size:9.5px; font-weight:700; letter-spacing:.03em; text-transform:uppercase; color:var(--muted);">${r.reviewPrevLabel}</td></tr>`;
+    }
+    const rowCls = [r.reviewReason ? 'has-review-reason' : '', r.reviewCompanion ? 'review-prev-row' : ''].filter(Boolean).join(' ');
+    html += `<tr${rowCls ? ' class="' + rowCls + '"' : ''}>
+        <td title="${r.machine} (ID ${r.machineId})">${r.machineId ? r.machineId + ' ' : ''}${r.machine}</td>
+        <td title="${shiftTitle}">${shiftLetter}<span style="color:var(--muted); font-size:9px;">${photoTypeLetter}</span></td>
+        <td>${r.prevReading}</td><td>${r.reading}</td>
+        <td class="${diffClass}" title="${r.resetPoint ? 'Meter reset point — counted as 0 here; the next readings count from this one' : ''}">${r.diff}${r.resetPoint ? ' \u21bb' : ''}</td>
+        ${showFlags ? `<td>${flagCell}</td>` : ''}
+        <td>${r.stopTime}</td>
+        <td title="${r.reason}">${reasonNum}</td>
+        <td title="${byTitle}">${firstName}</td>
+        <td title="${statusTitle}">${statusIcon}</td>
+        ${isAdmin ? `<td style="text-align:center;"><button class="mini-icon-btn rowMenuBtn${notes.length ? ' has-note' : ''}" data-id="${r.id}" title="${notes.length ? 'Has a note: ' + noteTitle : 'More'}"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></button></td>` : (notes.length ? `<td><span title="${noteTitle}">${ICON_NOTE}</span></td>` : '<td></td>')}
+      </tr>`;
+    // Only in the unusual-entries view: why this row was picked, right under it.
+    if(r.reviewReason){
+      html += `<tr class="review-reason-row"><td colspan="${colCount + 1}" style="white-space:normal; max-width:none; width:auto; overflow:visible; text-overflow:clip; position:static; box-shadow:none; background:transparent; padding:0 8px 9px 8px; font-size:10.5px; line-height:1.35; color:var(--muted);">${r.reviewReason}</td></tr>`;
+    }
+  });
+  html += '</tbody></table></div>';
+  body.innerHTML = html;
+  if(isAdmin){
+    body.querySelectorAll('.rowMenuBtn').forEach(b => b.addEventListener('click', () => openRowActionsMenu(b.dataset.id)));
+  }
+}
+
 async function loadReport(){
+  // In the "unusual entries only" view the list is already in memory — after an
+  // edit/delete/reset only the rows you touched need re-reading, never the
+  // whole history.
+  if(reportReview){ await refreshReviewAfterChange(); return; }
   const body = $('reportBody');
   body.innerHTML = '<div class="empty-state">Loading log…</div>';
   if(!requireDb()){ body.innerHTML = '<div class="empty-state">Database isn\'t connected yet.<br>Open the file and paste your free Firebase config in — see the setup note at the top of the script.</div>'; return; }
@@ -6611,108 +6942,312 @@ async function loadReport(){
     $('statMachines').textContent = new Set(records.map(r => r.machine)).size;
     $('statToday').textContent = records.filter(r => r.date === todayStr).length;
 
-    const isAdmin = state.user.role === 'admin';
-    $('addManualEntryBtn').style.display = isAdmin ? 'inline-flex' : 'none';
-    $('reviewUnusualBtn').style.display = showFlags ? 'inline-flex' : 'none';
-    const colCount = 8 + (showFlags ? 1 : 0) + (isAdmin ? 1 : 0);
-    let html = '<div class="table-scroll"><table class="report-table report-table-compact"><thead><tr>' +
-      '<th>Mc</th><th>Sh</th><th>Prev</th><th>New</th><th>Diff</th>' +
-      (showFlags ? '<th></th>' : '') +
-      '<th>Stop</th><th>Rsn</th><th>By</th><th></th>' +
-      (isAdmin ? '<th></th>' : '') +
-      '</tr></thead><tbody>';
-    let lastDate = null;
-    rows.forEach(r => {
-      if(r.date !== lastDate){
-        lastDate = r.date;
-        html += `<tr class="date-group-row"><td colspan="${colCount}">${fmtDate(r.date)}</td></tr>`;
-      }
-      const diffClass = (typeof r.diff === 'number') ? (r.diff >= 0 ? 'diff-pos' : 'diff-neg') : '';
-      const shiftLetter = r.shift === 'Day' ? 'D' : 'N';
-      const photoTypeLetter = r.photoType === 'Starting' ? 'S' : 'E';
-      const shiftTitle = r.shift + ' shift \u2014 ' + r.photoType + ' Photo';
-
-      let flagCell = '';
-      if(showFlags){
-        if(r.flag === 'down') flagCell = `<span title="Reading went down">${ICON_FLAG_DOWN}</span>`;
-        else if(r.flag === 'idle') flagCell = `<span title="No change since last reading">${ICON_FLAG_IDLE}</span>`;
-        else if(r.flag === 'unusual') flagCell = `<span title="Unusual jump vs recent average">${ICON_FLAG_WARN}</span>`;
-      }
-
-      const reasonNum = (r.reason && r.reason !== '—') ? r.reason.split(' ')[0] : '—';
-
-      const firstName = (r.enteredBy || '—').split(' ')[0];
-      const byTitle = `${r.enteredBy} (${r.enteredById})`;
-
-      let statusIcon = ICON_STATUS_PENDING, statusTitle = 'Pending approval';
-      if(r.status === 'approved'){ statusIcon = ICON_STATUS_APPROVED; statusTitle = 'Approved' + (r.approvedBy && r.approvedBy !== '—' ? ' by ' + r.approvedBy : ''); }
-      else if(r.status === 'rejected'){ statusIcon = ICON_STATUS_REJECTED; statusTitle = 'Rejected' + (r.approvedBy && r.approvedBy !== '—' ? ' by ' + r.approvedBy : ''); }
-
-      const notes = [r.remarks, r.supervisorRemarks, r.adminNote].filter(Boolean);
-      const noteTitle = notes.length ? notes.join(' \u2014 ').replace(/"/g,'&quot;') : '';
-
-      html += `<tr>
-        <td title="${r.machine} (ID ${r.machineId})">${r.machineId ? r.machineId + ' ' : ''}${r.machine}</td>
-        <td title="${shiftTitle}">${shiftLetter}<span style="color:var(--muted); font-size:9px;">${photoTypeLetter}</span></td>
-        <td>${r.prevReading}</td><td>${r.reading}</td>
-        <td class="${diffClass}" title="${r.resetPoint ? 'Meter reset point — counted as 0 here; the next readings count from this one' : ''}">${r.diff}${r.resetPoint ? ' \u21bb' : ''}</td>
-        ${showFlags ? `<td>${flagCell}</td>` : ''}
-        <td>${r.stopTime}</td>
-        <td title="${r.reason}">${reasonNum}</td>
-        <td title="${byTitle}">${firstName}</td>
-        <td title="${statusTitle}">${statusIcon}</td>
-        ${isAdmin ? `<td style="text-align:center;"><button class="mini-icon-btn rowMenuBtn${notes.length ? ' has-note' : ''}" data-id="${r.id}" title="${notes.length ? 'Has a note: ' + noteTitle : 'More'}"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></button></td>` : (notes.length ? `<td><span title="${noteTitle}">${ICON_NOTE}</span></td>` : '<td></td>')}
-      </tr>`;
-    });
-    html += '</tbody></table></div>';
-    body.innerHTML = html;
-    if(isAdmin){
-      body.querySelectorAll('.rowMenuBtn').forEach(b => b.addEventListener('click', () => openRowActionsMenu(b.dataset.id)));
-    }
+    drawReportTable(rows);
   }catch(err){ console.error(err); body.innerHTML = '<div class="empty-state">Could not load the log. Pull to refresh and try again.</div>'; }
 }
-$('refreshReportBtn').addEventListener('click', () => { if(window.__db.invalidateReadings) window.__db.invalidateReadings(); loadReport(); });   // Refresh always re-reads
-$('reportFromDate').addEventListener('change', loadReport);
+$('refreshReportBtn').addEventListener('click', () => {
+  if(window.__db.invalidateReadings) window.__db.invalidateReadings();   // Refresh always re-reads
+  if(reportReview){ loadUnusualEntries(); return; }   // in the unusual-entries view, Refresh re-checks everything
+  loadReport();
+});
+// Changing a date field does NOT reload the Report by itself any more — picking
+// the first date used to trigger a full reload before the second was chosen.
+// Pick both dates, then press Show (in the unusual-entries view it re-checks
+// the new dates instead).
+$('showReportBtn').addEventListener('click', () => { if(reportReview){ loadUnusualEntries(); } else { loadReport(); } });
 
 // ---- Admin: add a manually-entered reading (e.g. an entry the operator forgot) ----
+// ---------------------------------------------------------------------------
+// Review Unusual Entries
+//
+// Shows the Report's own table — same columns, same row menu (View Photo, Edit,
+// Reset Point, Delete) — but only for entries that look genuinely wrong:
+//   1. a STARTING reading that is not exactly the last Ending reading
+//      (a new shift should start where the last one stopped, so the
+//      difference should be 0);
+//   2. an ENDING reading that went backwards and isn't marked as a meter reset;
+//   3. an ENDING reading more than 100% above that machine's average (i.e. more
+//      than double it). "Average" = the average of the machine's earlier real
+//      readings (its first-ever entry, resets, zeros and anything that went
+//      backwards are not counted). Too LOW can't be 100% below the average
+//      without going under 0, which is rule 2.
+// Rejected entries are left out, and an entry is skipped while the entry right
+// before it is still waiting for approval (its gap only looks odd until then).
+//
+// Only the dates picked on the Report are reviewed (the same cheap read the
+// Report itself uses: just those days, plus each machine's small history
+// summary for context). Clear the From date to review everything.
+// An entry that looks fine on inspection can be marked OK, which is saved on it.
+// After an edit/delete/reset, only the entries you opened are re-read (1 read
+// each) and the list is recalculated in memory.
+// ---------------------------------------------------------------------------
+const UNUSUAL_HIGH_FACTOR = 2;
+
+// How many entries in an oldest-first list come strictly before `rec`.
+function countChronoBefore(sortedList, rec){
+  let lo = 0, hi = sortedList.length;
+  while(lo < hi){
+    const mid = (lo + hi) >> 1;
+    if(chronoCompare(sortedList[mid], rec) < 0) lo = mid + 1; else hi = mid;
+  }
+  return lo;
+}
+
+// For any record: that machine's average amount at that point in time — the
+// average of its earlier real readings (null until there are 3 to judge by).
+// It is worked out from each machine's history summary, which the review reads
+// anyway for the previous readings — so it needs no extra reads and nothing
+// extra stored in the database.
+function makeUsualLookup(allRecords){
+  const chains = buildDiffSequenceByMachine(allRecords);   // approved Ending readings, oldest first
+  const info = {};
+  Object.keys(chains).forEach(m => {
+    const chain = chains[m];
+    const mObj = state.machines.find(x => String(x.id) === String(m));
+    const hasBaseline = !!(mObj && mObj.baselineReading !== undefined && mObj.baselineReading !== null && String(mObj.baselineReading) !== '');
+    let sum = 0, n = 0;
+    const usualAt = [];
+    chain.forEach((e, idx) => {
+      usualAt[idx] = n >= 3 ? sum / n : null;
+      // The first-ever entry (when there's no baseline) has nothing to compare with,
+      // a reset entry is counted as 0, and 0 / negative are not real production.
+      const real = (idx > 0 || hasBaseline) && !e.resetPoint && typeof e._diff === 'number' && e._diff > 0;
+      if(real){ sum += e._diff; n++; }
+    });
+    usualAt[chain.length] = n >= 3 ? sum / n : null;
+    info[m] = { chain, usualAt };
+  });
+  return (rec) => {
+    const m = info[rec.machine];
+    return m ? m.usualAt[countChronoBefore(m.chain, rec)] : null;
+  };
+}
+
+function findUnusualRows(allRecords, fromDate, toDate){
+  const rows = buildReportRows(allRecords, allRecords);
+  const recById = {};
+  const endsByMachine = {};
+  allRecords.forEach(r => {
+    recById[r._id] = r;
+    if(r.photoType === 'start' || r.status === 'rejected') return;
+    (endsByMachine[r.machine] = endsByMachine[r.machine] || []).push(r);
+  });
+  Object.keys(endsByMachine).forEach(m => endsByMachine[m].sort(chronoCompare));
+  const usualBefore = makeUsualLookup(allRecords);
+  const num = (v) => Number(v).toLocaleString();
+  const out = [];
+  rows.forEach(r => {
+    // Only the dates being reviewed — earlier entries are still used as context
+    // (the previous reading, the machine's usual amount), just never listed.
+    if(fromDate && r.date < fromDate) return;
+    if(toDate && r.date > toDate) return;
+    if(r.status === 'rejected' || typeof r.diff !== 'number') return;   // rejected, or nothing to compare with yet
+    const rec = recById[r.id];
+    if(!rec) return;
+    const list = endsByMachine[rec.machine] || [];
+    const before = list[countChronoBefore(list, rec) - 1];
+    if(before && before.status !== 'approved') return;   // the entry right before it isn't approved yet
+    let kind = null, flag = '', reason = '';
+    if(r.photoType === 'Starting'){
+      if(r.diff !== 0){
+        kind = 'start'; flag = r.diff < 0 ? 'down' : 'unusual';
+        reason = `Starting reading is ${num(Math.abs(r.diff))} ${r.diff > 0 ? 'higher' : 'lower'} than the last Ending reading \u2014 it should be the same (difference 0).`;
+      }
+    } else if(!r.resetApplied){
+      if(r.diff < 0){
+        kind = 'back'; flag = 'down';
+        reason = `Reading went backwards by ${num(Math.abs(r.diff))} since the last Ending reading. If the meter was reset, mark this entry as the reset point.`;
+      } else {
+        const usual = usualBefore(rec);
+        if(typeof usual === 'number' && usual > 0 && r.diff > usual * UNUSUAL_HIGH_FACTOR){
+          kind = 'high'; flag = 'unusual';
+          reason = `Difference ${num(r.diff)} is more than double this machine's average ${num(Math.round(usual))} (over ${num(Math.round(usual * UNUSUAL_HIGH_FACTOR))}).`;
+        }
+      }
+    }
+    if(kind){
+      // "Mark as OK": saved on the entry itself, together with the reading and
+      // difference it was reviewed at. It only holds while the entry is still
+      // exactly that — if the reading or the gap to the last Ending changes
+      // later, it needs a fresh look and is listed again.
+      const ok = rec.unusualOk;
+      const reviewOk = (ok && String(ok.reading) === String(rec.reading) && Number(ok.diff) === r.diff) ? { by: ok.by || '', at: ok.at || 0 } : null;
+      out.push(Object.assign({}, r, { flag: reviewOk ? '' : flag, reviewKind: kind, reviewReason: reason, reviewOk, reviewPrevId: before ? before._id : null }));
+    }
+  });
+  return out;
+}
+
+// The entry an unusual row is compared with is often an older one that was only
+// read as a line in the machine's history summary (no photo, no operator). To
+// fix it from here it needs its full details, so fetch just those few entries:
+// 1 read each, only for rows still waiting for review, and only when needed.
+async function completeReviewCompanions(rv){
+  const byId = new Map(rv.records.map(r => [r._id, r]));
+  const need = new Set();
+  findUnusualRows(rv.records, rv.from, rv.to).forEach(r => {
+    if(r.reviewOk || !r.reviewPrevId) return;
+    const rec = byId.get(r.reviewPrevId);
+    if(rec && rec._fromDigest) need.add(r.reviewPrevId);
+  });
+  for(const pid of need){
+    try{
+      const full = await window.__db.getReading(pid);
+      const at = rv.records.findIndex(x => x._id === pid);
+      if(full && at >= 0) rv.records[at] = full;
+    }catch(err){ console.error(err); }
+  }
+}
+
+function exitReportReview(){
+  reportReview = null;
+  const banner = $('reportReviewBanner');
+  if(banner){ banner.style.display = 'none'; banner.innerHTML = ''; }
+}
+
+function renderReview(){
+  const rv = reportReview;
+  if(!rv) return;
+  const esc = (t) => String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const all = findUnusualRows(rv.records, rv.from, rv.to);
+  const okCount = all.filter(r => r.reviewOk).length;
+  const rows = all.filter(r => rv.showOk || !r.reviewOk).map(r => r.reviewOk
+    ? Object.assign({}, r, { reviewReason: `\u2713 Marked OK by ${esc(r.reviewOk.by || 'admin')}${r.reviewOk.at ? ' on ' + fmtDateFromTs(r.reviewOk.at) : ''}. ${r.reviewReason}` })
+    : r);
+  const shiftOrder = { 'Day': 0, 'Night': 1 };
+  rows.sort((a,b) => {
+    if(a.date !== b.date) return a.date < b.date ? 1 : -1;   // same order as the Report: newest date first
+    const so = (shiftOrder[a.shift] ?? 2) - (shiftOrder[b.shift] ?? 2);
+    if(so !== 0) return so;
+    return a.machineNum - b.machineNum;
+  });
+  rv.rows = rows;
+  // Under every unusual entry still waiting for review goes the entry it is compared with
+  // (the previous Ending) — even if that one looks fine — so both can be checked (photo, edit)
+  // and whichever is wrong can be fixed right here.
+  const byId = new Map(rv.records.map(r => [r._id, r]));
+  const prevRecs = [], seenPrev = new Set();
+  rows.forEach(r => {
+    if(!r.reviewOk && r.reviewPrevId && !seenPrev.has(r.reviewPrevId) && byId.has(r.reviewPrevId)){ seenPrev.add(r.reviewPrevId); prevRecs.push(byId.get(r.reviewPrevId)); }
+  });
+  const prevRowById = {};
+  if(prevRecs.length) buildReportRows(rv.records, prevRecs).forEach(pr => { prevRowById[pr.id] = pr; });
+  const drawRows = [], companions = [];
+  rows.forEach(r => {
+    drawRows.push(r);
+    const pr = (!r.reviewOk && r.reviewPrevId) ? prevRowById[r.reviewPrevId] : null;
+    if(pr){
+      const comp = Object.assign({}, pr, { flag: '', reviewCompanion: true, reviewPrevLabel: `Previous entry \u2014 what the one above is compared with: ${fmtDate(pr.date)} \u00b7 ${pr.shift} shift \u00b7 ${pr.photoType} photo` });
+      drawRows.push(comp); companions.push(comp);
+    }
+  });
+  lastReportRows = rows.concat(companions);   // the unusual rows first, so a record that is both finds its own row
+  const today = new Date();
+  const todayStr = today.getFullYear() + '-' + pad(today.getMonth()+1) + '-' + pad(today.getDate());
+  $('statEntries').textContent = rows.length;
+  $('statMachines').textContent = new Set(rows.map(r => r.machineId)).size;
+  $('statToday').textContent = rows.filter(r => r.date === todayStr).length;
+
+  const toReview = rows.filter(r => !r.reviewOk);
+  const count = (k) => toReview.filter(r => r.reviewKind === k).length;
+  const parts = [];
+  if(count('start')) parts.push(`${count('start')} starting reading${count('start')===1?'':'s'} not 0`);
+  if(count('high')) parts.push(`${count('high')} higher than usual`);
+  if(count('back')) parts.push(`${count('back')} went backwards`);
+  const rangeText = (!rv.from && !rv.to) ? 'All dates'
+    : (rv.from && rv.to) ? (rv.from === rv.to ? fmtDate(rv.from) : `${fmtDate(rv.from)} \u2192 ${fmtDate(rv.to)}`)
+    : rv.from ? `${fmtDate(rv.from)} onwards` : `Up to ${fmtDate(rv.to)}`;
+  const isAdmin = state.user.role === 'admin';
+  const banner = $('reportReviewBanner');
+  banner.style.display = 'block';
+  banner.innerHTML = `<div class="card" style="border-color:var(--warn); background:var(--warn-soft); margin-bottom:12px;">
+    <b style="font-family:Oswald,sans-serif; font-size:12.5px; letter-spacing:.04em; text-transform:uppercase; color:var(--warn);">Unusual entries only</b>
+    <div class="hint" style="text-align:left; margin-left:0; margin-top:6px;">${rangeText} \u2014 ${toReview.length} entr${toReview.length===1?'y':'ies'} to review${parts.length ? ': ' + parts.join(' \u00b7 ') : ''}.${isAdmin && rows.length ? ' Tap the small menu button at the end of a row to view its photo, edit it, mark a reset point, delete it \u2014 or mark it OK if it is fine as it is. Under each one is the entry it is compared with, so you can check both photos and fix whichever is wrong.' : ''} The dates are the ones picked above; change them and press Show.</div>
+    <div class="report-toolbar" style="margin:10px 0 0;">
+      ${okCount ? `<button class="btn btn-ghost" id="reportReviewToggleOk" style="margin-bottom:0;">${rv.showOk ? 'Hide' : 'Show'} ${okCount} marked OK</button>` : ''}
+      <button class="btn btn-ghost" id="reportReviewBackBtn" style="margin-bottom:0;">Back to Report</button>
+    </div>
+  </div>`;
+  $('reportReviewBackBtn').addEventListener('click', () => { exitReportReview(); loadReport(); });
+  const toggle = $('reportReviewToggleOk');
+  if(toggle) toggle.addEventListener('click', () => { rv.showOk = !rv.showOk; renderReview(); });
+
+  if(rows.length === 0){
+    $('reportBody').innerHTML = `<div class="empty-state">Nothing unusual found${(rv.from || rv.to) ? ' in these dates' : ''} \u2014 every machine looks consistent.</div>`;
+    return;
+  }
+  drawReportTable(drawRows);
+}
+
+// Saves (or removes) the "this is fine" mark on an entry. One write, no reads —
+// the copy held in memory is updated directly.
+async function setReviewOk(id, ok){
+  const rv = reportReview;
+  const row = lastReportRows.find(x => x.id === id);
+  if(!rv || !row || state.user.role !== 'admin') return;
+  const mark = ok ? { reading: String(row.reading), diff: row.diff, by: state.user.name || state.user.loginId, at: Date.now() } : null;
+  try{
+    await window.__db.updateReading(id, { unusualOk: mark });
+  }catch(err){
+    console.error(err);
+    toast('Could not save \u2014 check your connection and try again');
+    return;
+  }
+  if(reportReview !== rv) return;
+  const at = rv.records.findIndex(r => r._id === id);
+  if(at >= 0) rv.records[at] = Object.assign({}, rv.records[at], { unusualOk: mark });
+  rv.touched.delete(id);
+  toast(ok ? 'Marked as OK \u2014 it won\u2019t be listed again' : 'OK mark removed');
+  await completeReviewCompanions(rv);
+  if(reportReview !== rv) return;
+  renderReview();
+}
+
+// After an edit / delete / reset in the unusual-entries view: re-read ONLY the
+// rows you opened (1 read each), patch them into the copy held in memory, and
+// recalculate the list from that — the rest of the history is never re-read.
+async function refreshReviewAfterChange(){
+  const rv = reportReview;
+  if(!rv) return;
+  const ids = Array.from(rv.touched);
+  rv.touched.clear();
+  let failed = 0;
+  for(const id of ids){
+    try{
+      const fresh = await window.__db.getReading(id);
+      const at = rv.records.findIndex(r => r._id === id);
+      if(!fresh){ if(at >= 0) rv.records.splice(at, 1); }
+      else if(at >= 0) rv.records[at] = fresh;
+      else rv.records.push(fresh);
+    }catch(err){ console.error(err); failed++; }
+  }
+  if(reportReview !== rv) return;   // they pressed Back while this was loading
+  if(failed) toast('Some changes could not be re-checked \u2014 press Refresh to reload the list');
+  await completeReviewCompanions(rv);
+  if(reportReview !== rv) return;
+  renderReview();
+}
+
 async function loadUnusualEntries(){
   if(!requireDb()) return;
-  const backdrop = document.createElement('div');
-  backdrop.className = 'edit-modal-backdrop';
-  backdrop.id = 'unusualEntriesBackdrop';
-  backdrop.innerHTML = `<div class="edit-modal-sheet">
-    <h2 style="margin-top:0;">Review Unusual Entries — All Machines</h2>
-    <p class="hint" style="text-align:left; margin-left:0;">Every entry flagged as went-down, no-change, or unusually different from that machine's normal amount — across your whole history, not just what Report is currently showing.</p>
-    <div id="unusualEntriesBody"><div class="empty-state">Checking every machine…</div></div>
-    <button class="btn btn-ghost" id="unusualEntriesClose" style="margin-top:12px;">Close</button>
-  </div>`;
-  backdrop.addEventListener('click', (e) => { if(e.target === backdrop) backdrop.remove(); });
-  document.body.appendChild(backdrop);
-  $('unusualEntriesClose').addEventListener('click', () => backdrop.remove());
+  const body = $('reportBody');
+  body.innerHTML = '<div class="empty-state">Checking\u2026</div>';
+  const from = $('reportFromDate').value, to = $('reportToDate').value;
+  const keepShowOk = reportReview ? reportReview.showOk : false;
   try{
-    const allRecords = await window.__db.loadAllReadingsEver();
-    const rows = buildReportRows(allRecords, allRecords).filter(r => r.flag);
-    lastReportRows = rows;
-    rows.sort((a,b) => b.date.localeCompare(a.date));
-    const body = $('unusualEntriesBody');
-    if(rows.length === 0){
-      body.innerHTML = '<div class="empty-state">Nothing flagged — every machine looks consistent with its usual pattern.</div>';
-      return;
-    }
-    const flagLabel = { down: 'Went down', idle: 'No change', unusual: 'Unusual amount' };
-    body.innerHTML = `<div class="hint" style="text-align:left; margin-left:0; margin-bottom:10px;">${rows.length} flagged entr${rows.length===1?'y':'ies'}.</div>` +
-      rows.map(r => `
-        <div class="card" style="margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; gap:10px;">
-          <div>
-            <b>${r.machine}</b> — ${fmtDate(r.date)}, ${r.shift}
-            <div class="hint" style="text-align:left; margin-left:0;">${r.prevReading} → ${r.reading} (diff ${r.diff}) · ${flagLabel[r.flag] || r.flag}</div>
-          </div>
-          <button class="btn btn-ghost unusualEditBtn" data-id="${r.id}">Edit</button>
-        </div>`).join('');
-    body.querySelectorAll('.unusualEditBtn').forEach(btn => {
-      btn.addEventListener('click', () => { backdrop.remove(); openReportEditPanel(btn.dataset.id); });
-    });
-  }catch(err){ console.error(err); $('unusualEntriesBody').innerHTML = '<div class="empty-state">Could not load — check your connection.</div>'; }
+    // The very same cheap read the Report uses for those dates (and the whole
+    // history only if the From date has been cleared).
+    const records = await loadReportSourceRecords(from, to);
+    const rv = { records: records.slice(), touched: new Set(), rows: [], from, to, showOk: keepShowOk };
+    reportReview = rv;
+    await completeReviewCompanions(rv);
+    if(reportReview !== rv) return;
+    renderReview();
+  }catch(err){
+    console.error(err);
+    exitReportReview();
+    body.innerHTML = '<div class="empty-state">Could not load \u2014 check your connection.</div>';
+  }
 }
 if($('reviewUnusualBtn')){
   $('reviewUnusualBtn').addEventListener('click', loadUnusualEntries);
@@ -7263,7 +7798,6 @@ async function loadPicksForApprovals(){
 $('picksEmployeeSelect').addEventListener('change', () => { resetPagination('picksBodyPagination'); loadPicksForApprovals(); });
 $('picksFrom').addEventListener('change', () => { resetPagination('picksBodyPagination'); loadPicksForApprovals(); });
 $('picksTo').addEventListener('change', () => { resetPagination('picksBodyPagination'); loadPicksForApprovals(); });
-$('reportToDate').addEventListener('change', loadReport);
 
 /* ============================================================
    MY STATUS (operator only) — view-only: what's missing, and
@@ -7797,6 +8331,15 @@ $('profilePhotoInput').addEventListener('change', async (e) => {
   }catch(err){ console.error(err); toast('Could not upload photo — try a smaller image'); }
 });
 
+// One shift per person. For operators and supervisors it is the shift chosen next to Assigned
+// Machines (Admin > Users) — the one Log Reading and Approvals actually use — so the Profile simply
+// shows that. For everyone else (no such option there) it is the Shift chosen in their Profile.
+function isShiftAssignedRole(u){ return u.role === 'operator' || u.role === 'supervisor'; }
+function profileShiftText(u){
+  if(isShiftAssignedRole(u)) return u.assignedShift === 'Day' ? 'Day' : (u.assignedShift === 'Night' ? 'Night' : 'Both / Not fixed');
+  return (u.profile && u.profile.shiftPref) || '';
+}
+
 function fieldRow(label, value){
   return `<div class="row"><span class="k">${label}</span><span>${value || '—'}</span></div>`;
 }
@@ -7851,7 +8394,7 @@ function renderGeneralTab(){
         ${fieldRow('Home Country Airport', p.homeCountryAirport)}
         ${fieldRow('Position', p.position)}
         ${fieldRow('Employment Type', p.employmentType)}
-        ${fieldRow('Shift', p.shiftPref)}
+        ${fieldRow('Shift', profileShiftText(u))}
         ${fieldRow('Joining Date', fmtDate(p.joiningDate))}
         ${fieldRow('Total Time with Us', totalYearsTxt)}
         ${fieldRow('End Date', fmtDate(p.endDate))}
@@ -7870,7 +8413,9 @@ function renderGeneralTab(){
       <div class="field"><label>Home Country Airport</label><input type="text" id="pf-homeCountryAirport" value="${p.homeCountryAirport||''}"></div>
       <div class="field"><label>Position</label><select id="pf-position"><option value="">— Select —</option>${state.positions.map(x=>`<option ${p.position===x?'selected':''}>${x}</option>`).join('')}</select></div>
       <div class="field"><label>Employment Type</label><select id="pf-employmentType"><option value="">— Select —</option><option ${p.employmentType==='Sponsor'?'selected':''}>Sponsor</option><option ${p.employmentType==='Non-Sponsor'?'selected':''}>Non-Sponsor</option></select></div>
-      <div class="field"><label>Shift</label><select id="pf-shiftPref"><option value="">— Select —</option><option ${p.shiftPref==='Day'?'selected':''}>Day</option><option ${p.shiftPref==='Night'?'selected':''}>Night</option></select></div>
+      ${isShiftAssignedRole(u)
+        ? `<div class="field"><label>Shift <span style="text-transform:none;color:var(--muted);">(set in Admin &rarr; Users, next to Assigned Machines)</span></label><input type="text" value="${profileShiftText(u)}" disabled></div>`
+        : `<div class="field"><label>Shift</label><select id="pf-shiftPref"><option value="">— Select —</option><option ${p.shiftPref==='Day'?'selected':''}>Day</option><option ${p.shiftPref==='Night'?'selected':''}>Night</option></select></div>`}
       <div class="field"><label>Joining Date</label><input type="date" id="pf-joiningDate" value="${p.joiningDate||''}"></div>
       <div class="field"><label>End Date <span style="text-transform:none;color:var(--muted);">(if exited)</span></label><input type="date" id="pf-endDate" value="${p.endDate||''}"></div>
       <div class="field"><label>Vacation Eligibility</label><select id="pf-vacationEligibility"><option value="">— Select —</option><option value="1" ${p.vacationEligibility==='1'?'selected':''}>1 Year</option><option value="2" ${p.vacationEligibility==='2'?'selected':''}>2 Year</option></select></div>
@@ -7891,11 +8436,12 @@ async function saveGeneralTab(){
     homeCountryAirport: $('pf-homeCountryAirport').value.trim(),
     position: $('pf-position').value,
     employmentType: $('pf-employmentType').value,
-    shiftPref: $('pf-shiftPref').value,
     joiningDate: $('pf-joiningDate').value,
     endDate: $('pf-endDate').value,
     vacationEligibility: $('pf-vacationEligibility').value
   });
+  const shiftBox = $('pf-shiftPref');
+  if(shiftBox) p.shiftPref = shiftBox.value;   // operators/supervisors have no box here: their shift is set next to Assigned Machines
   // "Not Applicable" is a manual Admin choice, not automatic — a Sponsor
   // employee (e.g. management, or a Saudi national) can just as easily not
   // need their passport tracked. Anyone whose Location hasn't been chosen
