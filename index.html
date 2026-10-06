@@ -335,7 +335,9 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
   function encodeHistoryEntry(r){
     // Last field: 0 = not a reset, 1 = an older-style reset (counts as 0), 2 = a "count from zero"
     // reset on an Ending, 3 = a "count from zero" reset on a Starting photo (a restart marker).
-    const resetCode = r.resetPoint ? (r.resetMode === 'zero' ? (r.photoType === 'start' ? 3 : 2) : 1) : 0;
+    // 4 = a Starting photo that sets where the next Ending counts from (it carries picks of its own).
+    const resetCode = r.photoType === 'start' ? ((r.resetPoint && r.resetMode === 'zero') ? 3 : 4)
+      : (r.resetPoint ? (r.resetMode === 'zero' ? 2 : 1) : 0);
     return [r._id, r.date, r.shift, r.timestamp || 0, String(r.reading), resetCode].join('|');
   }
   function decodeHistoryEntry(str, machineId){
@@ -343,7 +345,7 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
     const e = { _id: id, machine: String(machineId), status: 'approved', photoType: 'end', date, shift, timestamp: Number(ts), reading };
     if(reset === '1') e.resetPoint = true;
     if(reset === '2' || reset === '3'){ e.resetPoint = true; e.resetMode = 'zero'; }
-    if(reset === '3') e.photoType = 'start';
+    if(reset === '3' || reset === '4') e.photoType = 'start';
     return e;
   }
 
@@ -620,7 +622,20 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
       // Treat it as fully handled rather than counting it as a reading.
       // The one exception is a Starting photo marked as a "count from zero" reset: it sets where the
       // next Ending counts from (and what the pointer says), so leave that one to the full calculation.
-      if(reading.photoType === 'start') return !(reading.resetPoint && reading.resetMode === 'zero');
+      // A Starting photo that carries stop time is counted too (when its shift has no Ending), so that also
+      // goes to the full calculation.
+      if(reading.photoType === 'start'){
+        const hasStop = (Array.isArray(reading.stopBreakdown) && reading.stopBreakdown.length > 0)
+          || (Number(reading.stopTime) > 0 && !!reading.reason && reading.reason !== '—');
+        // Picks that sit in the Starting photo itself (its reading is above the previous reading) are counted for
+        // the operator who gave it. The Approvals card already knew the previous reading (_prevHint, set by the
+        // approving screen), so deciding this costs no extra read; an ordinary Starting photo stays a no-op.
+        const hint = reading._prevHint;
+        const dayBefore = (ds) => { const d = new Date(ds + 'T12:00:00'); d.setDate(d.getDate() - 1); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+        const shiftBefore = reading.shift === 'Night' ? reading.date + '|Day' : dayBefore(reading.date) + '|Night';   // only a previous entry from the shift right before counts
+        const hasPicks = hint !== undefined && hint !== null && hint !== '' && Number(reading.reading) > Number(hint) && String(reading._prevKey) === shiftBefore;
+        return !((reading.resetPoint && reading.resetMode === 'zero') || hasStop || hasPicks);
+      }
       const mid = String(machineId);
       const SHIFT_ORDER = { 'Day': 0, 'Night': 1 };
       const chronoCmp = (a, b) => {
@@ -631,6 +646,9 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
       };
       const pointer = await getDoc(doc(db, 'machineLastApproved', mid));
       const last = pointer.exists() ? pointer.data() : null;
+      // A Starting photo with stop time in THIS shift is being counted on its own. Now that an Ending is
+      // approved the Ending carries the shift, so let the full calculation drop the Starting's stop.
+      if(last && Array.isArray(last.aloneKeys) && last.aloneKeys.includes(reading.date + '|' + reading.shift)) return false;
       // Out of order (a backdated/backlog approval) — not the simple case,
       // let the full recalculation handle it correctly.
       if(last && chronoCmp(reading, last) < 0) return false;
@@ -714,7 +732,8 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
         await setDoc(doc(db, 'machineLastApproved', mid), {
           reading: reading.reading, date: reading.date, shift: reading.shift,
           timestamp: reading.timestamp, readingId: reading._id,
-          diffSum: last.diffSum + diff, diffCount: last.diffCount + 1
+          diffSum: last.diffSum + diff, diffCount: last.diffCount + 1,
+          ...(Array.isArray(last.aloneKeys) && last.aloneKeys.length ? { aloneKeys: last.aloneKeys } : {})
         });
         return true;
       }catch(err){
@@ -2869,12 +2888,23 @@ function isZeroReset(r){ return !!r && !!r.resetPoint && r.resetMode === 'zero';
 // A Starting photo is never part of the production chain, so marking one "count from zero" works as a
 // restart marker instead: the next Ending after it counts from 0. Returns the approved markers per machine.
 function zeroRestartMarkers(records){
+  // (Now every Starting photo that sets where the next Ending counts from: a "count from zero" reset, or a lone
+  // Starting photo that carries picks. Needs buildDiffSequenceByMachine to have run on the same records first.)
   const byMachine = {};
   (records || []).forEach(r => {
-    if(r.status === 'approved' && r.photoType === 'start' && isZeroReset(r)){ (byMachine[r.machine] = byMachine[r.machine] || []).push(r); }
+    if(r.status === 'approved' && r.photoType === 'start' && (isZeroReset(r) || r._checkpoint === true)){ (byMachine[r.machine] = byMachine[r.machine] || []).push(r); }
   });
   Object.keys(byMachine).forEach(m => byMachine[m].sort(chronoCompare));
   return byMachine;
+}
+// The reading the next Ending counts from when this Starting photo is the starting point: 0 for a "count from zero"
+// reset whose shift has an Ending (that Ending carries the shift), otherwise the Starting photo's own reading.
+function startPointReading(r){ return r._startKind === 'zero' ? '0' : String(r.reading); }
+// The shift right before a given one: Night -> the same day's Day; Day -> the previous day's Night.
+function previousShiftOf(date, shift){
+  if(shift === 'Night') return { date, shift: 'Day' };
+  const d = new Date(date + 'T12:00:00'); d.setDate(d.getDate() - 1);
+  return { date: d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()), shift: 'Night' };
 }
 
 // Every diff calculation (Report, Earned Picks, Production, Top/Lowest
@@ -2888,7 +2918,12 @@ function buildDiffSequenceByMachine(records){
   // photo is missing, blurry, or unclear, and was never meant to be counted
   // as its own production interval. Records saved before this feature
   // existed have no photoType at all, so they're treated as "end" too.
-  const approved = records.filter(r => r.status === 'approved' && (r.photoType !== 'start' || isZeroReset(r)));   // restart markers ride along, they are never counted themselves
+  // A Starting photo with no approved Ending in its machine/date/shift is "alone". Alone Starting photos (and
+  // "count from zero" resets) ride along as starting points; an ordinary Starting photo is left out, as always.
+  const approvedAll = records.filter(r => r.status === 'approved');
+  const endedKeys = new Set(approvedAll.filter(r => r.photoType !== 'start').map(r => r.machine + '|' + r.date + '|' + r.shift));
+  records.forEach(r => { if(r.photoType === 'start'){ r._startPicks = 0; r._checkpoint = false; r._startKind = null; } });   // never trust flags left from an earlier run
+  const approved = approvedAll.filter(r => r.photoType !== 'start' || isZeroReset(r) || !endedKeys.has(r.machine + '|' + r.date + '|' + r.shift));
   const byMachine = {};
   approved.forEach(r => { (byMachine[r.machine] = byMachine[r.machine] || []).push(r); });
   const result = {};
@@ -2901,10 +2936,27 @@ function buildDiffSequenceByMachine(records){
       list.push(baseline);
     }
     list.sort(chronoCompare);
+    let prevKept = null;   // the latest entry that later Endings count from
+    const baseOf = (p) => p._startKind === 'zero' ? 0 : Number(p.reading);
     for(let i=0;i<list.length;i++){
       const cur = list[i];
-      if(cur.photoType === 'start') continue;   // a restart marker: never counted itself, it only sets where the next Ending counts from
-      const prev = i>0 ? list[i-1] : null;
+      if(cur.photoType === 'start'){
+        // Never part of the production chain itself; it only sets where the next Ending counts from.
+        const lone = !endedKeys.has(cur.machine + '|' + cur.date + '|' + cur.shift);
+        if(isZeroReset(cur)){
+          if(lone){ cur._startPicks = Number(cur.reading); cur._checkpoint = true; cur._startKind = 'own'; }   // after a reset its reading is its own picks
+          else { cur._startKind = 'zero'; }                                                                    // an Ending carries this shift: it counts from 0
+          prevKept = cur;
+        } else if(lone && prevKept){
+          // Only when the entry we count from belongs to the shift right before this one. If a shift in between
+          // has no approved Ending (pending, rejected or not logged), whose picks those are is unknown: count nothing.
+          const ps = previousShiftOf(cur.date, cur.shift);
+          const d = Number(cur.reading) - baseOf(prevKept);
+          if(d > 0 && prevKept.date === ps.date && prevKept.shift === ps.shift){ cur._startPicks = d; cur._checkpoint = true; cur._startKind = 'own'; prevKept = cur; }   // picks that came before this photo: the operator who gave it earned them
+        }
+        continue;
+      }
+      const prev = prevKept;
       const afterMarker = !!(prev && prev.photoType === 'start');
       cur._afterMarker = afterMarker;
       // A reading marked resetPoint means the physical meter was reset right
@@ -2915,9 +2967,10 @@ function buildDiffSequenceByMachine(records){
       if(isZeroReset(cur)){
         cur._diff = Number(cur.reading);   // "count from zero": the previous reading counts as 0
       } else {
-        // after a restart marker the previous reading counts as 0 too
-        cur._diff = (prev && !cur.resetPoint) ? (Number(cur.reading) - (afterMarker ? 0 : Number(prev.reading))) : 0;
+        // after a starting point the previous reading is that point's reading (0 for a reset whose shift has an Ending)
+        cur._diff = (prev && !cur.resetPoint) ? (Number(cur.reading) - baseOf(prev)) : 0;
       }
+      prevKept = cur;
     }
     result[mid] = list.filter(r => !r._isBaseline && r.photoType !== 'start');
   });
@@ -3013,6 +3066,22 @@ async function recalculateMachineDiffs(machineId, stats){
       byOpDate[key].stopBreakdown.push(...extractStopBreakdown(r));
       byOpDate[key].shifts.add(r.shift);
     });
+    // A Starting photo that carries stop time, in a shift that has no approved Ending photo, still earns its
+    // stop time: it is counted on its own (0 reading picks + the picks from the stop), so it shows on the
+    // operator's profile. As soon as an Ending for that shift is approved, the Ending carries the shift exactly
+    // as before and the Starting's stop is not added on top.
+    const endingShifts = new Set(chain.map(r => r.date + '|' + r.shift));
+    // It also earns the picks that sit in the Starting photo itself (its reading above the previous reading):
+    // those belong to the operator who gave the entry, and the next Ending counts from this reading instead.
+    const aloneStarts = records.filter(r => r.status === 'approved' && r.photoType === 'start' && r.operatorId
+      && !endingShifts.has(r.date + '|' + r.shift) && (extractStopBreakdown(r).length > 0 || r._startPicks > 0));
+    aloneStarts.forEach(r => {
+      const key = r.operatorId + '|' + r.date;
+      if(!byOpDate[key]) byOpDate[key] = { operatorId: r.operatorId, date: r.date, picks: 0, stopBreakdown: [], shifts: new Set() };
+      byOpDate[key].picks += (r._startPicks || 0);
+      byOpDate[key].stopBreakdown.push(...extractStopBreakdown(r));
+      byOpDate[key].shifts.add(r.shift);
+    });
     const computed = Object.values(byOpDate).map(s => ({
       operatorId: s.operatorId, date: s.date, picks: s.picks,
       stopBreakdown: s.stopBreakdown, shifts: Array.from(s.shifts)
@@ -3043,14 +3112,17 @@ async function recalculateMachineDiffs(machineId, stats){
       const lastChain = chain[chain.length - 1] || null;
       // A restart marker newer than the last Ending is where the next Ending will count from: reading 0.
       const lastEntry = (lastMarker && (!lastChain || chronoCompare(lastMarker, lastChain) > 0))
-        ? { reading: '0', date: lastMarker.date, shift: lastMarker.shift, timestamp: lastMarker.timestamp, _id: lastMarker._id }
+        ? { reading: startPointReading(lastMarker), date: lastMarker.date, shift: lastMarker.shift, timestamp: lastMarker.timestamp, _id: lastMarker._id }
         : lastChain;
       const mObj = state.machines.find(x => String(x.id) === String(machineId));
       const ds = diffStatsForChain(chain, mObj);
       await window.__db.setMachineLastApproved(machineId, {
         reading: lastEntry.reading, date: lastEntry.date, shift: lastEntry.shift,
         timestamp: lastEntry.timestamp, readingId: lastEntry._id,
-        diffSum: ds.sum, diffCount: ds.count
+        diffSum: ds.sum, diffCount: ds.count,
+        // which date+shift keys have a Starting photo being counted on its own, so the quick approval of an
+        // Ending in that shift knows to hand over to this full calculation (written only when there are any)
+        ...(aloneStarts.length ? { aloneKeys: Array.from(new Set(aloneStarts.map(r => r.date + '|' + r.shift))) } : {})
       });
     } else {
       await window.__db.clearMachineLastApproved(machineId);
@@ -6203,7 +6275,7 @@ function buildMachineStats(all){
     let last = list[list.length-1] || null;
     // a restart marker newer than the last Ending: the next Ending counts from 0
     const mk = markers[m] && markers[m][markers[m].length - 1];
-    if(mk && (!last || chronoCompare(mk, last) > 0)) last = { _id: mk._id, reading: '0', date: mk.date, shift: mk.shift, timestamp: mk.timestamp };
+    if(mk && (!last || chronoCompare(mk, last) > 0)) last = { _id: mk._id, reading: startPointReading(mk), date: mk.date, shift: mk.shift, timestamp: mk.timestamp };
     stats[m] = { last, avgDiff: avg };
   });
   return stats;
@@ -6443,7 +6515,7 @@ async function loadApprovals(){
           </div>
           <div class="field" style="margin-bottom:8px;">
             <label>Reading (check against photo — edit if wrong)</label>
-            <div class="lcd-input-wrap"><input type="text" inputmode="numeric" class="editReadingInput" data-id="${r._id}" data-prev="${prevReading === null ? '' : prevReading}" value="${r.reading}" ${locked?'disabled':''}></div>
+            <div class="lcd-input-wrap"><input type="text" inputmode="numeric" class="editReadingInput" data-id="${r._id}" data-prev="${prevReading === null ? '' : prevReading}" data-prevkey="${st && st.last ? [st.last.date, st.last.shift].join(String.fromCharCode(124)) : String()}" value="${r.reading}" ${locked?'disabled':''}></div>
           </div>
           <div class="approve-key-readout">
             <span>Previous reading: <b>${prevReading === null ? '—' : prevReading}</b></span>
@@ -6764,6 +6836,8 @@ async function decideReading(id, status){
   const newShift = shiftInput ? shiftInput.value : null;
   const newReading = readingInput ? readingInput.value.trim() : null;
   const supervisorNote = noteInput ? noteInput.value.trim() : '';
+  const prevHint = readingInput ? readingInput.dataset.prev : null;   // the previous reading this card showed (already loaded, no extra read)
+  const prevKey = readingInput ? readingInput.dataset.prevkey : null;  // ...and which date|shift it belongs to
 
   // Up to 4 Stop Time / Reason pairs, entered by the Supervisor (the
   // operator no longer enters these at all) — none are mandatory. They
@@ -6840,6 +6914,7 @@ async function decideReading(id, status){
         catch(err){ console.error('Background post-approval work failed (non-fatal, approval already saved; the next Approvals open finishes it):', err); return; }
         // The calculation comes FIRST and on its own: a failed photo move can no
         // longer stop the daily totals from being written.
+        if(current){ current._prevHint = prevHint; current._prevKey = prevKey; }
         if(current && current.machine) await runMachineCalc(current.machine, () => approvalCalculation(id, current));
         try{
           if(current && current.photoDataUrl && !isPhotoBlobRef(current.photoDataUrl)){
@@ -6875,7 +6950,7 @@ function buildReportRows(allRecords, recordsToShow){
     let list = (chainByMachine[m] || []).slice();
     // Restart markers (a Starting photo marked "count from zero") sit in their place in time with reading 0,
     // so the Ending after one shows previous 0.
-    const mks = (markersByMachine[m] || []).map(k => ({ _id: k._id, date: k.date, shift: k.shift, timestamp: k.timestamp, reading: '0', _marker: true }));
+    const mks = (markersByMachine[m] || []).map(k => ({ _id: k._id, date: k.date, shift: k.shift, timestamp: k.timestamp, reading: startPointReading(k), _marker: true }));
     if(mks.length) list = list.concat(mks).sort(chronoCompare);
     const mObj = state.machines.find(x => String(x.id) === String(m));
     if(mObj && mObj.baselineReading !== undefined && mObj.baselineReading !== null && String(mObj.baselineReading) !== ''){
@@ -7208,7 +7283,7 @@ function findUnusualRows(allRecords, fromDate, toDate){
   const endsByMachine = {};
   allRecords.forEach(r => {
     recById[r._id] = r;
-    if((r.photoType === 'start' && !isZeroReset(r)) || r.status === 'rejected') return;   // a restart marker counts as the entry before the next Ending
+    if((r.photoType === 'start' && !isZeroReset(r) && !r._checkpoint) || r.status === 'rejected') return;   // a starting-point Starting photo counts as the entry before the next Ending
     (endsByMachine[r.machine] = endsByMachine[r.machine] || []).push(r);
   });
   Object.keys(endsByMachine).forEach(m => endsByMachine[m].sort(chronoCompare));
@@ -7868,6 +7943,9 @@ function computeOperatorEfficiency(records, operatorId, fromDate, toDate, assign
   const completedKeys = new Set(
     mine.filter(r => r.photoType !== 'start').map(r => r.date + '|' + r.shift)
   );
+  // A Starting photo that carries stop time counts its shift too, even with no Ending photo yet: that stop time is
+  // earned (it shows in the daily totals), so the shift's hours, its stop time and its machine are counted.
+  mine.forEach(r => { if(r.photoType === 'start' && extractStopBreakdown(r).length > 0) completedKeys.add(r.date + '|' + r.shift); });
   // For someone with a fixed single shift (Day or Night), count distinct
   // CALENDAR DATES rather than date+shift pairs — they can only ever
   // genuinely work one shift per day, so a reading that ended up mistagged
@@ -7912,7 +7990,7 @@ function renderEfficiencyBox(elId, records, operatorId, fromDate, toDate, assign
     <div class="row"><span class="k">Total Stop Time</span><span>${eff.stopHours.toFixed(1)}h</span></div>
     <div class="row"><span class="k">Machines Run</span><span>${eff.machineCount}</span></div>
   </div>
-  <div class="hint">Efficiency = productive time \u00f7 total shift time, across every machine you ran in this range. Only completed shifts (with an Ending photo) count — one still in progress isn't held against you until it's finished.</div>`;
+  <div class="hint">Efficiency = productive time \u00f7 total shift time, across every machine you ran in this range. Only completed shifts (with an Ending photo) count — one still in progress isn't held against you until it's finished. A shift with only a Starting photo counts once it has stop time recorded, because that stop time is earned.</div>`;
 }
 
 // The salary cycle an arbitrary date falls into, e.g. startDay=26 means
@@ -10590,6 +10668,21 @@ function renderMachineDrillList(scopedMachines, range){
     const stop = Number(r.stopTime) || 0;
     if(r.shift === 'Day'){ if(r._diff > 0) b.dayPicks += r._diff; b.dayStop += stop; }
     else if(r.shift === 'Night'){ if(r._diff > 0) b.nightPicks += r._diff; b.nightStop += stop; }
+  });
+  // A Starting photo that carries stop time, in a shift with no approved Ending for that machine, still counts its
+  // stop hours (the same rule as the daily totals on the operator's profile). These readings are already loaded here.
+  const allRecs = state.cachedRecords || [];
+  buildDiffSequenceByMachine(allRecs);   // marks which Starting photos carry picks of their own (no database read)
+  const endedShifts = new Set(allRecs.filter(r => r.status === 'approved' && r.photoType !== 'start').map(r => r.machine + '|' + r.date + '|' + r.shift));
+  allRecs.forEach(r => {
+    if(r.status !== 'approved' || r.photoType !== 'start' || !r.operatorId) return;
+    if((range.fromDate && r.date < range.fromDate) || (range.toDate && r.date > range.toDate)) return;
+    if(endedShifts.has(r.machine + '|' + r.date + '|' + r.shift)) return;
+    const hasStop = extractStopBreakdown(r).length > 0, picks = r._startPicks > 0 ? r._startPicks : 0;
+    if(!hasStop && !picks) return;
+    const b = perMachine[r.machine] || (perMachine[r.machine] = { dayPicks:0, nightPicks:0, dayStop:0, nightStop:0 });
+    const stop = hasStop ? (Number(r.stopTime) || 0) : 0;
+    if(r.shift === 'Day'){ b.dayStop += stop; b.dayPicks += picks; } else if(r.shift === 'Night'){ b.nightStop += stop; b.nightPicks += picks; }
   });
 
   // A real <table> on purpose — small, dense cells, easy to select and paste
