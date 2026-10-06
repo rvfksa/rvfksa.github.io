@@ -107,7 +107,7 @@
     d.setDate(d.getDate() - days);
     return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
   }
-  function makeCachedCollection(name, { orderByField, includeId = true, recentWindowField = null, recentWindowDays = 60, buildQuery = null } = {}){
+  function makeCachedCollection(name, { orderByField, includeId = true, recentWindowField = null, recentWindowDays = 60, buildQuery = null, rowFilter = null } = {}){
     let cachedRows = null;
     let firstSnapshot = null;
     let unsub = null;
@@ -134,7 +134,7 @@
         let offlineTimer = null;
         unsub = onSnapshot(ref, (snap) => {
           const out = [];
-          snap.forEach(d => out.push(includeId ? { _id: d.id, ...d.data() } : d.data()));
+          snap.forEach(d => { const row = includeId ? { _id: d.id, ...d.data() } : d.data(); if(!rowFilter || rowFilter(row)) out.push(row); });
           cachedRows = out;
           // Tell anyone who registered interest (see onChange below) that
           // fresh data just came in — e.g. so an already-open Admin Users
@@ -240,21 +240,26 @@
   // keep showing the same stale numbers underneath.
   pendingReadingsCache.onChange(() => { allReadingsCache = null; allReadingsPromise = null; readingsVersion++; });
   recentReadingsCache.onChange(() => { allReadingsCache = null; allReadingsPromise = null; readingsVersion++; });
-  const usersCache = makeCachedCollection('users', { includeId: false });
+  // An account marked hiddenAccount is a normal, working login that simply never appears in any list
+// (Users, Employees, Accounts, dashboards, pickers...): every list of people comes through these two
+// caches, so filtering here keeps it out of all of them with no other change. Direct look-ups by ID
+// (login, "is this ID taken?") still find it. It is only ever created by hand in the database.
+const hiddenAccountsOut = (u) => !u.hiddenAccount;
+const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: hiddenAccountsOut });
   // A separate, plain one-time read of the same collection for every screen
   // that just needs "the current list of people" (My Status, Approvals'
   // employee picker, Leave, Employees) and never watches for live changes —
   // only the Admin > Users screen genuinely needs the live version above,
   // via listUsers()/onUsersChange. This one is invalidated on every write
   // to the users collection, so it can never go stale within a session.
-  const usersOnceCache = makeOnceCache('users', { includeId: false });
+  const usersOnceCache = makeOnceCache('users', { includeId: false, rowFilter: hiddenAccountsOut });
   // Vacations, violations and leave requests: nothing in the app ever
   // subscribes to these three changing live (unlike users, readings, which
   // genuinely have a live consumer) — so a permanently open connection for
   // each was pure overhead. These are now a plain one-time read per
   // session, invalidated on any write to that collection, exactly like the
   // full-history reading cache above.
-  function makeOnceCache(name, { includeId = true } = {}){
+  function makeOnceCache(name, { includeId = true, rowFilter = null } = {}){
     let cache = null, pending = null;
     return {
       async get(){
@@ -263,7 +268,7 @@
         if (!pending){
           pending = getDocs(collection(db, name)).then(snap => {
             const out = [];
-            snap.forEach(d => out.push(includeId ? { _id: d.id, ...d.data() } : d.data()));
+            snap.forEach(d => { const row = includeId ? { _id: d.id, ...d.data() } : d.data(); if(!rowFilter || rowFilter(row)) out.push(row); });
             cache = out;
             return out;
           }).catch(err => { pending = null; throw err; });
@@ -328,12 +333,17 @@
   // is stored exactly as written, so ordering can never differ from the real
   // readings'.
   function encodeHistoryEntry(r){
-    return [r._id, r.date, r.shift, r.timestamp || 0, String(r.reading), r.resetPoint ? 1 : 0].join('|');
+    // Last field: 0 = not a reset, 1 = an older-style reset (counts as 0), 2 = a "count from zero"
+    // reset on an Ending, 3 = a "count from zero" reset on a Starting photo (a restart marker).
+    const resetCode = r.resetPoint ? (r.resetMode === 'zero' ? (r.photoType === 'start' ? 3 : 2) : 1) : 0;
+    return [r._id, r.date, r.shift, r.timestamp || 0, String(r.reading), resetCode].join('|');
   }
   function decodeHistoryEntry(str, machineId){
     const [id, date, shift, ts, reading, reset] = String(str).split('|');
     const e = { _id: id, machine: String(machineId), status: 'approved', photoType: 'end', date, shift, timestamp: Number(ts), reading };
     if(reset === '1') e.resetPoint = true;
+    if(reset === '2' || reset === '3'){ e.resetPoint = true; e.resetMode = 'zero'; }
+    if(reset === '3') e.photoType = 'start';
     return e;
   }
 
@@ -608,7 +618,9 @@
       // the full calculation leaves it out — so approving one changes no
       // diff, no employee summary, no monthly total and not the pointer.
       // Treat it as fully handled rather than counting it as a reading.
-      if(reading.photoType === 'start') return true;
+      // The one exception is a Starting photo marked as a "count from zero" reset: it sets where the
+      // next Ending counts from (and what the pointer says), so leave that one to the full calculation.
+      if(reading.photoType === 'start') return !(reading.resetPoint && reading.resetMode === 'zero');
       const mid = String(machineId);
       const SHIFT_ORDER = { 'Day': 0, 'Night': 1 };
       const chronoCmp = (a, b) => {
@@ -637,7 +649,8 @@
       // one approval (it writes the running total), then the fast path
       // resumes. Only ever routes to the slower, always-correct path.
       if(typeof last.diffSum !== 'number' || typeof last.diffCount !== 'number') return false;
-      const diff = reading.resetPoint ? 0 : (Number(reading.reading) - Number(last.reading));
+      const diff = (reading.resetPoint && reading.resetMode === 'zero') ? Number(reading.reading)   // counted from 0
+        : (reading.resetPoint ? 0 : (Number(reading.reading) - Number(last.reading)));
       try{
         // Add this approval to the machine's history digest (the Report's
         // source for "previous reading" and "usual amount"). No digest yet
@@ -961,6 +974,33 @@
       if (!dbReady) throw new Error('NOT_CONFIGURED');
       const snap = await getDoc(doc(db, "readings", id));
       return snap.exists() ? { _id: snap.id, ...snap.data() } : null;
+    },
+    // "Calculation still owed" markers. Every approval saves calcPending:true and
+    // calcPendingAt in the same write; the approver's background job sets it back
+    // to false once the daily totals are written. A marker left at true means the
+    // job was lost (tab closed, phone locked, connection gone). Plain updateDoc on
+    // purpose — NOT updateReading — so clearing a marker does not throw away the
+    // Report's in-memory copy of the readings (that would cost a full reload).
+    async loadCalcPending() {
+      if (!dbReady) throw new Error('NOT_CONFIGURED');
+      const snap = await getDocs(query(collection(db, 'readings'), where('calcPending', '==', true)));
+      const out = [];
+      snap.forEach(d => out.push({ _id: d.id, ...d.data() }));
+      return out;
+    },
+    // Every entry approved (through Approvals) since a moment in time, whether its
+    // job has finished or not — lets the recovery notice an approval that ran
+    // while it was recalculating. Single-field range filter: automatic index.
+    async loadCalcStartedSince(ts) {
+      if (!dbReady) throw new Error('NOT_CONFIGURED');
+      const snap = await getDocs(query(collection(db, 'readings'), where('calcPendingAt', '>=', ts)));
+      const out = [];
+      snap.forEach(d => out.push({ _id: d.id, ...d.data() }));
+      return out;
+    },
+    async clearCalcPending(ids) {
+      if (!dbReady) throw new Error('NOT_CONFIGURED');
+      for (const id of ids) await updateDoc(doc(db, 'readings', id), { calcPending: false });
     },
     async loadAllReadingsEver() {
       return loadAllReadingsEver();
@@ -2821,6 +2861,22 @@ function chronoCompare(a, b){
   return (a.timestamp||0) - (b.timestamp||0); // same date+shift: fall back to entry order
 }
 
+// A meter reset can be marked two ways. The OLDER way (no resetMode) makes that reading's own difference 0.
+// The "count from zero" way (resetMode 'zero') says the physical counter restarted from 0 at that reading:
+// for that entry the previous reading counts as 0, so its difference is its own reading and the real picks
+// are counted; earlier entries are not touched and later entries follow from it as normal.
+function isZeroReset(r){ return !!r && !!r.resetPoint && r.resetMode === 'zero'; }
+// A Starting photo is never part of the production chain, so marking one "count from zero" works as a
+// restart marker instead: the next Ending after it counts from 0. Returns the approved markers per machine.
+function zeroRestartMarkers(records){
+  const byMachine = {};
+  (records || []).forEach(r => {
+    if(r.status === 'approved' && r.photoType === 'start' && isZeroReset(r)){ (byMachine[r.machine] = byMachine[r.machine] || []).push(r); }
+  });
+  Object.keys(byMachine).forEach(m => byMachine[m].sort(chronoCompare));
+  return byMachine;
+}
+
 // Every diff calculation (Report, Earned Picks, Production, Top/Lowest
 // Producer) shares this so a machine's baseline reading — the counter value
 // Admin set when the machine was added or last reset — is honored
@@ -2832,7 +2888,7 @@ function buildDiffSequenceByMachine(records){
   // photo is missing, blurry, or unclear, and was never meant to be counted
   // as its own production interval. Records saved before this feature
   // existed have no photoType at all, so they're treated as "end" too.
-  const approved = records.filter(r => r.status === 'approved' && r.photoType !== 'start');
+  const approved = records.filter(r => r.status === 'approved' && (r.photoType !== 'start' || isZeroReset(r)));   // restart markers ride along, they are never counted themselves
   const byMachine = {};
   approved.forEach(r => { (byMachine[r.machine] = byMachine[r.machine] || []).push(r); });
   const result = {};
@@ -2847,15 +2903,23 @@ function buildDiffSequenceByMachine(records){
     list.sort(chronoCompare);
     for(let i=0;i<list.length;i++){
       const cur = list[i];
+      if(cur.photoType === 'start') continue;   // a restart marker: never counted itself, it only sets where the next Ending counts from
       const prev = i>0 ? list[i-1] : null;
+      const afterMarker = !!(prev && prev.photoType === 'start');
+      cur._afterMarker = afterMarker;
       // A reading marked resetPoint means the physical meter was reset right
       // at this reading — Admin marked it after the fact once they noticed
       // it diffing to a huge negative number. Its own diff is always 0, no
       // matter what came before it; every reading after it still diffs
       // normally against it, exactly like the machine-level baseline does.
-      cur._diff = (prev && !cur.resetPoint) ? (Number(cur.reading) - Number(prev.reading)) : 0;
+      if(isZeroReset(cur)){
+        cur._diff = Number(cur.reading);   // "count from zero": the previous reading counts as 0
+      } else {
+        // after a restart marker the previous reading counts as 0 too
+        cur._diff = (prev && !cur.resetPoint) ? (Number(cur.reading) - (afterMarker ? 0 : Number(prev.reading))) : 0;
+      }
     }
-    result[mid] = list.filter(r => !r._isBaseline);
+    result[mid] = list.filter(r => !r._isBaseline && r.photoType !== 'start');
   });
   return result;
 }
@@ -2929,6 +2993,7 @@ async function recalculateMachineDiffs(machineId, stats){
     }
     const byMachine = buildDiffSequenceByMachine(records);
     const chain = byMachine[machineId] || byMachine[String(machineId)] || [];
+    const restartMarkers = zeroRestartMarkers(records)[String(machineId)] || [];   // Starting photos marked "count from zero"
     const updates = [];
     chain.forEach(r => {
       const stored = (r.diff === undefined || r.diff === null) ? null : Number(r.diff);
@@ -2966,15 +3031,20 @@ async function recalculateMachineDiffs(machineId, stats){
     // The machine's history digest for the Report — rebuilt from the same
     // chain, in its own protected step for the same reason.
     try{
-      await window.__db.setMachineHistory(machineId, chain.map(r => window.__db.encodeHistoryEntry(r)));
+      await window.__db.setMachineHistory(machineId, chain.concat(restartMarkers).map(r => window.__db.encodeHistoryEntry(r)));
     }catch(err){ ok = false; console.error('History digest update failed for machine', machineId, '(non-fatal):', err); }
     if(window.__db.bumpReadingsVersion) window.__db.bumpReadingsVersion();   // the digest just changed: anything the Report kept is now old
 
     // Keep the fast-path pointer in sync with reality — the full
     // recalculation is authoritative, so whatever it finds as the true
     // chronologically-last entry is what the pointer should reflect too.
-    if(chain.length){
-      const lastEntry = chain[chain.length - 1];
+    const lastMarker = restartMarkers[restartMarkers.length - 1] || null;
+    if(chain.length || lastMarker){
+      const lastChain = chain[chain.length - 1] || null;
+      // A restart marker newer than the last Ending is where the next Ending will count from: reading 0.
+      const lastEntry = (lastMarker && (!lastChain || chronoCompare(lastMarker, lastChain) > 0))
+        ? { reading: '0', date: lastMarker.date, shift: lastMarker.shift, timestamp: lastMarker.timestamp, _id: lastMarker._id }
+        : lastChain;
       const mObj = state.machines.find(x => String(x.id) === String(machineId));
       const ds = diffStatsForChain(chain, mObj);
       await window.__db.setMachineLastApproved(machineId, {
@@ -3208,7 +3278,8 @@ function goTo(key){
   clearCaptureDraft();   // they chose to leave the camera step
   markNavActive(key);
   if(key === 'admin'){ showScreen('screen-admin'); loadUsersForAdmin(); loadMachinesForAdmin(); loadConfigLists(); }
-  else if(key === 'approvals'){ showScreen('screen-approvals'); loadApprovals(); loadPicksForApprovals(); }
+  else if(key === 'approvals'){ showScreen('screen-approvals'); loadApprovals(); loadPicksForApprovals();
+    if(state.user && (state.user.role === 'admin' || state.user.role === 'supervisor')) recoverLostCalculations(); }
   else if(key === 'select'){ showScreen('screen-select'); setupSelectScreen(); }
   else if(key === 'report'){ exitReportReview(); showScreen('screen-report'); loadReport(); }
   else if(key === 'mystatus'){ showScreen('screen-mystatus'); loadMyStatus(); }
@@ -3275,7 +3346,10 @@ async function doLogin(){
       // info, etc.), which is what lets it stay readable even once every
       // other read in the database requires being signed in first.
       const idx = await window.__db.getAuthIndex(id);
-      if(idx.authEmailVersion){
+      if(idx.authEmail){
+        // An Employee ID that was changed: the account still lives under the email it was created with
+        signIn = await window.__db.authSignIn(idx.authEmail, password);
+      } else if(idx.authEmailVersion){
         signIn = await window.__db.authSignIn(syntheticEmailFor(id, idx.authEmailVersion), password);
       }
       if(!signIn.ok){
@@ -3326,6 +3400,8 @@ async function doLogin(){
       }
     }
 
+    // A hidden (emergency) account: note when it was last used, so any use you did not make yourself can be noticed in the database
+    if(u.hiddenAccount){ window.__db.updateUser(id, { lastLoginAt: Date.now() }).catch(err => console.error('lastLoginAt update failed', err)); }
     state.user = u;
     setMachinesSorted(machines);
     localStorage.setItem('mr_loginId', id);
@@ -6109,18 +6185,26 @@ $('anotherMachineBtn').addEventListener('click', () => goTo('select'));
 // its diff is only a placeholder 0 and is left out.
 function diffStatsForChain(list, mObj){
   const hasBaseline = mObj && mObj.baselineReading !== undefined && mObj.baselineReading !== null && String(mObj.baselineReading) !== '';
-  const diffs = list.map(r => r._diff).slice(hasBaseline ? 0 : 1);
+  // The first entry has nothing to compare with unless there is a baseline, a restart marker before it,
+  // or it is itself a "count from zero" reset.
+  const firstHasStart = hasBaseline || !!(list[0] && (list[0]._afterMarker || isZeroReset(list[0])));
+  const diffs = list.map(r => r._diff).slice(firstHasStart ? 0 : 1);
   return { sum: diffs.reduce((a,b)=>a+b,0), count: diffs.length };
 }
 function buildMachineStats(all){
   const byMachine = buildDiffSequenceByMachine(all);
+  const markers = zeroRestartMarkers(all);
   const stats = {};
-  Object.keys(byMachine).forEach(m => {
-    const list = byMachine[m];
+  Object.keys(Object.assign({}, byMachine, markers)).forEach(m => {
+    const list = byMachine[m] || [];
     const mObj = state.machines.find(x => String(x.id) === String(m));
     const ds = diffStatsForChain(list, mObj);
     const avg = ds.count ? ds.sum / ds.count : null;
-    stats[m] = { last: list[list.length-1] || null, avgDiff: avg };
+    let last = list[list.length-1] || null;
+    // a restart marker newer than the last Ending: the next Ending counts from 0
+    const mk = markers[m] && markers[m][markers[m].length - 1];
+    if(mk && (!last || chronoCompare(mk, last) > 0)) last = { _id: mk._id, reading: '0', date: mk.date, shift: mk.shift, timestamp: mk.timestamp };
+    stats[m] = { last, avgDiff: avg };
   });
   return stats;
 }
@@ -6308,7 +6392,7 @@ async function loadApprovals(){
     body.innerHTML = '';
     pending.forEach(r => {
       const st = stats[r.machine];
-      const prevReading = st && st.last ? Number(st.last.reading) : null;
+      const prevReading = isZeroReset(r) ? 0 : (st && st.last ? Number(st.last.reading) : null);   // a "count from zero" entry counts from 0
       const diff = prevReading !== null ? Number(r.reading) - prevReading : null;
       const badge = diffBadgeHtml(diff, st ? st.avgDiff : null);
       const diffColor = diff === null ? '' : (diff < 0 ? 'color:var(--danger);' : 'color:var(--ok);');
@@ -6563,11 +6647,11 @@ async function toggleResetPoint(id, currentlySet){
   if(!requireDb()) return;
   const confirmMsg = currentlySet
     ? 'Remove the reset-point mark from this reading? It will go back to diffing normally against whatever came before it.'
-    : 'Mark this reading as the meter reset point? Its own diff becomes 0, and every later reading for this machine will diff against it instead of whatever came before — use this on the exact reading where the physical counter was reset.';
+    : 'Mark this reading as the meter reset point? The counter restarted from 0 here, so this reading counts from 0 (its previous reading becomes 0) and its real picks are counted. Earlier readings are not changed, and later readings follow from it. If you mark a Starting photo, the next Ending of that shift counts from 0.';
   if(!confirm(confirmMsg)) return;
   const row = lastReportRows.find(x => x.id === id);
   try{
-    await window.__db.updateReading(id, { resetPoint: !currentlySet });
+    await window.__db.updateReading(id, { resetPoint: !currentlySet, resetMode: currentlySet ? null : 'zero' });
     toast(currentlySet ? 'Reset point removed' : 'Marked as reset point');
     loadReport();
     // row.machine is only the machine's display NAME ("RVF 42"); the
@@ -6588,6 +6672,87 @@ function removeApprovalRowLocally(id){
   if(!body.querySelector('.approve-item')){
     body.innerHTML = '<div class="empty-state">No entries waiting for approval right now.</div>';
   }
+}
+// One machine's calculations on THIS device run one after another, never side by
+// side — so a recovery and an approval of the same machine cannot interleave here.
+const machineCalcQueue = {};
+function runMachineCalc(machineId, fn){
+  const key = String(machineId);
+  const run = (machineCalcQueue[key] || Promise.resolve()).then(fn, fn);
+  machineCalcQueue[key] = run.catch(() => {});
+  return run;
+}
+// The calculation after one approval. The quick update is tried ONCE; if it
+// throws or declines, the full recalculation (safe to repeat) is used instead,
+// with one more try a few seconds later. The quick update is never repeated: it
+// adds to running totals, so running it twice would count twice. The marker is
+// cleared only when the totals were really written.
+async function approvalCalculation(id, current){
+  let done = false;
+  try{ done = (await window.__db.fastApproveUpdate(current.machine, current)) === true; }
+  catch(err){ console.error('Fast-path approval update failed, falling back to full recalculation:', err); }
+  if(!done){
+    done = (await recalculateMachineDiffs(current.machine)) === true;
+    if(!done){
+      await new Promise(r => setTimeout(r, 5000));
+      done = (await recalculateMachineDiffs(current.machine)) === true;
+    }
+  }
+  if(done){
+    try{ await window.__db.clearCalcPending([id]); }
+    catch(err){ console.error('Could not clear the calculation marker (the next Approvals open re-checks it):', err); }
+  }
+  return done;
+}
+// Finishes calculations whose approval job was lost. Runs in the background when
+// an admin or supervisor opens Approvals: at most once per 15 minutes per device
+// (1 read when nothing is owed). Only markers older than 30 minutes are touched,
+// so a job still running on someone's phone is left alone. Uses only the full
+// recalculation, which rebuilds from the readings and is safe to repeat.
+const CALC_RECOVER_AGE_MS = 30 * 60 * 1000;
+const CALC_RECOVER_EVERY_MS = 15 * 60 * 1000;
+const CALC_RECOVER_SETTLE_MS = 20 * 1000;
+const CALC_RECOVER_KEY = 'rvfRecoverCheckAt';
+const calcRecoverFailures = {};   // machine -> failed attempts in this session (gives up after 2)
+let calcRecoverRunning = false;
+async function recoverLostCalculations(){
+  if(calcRecoverRunning || !window.__db || !window.__db.ready()) return;
+  const started = Date.now();
+  let lastCheck = 0;
+  try{ lastCheck = Number(localStorage.getItem(CALC_RECOVER_KEY)) || 0; }catch(e){}
+  if(started - lastCheck < CALC_RECOVER_EVERY_MS) return;
+  try{ localStorage.setItem(CALC_RECOVER_KEY, String(started)); }catch(e){}
+  calcRecoverRunning = true;
+  try{
+    const owed = (await window.__db.loadCalcPending())
+      .filter(r => r.machine && started - (Number(r.calcPendingAt) || 0) > CALC_RECOVER_AGE_MS);
+    if(!owed.length) return;
+    const byMachine = {};
+    owed.forEach(r => { (byMachine[String(r.machine)] = byMachine[String(r.machine)] || []).push(r._id); });
+    const recalcOnce = async (m) => {
+      const ok = (await runMachineCalc(m, () => recalculateMachineDiffs(m))) === true;
+      if(!ok) calcRecoverFailures[m] = (calcRecoverFailures[m] || 0) + 1;
+      return ok;
+    };
+    const fixed = [];
+    for(const m of Object.keys(byMachine)){
+      if((calcRecoverFailures[m] || 0) >= 2) continue;
+      if(await recalcOnce(m)) fixed.push(m);
+    }
+    if(!fixed.length) return;
+    // Someone may have approved an entry on one of these machines (on another
+    // phone) while this was recalculating. Give their job time to finish, then
+    // recalculate that machine once more so nothing is counted twice or missed.
+    // The 10-minute margin covers phones whose clocks are a little off.
+    await new Promise(r => setTimeout(r, CALC_RECOVER_SETTLE_MS));
+    const during = await window.__db.loadCalcStartedSince(started - 10 * 60 * 1000);
+    for(const m of fixed){
+      const overlapped = during.some(r => String(r.machine) === m && !byMachine[m].includes(r._id));
+      if(overlapped && !(await recalcOnce(m))) continue;
+      await window.__db.clearCalcPending(byMachine[m]);
+    }
+  }catch(err){ console.error('Finishing lost calculations failed (non-fatal, tried again later):', err); }
+  finally{ calcRecoverRunning = false; }
 }
 async function decideReading(id, status){
   if(!requireDb()) return;
@@ -6652,6 +6817,10 @@ async function decideReading(id, status){
     if(newStopTime !== null) updates.stopTime = newStopTime;
     if(newReason !== null) updates.reason = newReason || '—';
     if(newBreakdown !== null) updates.stopBreakdown = newBreakdown;
+    // Marks the calculation as owed, in the SAME write as the approval, so it can
+    // never be lost: the job below clears it; if the job is lost, the next
+    // Approvals open finishes it (see recoverLostCalculations).
+    if(status === 'approved'){ updates.calcPending = true; updates.calcPendingAt = Date.now(); }
     // The core approval goes through FIRST, on its own — this is the one
     // action that matters most, so it never waits on anything else.
     await window.__db.updateReading(id, updates);
@@ -6666,17 +6835,18 @@ async function decideReading(id, status){
     // undo it, and the live calculations remain correct as a fallback.
     if(status === 'approved'){
       (async () => {
+        let current = null;
+        try{ current = await window.__db.getReading(id); }
+        catch(err){ console.error('Background post-approval work failed (non-fatal, approval already saved; the next Approvals open finishes it):', err); return; }
+        // The calculation comes FIRST and on its own: a failed photo move can no
+        // longer stop the daily totals from being written.
+        if(current && current.machine) await runMachineCalc(current.machine, () => approvalCalculation(id, current));
         try{
-          const current = await window.__db.getReading(id);
           if(current && current.photoDataUrl && !isPhotoBlobRef(current.photoDataUrl)){
             const ref = await window.__db.savePhotoBlob(current.photoDataUrl);
             await window.__db.updateReading(id, { photoDataUrl: ref });
           }
-          if(current && current.machine){
-            const handled = await window.__db.fastApproveUpdate(current.machine, current);
-            if(!handled) await recalculateMachineDiffs(current.machine);
-          }
-        }catch(err){ console.error('Background post-approval work failed (non-fatal, approval already saved):', err); }
+        }catch(err){ console.error('Background photo move failed (non-fatal, approval already saved):', err); }
       })();
     }
   }catch(err){ console.error(err); toast('Could not save — check your connection'); }
@@ -6699,9 +6869,14 @@ let reportReview = null;
 // Entries passes every record, then filters by flag afterward).
 function buildReportRows(allRecords, recordsToShow){
   const chainByMachine = buildDiffSequenceByMachine(allRecords);
+  const markersByMachine = zeroRestartMarkers(allRecords);
   const fullChainByMachine = {};
-  Object.keys(chainByMachine).forEach(m => {
-    const list = chainByMachine[m].slice();
+  Object.keys(Object.assign({}, chainByMachine, markersByMachine)).forEach(m => {
+    let list = (chainByMachine[m] || []).slice();
+    // Restart markers (a Starting photo marked "count from zero") sit in their place in time with reading 0,
+    // so the Ending after one shows previous 0.
+    const mks = (markersByMachine[m] || []).map(k => ({ _id: k._id, date: k.date, shift: k.shift, timestamp: k.timestamp, reading: '0', _marker: true }));
+    if(mks.length) list = list.concat(mks).sort(chronoCompare);
     const mObj = state.machines.find(x => String(x.id) === String(m));
     if(mObj && mObj.baselineReading !== undefined && mObj.baselineReading !== null && String(mObj.baselineReading) !== ''){
       list.unshift({ date: mObj.baselineDate || '0000-01-01', shift: '__baseline__', reading: mObj.baselineReading, _isBaseline: true });
@@ -6735,8 +6910,11 @@ function buildReportRows(allRecords, recordsToShow){
       // — it used to show the raw subtraction even when the reset was
       // correctly marked, which made a working reset look like it hadn't
       // done anything.
-      const isReset = !!cur.resetPoint && cur.photoType !== 'start'; // a Starting photo is never part of the chain, so a mark on one changes nothing
-      const diff = prev ? (isReset ? 0 : (Number(cur.reading) - Number(prev.reading))) : null;
+      // An older-style mark on a Starting photo still changes nothing (it is never part of the chain). A
+      // "count from zero" mark on any entry shows previous 0 and difference = its own reading.
+      const zero = isZeroReset(cur);
+      const isReset = (!!cur.resetPoint && cur.photoType !== 'start') || zero;
+      const diff = zero ? Number(cur.reading) : (prev ? (isReset ? 0 : (Number(cur.reading) - Number(prev.reading))) : null);
       let flag = '';
       if(diff !== null && !isReset){
         const avg = avgBeforeIn(m, cur);
@@ -6752,8 +6930,9 @@ function buildReportRows(allRecords, recordsToShow){
         date: cur.date, shift: cur.shift,
         timestamp: cur.timestamp,
         resetPoint: !!cur.resetPoint,
+        resetMode: cur.resetMode || null,
         resetApplied: isReset,
-        prevReading: prev ? prev.reading : '—', reading: cur.reading,
+        prevReading: zero ? '0' : (prev ? prev.reading : '—'), reading: cur.reading,
         diff: diff === null ? '—' : diff,
         flag,
         stopTime: cur.stopTime, reason: cur.reason,
@@ -6867,7 +7046,7 @@ function drawReportTable(rows){
         <td title="${r.machine} (ID ${r.machineId})">${r.machineId ? r.machineId + ' ' : ''}${r.machine}</td>
         <td title="${shiftTitle}">${shiftLetter}<span style="color:var(--muted); font-size:9px;">${photoTypeLetter}</span></td>
         <td>${r.prevReading}</td><td>${r.reading}</td>
-        <td class="${diffClass}" title="${r.resetPoint ? 'Meter reset point — counted as 0 here; the next readings count from this one' : ''}">${r.diff}${r.resetPoint ? ' \u21bb' : ''}</td>
+        <td class="${diffClass}" title="${r.resetPoint ? (r.resetMode === 'zero' ? 'Meter reset point — the counter restarted from 0 here; this reading counts from 0 and the next readings follow from it' : 'Meter reset point — counted as 0 here; the next readings count from this one') : ''}">${r.diff}${r.resetPoint ? ' \u21bb' : ''}</td>
         ${showFlags ? `<td>${flagCell}</td>` : ''}
         <td>${r.stopTime}</td>
         <td title="${r.reason}">${reasonNum}</td>
@@ -7029,7 +7208,7 @@ function findUnusualRows(allRecords, fromDate, toDate){
   const endsByMachine = {};
   allRecords.forEach(r => {
     recById[r._id] = r;
-    if(r.photoType === 'start' || r.status === 'rejected') return;
+    if((r.photoType === 'start' && !isZeroReset(r)) || r.status === 'rejected') return;   // a restart marker counts as the entry before the next Ending
     (endsByMachine[r.machine] = endsByMachine[r.machine] || []).push(r);
   });
   Object.keys(endsByMachine).forEach(m => endsByMachine[m].sort(chronoCompare));
@@ -7049,7 +7228,7 @@ function findUnusualRows(allRecords, fromDate, toDate){
     if(before && before.status !== 'approved') return;   // the entry right before it isn't approved yet
     let kind = null, flag = '', reason = '';
     if(r.photoType === 'Starting'){
-      if(r.diff !== 0){
+      if(!r.resetApplied && r.diff !== 0){
         kind = 'start'; flag = r.diff < 0 ? 'down' : 'unusual';
         reason = `Starting reading is ${num(Math.abs(r.diff))} ${r.diff > 0 ? 'higher' : 'lower'} than the last Ending reading \u2014 it should be the same (difference 0).`;
       }
@@ -7367,15 +7546,17 @@ async function openReportEditPanel(id){
       <div class="field" style="background:var(--panel-2); border-radius:10px; padding:10px 12px;">
         <label style="display:flex; align-items:center; gap:8px; font-weight:400; text-transform:none; cursor:pointer;">
           <input type="checkbox" id="re-resetPoint" style="width:auto;" ${r.resetPoint ? 'checked' : ''}>
-          Meter Reset Point — the physical counter was reset right at this reading
+          Meter Reset Point — the physical counter restarted from 0 at this reading
         </label>
-        <div class="hint" style="text-align:left; margin-left:0;">This reading's own diff becomes 0 no matter what came before it — every later reading for this machine still diffs normally against it.</div>
+        <div class="hint" style="text-align:left; margin-left:0;">${(r.resetPoint && !r.resetMode)
+          ? 'This is an older reset mark: this reading\'s own difference is counted as 0, and later readings diff normally against it. To count from 0 instead, untick the box and Save, then tick it again and Save.'
+          : 'This reading counts from 0 (its previous reading becomes 0), so its real picks are counted. Earlier readings are not changed and later readings follow from it. On a Starting photo, the next Ending of that shift counts from 0.'}</div>
       </div>
       <div class="field">
         <label>This Photo Is</label>
         <select id="re-photoType">
-          <option value="start" ${r.photoType==='start'?'selected':''}>Starting Photo</option>
-          <option value="end" ${r.photoType!=='start'?'selected':''}>Ending Photo</option>
+          <option value="start" ${(r.photoType==='Starting' || r.photoType==='start')?'selected':''}>Starting Photo</option>
+          <option value="end" ${(r.photoType==='Starting' || r.photoType==='start')?'':'selected'}>Ending Photo</option>
         </select>
         <div class="hint">Only Ending photos count toward Earned Picks — Starting photos are backup only.</div>
       </div>
@@ -7456,6 +7637,10 @@ async function saveReportEdit(id){
     remarks: $('re-remarks').value.trim(),
     adminNote: `Edited by ${state.user.name} on ${fmtDateFromTs(Date.now())}`
   };
+  // A newly ticked reset is the "count from zero" kind. A mark that was already there keeps its kind (an
+  // older mark stays older until it is unticked and ticked again); unticking clears the kind.
+  if(updates.resetPoint){ if(!(original && original.resetPoint)) updates.resetMode = 'zero'; }
+  else updates.resetMode = null;
   if(!updates.machine){ toast('Please select a machine'); return; }
   if(!updates.date){ toast('Pick a date'); return; }
   if(!updates.reading){ toast('Reading cannot be empty'); return; }
@@ -8038,7 +8223,7 @@ $('exportBtn').addEventListener('click', () => {
     const curNum = isValidNumber(r.reading) ? Number(r.reading) : r.reading;
     const hasFormula = typeof prevNum === 'number' && typeof curNum === 'number' && !r.resetApplied; // a reset row is counted as 0, so it gets that value, not a subtraction formula
     dataRowInfo.push({ aoaIdx: aoa.length, hasFormula, diff: r.diff, status: r.status });
-    aoa.push([r.machine, fmtDate(r.date), r.shift, r.photoType || 'Ending', prevNum, curNum, hasFormula ? null : r.diff, r.stopTime, r.reason, (r.resetApplied ? 'Meter reset point' + (r.remarks ? ' — ' + r.remarks : '') : (r.remarks || '')), r.enteredBy, r.enteredById, r.status, r.approvedBy, r.supervisorRemarks || '']);
+    aoa.push([r.machine, fmtDate(r.date), r.shift, r.photoType || 'Ending', prevNum, curNum, hasFormula ? null : r.diff, r.stopTime, r.reason, (r.resetApplied ? (r.resetMode === 'zero' ? 'Meter reset point — counted from 0' : 'Meter reset point') + (r.remarks ? ' — ' + r.remarks : '') : (r.remarks || '')), r.enteredBy, r.enteredById, r.status, r.approvedBy, r.supervisorRemarks || '']);
   });
   const ws = XLSX.utils.aoa_to_sheet(aoa);
   ws['!cols'] = [{wch:12},{wch:12},{wch:8},{wch:10},{wch:14},{wch:14},{wch:11},{wch:14},{wch:20},{wch:24},{wch:16},{wch:12},{wch:10},{wch:16},{wch:24}];
@@ -8243,8 +8428,25 @@ $('coreEditSaveBtn').addEventListener('click', async () => {
       const existing = await window.__db.getUser(newId);
       if(existing){ toast('That Employee ID is already in use'); return; }
       const fullUser = Object.assign({}, profileCache.user, { loginId: newId, name, department });
+      // Keep this person able to log in. Their real login account is held by Firebase under a hidden email
+      // built from their OLD ID, and it cannot be renamed from here. At login the app builds that email from
+      // the NEW ID instead — which doesn't exist — so the right password was refused as "Incorrect password".
+      // So, before anything moves, leave a note under the new ID saying which email the account really uses
+      // (authIndex is the one thing read before signing in) and carry over any temporary password / reset
+      // number. Someone who has not logged in yet has no account to point at, only their temporary
+      // password, so for them nothing but that is carried. If the note can't be saved, nothing is changed.
+      try{
+        const oldIdx = await window.__db.getAuthIndex(oldId);
+        const realEmail = oldIdx.tempPassword ? null : (profileCache.user.authEmail || syntheticEmailFor(oldId, oldIdx.authEmailVersion || 0));
+        const note = { tempPassword: oldIdx.tempPassword || null, authEmailVersion: oldIdx.authEmailVersion || 0 };
+        if(realEmail) note.authEmail = realEmail;
+        await window.__db.saveAuthIndex(newId, note);
+      }catch(err){ console.error(err); toast('Could not change the ID — check your connection and try again'); return; }
       await window.__db.createUser(fullUser);
       await window.__db.deleteUser(oldId);
+      // Their security-rules role lookup follows the new ID straight away (otherwise someone changing their
+      // own ID would lose admin access until their next sign-in).
+      if(fullUser.authUid){ try{ await window.__db.saveUidIndex(fullUser.authUid, { loginId: newId, role: fullUser.role }); }catch(err){ console.error(err); } }
       // Anywhere else this person's OLD Employee ID was stored as a reference
       // — another employee's Approvers list, or the Passport Access list —
       // has to be updated too, or those references silently point at an
