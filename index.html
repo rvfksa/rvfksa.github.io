@@ -372,6 +372,13 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
       await updateDoc(doc(db, "users", loginId), updates);
       usersOnceCache.invalidate();
     },
+    // Same write, but the cached people list is NOT thrown away (the caller has already updated that person in
+    // memory). Used by the HR Assistant so ticking a step or saving one HR detail never makes the next visit
+    // re-read every employee.
+    async updateUserQuiet(loginId, updates) {
+      if (!dbReady) throw new Error('NOT_CONFIGURED');
+      await updateDoc(doc(db, "users", loginId), updates);
+    },
     // Several people changed in ONE commit (the Admin > Assign tab): one write per person, only the fields given.
     // fields may use a dotted path such as 'profile.directSupervisor', so the rest of a profile is never rewritten.
     async updateUsersBatch(changes) {
@@ -1621,6 +1628,227 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
     .tab-sidebar-btn{ text-align:left; width:100%; }
     .tab-content-wrap{ flex:1; min-width:0; }
   }
+
+  /* ===== HR Assistant (Employees page): calm, white + grey, one accent ===== */
+  .hrWrap{ margin-bottom:26px; }
+  .hrBox{ padding:14px 16px 6px; }
+  .hrTabs{ display:flex; gap:2px; background:var(--panel-2); border-radius:12px; padding:3px; overflow-x:auto; margin-bottom:14px; scrollbar-width:none; }
+  .hrTabs::-webkit-scrollbar{ display:none; }
+  .hrTabs button{ flex:1 0 auto; display:flex; align-items:center; justify-content:center; gap:6px; border:0; background:transparent; padding:8px 12px; border-radius:9px; font:inherit; font-size:12px; font-weight:600; color:var(--muted); cursor:pointer; white-space:nowrap; }
+  .hrTabs button.active{ background:#fff; color:var(--text-strong); box-shadow:0 1px 3px rgba(15,23,42,.14); }
+  .hrTabs button svg{ width:15px; height:15px; flex:none; }
+  .hrTabs .hrCnt{ min-width:16px; height:16px; border-radius:8px; background:var(--danger); color:#fff; font-size:10px; font-weight:700; display:inline-flex; align-items:center; justify-content:center; padding:0 4px; }
+  @media (max-width:560px){ .hrTabs button .hrLbl{ display:none; } .hrTabs button.active .hrLbl{ display:inline; } }
+  .hrTiles{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:6px; }
+  .hrTile{ background:var(--panel-2); border-radius:14px; padding:12px 14px; cursor:pointer; text-align:left; border:0; font:inherit; transition:background .15s; }
+  .hrTile:hover{ background:#eceef5; }
+  .hrTile.on{ background:var(--amber-soft); }
+  .hrTile .n{ font-family:'JetBrains Mono',monospace; font-size:22px; font-weight:700; line-height:1; color:var(--text-strong); }
+  .hrTile.bad .n{ color:var(--danger); }
+  .hrTile .l{ font-size:10px; text-transform:uppercase; letter-spacing:.04em; font-weight:600; color:var(--muted); margin-top:6px; }
+  .hrLabel{ font-size:10px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); font-weight:600; margin:18px 0 2px; }
+  .hrRow{ display:flex; gap:12px; align-items:flex-start; padding:12px 0; border-bottom:1px solid var(--line); }
+  .hrRow:last-child{ border-bottom:0; }
+  .hrIco{ width:32px; height:32px; flex:none; border-radius:10px; background:var(--panel-2); color:var(--muted); display:flex; align-items:center; justify-content:center; }
+  .hrIco svg{ width:16px; height:16px; }
+  .hrBody{ flex:1; min-width:0; }
+  .hrTitle{ font-size:13px; font-weight:600; color:var(--text-strong); line-height:1.35; }
+  .hrTitle .id{ font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--muted); font-weight:500; margin-left:4px; }
+  .hrSub{ font-size:12px; color:var(--muted); margin-top:2px; line-height:1.45; }
+  .hrStat{ font-size:12px; font-weight:600; white-space:nowrap; text-align:right; }
+  .hrStat.late{ color:var(--danger); } .hrStat.soon{ color:var(--warn); } .hrStat.info{ color:var(--muted); }
+  .hrSide{ display:flex; flex-direction:column; align-items:flex-end; gap:8px; flex:none; }
+  .hrActs{ display:flex; gap:6px; }
+  .hrActs .iconBtn{ width:30px; height:30px; border-radius:10px; }
+  .hrActs .iconBtn svg{ width:15px; height:15px; }
+  @media (max-width:560px){ .hrRow{ flex-wrap:wrap; } .hrSide{ flex-direction:row; width:100%; justify-content:space-between; align-items:center; padding-left:44px; } }
+  details.hrHow{ margin-top:6px; }
+  details.hrHow > summary{ cursor:pointer; font-size:11.5px; font-weight:600; color:var(--amber); list-style:none; display:inline-flex; align-items:center; gap:5px; }
+  details.hrHow > summary::-webkit-details-marker{ display:none; }
+  details.hrHow > summary::before{ content:'\25B8'; font-size:10px; transition:transform .15s; }
+  details.hrHow[open] > summary::before{ transform:rotate(90deg); }
+  .hrHowBody{ margin-top:6px; background:var(--panel-2); border-radius:10px; padding:10px 12px; font-size:12px; line-height:1.55; color:var(--text); white-space:pre-wrap; }
+  .hrTbl{ width:100%; border-collapse:collapse; font-size:12px; }
+  .hrTbl th{ text-align:left; padding:8px 8px; color:var(--muted); text-transform:uppercase; font-size:9.5px; letter-spacing:.05em; border-bottom:1px solid var(--line); background:var(--panel-2); white-space:nowrap; }
+  .hrTbl td{ padding:10px 8px; border-bottom:1px solid var(--line); color:var(--text); vertical-align:middle; }
+  .hrTbl tr.clk{ cursor:pointer; } .hrTbl tr.clk:hover td{ background:var(--panel-2); }
+  .hrTbl td.nw{ white-space:nowrap; }
+  .hrTbl .id{ font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--muted); }
+  .hrScroll{ overflow-x:auto; border:1px solid var(--line); border-radius:14px; }
+  .hrToolbar{ display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-bottom:12px; }
+  .hrSearch{ flex:1; min-width:160px; position:relative; }
+  .hrSearch svg{ position:absolute; left:11px; top:50%; transform:translateY(-50%); width:15px; height:15px; color:var(--muted); pointer-events:none; }
+  .hrSearch input{ width:100%; height:34px; padding-left:34px; border-radius:11px; }
+  .hrDays{ font-family:'JetBrains Mono',monospace; font-size:11.5px; font-weight:600; white-space:nowrap; color:var(--muted); }
+  .hrDays.late{ color:var(--danger); } .hrDays.soon{ color:var(--warn); }
+  .hrNote{ font-size:11.5px; color:var(--muted); line-height:1.5; }
+  .hrEmpty{ text-align:center; color:var(--muted); font-size:13px; padding:28px 16px; }
+  .hrModal{ display:none; position:fixed; inset:0; background:rgba(15,23,42,.45); z-index:60; align-items:center; justify-content:center; padding:14px; }
+  .hrSheet{ background:#fff; border-radius:20px; width:100%; max-width:560px; max-height:92vh; overflow:auto; padding:18px; box-shadow:0 20px 50px rgba(15,23,42,.25); }
+  .hrSheetHead{ display:flex; align-items:center; gap:12px; margin-bottom:14px; }
+  .hrAvatar{ width:44px; height:44px; border-radius:50%; background:var(--panel-2); color:var(--muted); font-weight:700; display:flex; align-items:center; justify-content:center; flex:none; font-size:14px; overflow:hidden; }
+  .hrAvatar img{ width:100%; height:100%; object-fit:cover; }
+  .hrFacts{ display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:14px; }
+  .hrFact{ background:var(--panel-2); border-radius:12px; padding:9px 12px; } .hrFact .k{ font-size:9.5px; text-transform:uppercase; letter-spacing:.05em; font-weight:600; color:var(--muted); } .hrFact .v{ font-size:12.5px; font-weight:600; color:var(--text-strong); margin-top:2px; word-break:break-word; }
+  @media (max-width:520px){ .hrFacts{ grid-template-columns:1fr; } }
+  .hrForm{ display:grid; grid-template-columns:1fr 1fr; gap:10px 12px; margin-bottom:12px; }
+  .hrForm .field{ margin-bottom:0; } .hrForm .wide{ grid-column:1/-1; }
+  @media (max-width:520px){ .hrForm{ grid-template-columns:1fr; } }
+  .hrLetter{ background:#fff; border:1px solid var(--line-strong); border-radius:6px; overflow:hidden; }
+  .hrSetBlock{ border-bottom:1px solid var(--line); }
+  .hrSetBlock > summary{ list-style:none; cursor:pointer; padding:13px 2px; display:flex; align-items:center; gap:10px; font-size:13px; font-weight:600; color:var(--text-strong); }
+  .hrSetBlock > summary::-webkit-details-marker{ display:none; }
+  .hrSetBlock > summary .chev{ margin-left:auto; color:var(--muted); transition:transform .2s; } .hrSetBlock[open] > summary .chev{ transform:rotate(180deg); }
+  .hrSetIn{ padding:2px 2px 16px; }
+  .hrSetRow{ display:grid; grid-template-columns:auto 1fr; gap:10px 12px; align-items:start; padding:10px 0; border-bottom:1px solid var(--line); }
+  .hrSetRow:last-child{ border-bottom:0; }
+  .hrSetRow textarea{ min-height:58px; font-size:12px; }
+  .hrSwitch{ display:block; position:relative; width:38px; height:22px; flex:none; margin-top:2px; }
+  .hrSwitch input{ opacity:0; width:100%; height:100%; margin:0; position:absolute; inset:0; cursor:pointer; z-index:1; }
+  .hrSwitch i{ position:absolute; inset:0; background:#cbd5e1; border-radius:99px; transition:background .15s; }
+  .hrSwitch i::after{ content:''; position:absolute; top:3px; left:3px; width:16px; height:16px; background:#fff; border-radius:50%; transition:transform .15s; box-shadow:0 1px 2px rgba(0,0,0,.2); }
+  .hrSwitch input:checked + i{ background:var(--amber); } .hrSwitch input:checked + i::after{ transform:translateX(16px); }
+  .hrMini{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .hrMini label{ font-size:10px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); font-weight:600; }
+  .hrMini input[type=number]{ width:74px; padding:7px 9px; }
+  .hrStepBox{ background:var(--panel-2); border-radius:14px; padding:14px; margin:12px 0; }
+  .hrThin{ height:6px; background:#e2e8f0; border-radius:99px; overflow:hidden; margin:10px 0; } .hrThin > i{ display:block; height:100%; background:var(--amber); border-radius:99px; }
+
+  /* Team & Machine Summary - same look as the HR Assistant */
+  .asumTiles{ display:grid; grid-template-columns:repeat(5,1fr); gap:10px; margin-bottom:14px; }
+  .asumTile{ background:var(--panel-2); border-radius:14px; padding:14px 12px; cursor:pointer; text-align:left; transition:background .15s; }
+  .asumTile:hover{ background:#eceef5; }
+  .asumTile.on{ background:var(--amber-soft); }
+  .asumTile .n{ font-family:'JetBrains Mono',monospace; font-size:26px; font-weight:700; line-height:1; color:var(--text-strong); }
+  .asumTile.bad .n{ color:var(--danger); }
+  .asumTile .l{ font-size:11px; text-transform:uppercase; letter-spacing:.04em; font-weight:600; color:var(--muted); margin-top:8px; line-height:1.35; }
+  @media (max-width:760px){ .asumTiles{ grid-template-columns:repeat(6,1fr); gap:8px; } .asumTiles > .asumTile{ grid-column:span 2; padding:12px 10px; } .asumTiles > .asumTile:nth-child(n+4){ grid-column:span 3; } .asumTile .n{ font-size:22px; } .asumTile .l{ font-size:10px; }}
+  .asumBadge{ font-size:12px !important; padding:4px 11px !important; }
+  .asumBadge.b-op, .asumBadge.b-mc{ background:var(--panel-2) !important; color:var(--text) !important; }
+  .asumNm{ font-size:13px; }
+  .asumChip{ font-size:12.5px !important; padding:2px 8px !important; }
+  .asumTbl{ font-size:13px; }
+  .asumTbl th{ font-size:11px !important; padding:10px 8px !important; }
+  .asumTbl td{ padding:11px 8px !important; }
+  #asumDash .fChip, #assignSummary .fChip, .pdfSheet .fChip{ font-size:12.5px; }
+  #asumDash .fItem label, #assignSummary .fItem label{ font-size:10.5px; }
+  #asumDash .fHint, #assignSummary .fHint{ font-size:12px; }
+  #asumDash .fItem select, #assignSummary .fItem select{ font-size:13px; }
+  #asumDash .seg button, #assignSummary .seg button{ font-size:13px; padding:9px 6px; }
+  #asumDash .pillBtn, #assignSummary .pillBtn{ font-size:12.5px; }
+
+  /* Employee Overview breakdown */
+  .ovBrk{ margin-top:12px; }
+  .ovBrkHead{ display:flex; align-items:center; gap:10px; margin:12px 0 10px; }
+  .ovBrkHead label{ font-size:10.5px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); font-weight:600; }
+  .ovBrkHead select{ flex:1; max-width:320px; font-size:13px; }
+  .ovBar{ display:grid; grid-template-columns:minmax(80px,170px) 1fr auto; align-items:center; gap:10px; padding:6px 8px; margin:0 -8px; border-radius:10px; cursor:pointer; font-size:13px; }
+  .ovBar:hover{ background:var(--panel-2); }
+  .ovBar .nm{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--text); }
+  .ovBar .tr{ height:8px; border-radius:4px; background:var(--panel-2); overflow:hidden; }
+  .ovBar:hover .tr{ background:#e6e8f2; }
+  .ovBar .tr i{ display:block; height:100%; border-radius:4px; background:var(--amber); }
+  .ovBar .ct{ font-family:'JetBrains Mono',monospace; font-weight:700; color:var(--text-strong); text-align:right; }
+  .ovBar .ct small{ font-family:inherit; font-weight:500; color:var(--muted); font-size:11px; margin-left:5px; }
+  .ovFlow{ display:grid; grid-template-columns:1fr 70px 70px; gap:6px 10px; font-size:13px; align-items:center; }
+  .ovFlow .h{ font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); font-weight:600; text-align:right; }
+  .ovFlow .h:first-child{ text-align:left; }
+  .ovFlow .m{ color:var(--text); padding:7px 0; border-top:1px solid var(--line); }
+  .ovFlow .v{ font-family:'JetBrains Mono',monospace; font-weight:700; text-align:right; padding:7px 0; border-top:1px solid var(--line); color:var(--text-strong); }
+  .ovFlow .v.z{ color:var(--muted); font-weight:500; }
+  .ovBrkHint{ font-size:12px; color:var(--muted); margin-top:10px; }
+  .refreshBtn{ height:38px; padding:0 18px; border-radius:11px; border:0; background:var(--amber); color:#fff; font:inherit; font-size:13px; font-weight:600; display:inline-flex; align-items:center; gap:8px; cursor:pointer; box-shadow:0 1px 3px rgba(79,70,229,.35); transition:filter .15s, transform .1s; }
+  .refreshBtn:hover{ filter:brightness(1.08); } .refreshBtn:active{ transform:translateY(1px); }
+  .refreshBtn.spin svg{ animation:rfSpin .7s linear; } @keyframes rfSpin{ to{ transform:rotate(360deg); } }
+  #reportFilterBox .fItem label{ font-size:10.5px; } #reportFilterBox .fItem select, #reportFilterBox .fItem input{ font-size:13px; } #reportFilterBox .fHint{ font-size:12px; }
+  #rfActive .fChip{ font-size:12.5px; }
+  #screen-report .pillBtn{ font-size:12.5px; }
+
+  /* Team & Machine Summary: calm like Machine & Production - colour only where it means something */
+  .asumTile{ padding:10px 14px; border-radius:12px; }
+  .asumTile .n{ font-size:22px; } .asumTile .l{ font-size:10.5px; margin-top:6px; }
+  .asumTiles{ gap:8px; margin-bottom:12px; }
+  .asumTile.t-operators, .asumTile.t-supervisors{ background:var(--panel-2); } .asumTile.t-operators .n, .asumTile.t-supervisors .n{ color:var(--text-strong); }
+  .asumTile.t-machines{ background:var(--lcd-dim); } .asumTile.t-machines .n{ color:var(--ok); }
+  .asumTile.t-gap{ background:var(--danger-soft); } .asumTile.t-gap .n{ color:var(--danger); }
+  .asumTile.t-warn{ background:var(--warn-soft); } .asumTile.t-warn .n{ color:var(--warn); }
+  .asumTile:hover{ filter:brightness(.97); }
+  .asumTile.on, .asumTile.on.t-operators, .asumTile.on.t-supervisors, .asumTile.on.t-machines, .asumTile.on.t-gap, .asumTile.on.t-warn{ background:var(--amber-soft); box-shadow:none; transform:none; filter:none; }
+  .asumTile.on .n{ color:var(--amber) !important; }
+  .asumBadge.b-op{ background:var(--panel-2) !important; color:var(--text) !important; }
+  .asumBadge.b-mc{ background:var(--lcd-dim) !important; color:#166534 !important; }
+  @media (max-width:760px){ .asumTile{ padding:9px 10px; } .asumTile .n{ font-size:20px; } }
+
+  /* soft colour only in small icon chips; boxes stay white/grey */
+  .hrTile{ display:flex; align-items:center; gap:12px; }
+  .hrTile .ic, .asumTile .ic{ width:34px; height:34px; flex:none; border-radius:50%; display:flex; align-items:center; justify-content:center; background:#fff; color:var(--muted); }
+  .hrTile .tx, .asumTile .tx{ display:flex; flex-direction:column; min-width:0; }
+  .hrTile .n{ font-size:24px; } .hrTile .l{ font-size:11px; margin-top:5px; }
+  .hrTile.bad .n{ color:var(--text-strong); }
+  .lv-late .ic, .hrIco.lv-late{ background:var(--danger-soft); color:var(--danger); }
+  .lv-soon .ic, .hrIco.lv-soon{ background:var(--warn-soft); color:var(--warn); }
+  .lv-info .ic, .hrIco.lv-info{ background:var(--acc-blue-soft); color:var(--acc-blue); }
+  .hrTile.on .ic{ background:#fff; }
+  .hrSetBlock > summary{ gap:12px; padding:12px 2px; }
+  .hrSetIc{ width:36px; height:36px; flex:none; border-radius:11px; display:flex; align-items:center; justify-content:center; }
+  .hrSetIc.c-purple{ background:var(--acc-purple-soft); color:var(--acc-purple); } .hrSetIc.c-blue{ background:var(--acc-blue-soft); color:var(--acc-blue); }
+  .hrSetIc.c-teal{ background:#d7f3f6; color:#0e7490; } .hrSetIc.c-amber{ background:var(--warn-soft); color:var(--warn); }
+  .hrSetTx{ display:flex; flex-direction:column; min-width:0; } .hrSetTx b{ font-size:14px; font-weight:600; color:var(--text-strong); } .hrSetTx small{ font-size:12px; font-weight:400; color:var(--muted); margin-top:1px; }
+  /* Team & Machine Summary: same idea */
+  .asumTile, .asumTile.t-operators, .asumTile.t-supervisors, .asumTile.t-machines, .asumTile.t-gap, .asumTile.t-warn, .asumTile.t-gaps, .asumTile.t-noappr{ background:var(--panel-2); display:flex; align-items:center; gap:12px; }
+  .asumTile .n, .asumTile.t-operators .n, .asumTile.t-supervisors .n, .asumTile.t-machines .n, .asumTile.t-gap .n, .asumTile.t-warn .n{ color:var(--text-strong); }
+  .asumTile.t-operators .ic{ background:var(--acc-blue-soft); color:var(--acc-blue); }
+  .asumTile.t-supervisors .ic{ background:var(--acc-purple-soft); color:var(--acc-purple); }
+  .asumTile.t-machines .ic{ background:var(--lcd-dim); color:var(--ok); }
+  .asumTile.t-gap .ic{ background:var(--danger-soft); color:var(--danger); }
+  .asumTile.t-warn .ic{ background:var(--warn-soft); color:var(--warn); }
+  .asumTile.on, .asumTile.on.t-operators, .asumTile.on.t-supervisors, .asumTile.on.t-machines, .asumTile.on.t-gap, .asumTile.on.t-warn, .asumTile.on.t-gaps, .asumTile.on.t-noappr{ background:var(--amber-soft); }
+  .asumTile.on .n{ color:var(--text-strong) !important; }
+  .asumTile .l{ font-size:10.5px; margin-top:4px; }
+  .asumBadge.b-op{ background:var(--acc-blue-soft) !important; color:#1e40af !important; }
+  @media (max-width:760px){ .asumTile, .hrTile{ flex-direction:column; align-items:flex-start; gap:8px; } }
+  .hrTile .n, .hrTile .l, .asumTile .n, .asumTile .l{ display:block; }
+  /* Team & Machine Summary: laid out exactly like the Employee Overview */
+  .asumTiles{ display:grid !important; grid-template-columns:repeat(6,1fr) !important; gap:12px !important; margin-bottom:16px !important; }
+  .asumTiles > .asumTile{ display:block !important; text-align:left; border-radius:16px; padding:18px 14px; background:var(--panel-2); filter:none; transform:none; box-shadow:none; grid-column:span 2; }
+  .asumTiles > .asumTile.sm{ grid-column:span 3; text-align:center; border-radius:12px; padding:12px 8px; }
+  .asumTiles > .asumTile:hover{ background:#eceef5; }
+  .asumTiles > .asumTile.on{ background:var(--amber-soft); }
+  .asumTiles > .asumTile .ic{ display:flex; width:40px; height:40px; margin:0 0 12px; border-radius:50%; align-items:center; justify-content:center; background:#fff; color:var(--muted); }
+  .asumTiles > .asumTile.t-operators .ic{ background:var(--acc-blue-soft); color:var(--acc-blue); }
+  .asumTiles > .asumTile.t-supervisors .ic{ background:var(--acc-purple-soft); color:var(--acc-purple); }
+  .asumTiles > .asumTile.t-machines .ic{ background:var(--lcd-dim); color:var(--ok); }
+  .asumTiles > .asumTile .n{ display:block; font-family:'JetBrains Mono',monospace; font-size:28px; font-weight:700; line-height:1; color:var(--text-strong) !important; }
+  .asumTiles > .asumTile .l{ display:block; font-size:10.5px; text-transform:uppercase; letter-spacing:.04em; font-weight:600; color:var(--muted); margin-top:7px; line-height:1.35; }
+  .asumTiles > .asumTile.sm .n{ font-size:20px; } .asumTiles > .asumTile.sm .l{ font-size:10px; margin-top:4px; }
+  .asumTiles > .asumTile.t-gap{ background:var(--danger-soft); } .asumTiles > .asumTile.t-gap .n, .asumTiles > .asumTile.t-gap .l{ color:var(--danger) !important; }
+  .asumTiles > .asumTile.t-warn{ background:var(--warn-soft); } .asumTiles > .asumTile.t-warn .n, .asumTiles > .asumTile.t-warn .l{ color:var(--warn) !important; }
+  .asumTiles > .asumTile.on.t-gap, .asumTiles > .asumTile.on.t-warn{ background:var(--amber-soft); }
+  .asumTiles > .asumTile.on .n{ color:var(--text-strong) !important; } .asumTiles > .asumTile.on .l{ color:var(--muted) !important; }
+  @media (max-width:560px){ .asumTiles{ gap:8px !important; } .asumTiles > .asumTile{ padding:12px 10px; border-radius:14px; } .asumTiles > .asumTile .ic{ width:32px; height:32px; margin-bottom:8px; } .asumTiles > .asumTile .n{ font-size:22px; } .asumTiles > .asumTile .l{ font-size:9.5px; } .asumTiles > .asumTile.sm{ padding:10px 6px; } }
+  details.asumSup > summary{ padding:16px 18px; }
+  /* HR Assistant tiles + rows: same spacious layout as the Employee Overview */
+  .hrTiles{ gap:12px !important; margin-bottom:10px !important; }
+  .hrTiles > .hrTile{ display:block !important; padding:18px 14px; border-radius:16px; text-align:left; }
+  .hrTiles > .hrTile .ic{ display:flex; width:40px; height:40px; margin:0 0 12px; }
+  .hrTiles > .hrTile .tx{ display:block; }
+  .hrTiles > .hrTile .n{ display:block; font-size:28px; color:var(--text-strong) !important; }
+  .hrTiles > .hrTile .l{ display:block; font-size:10.5px; margin-top:7px; }
+  .hrTiles > .hrTile.on{ background:var(--amber-soft); }
+  .hrLabel{ margin:22px 0 4px; font-size:11px; }
+  .hrRow{ padding:16px 0; gap:14px; }
+  .hrIco{ width:38px; height:38px; border-radius:50%; }
+  .hrIco svg{ width:17px; height:17px; }
+  .hrRow .hrTitle{ font-size:14px; }
+  .hrRow .hrSub{ margin-top:3px; font-size:12.5px; }
+  @media (max-width:560px){ .hrTiles{ gap:8px !important; } .hrTiles > .hrTile{ padding:12px 10px; border-radius:14px; } .hrTiles > .hrTile .ic{ width:32px; height:32px; margin-bottom:8px; } .hrTiles > .hrTile .n{ font-size:22px; } .hrTiles > .hrTile .l{ font-size:9.5px; } }
+  /* the two warning tiles are normal grey boxes with a red / yellow icon circle, just wider */
+  .asumTiles > .asumTile.t-gaps, .asumTiles > .asumTile.t-noappr{ grid-column:span 3; }
+  .asumTiles > .asumTile.t-gaps .ic{ background:var(--danger-soft); color:var(--danger); }
+  .asumTiles > .asumTile.t-noappr .ic{ background:var(--warn-soft); color:var(--warn); }
+  /* one button shape across the app: fully round, like the main buttons and the Employee Overview filter button */
+  .pillBtn, .refreshBtn{ border-radius:9999px; }
+  .iconBtn{ border-radius:50%; }
 </style>
 </head>
 <body>
@@ -2240,8 +2468,9 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
 
       <div class="asumTop" style="margin-bottom:10px;">
         <button type="button" class="iconBtn" id="rfToggle" title="Filters" aria-label="Filters" aria-expanded="false" style="display:none;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg><span class="iconBadge" id="rfBadge" style="display:none;"></span></button>
+        <button type="button" class="refreshBtn" id="refreshReportBtn" title="Reload the latest entries" aria-label="Refresh"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.5 15a9 9 0 11-2.1-9.4L23 10"/></svg>Refresh</button>
         <span style="flex:1;"></span>
-        <button type="button" class="iconBtn" id="refreshReportBtn" title="Refresh" aria-label="Refresh"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.5 15a9 9 0 11-2.1-9.4L23 10"/></svg></button>
+        
         <button type="button" class="iconBtn" id="reviewUnusualBtn" style="display:none;" title="Review unusual entries (all machines)" aria-label="Review unusual entries"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></button>
         <button type="button" class="iconBtn" id="addManualEntryBtn" style="display:none;" title="Add a manual entry" aria-label="Add manual entry"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
         <button type="button" class="pillBtn" id="exportBtn" title="Download as Excel" aria-label="Download Excel"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Excel</button>
@@ -2506,30 +2735,33 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
         </div>
       </div>
       <div class="card" style="margin-bottom:8px;">
-        <div class="grid-3" style="gap:8px; margin-bottom:14px;">
-          <div class="machHealthStat" data-kind="all" style="cursor:pointer; text-align:center; background:var(--panel-2); border-radius:12px; padding:10px 4px;">
-            <div style="font-family:'JetBrains Mono',monospace; font-weight:700; font-size:18px; color:var(--text-strong);" id="kpiTotalMachine">0</div>
-            <div style="font-size:8.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.03em; margin-top:2px;">Total</div>
+        <div class="grid-3" style="gap:12px; margin-bottom:18px;">
+          <div class="machHealthStat" data-kind="all" style="cursor:pointer; text-align:left; background:var(--panel-2); border-radius:16px; padding:18px 14px;">
+            <div class="kpi-icon" style="background:var(--acc-blue-soft); color:var(--acc-blue); width:40px; height:40px; margin:0 0 12px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:19px; height:19px;"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 14h3M1 9h3M1 14h3"/></svg></div>
+            <div style="font-family:'JetBrains Mono',monospace; font-weight:700; font-size:28px; line-height:1; color:var(--text-strong);" id="kpiTotalMachine">0</div>
+            <div style="font-size:10.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; font-weight:600; margin-top:7px;">Total</div>
           </div>
-          <div class="machHealthStat" data-kind="running" style="cursor:pointer; text-align:center; background:var(--lcd-dim); border-radius:12px; padding:10px 4px;">
-            <div style="font-family:'JetBrains Mono',monospace; font-weight:700; font-size:18px; color:var(--ok);" id="ceoRunningCount">0</div>
-            <div style="font-size:8.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.03em; margin-top:2px;">Running (Day/Night)</div>
+          <div class="machHealthStat" data-kind="running" style="cursor:pointer; text-align:left; background:var(--panel-2); border-radius:16px; padding:18px 14px;">
+            <div class="kpi-icon" style="background:var(--lcd-dim); color:var(--ok); width:40px; height:40px; margin:0 0 12px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:19px; height:19px;"><polygon points="5 3 19 12 5 21 5 3"/></svg></div>
+            <div style="font-family:'JetBrains Mono',monospace; font-weight:700; font-size:28px; line-height:1; color:var(--text-strong);" id="ceoRunningCount">0</div>
+            <div style="font-size:10.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; font-weight:600; margin-top:7px;">Running (Day/Night)</div>
           </div>
-          <div class="machHealthStat" id="ceoStoppedCard" data-kind="stopped" style="cursor:pointer; text-align:center; background:var(--danger-soft); border-radius:12px; padding:10px 4px;">
-            <div style="font-family:'JetBrains Mono',monospace; font-weight:700; font-size:18px; color:var(--danger);" id="ceoStoppedCount">0</div>
-            <div style="font-size:8.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.03em; margin-top:2px;">Stopped (Day/Night)</div>
+          <div class="machHealthStat" id="ceoStoppedCard" data-kind="stopped" style="cursor:pointer; text-align:left; background:var(--panel-2); border-radius:16px; padding:18px 14px;">
+            <div class="kpi-icon" style="background:var(--danger-soft); color:var(--danger); width:40px; height:40px; margin:0 0 12px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:19px; height:19px;"><rect x="6" y="6" width="12" height="12" rx="2"/></svg></div>
+            <div style="font-family:'JetBrains Mono',monospace; font-weight:700; font-size:28px; line-height:1; color:var(--text-strong);" id="ceoStoppedCount">0</div>
+            <div style="font-size:10.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; font-weight:600; margin-top:7px;">Stopped (Day/Night)</div>
           </div>
         </div>
         <div id="machDrillList" style="display:none; margin-bottom:14px;"></div>
         <div id="ceoStoppedDetail" style="display:none; margin-bottom:14px;"></div>
 
-        <div style="border-top:1px solid var(--line); padding-top:14px; text-align:center;">
-          <div style="font-size:9.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); font-weight:600; margin-bottom:4px;">Production</div>
-          <div style="font-family:'JetBrains Mono',monospace; font-size:26px; font-weight:700; color:var(--text-strong);" id="kpiProduction">0 m&sup2;</div>
+        <div style="border-top:1px solid var(--line); padding:18px 0 8px; text-align:center;">
+          <div style="font-size:10.5px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); font-weight:600; margin-bottom:8px;">Production</div>
+          <div style="font-family:'JetBrains Mono',monospace; font-size:28px; line-height:1; font-weight:700; color:var(--text-strong);" id="kpiProduction">0 m&sup2;</div>
           <div class="hint" id="prodSkipNote" style="display:none;"></div>
         </div>
 
-        <div class="row" style="cursor:pointer; margin-top:14px;" id="prodDeptToggle">
+        <div class="row" style="cursor:pointer; margin-top:14px; padding:12px 0;" id="prodDeptToggle">
           <span style="font-size:12.5px; font-weight:600;">By Department</span>
           <span class="badge badge-pendingrole" id="prodDeptToggleLbl">Show</span>
         </div>
@@ -2603,6 +2835,9 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
       <h1>Employees</h1>
       <p class="sub" style="margin-bottom:20px;">Headcount, joiners, leavers, and passport custody — all in one place.</p>
 
+      <div class="hrWrap" id="hrAssistantMount"></div>
+
+
       <div id="employeeOverviewMountEmployees">
       <div id="employeeOverviewBlock">
       <h2 style="display:flex; align-items:center; justify-content:space-between;">
@@ -2614,34 +2849,45 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
           <div class="ceoEmpStat" data-filter="all" style="cursor:pointer; background:var(--panel-2); border-radius:16px; padding:18px 14px;">
             <div class="kpi-icon" style="background:var(--acc-blue-soft); color:var(--acc-blue); width:40px; height:40px; margin:0 0 12px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:19px; height:19px;"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg></div>
             <div style="font-family:'JetBrains Mono',monospace; font-size:28px; font-weight:700; color:var(--text-strong); line-height:1;" id="kpiTotalEmp">0</div>
-            <div style="font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; font-weight:600; margin-top:6px;">Total Employees</div>
+            <div style="font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; font-weight:600; margin-top:6px;">Total Employees</div>
           </div>
           <div class="ceoEmpStat" data-filter="Sponsor" style="cursor:pointer; background:var(--panel-2); border-radius:16px; padding:18px 14px;">
             <div class="kpi-icon" style="background:var(--lcd-dim); color:var(--ok); width:40px; height:40px; margin:0 0 12px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:19px; height:19px;"><path d="M20 6L9 17l-5-5"/></svg></div>
             <div style="font-family:'JetBrains Mono',monospace; font-size:28px; font-weight:700; color:var(--text-strong); line-height:1;" id="kpiSponsor">0</div>
-            <div style="font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; font-weight:600; margin-top:6px;">Sponsor</div>
+            <div style="font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; font-weight:600; margin-top:6px;">Sponsor</div>
           </div>
           <div class="ceoEmpStat" data-filter="Non-Sponsor" style="cursor:pointer; background:var(--panel-2); border-radius:16px; padding:18px 14px;">
             <div class="kpi-icon" style="background:var(--acc-purple-soft); color:var(--acc-purple); width:40px; height:40px; margin:0 0 12px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:19px; height:19px;"><circle cx="12" cy="12" r="9"/><path d="M9 12h6"/></svg></div>
             <div style="font-family:'JetBrains Mono',monospace; font-size:28px; font-weight:700; color:var(--text-strong); line-height:1;" id="kpiNonSponsor">0</div>
-            <div style="font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; font-weight:600; margin-top:6px;">Non-Sponsor</div>
+            <div style="font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; font-weight:600; margin-top:6px;">Non-Sponsor</div>
           </div>
         </div>
 
         <div class="grid-3" style="gap:8px; margin-bottom:6px;">
           <div class="ceoEmpHighlight" data-kind="newJoin" style="cursor:pointer; background:var(--panel-2); border-radius:12px; padding:10px 6px; text-align:center;">
-            <div style="font-family:'JetBrains Mono',monospace; font-weight:700; font-size:17px; color:var(--text-strong);" id="kpiNewJoin">0</div>
-            <div style="font-size:8.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.03em; margin-top:3px; line-height:1.3;">New Joined</div>
+            <div style="font-family:'JetBrains Mono',monospace; font-weight:700; font-size:22px; color:var(--text-strong);" id="kpiNewJoin">0</div>
+            <div style="font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.03em; margin-top:3px; line-height:1.3;">New Joined</div>
           </div>
           <div class="ceoEmpHighlight" data-kind="vacationNow" style="cursor:pointer; background:var(--panel-2); border-radius:12px; padding:10px 6px; text-align:center;">
-            <div style="font-family:'JetBrains Mono',monospace; font-weight:700; font-size:17px; color:var(--text-strong);" id="kpiVacationNow">0</div>
-            <div style="font-size:8.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.03em; margin-top:3px; line-height:1.3;">On Vacation</div>
+            <div style="font-family:'JetBrains Mono',monospace; font-weight:700; font-size:22px; color:var(--text-strong);" id="kpiVacationNow">0</div>
+            <div style="font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.03em; margin-top:3px; line-height:1.3;">On Vacation</div>
           </div>
           <div style="cursor:pointer; background:var(--danger-soft); border-radius:12px; padding:10px 6px; text-align:center;">
             <div class="ceoEmpHighlight" data-kind="exited" style="cursor:pointer;">
-              <div style="font-family:'JetBrains Mono',monospace; font-weight:700; font-size:17px; color:var(--danger);" id="kpiExited">0</div>
-              <div style="font-size:8.5px; color:var(--danger); text-transform:uppercase; letter-spacing:.03em; margin-top:3px; line-height:1.3;">Exit/Terminated</div>
+              <div style="font-family:'JetBrains Mono',monospace; font-weight:700; font-size:22px; color:var(--danger);" id="kpiExited">0</div>
+              <div style="font-size:10px; color:var(--danger); text-transform:uppercase; letter-spacing:.03em; margin-top:3px; line-height:1.3;">Exit/Terminated</div>
             </div>
+          </div>
+        </div>
+
+        <div class="ovBrk">
+          <button type="button" class="pillBtn" id="ovBrkToggle" aria-expanded="false"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Breakdown</button>
+          <div id="ovBrkPanel" style="display:none;">
+            <div class="ovBrkHead"><label for="ovBrkBy">Show</label>
+              <select id="ovBrkBy"><option value="dept">Headcount by department</option><option value="country">Headcount by country</option><option value="position">Headcount by position</option><option value="type">Headcount by sponsor type</option><option value="shift">Headcount by shift</option><option value="gender">Headcount by gender</option><option value="flow">Joined &amp; left &mdash; last 6 months</option></select>
+            </div>
+            <div id="ovBrkBody"></div>
+            <div class="ovBrkHint" id="ovBrkHint">Tap a bar to see exactly who is in it.</div>
           </div>
         </div>
 
@@ -2695,16 +2941,16 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
         <div class="card" style="margin-bottom:22px;">
           <div class="grid-3" style="gap:12px;">
             <div class="passportLocStat" data-loc="office" style="cursor:pointer; background:var(--panel-2); border-radius:16px; padding:18px 14px; text-align:center;">
-              <div style="font-family:'JetBrains Mono',monospace; font-size:26px; font-weight:700; color:var(--text-strong);" id="kpiPassportOffice">0</div>
-              <div style="font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; font-weight:600; margin-top:6px;">In Office</div>
+              <div style="font-family:'JetBrains Mono',monospace; font-size:28px; line-height:1; font-weight:700; color:var(--text-strong);" id="kpiPassportOffice">0</div>
+              <div style="font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; font-weight:600; margin-top:6px;">In Office</div>
             </div>
             <div class="passportLocStat" data-loc="employee" style="cursor:pointer; background:var(--panel-2); border-radius:16px; padding:18px 14px; text-align:center;">
-              <div style="font-family:'JetBrains Mono',monospace; font-size:26px; font-weight:700; color:var(--warn);" id="kpiPassportEmployee">0</div>
-              <div style="font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; font-weight:600; margin-top:6px;">With Employee</div>
+              <div style="font-family:'JetBrains Mono',monospace; font-size:28px; line-height:1; font-weight:700; color:var(--warn);" id="kpiPassportEmployee">0</div>
+              <div style="font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; font-weight:600; margin-top:6px;">With Employee</div>
             </div>
             <div class="passportLocStat" data-loc="unset" style="cursor:pointer; background:var(--panel-2); border-radius:16px; padding:18px 14px; text-align:center;">
-              <div style="font-family:'JetBrains Mono',monospace; font-size:26px; font-weight:700; color:var(--danger);" id="kpiPassportUnset">0</div>
-              <div style="font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; font-weight:600; margin-top:6px;">Not Set Yet</div>
+              <div style="font-family:'JetBrains Mono',monospace; font-size:28px; line-height:1; font-weight:700; color:var(--danger);" id="kpiPassportUnset">0</div>
+              <div style="font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; font-weight:600; margin-top:6px;">Not Set Yet</div>
             </div>
           </div>
           <div id="passportLocDrill" style="display:none; margin-top:14px; border-top:1px solid var(--line); padding-top:14px;">
@@ -8882,14 +9128,17 @@ function asumDownloadExcel(key, staged){
   const oRows = [['Operator', 'Operator ID', 'Department', 'Shift', 'Supervisor', 'Machine count', 'Machines']];
   D.ops.filter(ok).forEach(o => oRows.push([o.name, o.id, o.dept, shiftTag(o.shift), o.sup ? o.sup.name : 'None', o.machines.length, mlist(o)]));
   add('By operator', oRows, [24, 12, 14, 8, 24, 14, 60]);
-  const mRows = [['Machine', 'Machine ID', 'Department', 'Status', 'Shift setting', 'Day operator', 'Night operator', 'Supervisor']];
+  // Same columns and same supervisors as the screen: with a Day or Night filter on, only that shift is listed.
+  const showDay = st.fShift !== 'Night', showNight = st.fShift !== 'Day';
+  const mRows = [['Machine', 'Machine ID', 'Department', 'Status', 'Shift setting'].concat(showDay ? ['Day operator'] : [], showNight ? ['Night operator'] : [], ['Supervisor'])];
   asumMachineRows(D, st, ok).forEach(x => {
-    const names = []; x.d.concat(x.n).forEach(o => { const nm = o.sup ? o.sup.name + ' (' + o.sup.id + ')' : 'No supervisor'; if(!names.includes(nm)) names.push(nm); });
+    const shown = (showDay ? x.d : []).concat(showNight ? x.n : []).slice().sort((p, q) => ((p.sup && p.sup.name) || '~').localeCompare((q.sup && q.sup.name) || '~'));
+    const names = []; shown.forEach(o => { const nm = o.sup ? o.sup.name + ' (' + o.sup.id + ')' : 'No supervisor'; if(!names.includes(nm)) names.push(nm); });
     const cellOf = (held, runs) => held.length ? held.map(h => h.name + ' (' + h.id + ')').join(', ') : (runs ? 'NOBODY' : '-');
-    mRows.push([x.m.name, x.m.id, x.m.department || '', x.m.status === 'stopped' ? 'Stopped' : 'Running', (x.m.shiftRun === 'Day' || x.m.shiftRun === 'Night') ? x.m.shiftRun + ' only' : 'Both',
-      cellOf(x.d, machineRunsShift(x.m, 'Day')), cellOf(x.n, machineRunsShift(x.m, 'Night')), names.join(', ')]);
+    mRows.push([x.m.name, x.m.id, x.m.department || '', x.m.status === 'stopped' ? 'Stopped' : 'Running', (x.m.shiftRun === 'Day' || x.m.shiftRun === 'Night') ? x.m.shiftRun + ' only' : 'Both']
+      .concat(showDay ? [cellOf(x.d, machineRunsShift(x.m, 'Day'))] : [], showNight ? [cellOf(x.n, machineRunsShift(x.m, 'Night'))] : [], [names.join(', ')]));
   });
-  add('By machine', mRows, [20, 11, 14, 10, 12, 30, 30, 32]);
+  add('By machine', mRows, [20, 11, 14, 10, 12].concat(showDay ? [30] : [], showNight ? [30] : [], [34]));
   XLSX.writeFile(wb, 'team-machine-summary-' + rvfDateStamp() + '.xlsx');
   toast('Excel file downloaded');
 }
@@ -8958,15 +9207,18 @@ function renderAssignSummary(mountId, key, staged){
       <div class="fHint">Department and Shift change every number below. Supervisor, Operator and Machine narrow the lists.</div>
     </div>` : '';
 
-  // Same soft-tint tiles as Machine & Production: a colour per meaning, no outlines. The tab bar below shows which list is open.
-  const tone = { operators:['var(--acc-blue-soft)', 'var(--acc-blue)'], supervisors:['var(--acc-purple-soft)', 'var(--acc-purple)'], machines:['var(--lcd-dim)', 'var(--ok)'] };
+  // Same calm look as the HR Assistant: grey tiles, the open list is soft-highlighted, red number only for real gaps.
+  const SIC = { operators:'<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/>', supervisors:'<path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><polyline points="17 11 19 13 23 9"/>', machines:'<rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 14h3M1 9h3M1 14h3"/>', gaps:'<path d="M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>', noappr:'<path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="18" y1="11" x2="23" y2="11"/>' };
   const tile = (id, big, label, active, warn) => {
-    const t = tone[id] || (warn ? (id === 'gaps' ? ['var(--danger-soft)', 'var(--danger)'] : ['var(--warn-soft)', 'var(--warn)']) : ['var(--panel-2)', 'var(--text-strong)']);
-    return `<div class="asumTile" data-t="${id}" style="cursor:pointer; text-align:center; background:${t[0]}; border-radius:12px; padding:10px 4px; transition:transform .15s, box-shadow .15s; ${active ? 'box-shadow:0 4px 14px rgba(15,23,42,.14); transform:translateY(-1px);' : ''}">
-      <div style="font-family:'JetBrains Mono',monospace; font-weight:700; font-size:18px; color:${t[1]};">${big}</div>
-      <div style="font-size:8.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.03em; margin-top:2px;">${label}</div></div>`;
+    const main = true;
+    const cls = 'asumTile ' + (main ? 'big ' : 'sm ') + 't-' + id + (active ? ' on' : '');
+    return main
+      ? `<div class="${cls}" data-t="${id}"><span class="ic"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${SIC[id]}</svg></span><span class="n">${big}</span>
+      <span class="l">${label}</span></div>`
+      : `<div class="${cls}" data-t="${id}"><span class="n">${big}</span>
+      <span class="l">${label}</span></div>`;
   };
-  const tiles = `<div class="asumTiles" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(96px,1fr)); gap:8px; margin-bottom:12px;">
+  const tiles = `<div class="asumTiles">
       ${tile('operators', D.ops.length, 'Operators (' + dayOps + ' day / ' + nightOps + ' night' + (bothOps ? ' / ' + bothOps + ' both' : '') + ')', st.view === 'operator' && !anyNarrow)}
       ${tile('supervisors', D.sups.length, 'Supervisors', st.view === 'supervisor' && !anyNarrow)}
       ${tile('machines', covered + '/' + D.machines.length, 'Machines covered', st.view === 'machine' && !anyNarrow)}
@@ -8979,10 +9231,10 @@ function renderAssignSummary(mountId, key, staged){
   let body = '';
   if(st.view === 'operator'){
     const rows = D.ops.filter(opOk);
-    body = rows.length ? `<div class="table-scroll"><table class="report-table"><thead><tr><th style="width:26%;">Operator</th><th style="width:15%;">Dept &middot; shift</th><th style="width:22%;">Supervisor</th><th>Machines</th></tr></thead><tbody>${rows.map(o =>
-      `<tr><td>${esc(o.name)} <span style="color:var(--muted); font-size:11px;">${esc(o.id)}</span></td><td>${esc(o.dept || '—')} &middot; ${shiftTag(o.shift)}</td>
+    body = rows.length ? `<div class="table-scroll"><table class="report-table asumTbl"><thead><tr><th style="width:26%;">Operator</th><th style="width:15%;">Dept &middot; shift</th><th style="width:22%;">Supervisor</th><th>Machines</th></tr></thead><tbody>${rows.map(o =>
+      `<tr><td>${esc(o.name)} <span style="color:var(--muted); font-size:12px;">${esc(o.id)}</span></td><td>${esc(o.dept || '—')} &middot; ${shiftTag(o.shift)}</td>
        <td>${o.sup ? esc(o.sup.name) + ' ' + idTag(o.sup.id) + (o.sup.current ? '' : ' <span style="color:var(--warn);" title="No longer a supervisor">&#9888;</span>') : '<span style="color:var(--warn);">None</span>'}</td>
-       <td style="font-size:12px;"><b>${o.machines.length}</b> &middot; ${chips(o.machines)}</td></tr>`).join('')}</tbody></table></div>
+       <td style="font-size:13px;"><b>${o.machines.length}</b> &middot; ${chips(o.machines)}</td></tr>`).join('')}</tbody></table></div>
       <div class="hint" style="text-align:left; margin:6px 0 0;">${rows.length} operator${rows.length === 1 ? '' : 's'} shown.</div>` : '<div class="empty-state">No operators match.</div>';
   } else if(st.view === 'machine'){
     const rows = asumMachineRows(D, st, opOk);
@@ -8993,8 +9245,8 @@ function renderAssignSummary(mountId, key, staged){
       return held.map(h => `<span class="asumNm">${esc(h.name)} ${idTag(h.id)}</span>`).join('') + (runs ? '' : ' <span style="color:var(--warn);" title="This machine is set not to run this shift">&#9888;</span>');
     };
     const supOf = (x) => { const seen = new Set(), out = []; (showDay ? x.d : []).concat(showNight ? x.n : []).slice().sort((p, q) => ((p.sup && p.sup.name) || '~').localeCompare((q.sup && q.sup.name) || '~')).forEach(o => { const k = o.sup ? o.sup.id : '__none__'; if(seen.has(k)) return; seen.add(k); out.push(o.sup ? `<span class="asumNm">${esc(o.sup.name)} ${idTag(o.sup.id)}</span>` : '<span class="asumNm" style="color:var(--warn);">No supervisor</span>'); }); return out.length ? out.join('') : '—'; };
-    body = rows.length ? `<div class="table-scroll"><table class="report-table"><thead><tr><th style="width:15%;">Machine</th>${showDay ? '<th style="width:28%;">Day operator</th>' : ''}${showNight ? '<th style="width:28%;">Night operator</th>' : ''}<th>Supervisor</th></tr></thead><tbody>${rows.map(x =>
-      `<tr><td>${esc(x.m.name)}${x.m.status === 'stopped' ? ' <span style="color:var(--muted); font-size:11px;">stopped</span>' : ''}</td>${showDay ? `<td>${cellOf(x, 'Day')}</td>` : ''}${showNight ? `<td>${cellOf(x, 'Night')}</td>` : ''}<td style="font-size:12px;">${supOf(x)}</td></tr>`).join('')}</tbody></table></div>
+    body = rows.length ? `<div class="table-scroll"><table class="report-table asumTbl"><thead><tr><th style="width:15%;">Machine</th>${showDay ? '<th style="width:28%;">Day operator</th>' : ''}${showNight ? '<th style="width:28%;">Night operator</th>' : ''}<th>Supervisor</th></tr></thead><tbody>${rows.map(x =>
+      `<tr><td>${esc(x.m.name)}${x.m.status === 'stopped' ? ' <span style="color:var(--muted); font-size:11px;">stopped</span>' : ''}</td>${showDay ? `<td>${cellOf(x, 'Day')}</td>` : ''}${showNight ? `<td>${cellOf(x, 'Night')}</td>` : ''}<td style="font-size:13px;">${supOf(x)}</td></tr>`).join('')}</tbody></table></div>
       <div class="hint" style="text-align:left; margin:6px 0 0;">${rows.length} machine${rows.length === 1 ? '' : 's'} shown. Permanently stopped machines are left out.</div>` : '<div class="empty-state">No machines match.</div>';
   } else {
     // one card per supervisor: tap to open the team, with each operator's shift and machines
@@ -9005,10 +9257,10 @@ function renderAssignSummary(mountId, key, staged){
       const openAttr = (st.open.has(x.b.id) || anyNarrow) ? 'open' : '';
       return `<details class="asumSup card" data-id="${esc(x.b.id)}" ${openAttr} style="margin-bottom:10px;">
         <summary>
-          <span><span style="font-size:13px; font-weight:600; color:${x.b.warn ? 'var(--warn)' : 'var(--text-strong)'};">${esc(x.b.name)}${esc(x.b.note)}</span><br>${idTag(x.b.id === '__none__' ? 'Not assigned to a supervisor' : [x.b.id, x.b.dept, x.b.shift ? (x.b.shift === 'Both' ? 'Day & Night' : x.b.shift) : ''].filter(Boolean).join(' \u00B7 '))}</span>
+          <span><span style="font-size:14px; font-weight:600; color:${x.b.warn ? 'var(--warn)' : 'var(--text-strong)'};">${esc(x.b.name)}${esc(x.b.note)}</span><br>${idTag(x.b.id === '__none__' ? 'Not assigned to a supervisor' : [x.b.id, x.b.dept, x.b.shift ? (x.b.shift === 'Both' ? 'Day & Night' : x.b.shift) : ''].filter(Boolean).join(' \u00B7 '))}</span>
           <span style="display:inline-flex; align-items:center; gap:6px;"><span class="asumBadge b-op">${x.ops.length} operator${x.ops.length === 1 ? '' : 's'}</span><span class="asumBadge b-mc">${msl.length} machine${msl.length === 1 ? '' : 's'}</span><svg class="asumChev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span></summary>
-        ${x.ops.length ? `<div class="table-scroll"><table class="report-table"><thead><tr><th style="width:42%;">Operator</th><th style="width:14%;">Shift</th><th>Machines</th></tr></thead><tbody>${x.ops.map(o =>
-          `<tr><td>${esc(o.name)} <span style="color:var(--muted); font-size:11px;">${esc(o.id)}</span></td><td>${shiftTag(o.shift)}</td><td style="font-size:12px;">${chips(o.machines)}</td></tr>`).join('')}</tbody></table></div>` : '<div class="hint" style="text-align:left; margin:0 16px 14px;">No operators under this supervisor yet.</div>'}
+        ${x.ops.length ? `<div class="table-scroll"><table class="report-table asumTbl"><thead><tr><th style="width:42%;">Operator</th><th style="width:14%;">Shift</th><th>Machines</th></tr></thead><tbody>${x.ops.map(o =>
+          `<tr><td>${esc(o.name)} <span style="color:var(--muted); font-size:12px;">${esc(o.id)}</span></td><td>${shiftTag(o.shift)}</td><td style="font-size:13px;">${chips(o.machines)}</td></tr>`).join('')}</tbody></table></div>` : '<div class="hint" style="text-align:left; margin:0 16px 14px;">No operators under this supervisor yet.</div>'}
       </details>`;
     }).join('') + '</div>' : '<div class="empty-state">Nothing matches.</div>';
   }
@@ -10746,6 +10998,778 @@ async function loadCeoDashboard(){
 }
 
 /* ============================================================
+   HR ASSISTANT — Employees page (simple version)
+   Reads only the people already loaded (state.users). Rules, message and
+   letter templates live in ONE settings document (config/hrSettings).
+   The only extra per-person details (insurance expiry, contract end, a note,
+   and "done / remind me later" marks) live inside that person's own profile (profile.hr).
+   ============================================================ */
+const HR_IC = {
+  bell:'<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>',
+  todo:'<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>',
+  people:'<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+  msg:'<line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>',
+  file:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>',
+  gear:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
+  wa:'<path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>',
+  check:'<polyline points="20 6 9 17 4 12"/>',
+  clock:'<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+  user:'<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+  down:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>',
+  filter:'<polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>',
+  search:'<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>',
+  gift:'<polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/>',
+  idc:'<rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="8" cy="12" r="2"/><line x1="13" y1="10" x2="19" y2="10"/><line x1="13" y1="14" x2="19" y2="14"/>',
+  book:'<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>',
+  shield:'<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>',
+  ucheck:'<path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><polyline points="17 11 19 13 23 9"/>',
+  plane:'<path d="M17.8 19.2L16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/>',
+  moon:'<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>',
+  cal:'<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>',
+  info:'<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>',
+  plus:'<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
+  x:'<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>',
+  trash:'<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/>',
+  copy:'<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
+  chev:'<polyline points="6 9 12 15 18 9"/>',
+  contract:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>'
+};
+function hrSvg(n, s){ s = s || 16; return `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${HR_IC[n] || ''}</svg>`; }
+const HR_TYPES = {
+  iqama:      { label:'Iqama',             ic:'idc'    },
+  passport:   { label:'Passport',          ic:'book'   },
+  insurance:  { label:'Medical insurance', ic:'shield' },
+  contract:   { label:'Contract',          ic:'contract' },
+  probation:  { label:'Probation',         ic:'ucheck' },
+  vacation:   { label:'Vacation return',   ic:'plane'  },
+  ramadan:    { label:'Ramadan hours',     ic:'moon'   },
+  birthday:   { label:'Birthday',          ic:'gift'   },
+  anniversary:{ label:'Work anniversary',  ic:'cal'    },
+  missing:    { label:'Missing data',      ic:'info'   }
+};
+function hrDefaults(){
+  return {
+    on:   { iqama:true, passport:true, insurance:true, contract:true, probation:true, vacation:true, ramadan:true, birthday:true, anniversary:true, missing:true },
+    lead: { iqama:60, passport:120, insurance:30, contract:60, probation:14, vacation:5, ramadan:14, birthday:7, anniversary:7 },
+    company: 'Riyadh Velvet Factory', snoozeDays: 7, probationDays: 90,
+    milestones: [1, 3, 5, 10, 15, 20, 25],
+    ramadan: { start:'', end:'' },
+    steps: {
+      iqama: "1) Open your company account in Muqeem / Absher and check this person's Iqama expiry.\n2) Make sure the work-permit fee is paid and the medical insurance is valid.\n3) Renew the Iqama there. Start at least 2 weeks before the expiry date.\n4) Update the new expiry date in the employee's Iqama tab so this reminder disappears.",
+      passport: "1) Ask the employee for his passport renewal plan.\n2) If the passport is in the office, give it back when he applies at his embassy.\n3) Mark it 'Sent for Renewal' in Document Renewals.\n4) When the new passport arrives, update the number and expiry date in his Passport tab.",
+      insurance: "1) Ask the insurance company or broker for a renewal.\n2) Renew before the expiry date and keep the new card copy.\n3) Enter the new expiry date in his HR card.",
+      contract: "1) Talk to the supervisor and decide: renew, change terms, or end.\n2) Prepare and sign the new contract (or the end-of-contract papers).\n3) Enter the new contract end date in his HR card.",
+      probation: "1) Ask the supervisor for a short opinion.\n2) Decide: confirm, extend, or end the service.\n3) Press the tick here once the decision is taken.",
+      vacation: "1) Call the employee and confirm his return date.\n2) When he is back, set his Employment Status to 'On The Job' in his profile.",
+      ramadan: "1) Decide the Ramadan working hours.\n2) Open Admin > Shift & Timing and add a new rule starting on the date shown.\n3) After Ramadan, add another rule to return to normal hours.",
+      birthday: "Send a short greeting (the WhatsApp button prepares it).",
+      anniversary: "Send a thank-you message (the WhatsApp button prepares it).",
+      missing: "Open the People tab, choose 'Needs attention > Missing data' and collect the missing details."
+    },
+    wa: {
+      iqama: "Hello {name}, your Iqama expires on {date} ({days}). Please send us a clear copy of your Iqama and passport so we can start the renewal. - {company}",
+      passport: "Hello {name}, your passport expires on {date} ({days}). Please tell us when you will apply for renewal. - {company}",
+      insurance: "Hello {name}, your medical insurance ends on {date} ({days}). We are renewing it. - {company}",
+      contract: "Hello {name}, your contract ends on {date} ({days}). Please meet HR this week. - {company}",
+      probation: "Hello {name}, your probation period ends on {date}. HR will contact you. - {company}",
+      vacation: "Hello {name}, your vacation was due to end on {date}. Please confirm your return date. - {company}",
+      birthday: "Happy birthday {name}! Best wishes from all of us at {company}.",
+      anniversary: "Congratulations {name} on {years} with {company}. Thank you for your hard work!"
+    },
+    messages: [
+      { id:'m1', name:'Holiday notice', body:"Dear {name}, the factory will be closed on [date] for [reason]. Work resumes on [date]. - {company}" },
+      { id:'m2', name:'Salary paid', body:"Dear {name}, this month's salary has been transferred. Please contact HR if you have any question. - {company}" },
+      { id:'m3', name:'Meeting', body:"Dear {name}, please attend the meeting on [day] at [time] at [place]. - {company}" },
+      { id:'m4', name:'Safety reminder', body:"Dear {name}, please wear your safety shoes and follow all safety rules on the floor. Your safety comes first. - {company}" },
+      { id:'m5', name:'Documents request', body:"Dear {name}, please send a clear copy of your Iqama and passport to HR as soon as possible. - {company}" },
+      { id:'m6', name:'Eid greeting', body:"Eid Mubarak {name}! Wishing you and your family a blessed Eid. - {company}" },
+      { id:'m7', name:'Shift change', body:"Dear {name}, your shift will change to [Day / Night] starting [date]. Please confirm. - {company}" }
+    ],
+    letterhead: { company:'Riyadh Velvet Factory', line1:'', line2:'', footer:'', color:'#4f46e5', logo:'', signName:'', signTitle:'HR Department', stamp:true },
+    letters: [
+      { id:'l_emp', name:'Employment certificate', dir:'ltr', body:"To whom it may concern,\n\nThis is to certify that {name}, {nationality}, holding Iqama No. {iqamaNo}, has been working with {company} as {position} in the {department} department since {joiningDate}, and is still on the job at the date of this letter.\n\nThis letter is issued at the employee's request and carries no liability for the company.\n\nSincerely," },
+      { id:'l_exp', name:'Experience letter', dir:'ltr', body:"To whom it may concern,\n\nThis is to certify that {name}, {nationality}, Iqama No. {iqamaNo}, worked with {company} as {position} in the {department} department from {joiningDate} to {endDate} ({years}).\n\nDuring this period he performed his duties with care. We wish him success.\n\nSincerely," },
+      { id:'l_sal', name:'Salary certificate', dir:'ltr', body:"To whom it may concern,\n\nThis is to certify that {name}, {nationality}, Iqama No. {iqamaNo}, is employed by {company} as {position} since {joiningDate}, with a basic monthly salary of SAR {salary}.\n\nThis certificate is issued at his request without any responsibility on the company.\n\nSincerely," },
+      { id:'l_bank', name:'Bank letter (salary)', dir:'ltr', body:"To the Manager,\n{note}\n\nWe confirm that {name}, {nationality}, Iqama No. {iqamaNo}, is employed by {company} as {position} since {joiningDate}, with a basic monthly salary of SAR {salary}.\n\nKindly assist him with his banking request. This letter is issued at his request.\n\nSincerely," },
+      { id:'l_visa', name:'Embassy / travel letter', dir:'ltr', body:"To the Embassy of {nationality},\n\nThis is to confirm that {name}, passport no. {passportNo}, Iqama No. {iqamaNo}, works with {company} as {position} since {joiningDate}.\n\nHe is granted leave from {from} to {to} and is expected to return to his job after the leave. {note}\n\nSincerely," },
+      { id:'l_warn', name:'Warning letter', dir:'ltr', body:"Date: {date}\n\nTo: {name} (ID {id}) - {position}, {department}\n\nSubject: Warning\n\nIt has been noted that: {note}\n\nPlease treat this as an official warning. Repeating the same behaviour may lead to further action under company policy.\n\nSincerely," },
+      { id:'l_abs', name:'Absence warning', dir:'ltr', body:"Date: {date}\n\nTo: {name} (ID {id}) - {position}, {department}\n\nSubject: Absence without permission\n\nYou were absent from work without permission on: {note}\n\nPlease explain the reason to HR within 3 days. Further absence may lead to action under company policy.\n\nSincerely," },
+      { id:'l_leave', name:'Leave approval', dir:'ltr', body:"Date: {date}\n\nTo: {name} (ID {id}) - {position}\n\nYour leave request is approved from {from} to {to}. Please report to your supervisor on the first working day after the leave. {note}\n\nSincerely," },
+      { id:'l_res', name:'Resignation accepted', dir:'ltr', body:"Date: {date}\n\nTo: {name} (ID {id}) - {position}\n\nWe acknowledge your resignation dated {note}. Your last working day will be {to}. Please complete your clearance with HR before leaving.\n\nWe thank you for your service.\n\nSincerely," },
+      { id:'l_noc', name:'No-objection letter', dir:'ltr', body:"To whom it may concern,\n\n{company} has no objection to {name}, {nationality}, Iqama No. {iqamaNo}, {position}, regarding: {note}\n\nThis letter is issued at his request.\n\nSincerely," },
+      { id:'l_clr', name:'Final settlement receipt', dir:'ltr', body:"Date: {date}\n\nI, {name} (ID {id}, Iqama No. {iqamaNo}), confirm that I received my full final settlement of SAR {note} from {company}, and I have no further claim against the company.\n\nEmployee signature: ______________________\n\nHR: ______________________" },
+      { id:'l_emp_ar', name:'شهادة عمل (عربي)', dir:'rtl', body:"إلى من يهمه الأمر،\n\nتشهد شركة {company} بأن الموظف / {name}، الجنسية: {nationality}، رقم الإقامة: {iqamaNo}، يعمل لدينا بوظيفة ({position}) في قسم ({department}) منذ تاريخ {joiningDate}، ولا يزال على رأس العمل حتى تاريخ هذه الشهادة.\n\nوقد أُعطيت له هذه الشهادة بناءً على طلبه دون أدنى مسؤولية على الشركة.\n\nوتفضلوا بقبول فائق الاحترام،" },
+      { id:'l_sal_ar', name:'شهادة راتب (عربي)', dir:'rtl', body:"إلى من يهمه الأمر،\n\nتشهد شركة {company} بأن الموظف / {name}، الجنسية: {nationality}، رقم الإقامة: {iqamaNo}، يعمل لدينا بوظيفة ({position}) منذ تاريخ {joiningDate}، ويبلغ راتبه الأساسي الشهري {salary} ريال سعودي.\n\nوقد أُعطيت له هذه الشهادة بناءً على طلبه دون أدنى مسؤولية على الشركة.\n\nوتفضلوا بقبول فائق الاحترام،" }
+    ]
+  };
+}
+function hrMerge(saved){
+  const out = hrDefaults();
+  if(!saved || typeof saved !== 'object') return out;
+  ['on','lead','steps','wa','ramadan','letterhead'].forEach(k => { if(saved[k] && typeof saved[k] === 'object') Object.assign(out[k], saved[k]); });
+  ['company','snoozeDays','probationDays','milestones','messages','letters'].forEach(k => { if(saved[k] !== undefined && saved[k] !== null) out[k] = saved[k]; });
+  return out;
+}
+// What makes an employee file "complete" (kept short on purpose)
+const HR_FIELDS = [
+  { k:'photo',        t:'Profile photo',    get:(p) => !!p.photoDataUrl },
+  { k:'phone',        t:'Phone number',     get:(p) => !!(p.phone || p.phoneNumber) },
+  { k:'homeCountry',  t:'Home country',     get:(p) => !!p.homeCountry },
+  { k:'position',     t:'Position',         get:(p) => !!p.position },
+  { k:'joiningDate',  t:'Joining date',     get:(p) => !!p.joiningDate },
+  { k:'dob',          t:'Date of birth',    get:(p) => !!(p.passport && p.passport.dob) },
+  { k:'passportNo',   t:'Passport number',  get:(p) => !!(p.passport && p.passport.passportNo) },
+  { k:'passportExpiry',t:'Passport expiry', get:(p) => !!(p.passport && p.passport.expiryDate) },
+  { k:'iqamaNo',      t:'Iqama number',     get:(p) => !!(p.iqama && p.iqama.no), noSaudi:true },
+  { k:'iqamaExpiry',  t:'Iqama expiry',     get:(p) => !!(p.iqama && p.iqama.expiry), noSaudi:true }
+];
+
+/* ---------- helpers ---------- */
+const hrEsc = (t) => (typeof assignEsc === 'function' ? assignEsc(t) : String(t == null ? '' : t).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'));
+function hrToday(){ const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+function hrStr(d){ return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()); }
+function hrParse(s){ const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s || ''); return m ? new Date(+m[1], +m[2]-1, +m[3]) : null; }
+function hrDaysTo(s){ const d = hrParse(s); return d ? Math.round((d - hrToday()) / 864e5) : null; }
+function hrAddDays(s, n){ const d = hrParse(s); if(!d) return ''; d.setDate(d.getDate() + n); return hrStr(d); }
+function hrDaysText(n){ if(n === null || n === undefined) return ''; if(n === 0) return 'today'; if(n === 1) return 'tomorrow'; if(n === -1) return 'yesterday'; return n > 0 ? 'in ' + n + ' days' : Math.abs(n) + ' days ago'; }
+function hrYearsText(y){ if(y === null || y === undefined || !isFinite(y)) return '-'; const yr = Math.floor(y), mo = Math.floor((y - yr) * 12); return (yr ? yr + (yr === 1 ? ' year' : ' years') : '') + (yr && mo ? ' ' : '') + (mo || !yr ? mo + (mo === 1 ? ' month' : ' months') : ''); }
+function hrTenure(u){ const p = u.profile || {}, j = hrParse(p.joiningDate); if(!j) return null; const e = (isExitedEmployee(u) && hrParse(p.endDate)) || new Date(); return Math.max(0, (e - j) / (365.25 * 864e5)); }
+function hrCanEdit(){ return !!(state.user && state.user.role === 'admin'); }
+function hrActive(){ return (state.users || []).filter(u => u.role !== 'pending' && !isExitedEmployee(u)); }
+function hrAllPeople(){ return (state.users || []).filter(u => u.role !== 'pending'); }
+function hrFind(id){ return (state.users || []).find(u => u.loginId === id); }
+function hrIsSaudi(u){ const c = ((u.profile && u.profile.homeCountry) || '').toLowerCase(); return c === 'saudi arabia' || c === 'saudi' || c === 'ksa'; }
+function hrIni(name){ return (name || '?').split(/\s+/).slice(0, 2).map(w => w[0] || '').join('').toUpperCase(); }
+function hrPhoneDigits(u){ const p = u.profile || {}; let s = String(p.phone || ((p.phoneCode || '') + ' ' + (p.phoneNumber || ''))).replace(/[^\d+]/g, ''); if(!s) return ''; s = s.replace(/^\+/, '').replace(/^00/, ''); return s.length >= 8 ? s : ''; }
+function hrFill(tpl, vars){ return String(tpl || '').replace(/\{(\w+)\}/g, (m, k) => (vars[k] !== undefined && vars[k] !== null) ? vars[k] : m); }
+function hrVars(u, extra){
+  const S = state.hrSettings, p = u.profile || {}, pp = p.passport || {}, iq = p.iqama || {}, y = hrTenure(u);
+  return Object.assign({
+    name: u.name || '', first: (u.name || '').split(/\s+/)[0] || '', id: u.loginId || '', position: p.position || '', department: u.department || '', nationality: p.homeCountry || '',
+    iqamaNo: iq.no || '-', passportNo: pp.passportNo || '-', joiningDate: p.joiningDate ? fmtDate(p.joiningDate) : '-', endDate: p.endDate ? fmtDate(p.endDate) : (isExitedEmployee(u) ? '-' : 'present'),
+    years: y === null ? '-' : hrYearsText(y), salary: (p.salary && p.salary.basicSalary) ? p.salary.basicSalary : '-', date: fmtDate(hrStr(new Date())),
+    company: (S && S.company) || 'the company', signName: (S && S.letterhead.signName) || '', signTitle: (S && S.letterhead.signTitle) || ''
+  }, extra || {});
+}
+function hrSettingsReady(){ return !!(state.hrSettings && state.hrSettingsLoaded); }
+async function hrLoadSettings(force){
+  if(state.hrSettings && state.hrSettingsLoaded && !force) return state.hrSettings;
+  try{
+    const saved = await window.__db.getConfigObject('hrSettings', {});
+    state.hrSettings = hrMerge(saved); state.hrSettingsLoaded = true;
+  }catch(err){
+    console.error(err);
+    if(!state.hrSettings) state.hrSettings = hrDefaults();   // show standard values, but never allow saving over the real ones
+    state.hrSettingsLoaded = false;
+  }
+  return state.hrSettings;
+}
+async function hrSaveSettings(){
+  if(!hrCanEdit()){ toast('Only Admin can change this'); return false; }
+  if(!state.hrSettingsLoaded){ toast('Settings could not be loaded — reload the page before saving'); return false; }
+  try{ await window.__db.saveConfigObject('hrSettings', state.hrSettings); return true; }
+  catch(err){ console.error(err); toast('Could not save — check your connection'); return false; }
+}
+/* Ramadan dates: automatic (Umm al-Qura calendar) unless Settings gives dates */
+let hrRamadanMemo = {};
+function hrRamadanAuto(year){
+  if(hrRamadanMemo[year] !== undefined) return hrRamadanMemo[year];
+  let res = false;
+  try{
+    const f = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn', { day:'numeric', month:'numeric', year:'numeric' });
+    let start = null, end = null;
+    for(let i = 0; i < 366; i++){
+      const d = new Date(year, 0, 1 + i), parts = {};
+      f.formatToParts(d).forEach(x => { parts[x.type] = x.value; });
+      if(parts.month === '9'){ if(!start) start = hrStr(d); end = hrStr(d); }
+    }
+    if(start) res = { start, end };
+  }catch(e){ res = false; }
+  hrRamadanMemo[year] = res; return res;
+}
+function hrRamadanDates(){
+  const S = state.hrSettings, y = new Date().getFullYear();
+  if(S.ramadan && S.ramadan.start && S.ramadan.end) return { start:S.ramadan.start, end:S.ramadan.end, manual:true };
+  const today = hrStr(new Date());
+  for(const yr of [y - 1, y, y + 1]){ const r = hrRamadanAuto(yr); if(r && r.end >= hrAddDays(today, -5)) return { start:r.start, end:r.end, manual:false }; }
+  return null;
+}
+function hrComplete(u){
+  const p = u.profile || {}, saudi = hrIsSaudi(u), miss = []; let total = 0;
+  HR_FIELDS.forEach(f => { if(f.noSaudi && saudi) return; total++; if(!f.get(p, u)) miss.push(f.t); });
+  return { pct: total ? Math.round((total - miss.length) * 100 / total) : 100, missing: miss };
+}
+/* ---------- the To-Do list: worked out from data already in memory ---------- */
+function hrBuildTasks(){
+  const S = state.hrSettings, tasks = [], todayStr = hrStr(new Date());
+  const add = (u, type, date, days, level, title, extra) => {
+    const key = type + '_' + (date || 'x').replace(/-/g, '');
+    const hr = u ? ((u.profile && u.profile.hr) || {}) : {};
+    if(u && ((hr.done && hr.done[key]) || (hr.snooze && hr.snooze[key] && hr.snooze[key] >= todayStr))) return;
+    tasks.push(Object.assign({ key, type, u, date, days, level, title }, extra || {}));
+  };
+  hrActive().forEach(u => {
+    const p = u.profile || {}, hr = p.hr || {};
+    const expiry = (type, date, label, verb) => {
+      if(!S.on[type] || !date) return; const d = hrDaysTo(date); if(d === null) return;
+      if(d <= S.lead[type]) add(u, type, date, d, d < 0 ? 'late' : 'soon', label + (d < 0 ? ' expired ' : ' ' + verb + ' ') + fmtDate(date));
+    };
+    if(!hrIsSaudi(u)) expiry('iqama', p.iqama && p.iqama.expiry, 'Iqama', 'expires');
+    if(p.passport && p.passport.expiryDate && S.on.passport){
+      const d = hrDaysTo(p.passport.expiryDate), rs = p.passport.renewalStatus;
+      if(d !== null && d <= S.lead.passport){
+        const note = rs === 'sent' ? ' · sent for renewal' : (rs === 'done' ? ' · renewal done: enter the new expiry date' : '');
+        add(u, 'passport', p.passport.expiryDate, d, d < 0 ? 'late' : 'soon', 'Passport ' + (d < 0 ? 'expired ' : 'expires ') + fmtDate(p.passport.expiryDate) + note);
+      }
+    }
+    expiry('insurance', hr.insuranceExpiry, 'Medical insurance', 'ends');
+    expiry('contract', hr.contractEnd, 'Contract', 'ends');
+    if(S.on.probation && p.joiningDate){
+      const end = hrAddDays(p.joiningDate, S.probationDays), d = hrDaysTo(end);
+      if(d !== null && d <= S.lead.probation && d >= -45) add(u, 'probation', end, d, d < 0 ? 'late' : 'soon', 'Probation ' + (d < 0 ? 'ended ' : 'ends ') + fmtDate(end) + ' · decision needed');
+    }
+    if(S.on.vacation && p.employmentStatus === 'vacation' && state.hrVac){
+      const v = state.hrVac[u.loginId];
+      if(!v || !v.to) add(u, 'vacation', 'none', null, 'info', 'On vacation, no return date recorded');
+      else { const d = hrDaysTo(v.to);
+        if(d !== null && d < 0) add(u, 'vacation', v.to, d, 'late', 'Leave ended ' + fmtDate(v.to) + ' but still marked On Vacation');
+        else if(d !== null && d <= S.lead.vacation) add(u, 'vacation', v.to, d, 'soon', 'Returns from vacation ' + fmtDate(v.to)); }
+    }
+    const nextYearly = (dateStr) => { const b = hrParse(dateStr); if(!b) return null; const t = hrToday(); let nx = new Date(t.getFullYear(), b.getMonth(), b.getDate()); if(nx < t) nx = new Date(t.getFullYear() + 1, b.getMonth(), b.getDate()); return { nx, b, d:Math.round((nx - t) / 864e5) }; };
+    if(S.on.birthday && p.passport && p.passport.dob){ const r = nextYearly(p.passport.dob); if(r && r.d <= S.lead.birthday) add(u, 'birthday', hrStr(r.nx), r.d, 'info', 'Birthday ' + hrDaysText(r.d)); }
+    if(S.on.anniversary && p.joiningDate){ const r = nextYearly(p.joiningDate); if(r){ const yrs = r.nx.getFullYear() - r.b.getFullYear(); if(yrs >= 1 && r.d <= S.lead.anniversary && (S.milestones || []).includes(yrs)) add(u, 'anniversary', hrStr(r.nx), r.d, 'info', yrs + (yrs === 1 ? ' year' : ' years') + ' with the company ' + hrDaysText(r.d), { years:yrs }); } }
+  });
+  if(S.on.ramadan){
+    const r = hrRamadanDates();
+    if(r){
+      const hasRule = (date) => (state.shiftRules || []).some(x => { const a = hrParse(x.effectiveDate), b = hrParse(date); return a && b && Math.abs(a - b) <= 3 * 864e5; });
+      const ds = hrDaysTo(r.start), de = hrDaysTo(r.end);
+      if(ds !== null && ds <= S.lead.ramadan && de >= 0 && !hasRule(r.start)) tasks.push({ key:'ramadan_start', type:'ramadan', u:null, date:r.start, days:ds, level:ds < 0 ? 'late' : 'soon', title:(ds <= 0 ? 'Ramadan has started' : 'Ramadan starts ' + fmtDate(r.start)) + ': set the Ramadan working hours' });
+      if(de !== null && de <= S.lead.ramadan && de >= -3 && hasRule(r.start) && !hasRule(hrAddDays(r.end, 1))) tasks.push({ key:'ramadan_end', type:'ramadan', u:null, date:r.end, days:de, level:de < 0 ? 'late' : 'soon', title:'Ramadan ends ' + fmtDate(r.end) + ': return to the normal working hours' });
+    }
+  }
+  if(S.on.missing){
+    const n = hrActive().filter(u => hrComplete(u).missing.length).length;
+    if(n) tasks.push({ key:'missing_all', type:'missing', u:null, date:null, days:null, level:'info', title:n + ' employee' + (n === 1 ? ' has' : 's have') + ' incomplete files', count:n });
+  }
+  const rank = { late:0, soon:1, info:2 };
+  tasks.sort((a, b) => (rank[a.level] - rank[b.level]) || ((a.days === null ? 999 : a.days) - (b.days === null ? 999 : b.days)) || ((a.u ? a.u.name : '').localeCompare(b.u ? b.u.name : '')));
+  return tasks;
+}
+
+/* ============================================================
+   Shell, To-Do, HR card
+   ============================================================ */
+const hrUI = {
+  tab:'todo', filter:'all',
+  ppl:{ q:'', status:'active', dept:'', country:'', issue:'', open:false, limit:150 },
+  letter:{ emp:'', tpl:'', from:'', to:'', note:'', date:'' },
+  msg:{ who:'all', tpl:'', text:'', run:null },
+  tasks:[], cardId:'', setOpen:''
+};
+function hrTabsDef(){
+  const t = [['todo', 'todo', 'To-Do'], ['people', 'people', 'People']];
+  if(hrCanEdit()){ t.push(['message', 'msg', 'Message'], ['letters', 'file', 'Letters'], ['settings', 'gear', 'Settings']); }
+  return t;
+}
+function hrRender(){
+  const root = $('hrAssistantMount'); if(!root) return;
+  if(!root.dataset.built){
+    root.innerHTML = `<h2 style="display:flex; align-items:center; justify-content:space-between;"><span>HR Assistant</span><span style="font-size:9.5px; color:var(--muted); font-weight:500; text-transform:none; letter-spacing:0;">Reminders &middot; messages &middot; letters</span></h2>
+      <div class="card hrBox"><div class="hrTabs" id="hrTabs"></div><div id="hrBody"></div></div>`;
+    root.dataset.built = '1';
+    root.addEventListener('click', hrClick); root.addEventListener('input', hrInput); root.addEventListener('change', hrChange);
+    const m = document.createElement('div'); m.id = 'hrModal'; m.className = 'hrModal'; m.innerHTML = '<div class="hrSheet" id="hrSheet"></div>';
+    document.body.appendChild(m);
+    m.addEventListener('click', (e) => { if(e.target === m) hrCloseCard(); else hrClick(e); });
+  }
+  if(!hrTabsDef().some(t => t[0] === hrUI.tab)) hrUI.tab = 'todo';
+  hrRenderTabs(); hrRenderBody();
+}
+function hrRenderTabs(){
+  const late = (hrUI.tasks || []).filter(t => t.level === 'late').length;
+  $('hrTabs').innerHTML = hrTabsDef().map(t => `<button data-hr="tab" data-v="${t[0]}" class="${hrUI.tab === t[0] ? 'active' : ''}" title="${t[2]}">${hrSvg(t[1], 15)}<span class="hrLbl">${t[2]}</span>${t[0] === 'todo' && late ? `<span class="hrCnt">${late}</span>` : ''}</button>`).join('');
+}
+function hrRenderBody(){
+  const b = $('hrBody'); if(!b) return;
+  const fn = { todo:hrRenderTodo, people:hrRenderPeople, message:hrRenderMessage, letters:hrRenderLetters, settings:hrRenderSettings }[hrUI.tab];
+  try{ fn(); }catch(err){ console.error(err); b.innerHTML = '<div class="hrEmpty">Something went wrong in this section. The rest of the page is not affected.</div>'; }
+}
+async function hrOnEmployeesPageLoad(){
+  const root = $('hrAssistantMount'); if(!root) return;
+  await hrLoadSettings();
+  hrUI.tasks = hrBuildTasks(); hrRender();
+  hrEnsureVacations();   // reads vacations only if somebody is actually on vacation
+}
+async function hrEnsureVacations(){
+  try{
+    if(!state.hrSettings.on.vacation) return;
+    if(!hrActive().some(u => u.profile && u.profile.employmentStatus === 'vacation')){ state.hrVac = {}; return; }
+    const all = await window.__db.listVacations();   // one read per session, shared with the profile pages
+    const map = {};
+    (all || []).forEach(v => { const e = v.employeeId; if(!e) return; if(!map[e] || (v.from || '') > (map[e].from || '')) map[e] = v; });
+    state.hrVac = map; hrUI.tasks = hrBuildTasks(); hrRenderTabs();
+    if(hrUI.tab === 'todo') hrRenderBody();
+  }catch(err){ console.error(err); }
+}
+/* ---------- To-Do tab ---------- */
+function hrStatText(t){
+  if(t.type === 'missing') return '';
+  if(t.days === null || t.days === undefined) return '';
+  const d = t.days;
+  if(d < 0) return Math.abs(d) + (d === -1 ? ' day' : ' days') + (t.level === 'late' && ['vacation', 'ramadan', 'probation'].includes(t.type) ? ' late' : ' overdue');
+  return d === 0 ? 'Today' : (d === 1 ? 'Tomorrow' : 'In ' + d + ' days');
+}
+function hrRenderTodo(){
+  const all = hrUI.tasks, cnt = { late:0, soon:0, info:0 }; all.forEach(t => cnt[t.level]++);
+  const list = all.filter(t => hrUI.filter === 'all' || t.level === hrUI.filter);
+  const tIc = { late:'info', soon:'clock', info:'todo' };
+  const tile = (k, n, l, cls) => `<button class="hrTile lv-${k} ${hrUI.filter === k ? 'on' : ''}" data-hr="filter" data-v="${k}"><span class="ic">${hrSvg(tIc[k], 16)}</span><span class="tx"><span class="n">${n}</span><span class="l">${l}</span></span></button>`;
+  let html = `<div class="hrTiles">${tile('late', cnt.late, 'Do now', cnt.late ? 'bad' : '')}${tile('soon', cnt.soon, 'Coming up', '')}${tile('info', cnt.info, 'Good to know', '')}</div>`;
+  if(!hrSettingsReady()) html += '<div class="hrNote" style="margin:10px 0 0;">Your saved HR settings could not be loaded just now, so standard values are shown. Reload the page to try again.</div>';
+  if(!list.length){ $('hrBody').innerHTML = html + `<div class="hrEmpty">${all.length ? 'Nothing in this view.' : 'All clear. Nothing needs your attention today.'}</div>`; return; }
+  [['late', 'Do now'], ['soon', 'Coming up'], ['info', 'Good to know']].forEach(g => {
+    const items = list.filter(t => t.level === g[0]); if(!items.length) return;
+    html += `<div class="hrLabel">${g[1]}</div>` + items.map(t => hrTaskRow(t, hrUI.tasks.indexOf(t))).join('');
+  });
+  $('hrBody').innerHTML = html;
+}
+function hrTaskRow(t, i){
+  const S = state.hrSettings, ty = HR_TYPES[t.type], u = t.u, edit = hrCanEdit(), how = (S.steps && S.steps[t.type]) || '';
+  const head = u ? `<div class="hrTitle">${hrEsc(u.name)} <span class="id">${hrEsc(u.loginId)}</span></div><div class="hrSub">${hrEsc(t.title)}${u.department ? ' · ' + hrEsc(u.department) : ''}</div>`
+                 : `<div class="hrTitle">${hrEsc(t.title)}</div>`;
+  const btn = (act, ic, title) => `<button class="iconBtn" data-hr="${act}" data-i="${i}" title="${title}">${hrSvg(ic, 15)}</button>`;
+  let acts = '';
+  if(u) acts += btn('card', 'user', 'Open HR card');
+  if(u && S.wa && S.wa[t.type]) acts += btn('wa', 'wa', 'WhatsApp message');
+  if(t.type === 'ramadan' && edit) acts += btn('shift', 'gear', 'Open Shift & Timing');
+  if(t.type === 'missing') acts += btn('gomissing', 'people', 'See who');
+  if(u && edit){ acts += btn('snooze', 'clock', 'Remind me again in ' + S.snoozeDays + ' days'); acts += btn('done', 'check', 'Done'); }
+  return `<div class="hrRow"><div class="hrIco lv-${t.level}">${hrSvg(ty.ic, 16)}</div><div class="hrBody">${head}${how ? `<details class="hrHow"><summary>How to do it</summary><div class="hrHowBody">${hrEsc(how)}</div></details>` : ''}</div><div class="hrSide"><span class="hrStat ${t.level}">${hrStatText(t)}</span><div class="hrActs">${acts}</div></div></div>`;
+}
+/* ---------- saving one person's HR details (one write on that person's own document) ---------- */
+async function hrSaveHr(u, fn){
+  if(!hrCanEdit()){ toast('Only Admin can change this'); return false; }
+  if(!requireDb()) return false;
+  const p = u.profile || (u.profile = {}), next = JSON.parse(JSON.stringify(p.hr || {}));
+  fn(next);
+  try{ await window.__db.updateUserQuiet(u.loginId, { 'profile.hr': next }); p.hr = next; return true; }   // keeps the cached people list
+  catch(err){ console.error(err); toast('Could not save — check your connection'); return false; }
+}
+async function hrTaskMark(t, how){
+  const today = hrStr(new Date()), S = state.hrSettings;
+  const ok = await hrSaveHr(t.u, hr => { if(how === 'done'){ hr.done = hr.done || {}; hr.done[t.key] = today; } else { hr.snooze = hr.snooze || {}; hr.snooze[t.key] = hrAddDays(today, S.snoozeDays || 7); } });
+  if(ok){ toast(how === 'done' ? 'Done' : 'Will remind you again in ' + (S.snoozeDays || 7) + ' days'); hrRefreshAll(); }
+}
+function hrRefreshAll(){ hrUI.tasks = hrBuildTasks(); hrRenderTabs(); hrRenderBody(); }
+/* ---------- WhatsApp / copy ---------- */
+function hrMessageFor(t){
+  const extra = { date: t.date && t.date !== 'none' ? fmtDate(t.date) : '', days: t.days !== null && t.days !== undefined ? hrDaysText(t.days) : '' };
+  if(t.type === 'anniversary') extra.years = t.years + (t.years === 1 ? ' year' : ' years');
+  return hrFill(state.hrSettings.wa[t.type] || '', hrVars(t.u, extra));
+}
+function hrWaUrl(u, msg){ const d = hrPhoneDigits(u); return d ? 'https://wa.me/' + d + '?text=' + encodeURIComponent(msg) : ''; }
+function hrSendWa(u, msg){
+  const url = hrWaUrl(u, msg);
+  if(url){ window.open(url, '_blank', 'noopener'); return; }
+  hrCopy(msg, 'No phone number on file — the message was copied instead');
+}
+function hrCopy(text, okMsg){
+  const done = () => toast(okMsg || 'Copied');
+  const fb = () => { const ta = document.createElement('textarea'); ta.value = text; ta.style.cssText = 'position:fixed;left:-9999px;'; document.body.appendChild(ta); ta.select(); try{ document.execCommand('copy'); done(); }catch(e){ toast('Could not copy'); } ta.remove(); };
+  if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, fb); else fb();
+}
+function hrOpenProfile(id){ hrCloseCard(); state.execViewTarget = null; markNavActive('profile'); showScreen('screen-profile'); loadProfile(id, false); }
+function hrOpenShiftTiming(){ if(!hrCanEdit()) return; goTo('admin'); const tab = document.querySelector('.auth-tab[data-admintab="shifttime"]'); if(tab) tab.click(); }
+/* ---------- HR card (one person, kept short) ---------- */
+function hrDaysSpan(date){
+  const d = hrDaysTo(date); if(d === null) return '<span class="hrDays">-</span>';
+  return `<span class="hrDays ${d < 0 ? 'late' : (d <= 60 ? 'soon' : '')}" title="${fmtDate(date)}">${d < 0 ? Math.abs(d) + 'd over' : d + 'd'}</span>`;
+}
+function hrOpenCard(id){ if(!hrFind(id)) return; hrUI.cardId = id; hrRenderCard(); $('hrModal').style.display = 'flex'; }
+function hrCloseCard(){ const m = $('hrModal'); if(m) m.style.display = 'none'; hrUI.cardId = ''; }
+function hrRenderCard(){
+  const u = hrFind(hrUI.cardId); if(!u) return;
+  const p = u.profile || {}, hr = p.hr || {}, edit = hrCanEdit(), comp = hrComplete(u);
+  const fact = (k, v) => `<div class="hrFact"><div class="k">${k}</div><div class="v">${v || '-'}</div></div>`;
+  const photo = p.photoDataUrl && String(p.photoDataUrl).indexOf('data:') === 0 ? `<img src="${p.photoDataUrl}" alt="">` : hrIni(u.name);
+  const inp = (id, label, val, type) => `<div class="field"><label>${label}</label><input type="${type}" id="${id}" value="${hrEsc(val || '')}" ${edit ? '' : 'disabled'}></div>`;
+  $('hrSheet').innerHTML = `<div class="hrSheetHead"><div class="hrAvatar">${photo}</div><div style="flex:1;min-width:0;"><div style="font-size:15px;font-weight:700;color:var(--text-strong);">${hrEsc(u.name)} <span class="hrTitle"><span class="id">${hrEsc(u.loginId)}</span></span></div><div class="hrSub">${hrEsc(p.position || ROLE_LABEL[u.role] || '')}${u.department ? ' · ' + hrEsc(u.department) : ''} · ${empStatusLabel(p.employmentStatus)}</div></div><button class="iconBtn" data-hr="cardclose" title="Close">${hrSvg('x', 16)}</button></div>
+    <div class="hrFacts">
+      ${fact('Phone', p.phone ? `<a href="tel:${hrEsc(String(p.phone).replace(/\s+/g, ''))}" style="color:inherit;">${hrEsc(p.phone)}</a>` : '')}
+      ${fact('Home country', hrEsc(p.homeCountry || ''))}
+      ${fact('Joined', p.joiningDate ? fmtDate(p.joiningDate) + ' · ' + hrYearsText(hrTenure(u)) : '')}
+      ${fact('Iqama', p.iqama && p.iqama.no ? hrEsc(p.iqama.no) + ' ' + hrDaysSpan(p.iqama.expiry) : (hrIsSaudi(u) ? 'Not needed' : ''))}
+      ${fact('Passport', p.passport && p.passport.passportNo ? hrEsc(p.passport.passportNo) + ' ' + hrDaysSpan(p.passport.expiryDate) : '')}
+      ${fact('File', comp.pct + '%' + (comp.missing.length ? '<div class="hrNote" style="margin-top:3px;font-weight:400;">Missing: ' + hrEsc(comp.missing.join(', ')) + '</div>' : ''))}
+    </div>
+    <div class="hrForm">${inp('hrc-ins', 'Medical insurance expiry', hr.insuranceExpiry, 'date')}${inp('hrc-contract', 'Contract end date', hr.contractEnd, 'date')}
+      <div class="field wide"><label>Note (only HR sees this)</label><textarea id="hrc-note" rows="2" ${edit ? '' : 'disabled'}>${hrEsc(hr.note || '')}</textarea></div></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">${edit ? '<button class="btn btn-primary btn-sm" data-hr="cardsave">Save</button>' : ''}<button class="btn btn-ghost btn-sm" data-hr="cardprofile">Open full profile</button>${edit ? '<button class="btn btn-ghost btn-sm" data-hr="cardletter">Make a letter</button>' : ''}</div>`;
+}
+async function hrCardSave(){
+  const u = hrFind(hrUI.cardId); if(!u) return;
+  const v = (id) => ($(id) ? $(id).value.trim() : '');
+  const ok = await hrSaveHr(u, hr => { [['insuranceExpiry', 'hrc-ins'], ['contractEnd', 'hrc-contract'], ['note', 'hrc-note']].forEach(x => { if(v(x[1])) hr[x[0]] = v(x[1]); else delete hr[x[0]]; }); });
+  if(ok){ toast('Saved'); hrRefreshAll(); hrRenderCard(); }
+}
+
+/* ============================================================
+   Events + People tab
+   ============================================================ */
+function hrClick(e){
+  const el = e.target.closest('[data-hr]'); if(!el) return;
+  const a = el.dataset.hr, v = el.dataset.v, f = hrUI.ppl;
+  const task = el.dataset.i !== undefined ? hrUI.tasks[+el.dataset.i] : null;
+  switch(a){
+    case 'tab': hrUI.tab = v; hrRenderTabs(); hrRenderBody(); break;
+    case 'filter': hrUI.filter = hrUI.filter === v ? 'all' : v; hrRenderBody(); break;
+    case 'card': if(task && task.u) hrOpenCard(task.u.loginId); break;
+    case 'opencard': hrOpenCard(el.dataset.id); break;
+    case 'cardclose': hrCloseCard(); break;
+    case 'cardsave': hrCardSave(); break;
+    case 'cardprofile': hrOpenProfile(hrUI.cardId); break;
+    case 'cardletter': hrUI.letter.emp = hrUI.cardId; hrCloseCard(); hrUI.tab = 'letters'; hrRenderTabs(); hrRenderBody(); break;
+    case 'wa': if(task && task.u) hrSendWa(task.u, hrMessageFor(task)); break;
+    case 'shift': hrOpenShiftTiming(); break;
+    case 'gomissing': Object.assign(f, { dept:'', country:'', q:'', status:'active', issue:'missing' }); hrUI.tab = 'people'; hrRenderTabs(); hrRenderBody(); break;
+    case 'done': case 'snooze': if(task && task.u) hrTaskMark(task, a); break;
+    case 'ptoggle': f.open = !f.open; hrRenderPeople(); break;
+    case 'pclear': f[el.dataset.f] = el.dataset.f === 'status' ? 'active' : ''; hrRenderPeople(); break;
+    case 'pclearall': Object.assign(f, { dept:'', country:'', issue:'', status:'active' }); hrRenderPeople(); break;
+    case 'pmore': f.limit += 150; hrRenderPeopleList(); break;
+    case 'pxlsx': hrPeopleXlsx(); break;
+    case 'ppdf': hrPeoplePdf(); break;
+    default: hrClick2(a, el, e);
+  }
+}
+function hrInput(e){
+  const el = e.target, k = el.dataset.hrin; if(!k) return;
+  if(k === 'pq'){ hrUI.ppl.q = el.value; hrUI.ppl.limit = 150; hrRenderPeopleList(); }
+  else if(k === 'letterfield'){ hrUI.letter[el.dataset.f] = el.value; hrRenderLetterPreview(); }
+  else if(k === 'letteremp'){ hrUI.letter.emp = hrEmpFromLabel(el.value); hrRenderLetterPreview(); }
+  else if(k === 'msgtext'){ hrUI.msg.text = el.value; hrMsgRefresh(); }
+}
+function hrChange(e){
+  const el = e.target, k = el.dataset.hrin; if(!k) return;
+  if(k === 'pf'){ hrUI.ppl[el.dataset.f] = el.value; hrUI.ppl.limit = 150; hrRenderPeople(); }
+  else if(k === 'letteremp'){ hrUI.letter.emp = hrEmpFromLabel(el.value); hrRenderLetterPreview(); }
+  else if(k === 'lettertpl'){ hrUI.letter.tpl = el.value; hrRenderLetterPreview(); }
+  else if(k === 'msgwho'){ hrUI.msg.who = el.value; hrUI.msg.run = null; hrRenderBody(); }
+  else if(k === 'msgtpl'){ hrMsgPickTemplate(el.value); }
+}
+function hrShiftOf(u){ return profileShiftText(u) || ''; }
+function hrNear(date, lead){ const d = hrDaysTo(date); return d !== null && d <= lead; }
+function hrPeopleFiltered(){
+  const f = hrUI.ppl, S = state.hrSettings, q = f.q.trim().toLowerCase();
+  const list = hrAllPeople().filter(u => {
+    const p = u.profile || {}, hr = p.hr || {}, ex = isExitedEmployee(u);
+    if(f.status === 'active' && ex) return false;
+    if(f.status === 'exited' && !ex) return false;
+    if(f.status === 'vacation' && p.employmentStatus !== 'vacation') return false;
+    if(f.dept && (u.department || '') !== f.dept) return false;
+    if(f.country && (p.homeCountry || '') !== f.country) return false;
+    if(q && [u.name, u.loginId, p.phone, p.phoneNumber, p.iqama && p.iqama.no, p.passport && p.passport.passportNo, u.department, p.position].join(' ').toLowerCase().indexOf(q) < 0) return false;
+    if(f.issue === 'iqama' && !(!hrIsSaudi(u) && hrNear(p.iqama && p.iqama.expiry, S.lead.iqama))) return false;
+    if(f.issue === 'passport' && !hrNear(p.passport && p.passport.expiryDate, S.lead.passport)) return false;
+    if(f.issue === 'insurance' && !hrNear(hr.insuranceExpiry, S.lead.insurance)) return false;
+    if(f.issue === 'contract' && !hrNear(hr.contractEnd, S.lead.contract)) return false;
+    if(f.issue === 'missing' && !hrComplete(u).missing.length) return false;
+    return true;
+  });
+  return list.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+}
+function hrOpts(fn){ const set = {}; hrAllPeople().forEach(u => { const v = fn(u); if(v) set[v] = 1; }); return Object.keys(set).sort(); }
+function hrSel(f, label, opts, cur, noAll){
+  return `<div class="fItem"><label>${label}</label><select data-hrin="pf" data-f="${f}">${noAll ? '' : '<option value="">All</option>'}${opts.map(o => { const v = Array.isArray(o) ? o[0] : o, t = Array.isArray(o) ? o[1] : o; return `<option value="${hrEsc(v)}" ${cur === v ? 'selected' : ''}>${hrEsc(t)}</option>`; }).join('')}</select></div>`;
+}
+const HR_ISSUES = { iqama:'Iqama due', passport:'Passport due', insurance:'Insurance due', contract:'Contract due', missing:'Missing data' };
+function hrRenderPeople(){
+  const f = hrUI.ppl;
+  const chip = (field, label, val) => val ? `<span class="fChip">${label}: ${hrEsc(val)}<button data-hr="pclear" data-f="${field}" title="Remove">&times;</button></span>` : '';
+  const chips = chip('dept', 'Department', f.dept) + chip('country', 'Country', f.country) + chip('issue', 'Needs attention', HR_ISSUES[f.issue]) + (f.status !== 'active' ? chip('status', 'Who', { all:'Everyone', exited:'Left the company', vacation:'On vacation' }[f.status]) : '');
+  const n = [f.dept, f.country, f.issue].filter(Boolean).length + (f.status !== 'active' ? 1 : 0);
+  $('hrBody').innerHTML = `<div class="hrToolbar"><div class="hrSearch">${hrSvg('search', 15)}<input type="text" data-hrin="pq" placeholder="Search name, ID, phone, Iqama or passport no..." value="${hrEsc(f.q)}"></div>
+      <button class="iconBtn ${f.open ? 'on' : ''}" data-hr="ptoggle" title="Filters">${hrSvg('filter', 17)}${n ? `<span class="iconBadge">${n}</span>` : ''}</button>
+      <button class="pillBtn" data-hr="pxlsx" title="Download Excel">${hrSvg('down', 14)}Excel</button><button class="pillBtn" data-hr="ppdf" title="Download PDF">${hrSvg('down', 14)}PDF</button></div>
+    ${f.open ? `<div class="fPanel"><div class="fHead"><span class="fTitle">${hrSvg('filter', 14)}Filters</span><button class="fClear" data-hr="pclearall">Clear all</button></div><div class="fGrid">
+      ${hrSel('status', 'Who', [['active', 'Working now'], ['vacation', 'On vacation'], ['exited', 'Left the company'], ['all', 'Everyone']], f.status, true)}
+      ${hrSel('dept', 'Department', hrOpts(u => u.department), f.dept)}
+      ${hrSel('country', 'Home country', hrOpts(u => u.profile && u.profile.homeCountry), f.country)}
+      ${hrSel('issue', 'Needs attention', Object.keys(HR_ISSUES).map(k => [k, HR_ISSUES[k]]), f.issue)}</div></div>` : ''}
+    <div class="asumActive">${chips}</div><div id="hrPeopleList"></div>`;
+  hrRenderPeopleList();
+}
+function hrRenderPeopleList(){
+  const box = $('hrPeopleList'); if(!box) return;
+  const list = hrPeopleFiltered(), shown = list.slice(0, hrUI.ppl.limit);
+  if(!list.length){ box.innerHTML = '<div class="hrEmpty">No one matches.</div>'; return; }
+  box.innerHTML = `<div class="hrNote" style="margin-bottom:8px;">${list.length} ${list.length === 1 ? 'person' : 'people'}. Tap a row to open. Numbers are days left until expiry.</div>
+    <div class="hrScroll"><table class="hrTbl"><thead><tr><th>Employee</th><th>Department</th><th>Country</th><th>Iqama</th><th>Passport</th><th>Insurance</th></tr></thead><tbody>${shown.map(u => { const p = u.profile || {}, hr = p.hr || {};
+      return `<tr class="clk" data-hr="opencard" data-id="${hrEsc(u.loginId)}"><td><b style="font-weight:600;color:var(--text-strong);">${hrEsc(u.name)}</b> <span class="id">${hrEsc(u.loginId)}</span><div class="hrSub" style="margin:0;">${hrEsc(p.position || '')}</div></td><td>${hrEsc(u.department || '-')}</td><td class="nw">${hrEsc(p.homeCountry || '-')}</td><td class="nw">${hrIsSaudi(u) ? '<span class="hrDays">n/a</span>' : hrDaysSpan(p.iqama && p.iqama.expiry)}</td><td class="nw">${hrDaysSpan(p.passport && p.passport.expiryDate)}</td><td class="nw">${hrDaysSpan(hr.insuranceExpiry)}</td></tr>`; }).join('')}</tbody></table></div>
+    ${list.length > shown.length ? `<div style="text-align:center;margin-top:10px;"><button class="pillBtn" data-hr="pmore">Show more (${list.length - shown.length})</button></div>` : ''}`;
+}
+function hrPeopleXlsx(){
+  if(typeof XLSX === 'undefined'){ toast('Excel tool not loaded — check your connection'); return; }
+  const list = hrPeopleFiltered(); if(!list.length){ toast('Nobody to download'); return; }
+  const aoa = [['ID', 'Name', 'Department', 'Position', 'Home country', 'Employment type', 'Status', 'Phone', 'Joining date', 'Date of birth', 'Passport no.', 'Passport expiry', 'Iqama no.', 'Iqama expiry', 'Insurance expiry', 'Contract end', 'File completeness %', 'Missing']]
+    .concat(list.map(u => { const p = u.profile || {}, hr = p.hr || {}, c = hrComplete(u); return [u.loginId, u.name, u.department || '', p.position || '', p.homeCountry || '', p.employmentType || '', empStatusLabel(p.employmentStatus), p.phone || '', p.joiningDate || '', (p.passport && p.passport.dob) || '', (p.passport && p.passport.passportNo) || '', (p.passport && p.passport.expiryDate) || '', (p.iqama && p.iqama.no) || '', (p.iqama && p.iqama.expiry) || '', hr.insuranceExpiry || '', hr.contractEnd || '', c.pct, c.missing.join(', ')]; }));
+  const ws = XLSX.utils.aoa_to_sheet(aoa); ws['!cols'] = aoa[0].map((h, i) => ({ wch: i === 1 ? 26 : (i === 17 ? 40 : 15) }));
+  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Employees'); XLSX.writeFile(wb, 'employees-' + rvfDateStamp() + '.xlsx'); toast('Excel file downloaded');
+}
+async function hrPeoplePdf(){
+  const list = hrPeopleFiltered(); if(!list.length){ toast('Nobody to download'); return; }
+  const f = hrUI.ppl, esc = hrEsc;
+  const filt = [f.q && 'Search: ' + f.q, f.dept && 'Department: ' + f.dept, f.country && 'Country: ' + f.country, f.issue && HR_ISSUES[f.issue], f.status !== 'active' && 'Who: ' + f.status].filter(Boolean).join(' · ');
+  const day = (d) => d ? fmtDate(d) + (hrDaysTo(d) < 0 ? ' (expired)' : '') : '-';
+  const rows = list.map(u => { const p = u.profile || {}, hr = p.hr || {}; return `<tr><td>${esc(u.loginId)}</td><td>${esc(u.name)}</td><td>${esc(u.department || '')}</td><td>${esc(p.position || '')}</td><td>${esc(p.homeCountry || '')}</td><td>${hrIsSaudi(u) ? 'n/a' : day(p.iqama && p.iqama.expiry)}</td><td>${day(p.passport && p.passport.expiryDate)}</td><td>${day(hr.insuranceExpiry)}</td></tr>`; });
+  const head = '<tr><th>ID</th><th>Name</th><th>Department</th><th>Position</th><th>Country</th><th>Iqama expiry</th><th>Passport expiry</th><th>Insurance</th></tr>';
+  toast('Making the PDF…');
+  await rvfMakePdf([rvfPdfHeader('Employees', [list.length + ' people · ' + rvfNowText(), filt])].concat(rvfTableBlocks(head, rows, 28)), 'employees-' + rvfDateStamp() + '.pdf');
+}
+
+/* ============================================================
+   Message tab: one message to many people on WhatsApp
+   (WhatsApp itself needs one tap per chat, so this opens each chat
+    ready-filled, one after another. For a true single send, it can also
+    prepare the numbers / contacts file for a WhatsApp Broadcast list.)
+   ============================================================ */
+function hrMsgRecipients(){
+  const w = hrUI.msg.who; let list = hrActive();
+  if(w.indexOf('d:') === 0) list = list.filter(u => (u.department || '') === w.slice(2));
+  else if(w.indexOf('c:') === 0) list = list.filter(u => ((u.profile && u.profile.homeCountry) || '') === w.slice(2));
+  else if(w.indexOf('s:') === 0) list = list.filter(u => hrShiftOf(u) === w.slice(2));
+  list = list.slice().sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+  const send = list.filter(u => hrPhoneDigits(u));
+  return { all:list, send, missing:list.filter(u => !hrPhoneDigits(u)) };
+}
+function hrMsgFor(u){ return hrFill(hrUI.msg.text, hrVars(u)); }
+function hrRenderMessage(){
+  const S = state.hrSettings, M = hrUI.msg;
+  const opts = (label, arr, pre) => arr.length ? `<optgroup label="${label}">${arr.map(v => `<option value="${pre}${hrEsc(v)}" ${M.who === pre + v ? 'selected' : ''}>${hrEsc(v)}</option>`).join('')}</optgroup>` : '';
+  const shifts = Array.from(new Set(hrActive().map(hrShiftOf).filter(s => s === 'Day' || s === 'Night')));
+  $('hrBody').innerHTML = `<div class="hrLabel" style="margin-top:0;">1 &middot; Who gets it</div>
+    <select data-hrin="msgwho"><option value="all" ${M.who === 'all' ? 'selected' : ''}>Everyone working now</option>${opts('By department', hrOpts(u => u.department), 'd:')}${opts('By home country', hrOpts(u => u.profile && u.profile.homeCountry), 'c:')}${opts('By shift', shifts, 's:')}</select>
+    <div class="hrNote" id="hrMsgCount" style="margin-top:6px;"></div>
+    <div class="hrLabel">2 &middot; Message</div>
+    <select data-hrin="msgtpl" style="margin-bottom:8px;"><option value="">Write my own message</option>${(S.messages || []).map(m => `<option value="${hrEsc(m.id)}" ${M.tpl === m.id ? 'selected' : ''}>${hrEsc(m.name)}</option>`).join('')}</select>
+    <textarea data-hrin="msgtext" id="hrMsgText" rows="5" placeholder="Type your message. {name} becomes each person's name.">${hrEsc(M.text)}</textarea>
+    <div class="hrNote" style="margin-top:6px;"><b>{name}</b> = full name &nbsp; <b>{first}</b> = first name &nbsp; <b>{company}</b> &nbsp;&middot;&nbsp; Replace anything in [brackets] before sending.</div>
+    <div class="hrLabel">Preview</div><div class="hrHowBody" id="hrMsgPrev" style="margin-top:4px;"></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 4px;"><button class="btn btn-primary btn-sm" data-hr="msgstart" id="hrMsgGo">${hrSvg('wa', 14)} Send to all</button>
+      <button class="pillBtn" data-hr="msgcopy">${hrSvg('copy', 14)}Copy message</button><button class="pillBtn" data-hr="msgnums">${hrSvg('copy', 14)}Copy numbers</button><button class="pillBtn" data-hr="msgvcf">${hrSvg('down', 14)}Contacts file</button></div>
+    <div id="hrMsgRun"></div>
+    <details class="hrHow" style="margin-top:12px;"><summary>Save this message as a template</summary><div class="hrToolbar" style="margin-top:8px;"><input type="text" id="hrm-name" placeholder="Template name" style="flex:1;min-width:140px;"><button class="pillBtn" data-hr="msgsave">${hrSvg('plus', 14)}Save</button>${M.tpl ? `<button class="pillBtn" data-hr="msgdel">${hrSvg('trash', 14)}Delete selected</button>` : ''}</div></details>
+    <details class="hrHow" style="margin-top:8px;"><summary>How does sending work?</summary><div class="hrHowBody">WhatsApp does not allow a website to send many messages by itself. Press <b>Send to all</b>: it opens each person's chat with your message already written. You only press Send inside WhatsApp, then come back and press the green button for the next person.
+For one single send: press <b>Contacts file</b> and open it on your phone to save the contacts, then create a WhatsApp Broadcast list with them and send once. (Contacts must have your number saved to receive broadcasts.)
+Sending automatically to everyone with no taps needs the paid WhatsApp Business service, which can be added later.</div></details>`;
+  hrMsgRefresh(); hrRenderMsgRun();
+}
+function hrMsgRefresh(){
+  const r = hrMsgRecipients(), cnt = $('hrMsgCount'), prev = $('hrMsgPrev'), go = $('hrMsgGo'); if(!cnt) return;
+  cnt.textContent = r.send.length + ' ' + (r.send.length === 1 ? 'person' : 'people') + ' will get it' + (r.missing.length ? ' · ' + r.missing.length + ' without a phone number (skipped): ' + r.missing.slice(0, 5).map(u => u.name).join(', ') + (r.missing.length > 5 ? '...' : '') : '');
+  prev.textContent = hrUI.msg.text.trim() ? (r.send[0] ? hrMsgFor(r.send[0]) : hrUI.msg.text) : 'Your message will appear here.';
+  if(go) go.disabled = !hrUI.msg.text.trim() || !r.send.length;
+}
+function hrMsgPickTemplate(id){
+  const t = (state.hrSettings.messages || []).find(m => m.id === id);
+  hrUI.msg.tpl = id; if(t) hrUI.msg.text = t.body; hrRenderBody();
+}
+function hrRenderMsgRun(){
+  const box = $('hrMsgRun'), run = hrUI.msg.run; if(!box) return;
+  if(!run){ box.innerHTML = ''; return; }
+  const n = run.list.length;
+  if(run.i >= n){ box.innerHTML = `<div class="hrStepBox"><b>All done.</b> <span class="hrNote">You went through all ${n} chats.</span><div style="margin-top:10px;"><button class="btn btn-ghost btn-sm" data-hr="msgstop">Close</button></div></div>`; return; }
+  const u = run.list[run.i];
+  box.innerHTML = `<div class="hrStepBox"><div class="hrNote">Person ${run.i + 1} of ${n}</div><div class="hrThin"><i style="width:${Math.round(run.i * 100 / n)}%"></i></div>
+    <div class="hrTitle" style="margin-bottom:10px;">${hrEsc(u.name)} <span class="id">${hrEsc(u.profile.phone || '')}</span></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="btn btn-primary btn-sm" data-hr="msgnext">${hrSvg('wa', 14)} Open WhatsApp for ${hrEsc((u.name || '').split(/\s+/)[0])}</button><button class="btn btn-ghost btn-sm" data-hr="msgskip">Skip</button><button class="btn btn-ghost btn-sm" data-hr="msgstop">Stop</button></div></div>`;
+}
+function hrMsgNumbers(){ return hrMsgRecipients().send.map(u => '+' + hrPhoneDigits(u)); }
+function hrMsgVcf(){
+  const r = hrMsgRecipients().send; if(!r.length){ toast('Nobody to add'); return; }
+  const v = r.map(u => 'BEGIN:VCARD\r\nVERSION:3.0\r\nFN:' + (u.name || u.loginId).replace(/[\r\n,;]/g, ' ') + '\r\nTEL;TYPE=CELL:+' + hrPhoneDigits(u) + '\r\nEND:VCARD').join('\r\n') + '\r\n';
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([v], { type:'text/vcard' })); a.download = 'employees-contacts-' + rvfDateStamp() + '.vcf'; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+  toast('Contacts file downloaded');
+}
+async function hrMsgSaveTemplate(){
+  const S = state.hrSettings, name = ($('hrm-name').value || '').trim(), text = hrUI.msg.text.trim();
+  if(!name || !text){ toast('Write a message and give the template a name'); return; }
+  const before = S.messages, id = 'm' + Math.random().toString(36).slice(2, 7);
+  S.messages = (S.messages || []).concat([{ id, name, body:text }]);
+  if(await hrSaveSettings()){ hrUI.msg.tpl = id; toast('Template saved'); hrRenderBody(); } else S.messages = before;
+}
+async function hrMsgDeleteTemplate(){
+  const S = state.hrSettings, id = hrUI.msg.tpl; if(!id || !confirm('Delete this template?')) return;
+  const before = S.messages; S.messages = (S.messages || []).filter(m => m.id !== id);
+  if(await hrSaveSettings()){ hrUI.msg.tpl = ''; toast('Deleted'); hrRenderBody(); } else S.messages = before;
+}
+
+/* ============================================================
+   Letters tab
+   ============================================================ */
+function hrEmpLabel(u){ return (u.name || '') + ' (' + u.loginId + ')'; }
+function hrEmpFromLabel(val){ const m = /\(([^()]+)\)\s*$/.exec(val || ''); const id = m ? m[1].trim() : String(val || '').trim(); return hrFind(id) ? id : ''; }
+function hrLetterText(){
+  const S = state.hrSettings, L = hrUI.letter, u = hrFind(L.emp), tpl = (S.letters || []).find(t => t.id === L.tpl);
+  if(!u || !tpl) return null;
+  const vars = hrVars(u, { from:L.from ? fmtDate(L.from) : '', to:L.to ? fmtDate(L.to) : '', note:L.note || '', date:L.date ? fmtDate(L.date) : fmtDate(hrStr(new Date())) });
+  return { u, tpl, vars, text:hrFill(tpl.body, vars) };
+}
+function hrLetterHtml(d){
+  const S = state.hrSettings, lh = S.letterhead, col = /^#[0-9a-fA-F]{6}$/.test(lh.color) ? lh.color : '#4f46e5', rtl = d.tpl.dir === 'rtl';
+  const sign = (lh.signName || lh.signTitle) ? `<div style="margin-top:34px;font-size:14px;line-height:1.5;"><div style="font-weight:700;">${hrEsc(lh.signName)}</div><div style="color:#475569;">${hrEsc(lh.signTitle)}</div><div style="color:#475569;">${hrEsc(lh.company || S.company)}</div></div>` : '';
+  const stamp = lh.stamp ? `<div style="width:110px;height:110px;border:1.5px dashed #cbd5e1;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:10px;text-align:center;">Company<br>stamp</div>` : '';
+  return `<div style="width:760px;min-height:1040px;box-sizing:border-box;padding:44px 54px 30px;background:#fff;color:#0f172a;font-family:'Inter',sans-serif;display:flex;flex-direction:column;">
+    <div style="display:flex;align-items:center;gap:16px;padding-bottom:14px;border-bottom:3px solid ${col};">${lh.logo ? `<img src="${lh.logo}" alt="" style="max-height:62px;max-width:180px;object-fit:contain;">` : ''}
+      <div><div style="font-family:'Oswald',sans-serif;font-size:23px;font-weight:700;color:${col};line-height:1.2;">${hrEsc(lh.company || S.company)}</div>${lh.line1 ? `<div style="font-size:11px;color:#64748b;margin-top:2px;">${hrEsc(lh.line1)}</div>` : ''}${lh.line2 ? `<div style="font-size:11px;color:#64748b;">${hrEsc(lh.line2)}</div>` : ''}</div></div>
+    <div style="margin-top:22px;font-size:12.5px;color:#475569;">${d.tpl.body.indexOf('{date}') < 0 ? 'Date: ' + hrEsc(d.vars.date) : ''}</div>
+    <div ${rtl ? 'dir="rtl"' : ''} style="margin-top:14px;font-size:14px;line-height:1.8;white-space:pre-wrap;word-break:break-word;${rtl ? 'text-align:right;' : ''}flex:1;">${hrEsc(d.text)}${sign}</div>
+    <div style="display:flex;justify-content:flex-end;margin-top:20px;">${stamp}</div>
+    ${lh.footer ? `<div style="margin-top:16px;padding-top:10px;border-top:1px solid #e2e8f0;font-size:10.5px;color:#64748b;text-align:center;">${hrEsc(lh.footer)}</div>` : ''}</div>`;
+}
+function hrRenderLetters(){
+  const S = state.hrSettings, L = hrUI.letter, people = hrAllPeople().sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+  if(!L.tpl || !(S.letters || []).some(t => t.id === L.tpl)) L.tpl = (S.letters[0] || {}).id || '';
+  if(!L.date) L.date = hrStr(new Date());
+  const u = hrFind(L.emp);
+  $('hrBody').innerHTML = `<div class="hrForm">
+      <div class="field wide"><label>Employee (type a name or ID)</label><input type="text" list="hrEmpList" data-hrin="letteremp" value="${u ? hrEsc(hrEmpLabel(u)) : ''}" placeholder="Start typing..."><datalist id="hrEmpList">${people.map(x => `<option value="${hrEsc(hrEmpLabel(x))}"></option>`).join('')}</datalist></div>
+      <div class="field"><label>Letter</label><select data-hrin="lettertpl">${(S.letters || []).map(t => `<option value="${hrEsc(t.id)}" ${L.tpl === t.id ? 'selected' : ''}>${hrEsc(t.name)}</option>`).join('')}</select></div>
+      <div class="field"><label>Letter date</label><input type="date" data-hrin="letterfield" data-f="date" value="${hrEsc(L.date)}"></div>
+      <div class="field"><label>From (leave / travel)</label><input type="date" data-hrin="letterfield" data-f="from" value="${hrEsc(L.from)}"></div>
+      <div class="field"><label>To (leave / travel / last day)</label><input type="date" data-hrin="letterfield" data-f="to" value="${hrEsc(L.to)}"></div>
+      <div class="field wide"><label>Extra text (reason, amount, bank name...)</label><input type="text" data-hrin="letterfield" data-f="note" value="${hrEsc(L.note)}"></div></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;"><button class="btn btn-primary btn-sm" data-hr="lpdf">${hrSvg('down', 14)} Download PDF</button><button class="btn btn-ghost btn-sm" data-hr="lcopy">${hrSvg('copy', 14)} Copy text</button></div>
+    <div class="hrLetter" id="hrLetterBox"><div id="hrLetterInner" style="transform-origin:top left;"></div></div>
+    <div class="hrNote" style="margin:8px 0 12px;">Letter wording, letterhead and signature are edited in Settings.</div>`;
+  hrRenderLetterPreview();
+}
+function hrRenderLetterPreview(){
+  const inner = $('hrLetterInner'), box = $('hrLetterBox'); if(!inner) return;
+  const d = hrLetterText();
+  if(!d){ inner.innerHTML = '<div class="hrEmpty">Choose an employee to see the letter.</div>'; inner.style.transform = ''; box.style.height = ''; return; }
+  inner.innerHTML = hrLetterHtml(d);
+  const k = Math.min(1, (box.clientWidth - 2) / 760);
+  inner.style.transform = 'scale(' + k + ')'; box.style.height = Math.round(inner.firstElementChild.offsetHeight * k + 2) + 'px';
+}
+async function hrLetterPdf(){
+  const d = hrLetterText(); if(!d){ toast('Choose an employee first'); return; }
+  toast('Making the PDF…');
+  await rvfMakePdf([hrLetterHtml(d)], (d.tpl.id + '-' + d.u.loginId + '-' + rvfDateStamp()).replace(/[^\w\-]+/g, '-').toLowerCase() + '.pdf');
+}
+
+/* ============================================================
+   Settings tab (short on purpose)
+   ============================================================ */
+const HR_SETMETA = { reminders:['bell','c-purple','What to remind, how early, and the "how to do it" text'], other:['gear','c-blue','Probation, snooze days, Ramadan dates'], letterhead:['file','c-teal','Logo, address, colour, signed by'], letters:['file','c-amber','Edit the wording or add your own'] };
+function hrSetBlock(id, title, inner){
+  const m = HR_SETMETA[id] || ['gear', 'c-blue', ''];
+  return `<details class="hrSetBlock" ${hrUI.setOpen === id ? 'open' : ''} data-hrsb="${id}"><summary><span class="hrSetIc ${m[1]}">${hrSvg(m[0], 17)}</span><span class="hrSetTx"><b>${title}</b><small>${m[2]}</small></span><span class="chev">${hrSvg('chev', 16)}</span></summary><div class="hrSetIn">${inner}</div></details>`;
+}
+function hrRenderSettings(){
+  if(!hrCanEdit()){ $('hrBody').innerHTML = '<div class="hrEmpty">Only Admin can change the settings.</div>'; return; }
+  const S = state.hrSettings, r = hrRamadanDates();
+  const sw = (id, on) => `<label class="hrSwitch"><input type="checkbox" id="${id}" ${on ? 'checked' : ''}><i></i></label>`;
+  let rem = '<div class="hrNote" style="margin-bottom:4px;">Switch a reminder on or off and choose how many days before the date it should show. Tap "Edit texts" to change the instructions and the WhatsApp message.</div>';
+  Object.keys(HR_TYPES).forEach(k => {
+    rem += `<div class="hrSetRow"><div>${sw('hrs-on-' + k, S.on[k])}</div><div><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;"><b style="font-size:13px;">${HR_TYPES[k].label}</b>${S.lead[k] !== undefined ? `<span class="hrMini" style="margin-left:auto;"><label>Show</label><input type="number" min="0" max="3650" id="hrs-lead-${k}" value="${S.lead[k]}"><label>days before</label></span>` : ''}</div>
+      ${k === 'missing' ? '' : `<details class="hrHow"><summary>Edit texts</summary><div class="hrForm" style="margin:8px 0 0;"><div class="field"><label>How to do it</label><textarea id="hrs-steps-${k}" rows="4">${hrEsc(S.steps[k] || '')}</textarea></div>${S.wa[k] !== undefined ? `<div class="field"><label>WhatsApp message</label><textarea id="hrs-wa-${k}" rows="4">${hrEsc(S.wa[k] || '')}</textarea></div>` : ''}</div></details>`}</div></div>`;
+  });
+  rem += '<div style="margin-top:10px;"><button class="btn btn-primary btn-sm" data-hr="sv" data-v="reminders">Save</button> <button class="btn btn-ghost btn-sm" data-hr="sreset" data-v="reminders">Restore standard</button></div>';
+  const oth = `<div class="hrForm"><div class="field wide"><label>Company name in messages</label><input type="text" id="hrs-company" value="${hrEsc(S.company)}"></div>
+    <div class="field"><label>Probation length (days)</label><input type="number" min="0" id="hrs-prob" value="${S.probationDays}"></div><div class="field"><label>"Remind me later" after (days)</label><input type="number" min="1" id="hrs-snooze" value="${S.snoozeDays}"></div>
+    <div class="field wide"><label>Work anniversaries to celebrate (years)</label><input type="text" id="hrs-mile" value="${hrEsc((S.milestones || []).join(', '))}" placeholder="1, 3, 5, 10"></div>
+    <div class="field"><label>Ramadan starts (empty = automatic)</label><input type="date" id="hrs-rs" value="${hrEsc(S.ramadan.start || '')}"></div><div class="field"><label>Ramadan ends (empty = automatic)</label><input type="date" id="hrs-re" value="${hrEsc(S.ramadan.end || '')}"></div>
+    <div class="field wide hrNote">${r ? 'Ramadan dates now used: <b>' + fmtDate(r.start) + '</b> to <b>' + fmtDate(r.end) + '</b>' + (r.manual ? ' (entered by you)' : ' (worked out from the Saudi calendar; the real start can differ by a day)') : 'Could not work out Ramadan on this device. Enter the dates.'}</div></div><button class="btn btn-primary btn-sm" data-hr="sv" data-v="other">Save</button>`;
+  const lh = S.letterhead;
+  const head = `<div class="hrForm"><div class="field"><label>Company name on letters</label><input type="text" id="hrs-lh-company" value="${hrEsc(lh.company)}"></div><div class="field"><label>Accent colour</label><input type="color" id="hrs-lh-color" value="${hrEsc(/^#[0-9a-fA-F]{6}$/.test(lh.color) ? lh.color : '#4f46e5')}" style="height:40px;padding:3px;"></div>
+    <div class="field wide"><label>Address line</label><input type="text" id="hrs-lh-l1" value="${hrEsc(lh.line1)}"></div><div class="field wide"><label>Phone / email line</label><input type="text" id="hrs-lh-l2" value="${hrEsc(lh.line2)}"></div>
+    <div class="field wide"><label>Footer (CR number, VAT number...)</label><input type="text" id="hrs-lh-foot" value="${hrEsc(lh.footer)}"></div>
+    <div class="field"><label>Signed by (name)</label><input type="text" id="hrs-lh-sn" value="${hrEsc(lh.signName)}"></div><div class="field"><label>Title</label><input type="text" id="hrs-lh-st" value="${hrEsc(lh.signTitle)}"></div>
+    <div class="field"><label>Logo (small picture)</label><input type="file" accept="image/*" id="hrs-lh-logo"><div id="hrs-lh-logoprev" style="margin-top:6px;">${lh.logo ? `<img src="${lh.logo}" alt="" style="max-height:44px;max-width:160px;">` : ''}</div></div>
+    <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;"><input type="checkbox" id="hrs-lh-stamp" ${lh.stamp ? 'checked' : ''} style="width:auto;"> Leave a space for the company stamp</label></div>
+    <button class="btn btn-primary btn-sm" data-hr="sv" data-v="letterhead">Save</button> ${lh.logo ? '<button class="btn btn-ghost btn-sm" data-hr="logodel">Remove logo</button>' : ''}`;
+  const tpls = `<div class="hrNote" style="margin-bottom:8px;">Words in { } are filled in automatically: {name} {id} {position} {department} {nationality} {iqamaNo} {passportNo} {joiningDate} {endDate} {years} {salary} {date} {from} {to} {note} {company}</div><div id="hrs-tpls">${(S.letters || []).map(t => hrTplEditor(t)).join('')}</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="pillBtn" data-hr="tpladd">${hrSvg('plus', 14)}New letter</button><button class="btn btn-primary btn-sm" data-hr="sv" data-v="letters">Save</button><button class="btn btn-ghost btn-sm" data-hr="sreset" data-v="letters">Restore standard letters</button></div>`;
+  $('hrBody').innerHTML = (state.hrSettingsLoaded ? '' : '<div class="hrNote" style="color:var(--danger);margin-bottom:10px;">Saved settings could not be loaded, so saving is switched off. Reload the page.</div>')
+    + hrSetBlock('reminders', 'Reminders', rem) + hrSetBlock('other', 'Numbers &amp; dates', oth) + hrSetBlock('letterhead', 'Letterhead &amp; signature', head) + hrSetBlock('letters', 'Letter templates', tpls);
+  const lg = $('hrs-lh-logo'); if(lg) lg.addEventListener('change', hrLogoPicked);
+  document.querySelectorAll('[data-hrsb]').forEach(d => d.addEventListener('toggle', () => { if(d.open) hrUI.setOpen = d.dataset.hrsb; else if(hrUI.setOpen === d.dataset.hrsb) hrUI.setOpen = ''; }));
+}
+function hrTplEditor(t){
+  return `<details class="hrHow" style="margin:8px 0;" data-tpl="${hrEsc(t.id)}"><summary>${hrEsc(t.name)}</summary><div class="hrForm" style="margin-top:8px;"><div class="field"><label>Letter name</label><input type="text" data-k="name" value="${hrEsc(t.name)}"></div><div class="field"><label>Direction</label><select data-k="dir"><option value="ltr" ${t.dir !== 'rtl' ? 'selected' : ''}>Left to right (English)</option><option value="rtl" ${t.dir === 'rtl' ? 'selected' : ''}>Right to left (Arabic)</option></select></div><div class="field wide"><label>Text</label><textarea data-k="body" rows="7">${hrEsc(t.body)}</textarea></div></div><button class="btn btn-danger btn-sm" data-hr="tpldel">Delete this letter</button></details>`;
+}
+function hrLogoPicked(e){
+  const f = e.target.files && e.target.files[0]; if(!f) return;
+  const rd = new FileReader();
+  rd.onload = () => { const img = new Image(); img.onload = () => {
+    const k = Math.min(1, 360 / img.width, 120 / img.height), c = document.createElement('canvas');
+    c.width = Math.max(1, Math.round(img.width * k)); c.height = Math.max(1, Math.round(img.height * k));
+    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+    hrUI.logoTmp = c.toDataURL('image/png'); $('hrs-lh-logoprev').innerHTML = `<img src="${hrUI.logoTmp}" alt="" style="max-height:44px;max-width:160px;">`; }; img.src = rd.result; };
+  rd.readAsDataURL(f);
+}
+function hrNum(id, min, max, fb){ const v = parseInt($(id).value, 10); return isFinite(v) && v >= min && v <= max ? v : fb; }
+async function hrSaveBlock(which){
+  const S = state.hrSettings, snapshot = JSON.parse(JSON.stringify(S));
+  try{
+    if(which === 'reminders'){
+      Object.keys(HR_TYPES).forEach(k => {
+        S.on[k] = $('hrs-on-' + k).checked;
+        if(S.lead[k] !== undefined) S.lead[k] = hrNum('hrs-lead-' + k, 0, 3650, S.lead[k]);
+        if($('hrs-steps-' + k)) S.steps[k] = $('hrs-steps-' + k).value;
+        if($('hrs-wa-' + k)) S.wa[k] = $('hrs-wa-' + k).value;
+      });
+    } else if(which === 'other'){
+      S.company = $('hrs-company').value.trim() || S.company;
+      S.probationDays = hrNum('hrs-prob', 0, 730, S.probationDays); S.snoozeDays = hrNum('hrs-snooze', 1, 365, S.snoozeDays);
+      S.milestones = $('hrs-mile').value.split(/[,\s]+/).map(x => parseInt(x, 10)).filter(x => isFinite(x) && x > 0);
+      const rs = $('hrs-rs').value, re = $('hrs-re').value;
+      if((rs && !re) || (!rs && re)){ toast('Enter both Ramadan dates, or leave both empty'); return; }
+      if(rs && re && re < rs){ toast('Ramadan end is before its start'); return; }
+      S.ramadan = { start:rs, end:re };
+    } else if(which === 'letterhead'){
+      const lh = S.letterhead;
+      lh.company = $('hrs-lh-company').value.trim(); lh.color = $('hrs-lh-color').value; lh.line1 = $('hrs-lh-l1').value.trim(); lh.line2 = $('hrs-lh-l2').value.trim();
+      lh.footer = $('hrs-lh-foot').value.trim(); lh.signName = $('hrs-lh-sn').value.trim(); lh.signTitle = $('hrs-lh-st').value.trim(); lh.stamp = $('hrs-lh-stamp').checked;
+      if(hrUI.logoTmp !== undefined){ lh.logo = hrUI.logoTmp; hrUI.logoTmp = undefined; }
+    } else if(which === 'letters'){
+      S.letters = Array.from(document.querySelectorAll('[data-tpl]')).map(c => ({ id:c.dataset.tpl, name:c.querySelector('[data-k="name"]').value.trim() || 'Letter', dir:c.querySelector('[data-k="dir"]').value, body:c.querySelector('[data-k="body"]').value }));
+    }
+  }catch(err){ console.error(err); Object.keys(S).forEach(k => delete S[k]); Object.assign(S, snapshot); toast('Could not read the form'); return; }
+  if(await hrSaveSettings()){ toast('Saved'); hrRefreshAll(); }
+  else { Object.keys(S).forEach(k => delete S[k]); Object.assign(S, snapshot); }
+}
+function hrSettingsReset(which){
+  const D = hrDefaults(), S = state.hrSettings;
+  if(which === 'reminders'){ S.steps = D.steps; S.wa = D.wa; S.lead = D.lead; S.on = D.on; } else if(which === 'letters'){ S.letters = D.letters; }
+  hrUI.setOpen = which; hrRenderBody(); toast('Standard values restored — press Save to keep them');
+}
+function hrClick2(a, el){
+  const M = hrUI.msg;
+  switch(a){
+    case 'msgstart': { const r = hrMsgRecipients(); if(!M.text.trim() || !r.send.length) break; if(!confirm('Open WhatsApp one chat after another for ' + r.send.length + ' people?')) break; M.run = { list:r.send, i:0 }; hrRenderMsgRun(); break; }
+    case 'msgnext': { const run = M.run; if(!run || run.i >= run.list.length) break; const u = run.list[run.i]; window.open(hrWaUrl(u, hrMsgFor(u)), '_blank', 'noopener'); run.i++; hrRenderMsgRun(); break; }
+    case 'msgskip': if(M.run){ M.run.i++; hrRenderMsgRun(); } break;
+    case 'msgstop': M.run = null; hrRenderMsgRun(); break;
+    case 'msgcopy': if(M.text.trim()) hrCopy(M.text, 'Message copied'); break;
+    case 'msgnums': { const n = hrMsgNumbers(); if(n.length) hrCopy(n.join('\n'), n.length + ' numbers copied'); break; }
+    case 'msgvcf': hrMsgVcf(); break;
+    case 'msgsave': hrMsgSaveTemplate(); break;
+    case 'msgdel': hrMsgDeleteTemplate(); break;
+    case 'lpdf': hrLetterPdf(); break;
+    case 'lcopy': { const d = hrLetterText(); if(d) hrCopy(d.text, 'Letter text copied'); else toast('Choose an employee first'); break; }
+    case 'sv': hrSaveBlock(el.dataset.v); break;
+    case 'sreset': hrSettingsReset(el.dataset.v); break;
+    case 'tpladd': $('hrs-tpls').insertAdjacentHTML('beforeend', hrTplEditor({ id:'l' + Math.random().toString(36).slice(2, 8), name:'New letter', dir:'ltr', body:'To whom it may concern,\n\n{name} ...\n\nSincerely,' })); break;
+    case 'tpldel': if(confirm('Delete this letter template? (Press Save to keep the change)')){ const c = el.closest('[data-tpl]'); if(c) c.remove(); } break;
+    case 'logodel': hrUI.logoTmp = ''; state.hrSettings.letterhead.logo = ''; { const p = $('hrs-lh-logoprev'); if(p) p.innerHTML = ''; } toast('Logo removed — press Save to keep it'); break;
+  }
+}
+
+
+/* ============================================================
    EMPLOYEES PAGE — Employee Overview (shared with the Dashboard —
    see mountEmployeeOverview), plus Passport Tracking + the 2-step
    approval queue
@@ -10759,6 +11783,7 @@ async function loadEmployeesPage(){
     state.users = users;
     renderEmployeeOverviewBox(users);
     renderDocumentRenewalsBox(users);
+    try{ state.hrViol = null; state.hrVac = null; hrOnEmployeesPageLoad().catch(err => console.error(err)); }catch(err){ console.error(err); }
 
     const hasAccess = canViewPassportAdmin();
     $('passportTrackingWrap').style.display = hasAccess ? 'block' : 'none';
@@ -11004,7 +12029,7 @@ function renderEmployeeOverviewBox(users){
   $('kpiTotalEmp').textContent = activeProfile.length;
   $('kpiSponsor').textContent = activeProfile.filter(u => u.profile && u.profile.employmentType === 'Sponsor').length;
   $('kpiNonSponsor').textContent = activeProfile.filter(u => u.profile && u.profile.employmentType === 'Non-Sponsor').length;
-  $('ceoEmpDrill').style.display = 'none';
+  $('ceoEmpDrill').style.display = 'none'; empDrillExtra = null;
 
   const deptSel = $('ceoFilterDept'); deptSel.innerHTML = '<option value="">All</option>' + state.departments.map(d=>`<option>${d}</option>`).join('');
   const posSel = $('ceoFilterPosition'); posSel.innerHTML = '<option value="">All</option>' + state.positions.map(p=>`<option>${p}</option>`).join('');
@@ -11023,6 +12048,7 @@ function renderEmployeeOverviewBox(users){
   $('kpiExited').textContent = employeesExitedInRange(withProfile, 'thisMonth').length;
 
   if(empDrillKind) renderEmpDrillList();
+  try{ renderEmpBreakdown(); }catch(err){ console.error(err); }
 }
 // Passport/Iqama Expiring Soon stayed behind on the CEO Dashboard (it's about
 // upcoming expiry dates, a different concern from the new Passport Tracking
@@ -11111,7 +12137,8 @@ document.querySelectorAll('.ceoEmpHighlight').forEach(card => {
   card.addEventListener('click', () => {
     const kind = 'highlight:' + card.dataset.kind;
     const box = $('ceoEmpDrill');
-    if(box.style.display === 'block' && empDrillKind === kind){ box.style.display = 'none'; return; }
+    if(box.style.display === 'block' && empDrillKind === kind && !empDrillExtra){ box.style.display = 'none'; return; }
+    empDrillExtra = null;
     empDrillKind = kind;
     box.style.display = 'block';
     $('ceoEmpDrillSearch').value = '';
@@ -11232,13 +12259,66 @@ document.querySelectorAll('.ceoEmpStat').forEach(card => {
   card.addEventListener('click', () => {
     const kind = card.dataset.filter;
     const box = $('ceoEmpDrill');
-    if(box.style.display === 'block' && empDrillKind === kind){ box.style.display = 'none'; return; }
+    if(box.style.display === 'block' && empDrillKind === kind && !empDrillExtra){ box.style.display = 'none'; return; }
+    empDrillExtra = null;
     empDrillKind = kind;
     box.style.display = 'block';
     $('ceoEmpDrillSearch').value = '';
     renderEmpDrillList();
   });
 });
+
+// ---- Employee Overview: small "Breakdown" panel (headcount by ... / joined & left) ----
+// Uses the people already loaded for the Overview: no extra database reads.
+let empDrillExtra = null;   // { label, fn } — set when a breakdown bar is tapped
+const OV_BRK = {
+  dept:     { label: 'Department',   key: u => u.department },
+  country:  { label: 'Country',      key: u => (u.profile || {}).homeCountry },
+  position: { label: 'Position',     key: u => (u.profile || {}).position },
+  type:     { label: 'Sponsor type', key: u => (u.profile || {}).employmentType },
+  shift:    { label: 'Shift',        key: u => u.assignedShift },
+  gender:   { label: 'Gender',       key: u => (u.profile || {}).gender }
+};
+function renderEmpBreakdown(){
+  const panel = $('ovBrkPanel'); if(!panel || panel.style.display === 'none') return;
+  const by = $('ovBrkBy').value, body = $('ovBrkBody');
+  const people = (state.users || []).filter(u => u.role !== 'pending');
+  if(by === 'flow'){
+    const now = new Date(), rows = [];
+    for(let k = 0; k < 6; k++){
+      const d = new Date(now.getFullYear(), now.getMonth() - k, 1);
+      const ym = d.getFullYear() + '-' + pad(d.getMonth() + 1);
+      const j = people.filter(u => ((u.profile || {}).joiningDate || '').slice(0, 7) === ym).length;
+      const l = people.filter(u => { const p = u.profile || {}; return (p.employmentStatus === 'terminated' || p.employmentStatus === 'final_exit') && (p.endDate || '').slice(0, 7) === ym; }).length;
+      rows.push(`<div class="m">${d.toLocaleString('en-GB', { month: 'short', year: 'numeric' })}</div><div class="v ${j ? '' : 'z'}">${j}</div><div class="v ${l ? '' : 'z'}">${l}</div>`);
+    }
+    body.innerHTML = `<div class="ovFlow"><div class="h">Month</div><div class="h">Joined</div><div class="h">Left</div>${rows.join('')}</div>`;
+    $('ovBrkHint').textContent = 'Tap New Joined or Exit/Terminated above to see the names for any period.';
+    return;
+  }
+  const esc = assignEsc, def = OV_BRK[by], active = people.filter(u => !isExitedEmployee(u)), counts = {};
+  active.forEach(u => { const v = (def.key(u) || '').toString().trim() || 'Not set'; counts[v] = (counts[v] || 0) + 1; });
+  const list = Object.keys(counts).sort((a, b) => counts[b] - counts[a] || a.localeCompare(b));
+  const max = Math.max(1, ...list.map(k => counts[k]));
+  body.innerHTML = list.length ? list.map(k => `<div class="ovBar" data-v="${esc(k)}"><span class="nm" title="${esc(k)}">${esc(k)}</span><span class="tr"><i style="width:${Math.max(2, counts[k] / max * 100)}%"></i></span><span class="ct">${counts[k]}<small>${Math.round(counts[k] / active.length * 100)}%</small></span></div>`).join('') : '<div class="empty-state">No employees yet.</div>';
+  $('ovBrkHint').textContent = 'Tap a bar to see exactly who is in it. Working employees only.';
+  body.querySelectorAll('.ovBar').forEach(el => el.addEventListener('click', () => {
+    const v = el.dataset.v;
+    empDrillExtra = { label: def.label + ': ' + v, fn: u => ((def.key(u) || '').toString().trim() || 'Not set') === v };
+    empDrillKind = 'all';
+    $('ceoEmpDrill').style.display = 'block'; $('ceoEmpDrillSearch').value = '';
+    renderEmpDrillList();
+    $('ceoEmpDrill').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }));
+}
+$('ovBrkToggle').addEventListener('click', () => {
+  const p = $('ovBrkPanel'), open = p.style.display === 'none';
+  p.style.display = open ? 'block' : 'none';
+  $('ovBrkToggle').setAttribute('aria-expanded', open ? 'true' : 'false');
+  $('ovBrkToggle').classList.toggle('on', open);
+  renderEmpBreakdown();
+});
+$('ovBrkBy').addEventListener('change', renderEmpBreakdown);
 
 let empDrillKind = null;
 function renderEmpDrillList(){
@@ -11288,6 +12368,7 @@ function renderEmpDrillList(){
     list = list.filter(u => !u.profile || !u.profile.employmentStatus || u.profile.employmentStatus === 'running');
   }
 
+  if(empDrillExtra){ list = list.filter(empDrillExtra.fn); title = title + ' \u2014 ' + empDrillExtra.label; }
   // apply the (optional) filter fields on top of the category
   const dept = $('ceoFilterDept').value, country = $('ceoFilterCountry').value, gender = $('ceoFilterGender').value,
         position = $('ceoFilterPosition').value, tenure = parseFloat($('ceoFilterTenure').value);
