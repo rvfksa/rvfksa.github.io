@@ -372,6 +372,15 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
       await updateDoc(doc(db, "users", loginId), updates);
       usersOnceCache.invalidate();
     },
+    // Several people changed in ONE commit (the Admin > Assign tab): one write per person, only the fields given.
+    // fields may use a dotted path such as 'profile.directSupervisor', so the rest of a profile is never rewritten.
+    async updateUsersBatch(changes) {
+      if (!dbReady) throw new Error('NOT_CONFIGURED');
+      const batch = writeBatch(db);
+      changes.forEach(c => batch.update(doc(db, "users", c.loginId), c.fields));
+      await batch.commit();
+      usersOnceCache.invalidate();
+    },
     async deleteUser(loginId) {
       if (!dbReady) throw new Error('NOT_CONFIGURED');
       await deleteDoc(doc(db, "users", loginId));
@@ -1794,6 +1803,7 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
 
       <div class="auth-tabs wrap-tabs">
         <div class="auth-tab active" data-admintab="users">Users</div>
+        <div class="auth-tab" data-admintab="assign">Assign</div>
         <div class="auth-tab" data-admintab="machines">Machines</div>
         <div class="auth-tab" data-admintab="shifttime">Shift &amp; Timing</div>
         <div class="auth-tab" data-admintab="execaccess">Executive Access</div>
@@ -1844,6 +1854,13 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
           </button>
         </div>
         <div id="usersBody"></div>
+      </div>
+
+      <div class="auth-pane" id="admin-assign">
+        <div id="assignChecks"></div>
+        <div id="assignViewBar" style="display:flex; gap:8px; margin:12px 0;"></div>
+        <div id="assignBody"></div>
+        <div id="assignSaveBar"></div>
       </div>
 
       <div class="auth-pane" id="admin-machines">
@@ -3605,6 +3622,11 @@ $('refreshUsersBtn').addEventListener('click', loadUsersForAdmin);
         state.users = users;
         renderUsersList();
       }
+      const assignTabOpen = $('screen-admin').classList.contains('active') && $('admin-assign').classList.contains('active');
+      if(assignTabOpen && state.user && state.user.role === 'admin'){
+        state.users = users;
+        renderAssignBoard();
+      }
     });
   }
 })();
@@ -3695,6 +3717,11 @@ function userDeptOptions(u){
 
 function renderUserRows(container, users){
   container.innerHTML = '';
+  // How many operators each supervisor approves for (from the people list already loaded: no read)
+  const teamCount = {};
+  (state.users || []).forEach(o => {
+    if(o.role === 'operator' && !isExitedEmployee(o)){ const d = o.profile && o.profile.directSupervisor; if(d && d.loginId) teamCount[d.loginId] = (teamCount[d.loginId] || 0) + 1; }
+  });
   users.forEach(u => {
     const row = document.createElement('div');
     row.className = 'user-row';
@@ -3734,6 +3761,8 @@ function renderUserRows(container, users){
           <div class="nm">${u.name} <span class="badge ${badgeClass}">${ROLE_LABEL[u.role] || u.role}</span>${statusTag}${approverWarnTag}</div>
           <div class="meta">ID: ${u.loginId} &middot; ${u.department || '—'}${shiftTag}</div>
           ${(u.role === 'operator' || u.role === 'supervisor') ? `<div class="meta">Machines: ${machinesTxt}</div>` : ''}
+          ${(u.role === 'operator' && !isExitedEmployee(u)) ? ((ds && ds.loginId) ? `<div class="meta">Approver: <b>${(state.users.find(x => x.loginId === ds.loginId) || ds).name || ds.loginId}</b></div>` : `<div class="meta" style="color:var(--danger);">No approver set</div>`) : ''}
+          ${u.role === 'supervisor' ? `<div class="meta">Team: ${teamCount[u.loginId] || 0} operator${(teamCount[u.loginId] || 0) === 1 ? '' : 's'}</div>` : ''}
           <div class="meta" style="font-size:11px; color:${completion>=80?'var(--ok, #2f9e57)':(completion>=40?'var(--muted)':'var(--danger)')};">Profile ${completion}% complete</div>
         </div>
       </div>
@@ -3886,9 +3915,19 @@ function buildMachineGrid(u, deptFilter){
   const assigned = u._machinePicks;
   const list = deptFilter ? state.machines.filter(m => m.department === deptFilter) : state.machines;
   if(list.length === 0){ grid.innerHTML = '<span style="font-size:11.5px; color:var(--muted);">No machines in this department.</span>'; return; }
+  // For an operator: the other operators on the same shift who already have each machine (people list already loaded)
+  const holdersOf = {};
+  if(u.role === 'operator'){
+    (state.users || []).forEach(o => {
+      if(o.role !== 'operator' || o.loginId === u.loginId || isExitedEmployee(o)) return;
+      const a = u.assignedShift || 'Both', b = o.assignedShift || 'Both';
+      if(a !== 'Both' && b !== 'Both' && a !== b) return;
+      (o.assignedMachines || []).forEach(mid => { (holdersOf[mid] = holdersOf[mid] || []).push((o.name || o.loginId).split(' ')[0]); });
+    });
+  }
   list.forEach(m => {
     const lbl = document.createElement('label');
-    lbl.innerHTML = `<input type="checkbox" value="${m.id}" ${assigned.has(m.id) ? 'checked' : ''}> ${m.name}`;
+    lbl.innerHTML = `<input type="checkbox" value="${m.id}" ${assigned.has(m.id) ? 'checked' : ''}> ${m.name}${holdersOf[m.id] ? ` <span style="color:var(--muted); font-size:10.5px;" title="Already assigned to ${holdersOf[m.id].join(', ')} on this shift">&middot; ${holdersOf[m.id].join(', ')}</span>` : ''}`;
     lbl.querySelector('input').addEventListener('change', (e) => { if(e.target.checked) assigned.add(m.id); else assigned.delete(m.id); });
     grid.appendChild(lbl);
   });
@@ -3942,7 +3981,10 @@ async function saveUserEdits(loginId){
         pendingLocationChange: null
       });
     }
-    const update = { role, assignedMachines, assignedShift, pages, profile };
+    // Only the profile fields this panel owns are written (by path), so nothing else on the profile can be overwritten from a stale copy
+    const update = { role, assignedMachines, assignedShift, pages, 'profile.employmentStatus': employmentStatus };
+    if(role === 'operator' || role === 'supervisor') update['profile.shiftPref'] = profile.shiftPref;
+    if(isExit && profile.passport){ ['location','locationReason','locationChangedAt','drawer','box','section','pendingLocationChange'].forEach(k => { update['profile.passport.' + k] = profile.passport[k]; }); }
     const deptBox = document.querySelector(`.deptSelect[data-id="${loginId}"]`);
     if(deptBox && deptBox.value !== (existing.department || '')) update.department = deptBox.value;   // only written when it was actually changed
     await window.__db.updateUser(loginId, update);
@@ -8359,6 +8401,288 @@ document.querySelectorAll('.auth-tab[data-admintab]').forEach(tab => {
   });
 });
 
+/* ---------- Admin > Assign: approvers and machines, staged together and saved in one go ---------- */
+// Nothing is written until "Save changes". Only the people who actually changed are written (one write each, in one
+// commit), and only the fields that changed: their machine list and/or their Log Reading Approver. Those are the same
+// two fields the Users edit panel and the Profile > Approvers tab write, so every other screen sees them the same way.
+const assignUI = { view:'approvers', q:'', dept:'', shift:'', appr:'', machDept:'', machQ:'', selected:new Set(), stagedApprover:{}, stagedAdd:{}, stagedRemove:{} };
+function assignEsc(t){ return String(t == null ? '' : t).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+const assignByName = (a, b) => (a.name || '').localeCompare(b.name || '');
+function assignOperators(){ return (state.users || []).filter(u => u.role === 'operator' && !isExitedEmployee(u)); }
+function assignSupervisors(){ return (state.users || []).filter(u => u.role === 'supervisor' && !isExitedEmployee(u)); }
+function assignUserById(id){ return (state.users || []).find(u => u.loginId === id); }
+function assignMachinesOf(u){   // what this person has once the waiting changes are applied
+  const set = new Set(u.assignedMachines || []);
+  (assignUI.stagedRemove[u.loginId] || new Set()).forEach(m => set.delete(m));
+  (assignUI.stagedAdd[u.loginId] || new Set()).forEach(m => set.add(m));
+  return set;
+}
+function assignOriginalApprover(u){ return (u.profile && u.profile.directSupervisor && u.profile.directSupervisor.loginId) ? u.profile.directSupervisor : null; }
+function assignApproverOf(u){
+  if(Object.prototype.hasOwnProperty.call(assignUI.stagedApprover, u.loginId)) return assignUI.stagedApprover[u.loginId];
+  return assignOriginalApprover(u);
+}
+function assignStageApprover(opId, supId){
+  const op = assignUserById(opId); if(!op) return;
+  const sup = supId ? assignUserById(supId) : null;
+  const next = sup ? { loginId: sup.loginId, name: sup.name } : null;
+  const orig = assignOriginalApprover(op);
+  if((orig && next && orig.loginId === next.loginId) || (!orig && !next)) delete assignUI.stagedApprover[opId];
+  else assignUI.stagedApprover[opId] = next;
+}
+function assignStageMachine(userId, mid, on){
+  const u = assignUserById(userId); if(!u) return;
+  const has = (u.assignedMachines || []).includes(mid);
+  const add = assignUI.stagedAdd[userId] = assignUI.stagedAdd[userId] || new Set();
+  const rem = assignUI.stagedRemove[userId] = assignUI.stagedRemove[userId] || new Set();
+  if(on){ rem.delete(mid); if(!has) add.add(mid); else add.delete(mid); }
+  else { add.delete(mid); if(has) rem.add(mid); else rem.delete(mid); }
+  if(!add.size) delete assignUI.stagedAdd[userId];
+  if(!rem.size) delete assignUI.stagedRemove[userId];
+}
+// Who holds each machine on each shift: the same rule the Dashboard uses to name its Day and Night operator.
+function assignSlots(){
+  const day = {}, night = {};
+  assignOperators().forEach(u => {
+    assignMachinesOf(u).forEach(mid => {
+      if(u.assignedShift === 'Night') (night[mid] = night[mid] || []).push(u);
+      else if(u.assignedShift === 'Day') (day[mid] = day[mid] || []).push(u);
+      else if(!(day[mid] || []).length) (day[mid] = day[mid] || []).push(u);
+      else (night[mid] = night[mid] || []).push(u);
+    });
+  });
+  return { day, night };
+}
+function assignSetSlot(mid, slot, opId){   // the chosen person takes the machine; whoever held it on that shift gives it up
+  const slots = assignSlots();
+  ((slot === 'Night' ? slots.night : slots.day)[mid] || []).forEach(h => { if(h.loginId !== opId) assignStageMachine(h.loginId, mid, false); });
+  if(opId) assignStageMachine(opId, mid, true);
+}
+function assignSupOptions(op, selectedId){
+  const sups = assignSupervisors().slice().sort(assignByName);
+  const same = sups.filter(s => s.department === op.department && (!s.assignedShift || s.assignedShift === 'Both' || s.assignedShift === op.assignedShift));
+  const other = sups.filter(s => !same.includes(s));
+  const opt = (s) => `<option value="${assignEsc(s.loginId)}" ${s.loginId === selectedId ? 'selected' : ''}>${assignEsc(s.name)} (${assignEsc(s.loginId)})</option>`;
+  let html = '<option value="">— none —</option>';
+  if(same.length) html += `<optgroup label="Same department and shift">${same.map(opt).join('')}</optgroup>`;
+  if(other.length) html += `<optgroup label="Other supervisors">${other.map(opt).join('')}</optgroup>`;
+  if(selectedId && !sups.some(s => s.loginId === selectedId)){ const gone = assignUserById(selectedId); html += `<option value="${assignEsc(selectedId)}" selected>${assignEsc(gone ? gone.name : selectedId)} (no longer a supervisor)</option>`; }
+  return html;
+}
+function assignOpOptions(machine, slot, selectedId){
+  const ops = assignOperators().filter(o => o.assignedShift === slot).sort(assignByName);
+  const same = ops.filter(o => o.department === machine.department), other = ops.filter(o => o.department !== machine.department);
+  const opt = (o) => `<option value="${assignEsc(o.loginId)}" ${o.loginId === selectedId ? 'selected' : ''}>${assignEsc(o.name)} (${assignEsc(o.loginId)})</option>`;
+  let html = '<option value="">— nobody —</option>';
+  if(same.length) html += `<optgroup label="${assignEsc(machine.department || 'Same department')}">${same.map(opt).join('')}</optgroup>`;
+  if(other.length) html += `<optgroup label="Other departments">${other.map(opt).join('')}</optgroup>`;
+  if(selectedId && !ops.some(o => o.loginId === selectedId)){ const o = assignUserById(selectedId); html += `<option value="${assignEsc(selectedId)}" selected>${assignEsc(o ? o.name : selectedId)} (both shifts)</option>`; }
+  return html;
+}
+function assignShortList(names, max){ return names.length <= max ? names.join(', ') : names.slice(0, max).join(', ') + ' and ' + (names.length - max) + ' more'; }
+
+function renderAssignChecks(){
+  const box = $('assignChecks'); if(!box) return;
+  const ops = assignOperators(), sups = assignSupervisors(), lines = [];
+  const noApprover = ops.filter(o => !assignApproverOf(o));
+  if(noApprover.length) lines.push(`<div class="hint" style="text-align:left; margin:4px 0; color:var(--warn);">&#9888; ${noApprover.length} operator${noApprover.length === 1 ? ' has' : 's have'} no approver: ${assignEsc(assignShortList(noApprover.map(o => o.name), 6))} <button class="btn btn-ghost btn-sm" style="width:auto; margin-left:6px;" data-act="showNone">Show them</button></div>`);
+  const goneApprover = ops.filter(o => { const a = assignApproverOf(o); if(!a) return false; const sp = assignUserById(a.loginId); return !sp || sp.role !== 'supervisor' || isExitedEmployee(sp); });
+  if(goneApprover.length) lines.push(`<div class="hint" style="text-align:left; margin:4px 0; color:var(--warn);">&#9888; ${goneApprover.length} operator${goneApprover.length === 1 ? ' has an approver' : 's have an approver'} who is no longer a supervisor: ${assignEsc(assignShortList(goneApprover.map(o => o.name), 6))}</div>`);
+  sups.sort(assignByName).forEach(sp => {
+    const team = ops.filter(o => { const a = assignApproverOf(o); return a && a.loginId === sp.loginId; });
+    const mine = assignMachinesOf(sp), want = new Set();
+    team.forEach(o => assignMachinesOf(o).forEach(m => want.add(m)));
+    const missing = state.machines.filter(m => want.has(m.id) && !mine.has(m.id)).map(m => m.id);
+    if(missing.length) lines.push(`<div class="hint" style="text-align:left; margin:4px 0; color:var(--warn);">&#9888; ${assignEsc(sp.name)}'s machine list is missing ${assignEsc(assignShortList(missing.map(machineName), 8))} (operators under ${assignEsc(sp.name)} run them) <button class="btn btn-ghost btn-sm" style="width:auto; margin-left:6px;" data-act="addSup" data-sup="${assignEsc(sp.loginId)}" data-ms="${assignEsc(missing.join(','))}">Add them</button></div>`);
+  });
+  const slots = assignSlots(), clash = [], nobody = [];
+  state.machines.forEach(m => {
+    if(m.status === 'stopped' && m.stopType === 'permanent') return;
+    const d = (slots.day[m.id] || []).length, n = (slots.night[m.id] || []).length;
+    if((!machineRunsShift(m, 'Day') && d) || (!machineRunsShift(m, 'Night') && n)) clash.push(m.name);
+    if((machineRunsShift(m, 'Day') && !d) || (machineRunsShift(m, 'Night') && !n)) nobody.push(m.name + ' (' + [machineRunsShift(m, 'Day') && !d ? 'Day' : '', machineRunsShift(m, 'Night') && !n ? 'Night' : ''].filter(Boolean).join(' and ') + ')');
+  });
+  if(clash.length) lines.push(`<div class="hint" style="text-align:left; margin:4px 0; color:var(--warn);">&#9888; ${assignEsc(assignShortList(clash, 8))}: an operator is assigned for a shift the machine is set not to run. Change the machine's shift setting in the Machines tab.</div>`);
+  if(nobody.length) lines.push(`<div class="hint" style="text-align:left; margin:4px 0; color:var(--warn);">&#9888; Nobody is assigned: ${assignEsc(assignShortList(nobody, 8))}</div>`);
+  box.innerHTML = `<div class="card" style="margin-bottom:0;"><div class="sub" style="margin-top:0; font-weight:600; color:var(--text); text-transform:none;">Checks</div>${lines.length ? lines.join('') : '<div class="hint" style="text-align:left; margin:4px 0;">Everything is assigned and consistent.</div>'}</div>`;
+  box.querySelectorAll('[data-act="showNone"]').forEach(b => b.addEventListener('click', () => { assignUI.view = 'approvers'; assignUI.appr = '__none__'; renderAssignBoard(); }));
+  box.querySelectorAll('[data-act="addSup"]').forEach(b => b.addEventListener('click', () => { b.dataset.ms.split(',').forEach(mid => assignStageMachine(b.dataset.sup, mid, true)); renderAssignBoard(); }));
+}
+
+function renderAssignViewBar(){
+  const bar = $('assignViewBar'); if(!bar) return;
+  const btn = (v, label) => `<button class="btn ${assignUI.view === v ? '' : 'btn-ghost'} btn-sm" style="width:auto;" data-view="${v}">${label}</button>`;
+  bar.innerHTML = btn('approvers', 'Approvers: who approves whom') + btn('machines', 'Machines: who runs which machine');
+  bar.querySelectorAll('[data-view]').forEach(b => b.addEventListener('click', () => { assignUI.view = b.dataset.view; renderAssignBoard(); }));
+}
+
+function renderAssignApprovers(box){
+  const ops = assignOperators(), sups = assignSupervisors().slice().sort(assignByName);
+  const depts = Array.from(new Set(ops.map(o => o.department).filter(Boolean))).sort();
+  const countFor = (sid) => ops.filter(o => { const a = assignApproverOf(o); return a && a.loginId === sid; }).length;
+  box.innerHTML = `
+    <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px;">
+      <input type="text" id="assignQ" placeholder="Search operator..." value="${assignEsc(assignUI.q)}" style="flex:1; min-width:140px;">
+      <select id="assignDept"><option value="">All departments</option>${depts.map(d => `<option value="${assignEsc(d)}" ${assignUI.dept === d ? 'selected' : ''}>${assignEsc(d)}</option>`).join('')}</select>
+      <select id="assignShift"><option value="">Any shift</option><option value="Day" ${assignUI.shift === 'Day' ? 'selected' : ''}>Day</option><option value="Night" ${assignUI.shift === 'Night' ? 'selected' : ''}>Night</option></select>
+      <select id="assignAppr"><option value="">Any approver</option><option value="__none__" ${assignUI.appr === '__none__' ? 'selected' : ''}>No approver (${ops.filter(o => !assignApproverOf(o)).length})</option>${sups.map(s => `<option value="${assignEsc(s.loginId)}" ${assignUI.appr === s.loginId ? 'selected' : ''}>${assignEsc(s.name)} (${countFor(s.loginId)})</option>`).join('')}</select>
+    </div>
+    <div id="assignTable"></div>`;
+  const redraw = () => renderAssignApproversTable();
+  $('assignQ').addEventListener('input', () => { assignUI.q = $('assignQ').value; redraw(); });
+  $('assignDept').addEventListener('change', () => { assignUI.dept = $('assignDept').value; redraw(); });
+  $('assignShift').addEventListener('change', () => { assignUI.shift = $('assignShift').value; redraw(); });
+  $('assignAppr').addEventListener('change', () => { assignUI.appr = $('assignAppr').value; redraw(); });
+  redraw();
+}
+function renderAssignApproversTable(){
+  const box = $('assignTable'); if(!box) return;
+  const q = assignUI.q.trim().toLowerCase();
+  const rows = assignOperators().filter(o =>
+    (!assignUI.dept || o.department === assignUI.dept) && (!assignUI.shift || (o.assignedShift || 'Both') === assignUI.shift) &&
+    (!q || (o.name || '').toLowerCase().includes(q) || (o.loginId || '').toLowerCase().includes(q)) &&
+    (assignUI.appr === '' || (assignUI.appr === '__none__' ? !assignApproverOf(o) : (assignApproverOf(o) || {}).loginId === assignUI.appr))
+  ).sort((a, b) => (a.department || '').localeCompare(b.department || '') || (a.assignedShift || '').localeCompare(b.assignedShift || '') || assignByName(a, b));
+  const sups = assignSupervisors().slice().sort(assignByName);
+  if(!rows.length){ box.innerHTML = '<div class="empty-state">No operators match.</div>'; return; }
+  const allTicked = rows.every(o => assignUI.selected.has(o.loginId));
+  box.innerHTML = `<div class="table-scroll"><table class="report-table"><thead><tr>
+      <th><input type="checkbox" id="assignAll" ${allTicked ? 'checked' : ''}></th><th>Operator</th><th>Dept &middot; shift</th><th>Machines</th><th>Approver</th>
+    </tr></thead><tbody>${rows.map(o => {
+      const cur = assignApproverOf(o), orig = assignOriginalApprover(o);
+      const changed = Object.prototype.hasOwnProperty.call(assignUI.stagedApprover, o.loginId);
+      const was = changed ? `<div class="hint" style="margin:2px 0 0; text-align:left; color:var(--warn);">was ${assignEsc(orig ? ((assignUserById(orig.loginId) || orig).name || orig.loginId) : 'no approver')}</div>` : '';
+      const ms = Array.from(assignMachinesOf(o)).map(machineName).join(', ');
+      return `<tr style="${changed ? 'background:var(--lcd-dim);' : ''}">
+        <td><input type="checkbox" class="assignTick" data-id="${assignEsc(o.loginId)}" ${assignUI.selected.has(o.loginId) ? 'checked' : ''}></td>
+        <td>${assignEsc(o.name)} <span style="color:var(--muted); font-size:11px;">${assignEsc(o.loginId)}</span></td>
+        <td>${assignEsc(o.department || '—')} &middot; ${o.assignedShift === 'Day' ? 'Day' : (o.assignedShift === 'Night' ? 'Night' : 'Both')}</td>
+        <td style="max-width:220px; font-size:12px;">${assignEsc(ms || '—')}</td>
+        <td><select class="assignApprSel" data-id="${assignEsc(o.loginId)}">${assignSupOptions(o, cur ? cur.loginId : '')}</select>${was}</td>
+      </tr>`;
+    }).join('')}</tbody></table></div>
+    <div style="display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-top:10px;">
+      <span class="hint" style="margin:0;">${assignUI.selected.size} selected. Set their approver to</span>
+      <select id="assignBulkSel"><option value="">— none —</option>${sups.map(s => `<option value="${assignEsc(s.loginId)}">${assignEsc(s.name)} (${assignEsc(s.loginId)})</option>`).join('')}</select>
+      <button class="btn btn-ghost btn-sm" style="width:auto;" id="assignBulkBtn">Apply to selected</button>
+    </div>`;
+  box.querySelectorAll('.assignApprSel').forEach(sel => sel.addEventListener('change', () => { assignStageApprover(sel.dataset.id, sel.value); renderAssignBoard(); }));
+  box.querySelectorAll('.assignTick').forEach(cb => cb.addEventListener('change', () => { if(cb.checked) assignUI.selected.add(cb.dataset.id); else assignUI.selected.delete(cb.dataset.id); renderAssignApproversTable(); }));
+  $('assignAll').addEventListener('change', (e) => { rows.forEach(o => { if(e.target.checked) assignUI.selected.add(o.loginId); else assignUI.selected.delete(o.loginId); }); renderAssignApproversTable(); });
+  $('assignBulkBtn').addEventListener('click', () => {
+    if(!assignUI.selected.size){ toast('Tick the operators first'); return; }
+    const sid = $('assignBulkSel').value;
+    assignUI.selected.forEach(id => assignStageApprover(id, sid));
+    assignUI.selected = new Set();
+    renderAssignBoard();
+  });
+}
+
+function renderAssignMachines(box){
+  const depts = Array.from(new Set(state.machines.map(m => m.department).filter(Boolean))).sort();
+  box.innerHTML = `
+    <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px;">
+      <input type="text" id="assignMQ" placeholder="Search machine..." value="${assignEsc(assignUI.machQ)}" style="flex:1; min-width:140px;">
+      <select id="assignMDept"><option value="">All departments</option>${depts.map(d => `<option value="${assignEsc(d)}" ${assignUI.machDept === d ? 'selected' : ''}>${assignEsc(d)}</option>`).join('')}</select>
+    </div>
+    <div id="assignTable"></div>`;
+  $('assignMQ').addEventListener('input', () => { assignUI.machQ = $('assignMQ').value; renderAssignMachinesTable(); });
+  $('assignMDept').addEventListener('change', () => { assignUI.machDept = $('assignMDept').value; renderAssignMachinesTable(); });
+  renderAssignMachinesTable();
+}
+function renderAssignMachinesTable(){
+  const box = $('assignTable'); if(!box) return;
+  const q = assignUI.machQ.trim().toLowerCase();
+  const list = state.machines.filter(m => (!assignUI.machDept || m.department === assignUI.machDept) && (!q || (m.name || '').toLowerCase().includes(q) || String(m.id).toLowerCase().includes(q)));
+  if(!list.length){ box.innerHTML = '<div class="empty-state">No machines match.</div>'; return; }
+  const slots = assignSlots();
+  const orig = (() => { const keep = [assignUI.stagedAdd, assignUI.stagedRemove]; assignUI.stagedAdd = {}; assignUI.stagedRemove = {}; const s = assignSlots(); assignUI.stagedAdd = keep[0]; assignUI.stagedRemove = keep[1]; return s; })();
+  const cell = (m, slot) => {
+    const held = (slot === 'Night' ? slots.night : slots.day)[m.id] || [], was = (slot === 'Night' ? orig.night : orig.day)[m.id] || [];
+    const changed = held.map(h => h.loginId).join() !== was.map(h => h.loginId).join();
+    const extra = held.length > 1 ? `<div class="hint" style="margin:2px 0 0; text-align:left; color:var(--warn);">also: ${assignEsc(held.slice(1).map(h => h.name).join(', '))}</div>` : '';
+    const wasTxt = changed ? `<div class="hint" style="margin:2px 0 0; text-align:left; color:var(--warn);">was ${assignEsc(was.length ? was.map(h => h.name).join(', ') : 'nobody')}</div>` : '';
+    return { html: `<select class="assignSlotSel" data-m="${assignEsc(m.id)}" data-slot="${slot}">${assignOpOptions(m, slot, held.length ? held[0].loginId : '')}</select>${extra}${wasTxt}`, changed };
+  };
+  box.innerHTML = `<div class="table-scroll"><table class="report-table"><thead><tr><th>Machine</th><th>Day operator</th><th>Night operator</th><th>Setting</th></tr></thead><tbody>${list.map(m => {
+    const d = cell(m, 'Day'), n = cell(m, 'Night');
+    const dh = (slots.day[m.id] || []).length, nh = (slots.night[m.id] || []).length;
+    const warn = ((!machineRunsShift(m, 'Day') && dh) || (!machineRunsShift(m, 'Night') && nh)) ? ' <span style="color:var(--warn); font-weight:800;" title="An operator is assigned for a shift this machine is set not to run">&#9888;</span>' : '';
+    const setting = (m.shiftRun === 'Day' || m.shiftRun === 'Night') ? m.shiftRun + ' only' : 'Both';
+    return `<tr style="${(d.changed || n.changed) ? 'background:var(--lcd-dim);' : ''}"><td>${assignEsc(m.name)}${m.status === 'stopped' ? ' <span style="color:var(--muted); font-size:11px;">stopped</span>' : ''}</td><td>${d.html}</td><td>${n.html}</td><td style="font-size:12px;">${setting}${warn}</td></tr>`;
+  }).join('')}</tbody></table></div>`;
+  box.querySelectorAll('.assignSlotSel').forEach(sel => sel.addEventListener('change', () => { assignSetSlot(sel.dataset.m, sel.dataset.slot, sel.value); renderAssignBoard(); }));
+}
+
+// Everything waiting to be saved, as one list: who, which fields, and a plain-words line for each change.
+function assignBuildChanges(){
+  const ids = new Set(Object.keys(assignUI.stagedApprover).concat(Object.keys(assignUI.stagedAdd), Object.keys(assignUI.stagedRemove)));
+  const out = [];
+  ids.forEach(id => {
+    const u = assignUserById(id); if(!u) return;
+    const fields = {}, lines = [], change = { loginId: id, fields, lines };
+    if(Object.prototype.hasOwnProperty.call(assignUI.stagedApprover, id)){
+      const next = assignUI.stagedApprover[id], was = assignOriginalApprover(u);
+      fields['profile.directSupervisor'] = next; change.approver = next;
+      lines.push(`approver: ${was ? ((assignUserById(was.loginId) || was).name || was.loginId) : 'none'} \u2192 ${next ? next.name : 'none'}`);
+    }
+    const add = assignUI.stagedAdd[id], rem = assignUI.stagedRemove[id];
+    if((add && add.size) || (rem && rem.size)){
+      const cur = new Set(u.assignedMachines || []);
+      (rem || new Set()).forEach(m => cur.delete(m)); (add || new Set()).forEach(m => cur.add(m));
+      const known = state.machines.filter(m => cur.has(m.id)).map(m => m.id);
+      const unknown = Array.from(cur).filter(m => !state.machines.some(x => x.id === m));   // never silently drop a machine the list no longer knows
+      fields.assignedMachines = known.concat(unknown); change.machines = fields.assignedMachines;
+      const bits = [];
+      if(add && add.size) bits.push('+ ' + Array.from(add).map(machineName).join(', '));
+      if(rem && rem.size) bits.push('\u2212 ' + Array.from(rem).map(machineName).join(', '));
+      lines.push('machines: ' + bits.join(' '));
+    }
+    if(Object.keys(fields).length) out.push(change);
+  });
+  return out.sort((a, b) => (assignUserById(a.loginId).name || '').localeCompare(assignUserById(b.loginId).name || ''));
+}
+function renderAssignSaveBar(){
+  const bar = $('assignSaveBar'); if(!bar) return;
+  const changes = assignBuildChanges();
+  if(!changes.length){ bar.innerHTML = ''; return; }
+  bar.innerHTML = `<div class="card" style="margin-top:12px; border:1px solid var(--lcd);">
+    <div class="sub" style="margin-top:0; font-weight:600; color:var(--text); text-transform:none;">${changes.length} ${changes.length === 1 ? 'person' : 'people'} will change. Nothing is saved until you press Save changes.</div>
+    ${changes.map(c => `<div class="hint" style="text-align:left; margin:3px 0;"><b>${assignEsc(assignUserById(c.loginId).name)}</b> &middot; ${assignEsc(c.lines.join(' &middot; '))}</div>`).join('')}
+    <div style="display:flex; gap:8px; margin-top:10px;"><button class="btn btn-ghost" id="assignDiscardBtn">Discard</button><button class="btn" id="assignSaveBtn">Save changes</button></div>
+  </div>`;
+  $('assignDiscardBtn').addEventListener('click', () => { assignUI.stagedApprover = {}; assignUI.stagedAdd = {}; assignUI.stagedRemove = {}; assignUI.selected = new Set(); renderAssignBoard(); });
+  $('assignSaveBtn').addEventListener('click', saveAssignChanges);
+}
+async function saveAssignChanges(){
+  if(!requireDb()) return;
+  const changes = assignBuildChanges(); if(!changes.length) return;
+  try{
+    await window.__db.updateUsersBatch(changes.map(c => ({ loginId: c.loginId, fields: c.fields })));
+    changes.forEach(c => {
+      const u = assignUserById(c.loginId); if(!u) return;
+      if(c.machines) u.assignedMachines = c.machines;
+      if(Object.prototype.hasOwnProperty.call(c, 'approver')) u.profile = Object.assign({}, u.profile || {}, { directSupervisor: c.approver });
+      delete u._machinePicks;   // the Users edit panel must pick up the new machine list
+    });
+    assignUI.stagedApprover = {}; assignUI.stagedAdd = {}; assignUI.stagedRemove = {}; assignUI.selected = new Set();
+    toast(changes.length === 1 ? 'Saved 1 person' : 'Saved ' + changes.length + ' people');
+    if($('usersBody')) renderUsersList();
+    renderAssignBoard();
+  }catch(err){ console.error(err); toast('Could not save — check your connection'); }
+}
+async function renderAssignBoard(){
+  const body = $('assignBody'); if(!body) return;
+  if(!state.users || !state.users.length){
+    body.innerHTML = '<div class="empty-state">Loading…</div>';
+    try{ state.users = await window.__db.listUsers(); }catch(err){ console.error(err); body.innerHTML = '<div class="empty-state">Could not load people.</div>'; return; }
+  }
+  renderAssignChecks(); renderAssignViewBar();
+  if(assignUI.view === 'machines') renderAssignMachines(body); else renderAssignApprovers(body);
+  renderAssignSaveBar();
+}
+document.querySelector('.auth-tab[data-admintab="assign"]').addEventListener('click', () => renderAssignBoard());
+
 /* ---------- profile tabs ---------- */
 document.querySelectorAll('.tab-sidebar-btn[data-ptab]').forEach(tab => {
   tab.addEventListener('click', () => {
@@ -8384,6 +8708,35 @@ document.querySelectorAll('.auth-tab[data-leavetab]').forEach(tab => {
    ============================================================ */
 let profileCache = { user: null, vacations: [], violations: [] };
 
+// Saving a profile section used to rebuild the WHOLE profile from whatever copy the screen was holding and write that
+// back, so a stale copy silently wiped other sections (saving the passport location erased the passport details,
+// and saving the passport details erased the location). Now each save writes only the fields it owns, by path
+// (e.g. 'passport.location'), so no section can touch another, whatever copy of the person this screen has.
+function profileSetIn(obj, path, value){
+  const keys = path.split('.'); const root = Object.assign({}, obj || {}); let cur = root;
+  for(let i = 0; i < keys.length - 1; i++){
+    const next = cur[keys[i]];
+    cur[keys[i]] = Object.assign({}, (next && typeof next === 'object') ? next : {});
+    cur = cur[keys[i]];
+  }
+  cur[keys[keys.length - 1]] = value;
+  return root;
+}
+async function saveProfileFields(loginId, fields){
+  const updates = {};
+  Object.keys(fields).forEach(k => { updates['profile.' + k] = (fields[k] === undefined ? null : fields[k]); });
+  await window.__db.updateUser(loginId, updates);
+  const apply = (u) => {
+    if(!u) return;
+    let p = u.profile || {};
+    Object.keys(fields).forEach(k => { p = profileSetIn(p, k, fields[k] === undefined ? null : fields[k]); });
+    u.profile = p;
+  };
+  if(profileCache.user && profileCache.user.loginId === loginId) apply(profileCache.user);
+  apply((state.users || []).find(x => x.loginId === loginId));
+  if(state.user && state.user.loginId === loginId) apply(state.user);
+}
+
 async function loadProfile(loginId, editMode){
   state.profileTarget = loginId;
   state.profileEditMode = !!editMode && state.user.role === 'admin';
@@ -8393,7 +8746,21 @@ async function loadProfile(loginId, editMode){
   $('profileEyebrow').textContent = state.profileEditMode ? 'Editing HR Profile' : 'Profile';
   if(!requireDb()) return;
   try{
-    const u = (loginId === state.user.loginId) ? state.user : await window.__db.getUser(loginId);
+    let u;
+    if(loginId === state.user.loginId){
+      // Your own record is loaded when you log in and was never refreshed after that, so anything an admin saved
+      // afterwards stayed invisible until you logged out and in. Fetch just your own record (one read), at most
+      // once a minute; if that fails, the copy already held is shown as before.
+      if(Date.now() - (state._selfFreshAt || 0) > 60000){
+        try{
+          const fresh = await window.__db.getUser(loginId);
+          if(fresh){ state.user.profile = fresh.profile || {}; state.user.name = fresh.name; state.user.department = fresh.department; state._selfFreshAt = Date.now(); }
+        }catch(err){ console.error('Could not refresh own profile', err); }
+      }
+      u = state.user;
+    } else {
+      u = await window.__db.getUser(loginId);
+    }
     if(!u){ toast('Employee not found'); return; }
     const [vacations, violations] = await Promise.all([
       window.__db.listVacations(loginId),
@@ -8602,10 +8969,7 @@ $('profilePhotoInput').addEventListener('change', async (e) => {
   if(!requireDb()) return;
   try{
     const dataUrl = await compressImageSafe(file);
-    const p = Object.assign({}, profileCache.user.profile || {}, { photoDataUrl: dataUrl });
-    await window.__db.updateUser(profileCache.user.loginId, { profile: p });
-    profileCache.user.profile = p;
-    if(state.user.loginId === profileCache.user.loginId){ state.user.profile = p; }
+    await saveProfileFields(profileCache.user.loginId, { photoDataUrl: dataUrl });
     renderProfilePhoto(profileCache.user);
     toast('Photo updated');
   }catch(err){ console.error(err); toast('Could not upload photo — try a smaller image'); }
@@ -8709,7 +9073,7 @@ function renderGeneralTab(){
 async function saveGeneralTab(){
   const phoneCode = $('pf-phoneCode').value.trim();
   const phoneNumber = $('pf-phoneNumber').value.trim();
-  const p = Object.assign({}, profileCache.user.profile || {}, {
+  const p = {   // only the fields this tab owns are written
     phoneCode, phoneNumber,
     phone: [phoneCode, phoneNumber].filter(Boolean).join(' '),
     homeCountry: $('pf-homeCountry').value.trim(),
@@ -8719,7 +9083,7 @@ async function saveGeneralTab(){
     joiningDate: $('pf-joiningDate').value,
     endDate: $('pf-endDate').value,
     vacationEligibility: $('pf-vacationEligibility').value
-  });
+  };
   const shiftBox = $('pf-shiftPref');
   if(shiftBox) p.shiftPref = shiftBox.value;   // operators/supervisors have no box here: their shift is set next to Assigned Machines
   // "Not Applicable" is a manual Admin choice, not automatic — a Sponsor
@@ -8728,8 +9092,7 @@ async function saveGeneralTab(){
   // yet — Sponsor or Non-Sponsor — simply shows under "Not Set Yet" until
   // Admin reviews and picks the right one.
   try{
-    await window.__db.updateUser(profileCache.user.loginId, { profile: p });
-    profileCache.user.profile = p;
+    await saveProfileFields(profileCache.user.loginId, p);
     toast('Saved');
     renderGeneralTab();
   }catch(err){ console.error(err); toast('Could not save — check your connection'); }
@@ -8870,22 +9233,16 @@ function wireDirectSupervisorBlock(){
 }
 async function saveDirectSupervisor(ds){
   if(!requireDb()) return;
-  const p = Object.assign({}, profileCache.user.profile || {}, { directSupervisor: ds });
   try{
-    await window.__db.updateUser(profileCache.user.loginId, { profile: p });
-    profileCache.user.profile = p;
-    const cached = state.users.find(x => x.loginId === profileCache.user.loginId);
-    if(cached) cached.profile = p;
+    await saveProfileFields(profileCache.user.loginId, { directSupervisor: ds });
     toast(ds ? 'Direct Supervisor set' : 'Direct Supervisor removed');
     renderApproversTab();
   }catch(err){ console.error(err); toast('Could not save — check your connection'); }
 }
 
 async function saveApprovers(approvers){
-  const p = Object.assign({}, profileCache.user.profile || {}, { approvers });
   try{
-    await window.__db.updateUser(profileCache.user.loginId, { profile: p });
-    profileCache.user.profile = p;
+    await saveProfileFields(profileCache.user.loginId, { approvers });
     toast('Approvers updated');
     renderApproversTab();
   }catch(err){ console.error(err); toast('Could not save — check your connection'); }
@@ -9038,17 +9395,11 @@ async function savePassportRenewalEdit(targetId){
   if(!requireDb()) return;
   const changes = { renewalStatus };
   try{
-    const existing = state.users.find(x => x.loginId === targetId) || await window.__db.getUser(targetId);
-    const currentPassport = (existing.profile || {}).passport || {};
     const needsApproval = state.user.role !== 'admin' && passportWriteCapableUsers().some(u => u.loginId !== state.user.loginId);
-    const passport = needsApproval
-      ? Object.assign({}, currentPassport, { pendingRenewalChange: { proposedBy: state.user.loginId, proposedByName: state.user.name, proposedAt: Date.now(), changes } })
-      : Object.assign({}, currentPassport, changes, { pendingRenewalChange: null });
-    const profile = Object.assign({}, existing.profile || {}, { passport });
-    await window.__db.updateUser(targetId, { profile });
-    if(profileCache.user.loginId === targetId) profileCache.user.profile = profile;
-    const cached = state.users.find(x => x.loginId === targetId);
-    if(cached) cached.profile = profile;
+    const fields = {};
+    if(needsApproval) fields['passport.pendingRenewalChange'] = { proposedBy: state.user.loginId, proposedByName: state.user.name, proposedAt: Date.now(), changes };
+    else { Object.keys(changes).forEach(k => { fields['passport.' + k] = changes[k]; }); fields['passport.pendingRenewalChange'] = null; }
+    await saveProfileFields(targetId, fields);   // only these passport fields: the details and the location are never touched
     docSectionEditing.passportRenewal = false;
     toast(needsApproval ? 'Saved — waiting for the other Approver to confirm' : 'Saved');
     renderPassportTab();
@@ -9166,17 +9517,11 @@ async function savePassportLocationEdit(targetId){
   if(!requireDb()) return;
   const changes = { location, drawer, box, section, locationReason: reason, locationChangedAt: date };
   try{
-    const existing = state.users.find(x => x.loginId === targetId) || await window.__db.getUser(targetId);
-    const currentPassport = (existing.profile || {}).passport || {};
     const needsApproval = state.user.role !== 'admin' && passportWriteCapableUsers().some(u => u.loginId !== state.user.loginId);
-    const passport = needsApproval
-      ? Object.assign({}, currentPassport, { pendingLocationChange: { proposedBy: state.user.loginId, proposedByName: state.user.name, proposedAt: Date.now(), changes } })
-      : Object.assign({}, currentPassport, changes, { pendingLocationChange: null });
-    const profile = Object.assign({}, existing.profile || {}, { passport });
-    await window.__db.updateUser(targetId, { profile });
-    if(profileCache.user.loginId === targetId) profileCache.user.profile = profile;
-    const cached = state.users.find(x => x.loginId === targetId);
-    if(cached) cached.profile = profile;
+    const fields = {};
+    if(needsApproval) fields['passport.pendingLocationChange'] = { proposedBy: state.user.loginId, proposedByName: state.user.name, proposedAt: Date.now(), changes };
+    else { Object.keys(changes).forEach(k => { fields['passport.' + k] = changes[k]; }); fields['passport.pendingLocationChange'] = null; }
+    await saveProfileFields(targetId, fields);   // only the location fields: the passport details are never touched (this used to wipe them)
     docSectionEditing.passportLocation = false;
     toast(needsApproval ? 'Saved — waiting for the other Approver to confirm' : 'Saved');
     renderPassportTab();
@@ -9190,8 +9535,8 @@ function willNeedPassportApproval(){
 async function decidePendingPassportChange(targetId, field, approve){
   if(!requireDb()) return;
   try{
-    const existing = state.users.find(x => x.loginId === targetId) || await window.__db.getUser(targetId);
-    const currentPassport = (existing.profile || {}).passport || {};
+    const existing = await window.__db.getUser(targetId);   // decided against the live record, not a cached copy
+    const currentPassport = ((existing && existing.profile) || {}).passport || {};
     const pending = currentPassport[field];
     if(!pending) return;
     // The proposer otherwise has no way to find out what happened to their
@@ -9204,14 +9549,10 @@ async function decidePendingPassportChange(targetId, field, approve){
       decidedBy: state.user.loginId, decidedByName: state.user.name,
       decidedAt: Date.now(), decision: approve ? 'approved' : 'rejected', changes: pending.changes
     };
-    const passport = approve
-      ? Object.assign({}, currentPassport, pending.changes, { [field]: null, [resultField]: decisionResult })
-      : Object.assign({}, currentPassport, { [field]: null, [resultField]: decisionResult });
-    const profile = Object.assign({}, existing.profile || {}, { passport });
-    await window.__db.updateUser(targetId, { profile });
-    if(profileCache.user.loginId === targetId) profileCache.user.profile = profile;
-    const cached = state.users.find(x => x.loginId === targetId);
-    if(cached) cached.profile = profile;
+    const fields = {};
+    if(approve) Object.keys(pending.changes || {}).forEach(k => { fields['passport.' + k] = pending.changes[k]; });
+    fields['passport.' + field] = null; fields['passport.' + resultField] = decisionResult;
+    await saveProfileFields(targetId, fields);
     toast(approve ? 'Change approved and applied' : 'Change rejected');
     if($('ptab-passport') && profileCache.user.loginId === targetId) renderPassportTab();
     if($('passportApprovalBody')) renderPassportApprovalQueue();
@@ -9223,14 +9564,7 @@ async function decidePendingPassportChange(targetId, field, approve){
 async function dismissPassportDecision(targetId, resultField){
   if(!requireDb()) return;
   try{
-    const existing = state.users.find(x => x.loginId === targetId) || await window.__db.getUser(targetId);
-    const currentPassport = (existing.profile || {}).passport || {};
-    const passport = Object.assign({}, currentPassport, { [resultField]: null });
-    const profile = Object.assign({}, existing.profile || {}, { passport });
-    await window.__db.updateUser(targetId, { profile });
-    if(profileCache.user.loginId === targetId) profileCache.user.profile = profile;
-    const cached = state.users.find(x => x.loginId === targetId);
-    if(cached) cached.profile = profile;
+    await saveProfileFields(targetId, { ['passport.' + resultField]: null });
     if($('ptab-passport') && profileCache.user.loginId === targetId) renderPassportTab();
     if($('myPassportRequestsBody')) renderMyPassportRequestsStatus();
   }catch(err){ console.error(err); toast('Could not save — check your connection'); }
@@ -9274,12 +9608,13 @@ function wireDocSave(kind, keys){
     keys.forEach(k => d[k] = $('doc-'+kind+'-'+k).value.trim());
     const fileInput = $('doc-'+kind+'-file');
     const finish = async (attachmentRef) => {
-      if(attachmentRef) d.attachment = attachmentRef;
-      else { const existing = (profileCache.user.profile||{})[kind]||{}; if(existing.attachment) d.attachment = existing.attachment; }
-      const p = Object.assign({}, profileCache.user.profile || {}, { [kind]: d });
+      // Only the detail fields of this document are written (each by path); an existing attachment is simply left alone,
+      // and the passport's location / renewal fields, which live in the same block, are never touched.
+      const fields = {};
+      Object.keys(d).forEach(k => { fields[kind + '.' + k] = d[k]; });
+      if(attachmentRef) fields[kind + '.attachment'] = attachmentRef;
       try{
-        await window.__db.updateUser(profileCache.user.loginId, { profile: p });
-        profileCache.user.profile = p;
+        await saveProfileFields(profileCache.user.loginId, fields);
         docSectionEditing[kind] = false;
         toast('Saved');
         kind === 'passport' ? renderPassportTab() : renderIqamaTab();
@@ -9635,10 +9970,8 @@ async function saveSalaryInfo(){
     premiumEligible: $('sal-premium').checked,
     components
   };
-  const p = Object.assign({}, profileCache.user.profile || {}, { salary });
   try{
-    await window.__db.updateUser(profileCache.user.loginId, { profile: p });
-    profileCache.user.profile = p;
+    await saveProfileFields(profileCache.user.loginId, { salary });
     toast('Salary info saved');
   }catch(err){ console.error(err); toast('Could not save — check your connection'); }
 }
@@ -9688,12 +10021,14 @@ async function loadLeavePage(){
   $('applyLeaveBtn').style.display = viewingOther ? 'none' : '';
   try{
     const all = await window.__db.listLeaveRequests();
-    if(!state.users || state.users.length === 0) state.users = await window.__db.listUsersOnce();
     leaveCache.mine = all.filter(r => r.employeeId === targetId);
     leaveCache.forMeToApprove = viewingOther ? [] : all.filter(r =>
       (r.status === 'pending_1st' && r.approver1 && r.approver1.loginId === state.user.loginId) ||
       (r.status === 'pending_2nd' && r.approver2 && r.approver2.loginId === state.user.loginId)
     );
+    // The whole people list is only needed to name/describe the requester on requests waiting for YOUR approval, or when an
+    // admin views someone else. An ordinary employee used to read every person here (one read each) for nothing.
+    if((viewingOther || leaveCache.forMeToApprove.length) && (!state.users || state.users.length === 0)) state.users = await window.__db.listUsersOnce();
     renderLeaveApprovalsForMe();
     renderMyLeaveList('all');
   }catch(err){ console.error(err); toast('Could not load leave requests'); }
@@ -10324,12 +10659,7 @@ function renderExpiringIqamas(withProfile, days){
 async function savePassportRenewalStatus(loginId, renewalStatus){
   if(!requireDb()) return;
   try{
-    const existing = state.users.find(x => x.loginId === loginId) || await window.__db.getUser(loginId);
-    const passport = Object.assign({}, (existing.profile||{}).passport || {}, { renewalStatus });
-    const profile = Object.assign({}, existing.profile || {}, { passport });
-    await window.__db.updateUser(loginId, { profile });
-    const cached = state.users.find(x => x.loginId === loginId);
-    if(cached) cached.profile = profile;
+    await saveProfileFields(loginId, { 'passport.renewalStatus': renewalStatus });
     toast('Updated');
     renderExpiringPassports(state.users.filter(u => u.role !== 'pending'), $('ceoExpiryDaysPassport').value);
   }catch(err){ console.error(err); toast('Could not save — check your connection'); }
@@ -10685,6 +11015,24 @@ function renderMachineDrillList(scopedMachines, range){
     if(r.shift === 'Day'){ b.dayStop += stop; b.dayPicks += picks; } else if(r.shift === 'Night'){ b.nightStop += stop; b.nightPicks += picks; }
   });
 
+  // Cross-check the operators assigned in Admin > Users against each machine's own "Shift run" setting in Admin >
+  // Machines. A machine set to run only one shift, but with an operator assigned (or real entries) for the other
+  // one, used to show dashes there and silently hide that shift's numbers. Now it gets a warning, and real numbers
+  // are never hidden. (Uses only data this screen already has loaded: no database read.)
+  const shiftClash = (m) => {
+    const b = perMachine[m.id] || { dayPicks:0, nightPicks:0, dayStop:0, nightStop:0 };
+    const out = [];
+    if(!machineRunsShift(m, 'Night') && (nightOpByMachine[m.id] || b.nightPicks > 0 || b.nightStop > 0))
+      out.push('Night: ' + (nightOpByMachine[m.id] ? nightOpByMachine[m.id] + ' is assigned' : 'entries exist') + ', but this machine is set to ' + (m.shiftRun || 'Both') + ' Only in Admin > Machines');
+    if(!machineRunsShift(m, 'Day') && (dayOpByMachine[m.id] || b.dayPicks > 0 || b.dayStop > 0))
+      out.push('Day: ' + (dayOpByMachine[m.id] ? dayOpByMachine[m.id] + ' is assigned' : 'entries exist') + ', but this machine is set to ' + (m.shiftRun || 'Both') + ' Only in Admin > Machines');
+    return out;
+  };
+  const flaggedMachines = list.filter(m => shiftClash(m).length);
+  const clashNote = flaggedMachines.length
+    ? `<div class="hint shiftClashNote" style="text-align:left; margin-left:0; margin-top:6px; color:var(--warn);">\u26A0 ${flaggedMachines.map(m => m.name).join(', ')}: an operator is assigned (or entries exist) for a shift this machine is set not to run. Change the machine's shift setting in Admin &gt; Machines so that shift is counted and reminded.</div>`
+    : '';
+
   // A real <table> on purpose — small, dense cells, easy to select and paste
   // straight into Excel, exactly like the Report page's table.
   box.innerHTML = `<div class="table-scroll"><table class="report-table">
@@ -10712,17 +11060,21 @@ function renderMachineDrillList(scopedMachines, range){
         // applicable.
         const runsDay = machineRunsShift(m, 'Day'), runsNight = machineRunsShift(m, 'Night');
         const dash = '<span style="color:var(--muted);">—</span>';
+        // Real numbers are never hidden: a shift this machine is not set to run still shows its picks / stop hours
+        // when there are any (only the expected-hours cell stays a dash, since the shift is not scheduled).
+        const showDay = runsDay || b.dayPicks > 0 || b.dayStop > 0, showNight = runsNight || b.nightPicks > 0 || b.nightStop > 0;
+        const clash = shiftClash(m);
         return `<tr>
-          <td>${m.id} &middot; ${m.name}</td>
+          <td${clash.length ? ' title="' + clash.join(' \u00B7 ').replace(/"/g, '&quot;') + '"' : ''}>${m.id} &middot; ${m.name}${clash.length ? ' <span style="color:var(--warn); font-weight:800;">\u26A0</span>' : ''}</td>
           <td title="${opTitle}">${dayFirst} / ${nightFirst}</td>
           <td class="${statusClass}">${statusLabel}</td>
-          <td>${runsDay ? expectedDayHrs.toFixed(1) : dash}</td><td>${runsDay ? b.dayStop.toFixed(1) : dash}</td><td>${runsDay ? b.dayPicks.toLocaleString() : dash}</td>
-          <td>${runsNight ? expectedNightHrs.toFixed(1) : dash}</td><td>${runsNight ? b.nightStop.toFixed(1) : dash}</td><td>${runsNight ? b.nightPicks.toLocaleString() : dash}</td>
+          <td>${runsDay ? expectedDayHrs.toFixed(1) : dash}</td><td>${showDay ? b.dayStop.toFixed(1) : dash}</td><td>${showDay ? b.dayPicks.toLocaleString() : dash}</td>
+          <td>${runsNight ? expectedNightHrs.toFixed(1) : dash}</td><td>${showNight ? b.nightStop.toFixed(1) : dash}</td><td>${showNight ? b.nightPicks.toLocaleString() : dash}</td>
         </tr>`;
       }).join('')}
     </tbody>
   </table></div>
-  <div class="hint" style="text-align:left; margin-left:0; margin-top:6px;">Day Shift Hrs = ${expectedDayHrs.toFixed(1)}h &middot; Night Shift Hrs = ${expectedNightHrs.toFixed(1)}h across ${workingDays} working day${workingDays===1?'':'s'} in this range (Fridays/holidays from Admin &gt; Holidays excluded; uses whichever shift hours were in effect on each date).</div>`;
+  <div class="hint" style="text-align:left; margin-left:0; margin-top:6px;">Day Shift Hrs = ${expectedDayHrs.toFixed(1)}h &middot; Night Shift Hrs = ${expectedNightHrs.toFixed(1)}h across ${workingDays} working day${workingDays===1?'':'s'} in this range (Fridays/holidays from Admin &gt; Holidays excluded; uses whichever shift hours were in effect on each date).</div>${clashNote}`;
 }
 
 // Month-by-month production in m², for the "Last 12 Months" section.
