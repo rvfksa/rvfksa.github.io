@@ -1388,6 +1388,54 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
   .stat-card .num{ font-family:'JetBrains Mono', monospace; font-size: 18px; font-weight:700; color: var(--amber); }
   .stat-card .lbl{ font-size: 9.5px; color: var(--muted); text-transform:uppercase; letter-spacing:0.05em; margin-top:2px; }
 
+  .asumTop{ display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-bottom:12px; }
+  .asumActive{ display:flex; flex-wrap:wrap; gap:6px; margin:-4px 0 12px; }
+  .asumActive:empty{ display:none; }
+  .iconBtn{ position:relative; width:34px; height:34px; flex:none; border-radius:11px; border:1px solid rgba(15,23,42,.10); background:#fff; color:var(--muted); display:inline-flex; align-items:center; justify-content:center; cursor:pointer; padding:0; transition:background .15s, color .15s, border-color .15s; }
+  .iconBtn.on{ background:var(--amber-soft); color:var(--amber); border-color:var(--amber-dim); }
+  .iconBadge{ position:absolute; top:-6px; right:-6px; min-width:17px; height:17px; border-radius:9px; background:var(--amber); color:#fff; font-size:10px; font-weight:700; display:flex; align-items:center; justify-content:center; padding:0 4px; box-shadow:0 0 0 2px #fff; }
+  .pillBtn{ height:34px; flex:none; padding:0 13px; border-radius:11px; border:1px solid rgba(15,23,42,.10); background:#fff; color:var(--muted); font:inherit; font-size:11.5px; font-weight:600; display:inline-flex; align-items:center; gap:6px; cursor:pointer; transition:background .15s, color .15s, border-color .15s; }
+  .pillBtn:hover, .iconBtn:hover{ background:var(--amber-soft); border-color:var(--amber-dim); color:var(--amber); }
+  .asumBadge{ display:inline-flex; align-items:center; border-radius:999px; padding:3px 10px; font-size:11px; font-weight:600; line-height:1.3; white-space:nowrap; }
+  .asumBadge.b-op{ background:var(--acc-blue-soft); color:#1e40af; }
+  .asumBadge.b-mc{ background:var(--lcd-dim); color:#166534; }
+  .asumGrid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(min(100%,440px),1fr)); gap:10px; align-items:start; }
+  .asumGrid > details.asumSup{ margin-bottom:0 !important; }
+  @media (max-width:560px){ .asumTiles{ grid-template-columns:repeat(6,1fr) !important; } .asumTiles > .asumTile{ grid-column:span 2; } .asumTiles > .asumTile:nth-child(n+4){ grid-column:span 3; } }
+  .asumNm{ display:inline-block; white-space:nowrap; margin:0 14px 0 0; line-height:1.5; }
+  .asumNm:last-child{ margin-right:0; }
+  details.asumSup{ padding:0; }
+  details.asumSup > summary{ list-style:none; padding:14px 16px; display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; cursor:pointer; }
+  details.asumSup > summary::-webkit-details-marker{ display:none; }
+  details.asumSup .asumChev{ color:var(--muted); transition:transform .2s; flex:none; }
+  details.asumSup[open] .asumChev{ transform:rotate(180deg); }
+  details.asumSup > .table-scroll, details.asumSup > .hint{ margin:0 12px 12px; }
+  .fChip{ display:inline-flex; align-items:center; gap:4px; background:var(--amber-soft); color:var(--amber); border-radius:999px; padding:3px 4px 3px 10px; font-size:11px; font-weight:600; }
+  .fChip button{ border:0; background:transparent; color:inherit; font-size:14px; line-height:1; width:18px; height:18px; border-radius:50%; cursor:pointer; padding:0; }
+  .fChip button:hover{ background:rgba(79,70,229,.15); }
+  .fPanel{ background:#fff; border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); padding:14px; margin-bottom:14px; }
+  .fHead{ display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:12px; }
+  .fTitle{ display:inline-flex; align-items:center; gap:7px; font-family:'Oswald',sans-serif; font-weight:600; font-size:13px; letter-spacing:.06em; text-transform:uppercase; color:var(--amber); }
+  .fClear{ display:inline-flex; align-items:center; gap:5px; border:0; background:transparent; color:var(--muted); font:inherit; font-size:11.5px; font-weight:600; cursor:pointer; padding:4px 6px; border-radius:8px; }
+  .fClear:hover{ background:var(--amber-soft); color:var(--amber); }
+  .fGrid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; }
+  .fItem label{ display:flex; align-items:center; gap:5px; font-size:9.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); font-weight:600; margin:0 0 5px; }
+  .fItem select{ width:100%; }
+  .fItem.fWide{ grid-column:1/-1; }
+  @media (max-width:560px){ .fGrid > .fItem:last-child:nth-child(odd), .fGrid > .fItem:nth-last-child(2):nth-child(odd){ grid-column:1/-1; } }
+  .fHint{ font-size:11px; color:var(--muted); margin-top:12px; padding-top:10px; border-top:1px solid var(--line); }
+  .fPanel .seg{ margin-bottom:0; background:var(--panel-2); }
+  .seg button{ display:flex; align-items:center; justify-content:center; gap:6px; }
+  .seg{ display:flex; gap:2px; background:var(--panel-2); border-radius:12px; padding:3px; margin-bottom:12px; }
+  .seg button{ flex:1; border:0; background:transparent; padding:8px 4px; border-radius:9px; font:inherit; font-size:12px; font-weight:600; color:var(--muted); cursor:pointer; }
+  .seg button.active{ background:#fff; color:var(--text-strong); box-shadow:0 1px 3px rgba(15,23,42,.14); }
+  .pdfSheet *{ font-family:'Inter', sans-serif; }
+  .pdfSheet table.report-table{ font-size:11px; }
+  .pdfSheet table.report-table th{ position:static !important; }
+  .pdfSheet table.report-table td{ white-space:normal; word-break:break-word; padding:7px 6px; }
+  .pdfSheet .table-scroll{ box-shadow:none; overflow:visible; }
+  .pdfSheet .asumChip{ white-space:normal; }
+  .asumChip{ display:inline-block; background:var(--panel-2); border-radius:6px; padding:1px 6px; margin:1px 3px 1px 0; font-size:11px; white-space:nowrap; }
   table.report-table{ width:100%; border-collapse: collapse; font-size: 12px; }
   table.report-table th{ text-align:left; padding: 9px 7px; color: var(--muted); text-transform:uppercase; font-size: 9.5px; letter-spacing:0.05em; border-bottom: 1px solid var(--line); position: sticky; top:0; background: var(--panel-2); }
   table.report-table td{ padding: 10px 7px; border-bottom: 1px solid var(--line); white-space:nowrap; color: var(--text); }
@@ -1858,6 +1906,8 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
 
       <div class="auth-pane" id="admin-assign">
         <div id="assignChecks"></div>
+        <h2 style="margin-top:16px;">Summary: who runs what</h2>
+        <div class="card" style="margin-bottom:0;"><div id="assignSummary"></div></div>
         <div id="assignViewBar" style="display:flex; gap:8px; margin:12px 0;"></div>
         <div id="assignBody"></div>
         <div id="assignSaveBar"></div>
@@ -2188,11 +2238,28 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
         <div class="hint">Pick both dates, then press Show. Shows today and yesterday by default — clear both fields to see every entry ever logged instead.</div>
       </div>
 
-      <div class="report-toolbar">
-        <button class="btn btn-ghost" id="refreshReportBtn">Refresh</button>
-        <button class="btn btn-primary" id="exportBtn">Export to Excel</button>
-        <button class="btn btn-ghost" id="reviewUnusualBtn" style="display:none;">Review Unusual Entries (All Machines)</button>
-        <button class="btn btn-ghost" id="addManualEntryBtn" style="display:none;">Add Manual Entry</button>
+      <div class="asumTop" style="margin-bottom:10px;">
+        <button type="button" class="iconBtn" id="rfToggle" title="Filters" aria-label="Filters" aria-expanded="false" style="display:none;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg><span class="iconBadge" id="rfBadge" style="display:none;"></span></button>
+        <span style="flex:1;"></span>
+        <button type="button" class="iconBtn" id="refreshReportBtn" title="Refresh" aria-label="Refresh"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.5 15a9 9 0 11-2.1-9.4L23 10"/></svg></button>
+        <button type="button" class="iconBtn" id="reviewUnusualBtn" style="display:none;" title="Review unusual entries (all machines)" aria-label="Review unusual entries"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></button>
+        <button type="button" class="iconBtn" id="addManualEntryBtn" style="display:none;" title="Add a manual entry" aria-label="Add manual entry"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+        <button type="button" class="pillBtn" id="exportBtn" title="Download as Excel" aria-label="Download Excel"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Excel</button>
+        <button type="button" class="pillBtn" id="exportPdfBtn" title="Download as PDF" aria-label="Download PDF"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>PDF</button>
+      </div>
+      <div class="asumActive" id="rfActive"></div>
+      <div class="fPanel" id="reportFilterBox" style="display:none;">
+        <div class="fHead"><span class="fTitle"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>Filters</span><button type="button" class="fClear" id="rfClear"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>Clear all</button></div>
+        <div class="fGrid">
+          <div class="fItem" id="rfWDept"><label><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 22v-4h6v4M8 6h.01M12 6h.01M16 6h.01M8 10h.01M12 10h.01M16 10h.01M8 14h.01M12 14h.01M16 14h.01"/></svg>Department</label><select id="rfDept"></select></div>
+          <div class="fItem"><label><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>Shift</label><select id="rfShift"></select></div>
+          <div class="fItem" id="rfWSup"><label><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><polyline points="16 11 18 13 22 9"/></svg>Supervisor</label><select id="rfSup"></select></div>
+          <div class="fItem" id="rfWOp"><label><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Operator</label><select id="rfOp"></select></div>
+          <div class="fItem"><label><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 14h3M1 9h3M1 14h3"/></svg>Machine</label><select id="rfMach"></select></div>
+        </div>
+        <div class="fItem" style="margin-top:12px;"><label><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>Entries</label>
+          <div class="seg" id="rfView"><button type="button" data-v="separate"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>Starting &amp; Ending</button><button type="button" data-v="combined"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><line x1="3" y1="12" x2="21" y2="12" stroke-dasharray="0"/></svg>One row each</button></div></div>
+        <div class="fHint" id="rfHint"></div>
       </div>
 
       <div id="manualEntryPanel" class="card" style="display:none; margin-bottom:14px;"></div>
@@ -2475,6 +2542,10 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
         <div id="prod12Month" style="display:none; margin-top:10px;"></div>
       </div>
       <p class="sub" style="margin-top:2px; margin-bottom:20px;">Tap the filter icon to change date, department, or machine. Tap Total/Running/Stopped for the list.</p>
+
+      <h2>Team &amp; Machine Summary</h2>
+      <p class="sub" style="margin:-4px 0 10px;">Who runs which machine, and who answers to which supervisor. Tap a number or a tab to see the details.</p>
+      <div class="card" style="margin-bottom:22px;"><div id="asumDash"></div></div>
 
       <!-- ============ BOX 3: PERFORMANCE & STATISTICS (own filter) ============ -->
       <h2 style="display:flex; align-items:center; justify-content:space-between;">
@@ -6732,6 +6803,8 @@ function openRowActionsMenu(id){
       ${reportReview && row.reviewReason ? `<div class="card" style="margin-bottom:14px; font-size:13px;">${row.reviewReason}</div>` : ''}
       ${reportReview && row.reviewReason && state.user.role === 'admin' ? (row.reviewOk ? `<button class="btn btn-ghost" id="rowActionRemoveOk">Remove OK mark</button>` : `<button class="btn btn-ghost" id="rowActionMarkOk">Mark as OK \u2014 not unusual</button>`) : ''}
       ${row.photoDataUrl ? `<button class="btn btn-ghost" id="rowActionPhoto">View Photo</button>` : ''}
+      ${reportPairStart[id] && reportPairStart[id].photoDataUrl ? `<button class="btn btn-ghost" id="rowActionStartPhoto">View Starting Photo</button>` : ''}
+      ${reportPairStart[id] ? `<button class="btn btn-ghost" id="rowActionStartEdit">Edit Starting Entry (${reportPairStart[id].reading})</button>` : ''}
       <button class="btn btn-ghost" id="rowActionResetPoint">${row.resetPoint ? 'Remove Reset Point' : 'Mark as Meter Reset Point'}</button>
       <button class="btn btn-ghost" id="rowActionEdit">Edit Entry</button>
       <button class="btn btn-danger" id="rowActionDelete">Delete Entry</button>
@@ -6741,6 +6814,10 @@ function openRowActionsMenu(id){
   document.body.appendChild(backdrop);
   const photoBtn = backdrop.querySelector('#rowActionPhoto');
   if(photoBtn) photoBtn.addEventListener('click', () => { backdrop.remove(); openPhotoRef(row.photoDataUrl); });
+  const startPhotoBtn = backdrop.querySelector('#rowActionStartPhoto');
+  if(startPhotoBtn) startPhotoBtn.addEventListener('click', () => { backdrop.remove(); openPhotoRef(reportPairStart[id].photoDataUrl); });
+  const startEditBtn = backdrop.querySelector('#rowActionStartEdit');
+  if(startEditBtn) startEditBtn.addEventListener('click', () => { const sid = reportPairStart[id].id; backdrop.remove(); openReportEditPanel(sid); });
   backdrop.querySelector('#rowActionResetPoint').addEventListener('click', () => { backdrop.remove(); toggleResetPoint(id, row.resetPoint); });
   backdrop.querySelector('#rowActionEdit').addEventListener('click', () => { backdrop.remove(); openReportEditPanel(id); });
   backdrop.querySelector('#rowActionDelete').addEventListener('click', () => { backdrop.remove(); deleteReportRow(id); });
@@ -7133,8 +7210,11 @@ function drawReportTable(rows){
     }
     const diffClass = (typeof r.diff === 'number') ? (r.diff >= 0 ? 'diff-pos' : 'diff-neg') : '';
     const shiftLetter = r.shift === 'Day' ? 'D' : 'N';
-    const photoTypeLetter = r.photoType === 'Starting' ? 'S' : 'E';
-    const shiftTitle = r.shift + ' shift \u2014 ' + r.photoType + ' Photo';
+    const startMismatch = !!(r.combined && typeof r.startDiff === 'number' && r.startDiff !== 0 && !r.resetApplied);
+    const photoTypeLetter = r.combined ? (startMismatch ? '<b style="color:var(--warn);">SE</b>' : 'SE') : (r.photoType === 'Starting' ? 'S' : 'E');
+    const shiftTitle = r.combined
+      ? r.shift + ' shift \u2014 Starting and Ending photos in one row. Starting reading ' + r.startReading + (startMismatch ? ' (does NOT match the last Ending reading)' : ' (matches)')
+      : r.shift + ' shift \u2014 ' + r.photoType + ' Photo';
 
     let flagCell = '';
     if(showFlags){
@@ -7169,7 +7249,7 @@ function drawReportTable(rows){
         <td title="${r.reason}">${reasonNum}</td>
         <td title="${byTitle}">${firstName}</td>
         <td title="${statusTitle}">${statusIcon}</td>
-        ${isAdmin ? `<td style="text-align:center;"><button class="mini-icon-btn rowMenuBtn${notes.length ? ' has-note' : ''}" data-id="${r.id}" title="${notes.length ? 'Has a note: ' + noteTitle : 'More'}"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></button></td>` : (notes.length ? `<td><span title="${noteTitle}">${ICON_NOTE}</span></td>` : '<td></td>')}
+        ${isAdmin ? `<td style="text-align:center;"><button class="mini-icon-btn rowMenuBtn${notes.length ? ' has-note' : ''}" data-id="${r.id}" title="${notes.length ? 'Has a note: ' + noteTitle : 'More'}"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></button></td>` : (notes.length || r.photoDataUrl || (r.combined && r.startPhoto) ? `<td style="width:auto; max-width:none; white-space:nowrap;">${r.combined && r.startPhoto ? `<button class="mini-icon-btn rowPhotoBtn" data-id="${r.startId}" title="View Starting photo" aria-label="View Starting photo"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg></button>` : ''}${r.photoDataUrl ? `<button class="mini-icon-btn rowPhotoBtn" data-id="${r.id}" title="${r.combined ? 'View Ending photo' : 'View photo'}" aria-label="View photo"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg></button>` : ''}${notes.length ? `<span title="${noteTitle}">${ICON_NOTE}</span>` : ''}</td>` : '<td></td>')}
       </tr>`;
     // Only in the unusual-entries view: why this row was picked, right under it.
     if(r.reviewReason){
@@ -7180,6 +7260,12 @@ function drawReportTable(rows){
   body.innerHTML = html;
   if(isAdmin){
     body.querySelectorAll('.rowMenuBtn').forEach(b => b.addEventListener('click', () => openRowActionsMenu(b.dataset.id)));
+  } else {
+    // everyone else can only look at the photo (nothing to edit); a stored photo costs one read, only when tapped
+    body.querySelectorAll('.rowPhotoBtn').forEach(b => b.addEventListener('click', () => {
+      const row = lastReportRows.find(x => x.id === b.dataset.id);
+      if(row && row.photoDataUrl) openPhotoRef(row.photoDataUrl);
+    }));
   }
 }
 
@@ -7215,6 +7301,7 @@ async function loadReport(){
       $('statEntries').textContent = '0'; $('statMachines').textContent = '0'; $('statToday').textContent = '0';
       body.innerHTML = '<div class="empty-state">No readings logged yet.<br>Submit a reading to see it here.</div>';
       lastReportRows = [];
+      reportAllRows = []; renderReportFilterBox();
       return;
     }
 
@@ -7230,7 +7317,9 @@ async function loadReport(){
       if(so !== 0) return so;
       return a.machineNum - b.machineNum;
     });
-    lastReportRows = rows;
+    reportAllRows = rows;
+    const shownRows = reportFilterActive() ? applyReportFilter(rows) : rows;
+    lastReportRows = shownRows;
 
     const today = new Date();
     const todayStr = today.getFullYear() + '-' + pad(today.getMonth()+1) + '-' + pad(today.getDate());
@@ -7238,9 +7327,144 @@ async function loadReport(){
     $('statMachines').textContent = new Set(records.map(r => r.machine)).size;
     $('statToday').textContent = records.filter(r => r.date === todayStr).length;
 
-    drawReportTable(rows);
+    drawReportFiltered(shownRows);
+    renderReportFilterBox();
+    ensureReportFilterUsers();
   }catch(err){ console.error(err); body.innerHTML = '<div class="empty-state">Could not load the log. Pull to refresh and try again.</div>'; }
 }
+
+/* ---------- Report filter: department / shift / supervisor / operator / machine ----------
+   Works only on the rows already on screen (no database reads). The supervisor list needs the people list, which the app
+   loads once per session anyway; it is fetched in the background only when it is not there yet. Department means the
+   department of the machine the entry is for. */
+let reportAllRows = [];
+let reportFilterOpen = false;
+let reportPairStart = {};   // Ending row id -> its Starting row, while "One row each" is on
+let reportView = 'separate';
+try{ if(localStorage.getItem('rvfReportView') === 'combined') reportView = 'combined'; }catch(e){}
+function setReportView(v){ reportView = v; try{ localStorage.setItem('rvfReportView', v); }catch(e){} }
+// One row per machine, date and shift: when that shift has exactly one Starting and one Ending entry they become a single row
+// (the Ending's numbers, plus a marker and both photos). Anything else stays as separate rows. Pure arithmetic on rows already here.
+function combineReportRows(rows){
+  reportPairStart = {};
+  const key = (r) => r.machineId + '|' + r.date + '|' + r.shift;
+  const groups = new Map();
+  rows.forEach(r => { const k = key(r); if(!groups.has(k)) groups.set(k, []); groups.get(k).push(r); });
+  const seen = new Set(), out = [];
+  rows.forEach(r => {
+    const k = key(r); if(seen.has(k)) return; seen.add(k);
+    const g = groups.get(k), st = g.filter(x => x.photoType === 'Starting'), en = g.filter(x => x.photoType !== 'Starting');
+    if(st.length === 1 && en.length === 1){
+      const e = en[0], sr = st[0];
+      reportPairStart[e.id] = sr;
+      out.push(Object.assign({}, e, { combined:true, startId:sr.id, startReading:sr.reading, startDiff:sr.diff, startPhoto:sr.photoDataUrl || null }));
+    } else g.forEach(x => out.push(x));
+  });
+  return out;
+}
+function reportDisplayRows(rows){ return (reportView === 'combined' && !reportReview) ? combineReportRows(rows) : rows; }
+const reportFilter = { dept:'', shift:'', sup:'', op:'', mach:'' };
+function reportFilterActive(){ return !!(reportFilter.dept || reportFilter.shift || reportFilter.sup || reportFilter.op || reportFilter.mach); }
+function reportOperatorsOf(supId){
+  const set = new Set();
+  (state.users || []).forEach(u => { const a = u.profile && u.profile.directSupervisor; if(a && a.loginId === supId) set.add(u.loginId); });
+  return set;
+}
+function reportMachineDept(mid){ const m = state.machines.find(x => String(x.id) === String(mid)); return (m && m.department) || ''; }
+function applyReportFilter(rows){
+  const ops = reportFilter.sup ? reportOperatorsOf(reportFilter.sup) : null;
+  return rows.filter(r => (!reportFilter.op || r.enteredById === reportFilter.op) && (!reportFilter.mach || String(r.machineId) === reportFilter.mach) && (!ops || ops.has(r.enteredById)) &&
+    (!reportFilter.shift || r.shift === reportFilter.shift) && (!reportFilter.dept || reportMachineDept(r.machineId) === reportFilter.dept));
+}
+function drawReportFiltered(rows){
+  drawReportTable(reportDisplayRows(rows));
+  if(!rows.length && reportFilterActive()) $('reportBody').innerHTML = '<div class="empty-state">No entries match these filters.<br>Open the filter button and press Clear all to see everything again.</div>';
+}
+function reportFilterLabels(){
+  const out = [];
+  if(reportFilter.dept) out.push(['dept', 'Dept: ' + reportFilter.dept]);
+  if(reportFilter.shift) out.push(['shift', reportFilter.shift + ' shift']);
+  if(reportFilter.sup){ const u = (state.users || []).find(x => x.loginId === reportFilter.sup); out.push(['sup', 'Supervisor: ' + (u ? u.name : reportFilter.sup)]); }
+  if(reportFilter.op){ const r = reportAllRows.find(x => x.enteredById === reportFilter.op); out.push(['op', 'Operator: ' + (r ? r.enteredBy : reportFilter.op)]); }
+  if(reportFilter.mach) out.push(['mach', 'Machine: ' + machineName(reportFilter.mach)]);
+  if(reportView === 'combined') out.push(['view', 'One row each']);
+  return out;
+}
+function reportFilterText(){ return reportFilterLabels().map(l => l[1]).join(' · '); }
+function renderReportFilterBox(){
+  const box = $('reportFilterBox'), tg = $('rfToggle'); if(!box || !tg) return;
+  if(reportReview || !reportAllRows.length){ box.style.display = 'none'; tg.style.display = 'none'; $('rfActive').innerHTML = ''; return; }
+  const esc = assignEsc, isOperator = state.user && state.user.role === 'operator';
+  const opMap = {}; reportAllRows.forEach(r => { if(r.enteredById && r.enteredById !== '—') opMap[r.enteredById] = r.enteredBy; });
+  const opIds = Object.keys(opMap).sort((a, b) => opMap[a].localeCompare(opMap[b]));
+  const machMap = {}; reportAllRows.forEach(r => { machMap[r.machineId] = r.machine; });
+  const machIds = Object.keys(machMap).sort((a, b) => (Number(a) || 0) - (Number(b) || 0));
+  const deptList = Array.from(new Set(machIds.map(reportMachineDept).filter(Boolean))).sort();
+  const usersReady = !!(state.users && state.users.length);
+  const rowOps = new Set(reportAllRows.map(r => r.enteredById));
+  const supList = usersReady ? assignSupervisors().slice().sort(assignByName).filter(sp => Array.from(reportOperatorsOf(sp.loginId)).some(id => rowOps.has(id))) : [];
+  if(reportFilter.op && !opMap[reportFilter.op]) reportFilter.op = '';
+  if(reportFilter.mach && !machMap[reportFilter.mach]) reportFilter.mach = '';
+  if(reportFilter.dept && !deptList.includes(reportFilter.dept)) reportFilter.dept = '';
+  if(reportFilter.sup && usersReady && !supList.some(sp => sp.loginId === reportFilter.sup)) reportFilter.sup = '';
+  $('rfDept').innerHTML = '<option value="">All departments</option>' + deptList.map(d => `<option value="${esc(d)}" ${reportFilter.dept === d ? 'selected' : ''}>${esc(d)}</option>`).join('');
+  $('rfShift').innerHTML = `<option value="">Day &amp; Night</option><option value="Day" ${reportFilter.shift === 'Day' ? 'selected' : ''}>Day</option><option value="Night" ${reportFilter.shift === 'Night' ? 'selected' : ''}>Night</option>`;
+  $('rfSup').innerHTML = `<option value="">${usersReady ? 'All supervisors' : 'Supervisors loading…'}</option>` + supList.map(sp => `<option value="${esc(sp.loginId)}" ${reportFilter.sup === sp.loginId ? 'selected' : ''}>${esc(sp.name)}</option>`).join('');
+  $('rfOp').innerHTML = '<option value="">All operators</option>' + opIds.map(id => `<option value="${esc(id)}" ${reportFilter.op === id ? 'selected' : ''}>${esc(opMap[id])}</option>`).join('');
+  $('rfMach').innerHTML = '<option value="">All machines</option>' + machIds.map(id => `<option value="${esc(id)}" ${reportFilter.mach === id ? 'selected' : ''}>${esc(machMap[id])}</option>`).join('');
+  // an operator only ever sees their own entries, so only shift and machine are useful to them
+  ['rfWDept', 'rfWSup', 'rfWOp'].forEach(id => { $(id).style.display = isOperator ? 'none' : ''; });
+  const labels = reportFilterLabels();
+  $('rfActive').innerHTML = labels.map(l => `<span class="fChip">${esc(l[1])}<button type="button" class="rfChipX" data-f="${l[0]}" aria-label="Remove filter">&times;</button></span>`).join('');
+  $('rfActive').querySelectorAll('.rfChipX').forEach(x => x.addEventListener('click', () => { if(x.dataset.f === 'view') setReportView('separate'); else reportFilter[x.dataset.f] = ''; applyReportFilterNow(); }));
+  $('rfBadge').style.display = labels.length ? '' : 'none'; $('rfBadge').textContent = labels.length;
+  tg.style.display = ''; tg.classList.toggle('on', reportFilterOpen || labels.length > 0); tg.setAttribute('aria-expanded', reportFilterOpen ? 'true' : 'false');
+  $('rfClear').style.visibility = labels.length ? 'visible' : 'hidden';
+  $('rfHint').textContent = (labels.length ? `Showing ${lastReportRows.length} of ${reportAllRows.length} entries. ` : '') + 'Excel lists every entry shown; PDF follows the view you chose. Department = the machine\u2019s department.';
+  $('rfView').querySelectorAll('button').forEach(bt => bt.classList.toggle('active', bt.dataset.v === reportView));
+  box.style.display = reportFilterOpen ? 'block' : 'none';
+}
+let reportUsersLoading = false;
+function ensureReportFilterUsers(){
+  if(reportUsersLoading || !state.user || state.user.role === 'operator' || (state.users && state.users.length)) return;
+  reportUsersLoading = true;
+  window.__db.listUsersOnce().then(u => { state.users = u; }).catch(err => console.error(err)).finally(() => { reportUsersLoading = false; renderReportFilterBox(); });
+}
+function applyReportFilterNow(){
+  if(reportReview) return;
+  lastReportRows = reportFilterActive() ? applyReportFilter(reportAllRows) : reportAllRows;
+  drawReportFiltered(lastReportRows);
+  renderReportFilterBox();
+}
+function onReportFilterChange(){
+  reportFilter.dept = $('rfDept').value; reportFilter.shift = $('rfShift').value; reportFilter.sup = $('rfSup').value; reportFilter.op = $('rfOp').value; reportFilter.mach = $('rfMach').value;
+  applyReportFilterNow();
+}
+['rfDept', 'rfShift', 'rfSup', 'rfOp', 'rfMach'].forEach(id => $(id).addEventListener('change', onReportFilterChange));
+$('rfClear').addEventListener('click', () => { reportFilter.dept = reportFilter.shift = reportFilter.sup = reportFilter.op = reportFilter.mach = ''; setReportView('separate'); applyReportFilterNow(); });
+$('rfView').querySelectorAll('button').forEach(bt => bt.addEventListener('click', () => { setReportView(bt.dataset.v); applyReportFilterNow(); }));
+$('rfToggle').addEventListener('click', () => { reportFilterOpen = !reportFilterOpen; renderReportFilterBox(); });
+
+$('exportPdfBtn').addEventListener('click', async () => {
+  if(!lastReportRows || lastReportRows.length === 0){ toast('Nothing to download yet'); return; }
+  const rows = reportDisplayRows(lastReportRows), esc = assignEsc;
+  const diffTxt = (r) => typeof r.diff === 'number' ? Number(r.diff).toLocaleString() : '\u2014';
+  const statusCell = (r) => r.status === 'approved' ? '<span class="badge badge-approved">Approved</span>' : r.status === 'rejected' ? '<span class="badge badge-rejected">Rejected</span>' : '<span class="badge badge-pending">Pending</span>';
+  const head = '<tr><th>Machine</th><th>Shift</th><th>Prev</th><th>New</th><th>Diff</th><th>Stop</th><th>Reason</th><th>By</th><th>Status</th></tr>';
+  const items = []; let lastDate = null;
+  rows.forEach(r => {
+    if(r.date !== lastDate){ lastDate = r.date; items.push(`<tr class="date-group-row"><td colspan="9">${esc(fmtDate(r.date))}</td></tr>`); }
+    const diffClass = (typeof r.diff === 'number') ? (r.diff >= 0 ? 'diff-pos' : 'diff-neg') : '';
+    items.push(`<tr><td>${esc(r.machineId ? r.machineId + ' ' : '')}${esc(r.machine)}</td><td>${r.shift === 'Day' ? 'Day' : 'Night'} ${r.combined ? 'S+E' : (r.photoType === 'Starting' ? 'S' : 'E')}${r.combined && typeof r.startDiff === 'number' && r.startDiff !== 0 && !r.resetApplied ? '<div style="color:#92400e; font-size:9px;">start ' + esc(r.startReading) + '</div>' : ''}</td><td>${esc(r.prevReading)}</td><td>${esc(r.reading)}</td>
+      <td class="${diffClass}">${esc(diffTxt(r))}${r.resetApplied ? ' <span style="color:#64748b; font-size:9px;">reset</span>' : ''}</td><td>${esc(r.stopTime)}</td><td>${esc(r.reason)}</td><td>${esc(r.enteredBy)}</td><td>${statusCell(r)}</td></tr>`);
+  });
+  const from = $('reportFromDate').value, to = $('reportToDate').value;
+  const range = (from || to) ? ('Dates: ' + (from ? fmtDate(from) : 'start') + ' \u2192 ' + (to ? fmtDate(to) : 'today')) : 'All dates';
+  const blocks = [rvfPdfHeader(reportReview ? 'Unusual Entries Review' : 'Machine Report', [range + ' \u00B7 ' + rows.length + ' entries \u00B7 ' + rvfNowText(), reportReview ? '' : reportFilterText(), reportView === 'combined' && !reportReview ? 'S+E = Starting and Ending in one row (numbers are the Ending\u2019s)' : 'S = Starting photo, E = Ending photo'])];
+  rvfTableBlocks(head, items, 30, 'pdfReportTable').forEach(b => blocks.push(b));
+  toast('Making the PDF\u2026');
+  await rvfMakePdf(blocks, 'machine-report-' + rvfDateStamp() + '.pdf');
+});
 $('refreshReportBtn').addEventListener('click', () => {
   if(window.__db.invalidateReadings) window.__db.invalidateReadings();   // Refresh always re-reads
   if(reportReview){ loadUnusualEntries(); return; }   // in the unusual-entries view, Refresh re-checks everything
@@ -7404,6 +7628,7 @@ function exitReportReview(){
 function renderReview(){
   const rv = reportReview;
   if(!rv) return;
+  if($('reportFilterBox')) $('reportFilterBox').style.display = 'none';   // filters belong to the normal Report
   const esc = (t) => String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   const all = findUnusualRows(rv.records, rv.from, rv.to);
   const okCount = all.filter(r => r.reviewOk).length;
@@ -8475,11 +8700,337 @@ function assignOpOptions(machine, slot, selectedId){
   const opt = (o) => `<option value="${assignEsc(o.loginId)}" ${o.loginId === selectedId ? 'selected' : ''}>${assignEsc(o.name)} (${assignEsc(o.loginId)})</option>`;
   let html = '<option value="">— nobody —</option>';
   if(same.length) html += `<optgroup label="${assignEsc(machine.department || 'Same department')}">${same.map(opt).join('')}</optgroup>`;
-  if(other.length) html += `<optgroup label="Other departments">${other.map(opt).join('')}</optgroup>`;
+  // everyone else is grouped under their own real department name (SSTM, ...), so it is clear where each person belongs
+  const otherDepts = Array.from(new Set(other.map(o => o.department || ''))).sort((a, b) => a.localeCompare(b));
+  otherDepts.forEach(d => { html += `<optgroup label="${assignEsc(d || 'No department set')}">${other.filter(o => (o.department || '') === d).map(opt).join('')}</optgroup>`; });
   if(selectedId && !ops.some(o => o.loginId === selectedId)){ const o = assignUserById(selectedId); html += `<option value="${assignEsc(selectedId)}" selected>${assignEsc(o ? o.name : selectedId)} (both shifts)</option>`; }
   return html;
 }
 function assignShortList(names, max){ return names.length <= max ? names.join(', ') : names.slice(0, max).join(', ') + ' and ' + (names.length - max) + ' more'; }
+
+
+/* ---------- Team & Machine Summary (Dashboard + Admin > Assign) ----------
+   One report, drawn from the people and machines the app has already loaded: it reads nothing and writes nothing.
+   On the Dashboard it shows what is saved. On Admin > Assign it also counts the changes waiting to be saved, so it
+   updates the moment something is picked, and shows the saved numbers again after Save changes. */
+const asumState = {};
+function asumGet(key){ return asumState[key] || (asumState[key] = { view:'supervisor', fDept:'', fShift:'', fSup:'', fOp:'', fMach:'', gap:false, panel:false, open:new Set() }); }
+function asumBuild(staged){
+  const machinesOf = (u) => staged ? assignMachinesOf(u) : new Set(u.assignedMachines || []);
+  const approverOf = (u) => staged ? assignApproverOf(u) : assignOriginalApprover(u);
+  const known = new Set(state.machines.map(m => String(m.id)));
+  const ops = assignOperators().map(u => {
+    const a = approverOf(u), sp = a ? assignUserById(a.loginId) : null;
+    return { id:u.loginId, name:u.name || u.loginId, dept:u.department || '', shift:(u.assignedShift === 'Day' || u.assignedShift === 'Night') ? u.assignedShift : 'Both',
+      machines:Array.from(machinesOf(u)).filter(mid => known.has(String(mid))).sort((x, y) => (Number(x) || 0) - (Number(y) || 0)),
+      sup: a ? { id:a.loginId, name:(sp && sp.name) || a.name || a.loginId, current: !!(sp && sp.role === 'supervisor' && !isExitedEmployee(sp)) } : null };
+  }).sort((a, b) => a.name.localeCompare(b.name));
+  const sups = assignSupervisors().slice().sort(assignByName).map(s => ({ id:s.loginId, name:s.name || s.loginId, dept:s.department || '', shift:s.assignedShift || '' }));
+  // who holds each machine on each shift: the same rule the Dashboard and the Assign tab already use
+  const day = {}, night = {};
+  ops.forEach(o => o.machines.forEach(mid => {
+    if(o.shift === 'Night') (night[mid] = night[mid] || []).push(o);
+    else if(o.shift === 'Day') (day[mid] = day[mid] || []).push(o);
+    else if(!(day[mid] || []).length) (day[mid] = day[mid] || []).push(o);
+    else (night[mid] = night[mid] || []).push(o);
+  }));
+  const machines = state.machines.filter(m => !(m.status === 'stopped' && m.stopType === 'permanent')).map(m => {
+    const d = day[m.id] || [], n = night[m.id] || [];
+    const gapDay = machineRunsShift(m, 'Day') && !d.length, gapNight = machineRunsShift(m, 'Night') && !n.length;
+    return { m, d, n, gapDay, gapNight, gap: gapDay || gapNight };
+  });
+  return { ops, sups, machines, day, night };
+}
+function asumFilterFn(st){
+  return (o) => (!st.fOp || o.id === st.fOp) && (!st.fMach || o.machines.some(mid => String(mid) === st.fMach)) &&
+    (!st.fSup || (st.fSup === '__none__' ? !o.sup : (o.sup && o.sup.id === st.fSup)));
+}
+function asumMachineRows(D, st, opOk){
+  let rows = D.machines.filter(x => (!st.fMach || String(x.m.id) === st.fMach) && (!st.gap || x.gap));
+  if(st.fOp || st.fSup) rows = rows.filter(x => x.d.concat(x.n).some(opOk));
+  return rows;
+}
+function asumBuckets(D, opOk, anyFilter){
+  const buckets = D.sups.map(s => ({ id:s.id, name:s.name, note:'', ops:[], dept:s.dept, shift:s.shift }));
+  const byId = {}; buckets.forEach(b => byId[b.id] = b);
+  const none = { id:'__none__', name:'No supervisor', note:'', ops:[], warn:true };
+  D.ops.forEach(o => {
+    if(!o.sup) { none.ops.push(o); return; }
+    if(!byId[o.sup.id]){ const b = { id:o.sup.id, name:o.sup.name, note:' (no longer a supervisor)', ops:[], warn:true }; byId[o.sup.id] = b; buckets.push(b); }
+    byId[o.sup.id].ops.push(o);
+  });
+  buckets.push(none);
+  return buckets.map(b => ({ b, ops:b.ops.filter(opOk) })).filter(x => anyFilter ? x.ops.length : (x.b.id !== '__none__' || x.ops.length));
+}
+function asumFilterText(st, D){
+  const bits = [];
+  if(st.fDept) bits.push('Department: ' + st.fDept);
+  if(st.fShift) bits.push(st.fShift + ' shift');
+  if(st.fSup) bits.push('Supervisor: ' + (st.fSup === '__none__' ? 'none assigned' : ((D.sups.find(x => x.id === st.fSup) || {}).name || st.fSup)));
+  if(st.fOp) bits.push('Operator: ' + ((D.ops.find(x => x.id === st.fOp) || {}).name || st.fOp));
+  if(st.fMach) bits.push('Machine: ' + machineName(st.fMach));
+  if(st.gap) bits.push('Only machines with nobody assigned');
+  return bits.join(' \u00B7 ');
+}
+function rvfDateStamp(){ const d = new Date(); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+function rvfNowText(){ return new Date().toLocaleString('en-GB', { dateStyle:'medium', timeStyle:'short' }); }
+
+// ---- PDF: the page is drawn in the app's own style and saved as an A4 PDF, one block at a time (so a long list never hits
+// a size limit and a row is never cut in half). The two small helper libraries load only when someone presses Download PDF.
+const rvfScriptCache = {};
+function rvfLoadScript(src){
+  return rvfScriptCache[src] || (rvfScriptCache[src] = new Promise((resolve, reject) => {
+    const el = document.createElement('script'); el.src = src; el.onload = resolve; el.onerror = () => { delete rvfScriptCache[src]; reject(new Error('load failed')); };
+    document.head.appendChild(el);
+  }));
+}
+async function rvfEnsurePdfLibs(){
+  if(!(window.jspdf && window.jspdf.jsPDF)) await rvfLoadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+  if(!window.html2canvas) await rvfLoadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
+}
+async function rvfMakePdf(blocks, filename){
+  try{ await rvfEnsurePdfLibs(); }catch(err){ console.error(err); toast('Could not load the PDF tool \u2014 check your connection'); return false; }
+  const wrap = document.createElement('div');
+  wrap.className = 'pdfSheet';
+  wrap.style.cssText = 'position:fixed; left:-10000px; top:0; width:760px; background:#fff; color:#0f172a; padding:0; z-index:-1;';
+  const els = blocks.map(h => { const d = document.createElement('div'); d.className = 'pdfBlock'; d.innerHTML = h; wrap.appendChild(d); return d; });
+  document.body.appendChild(wrap);
+  try{
+    const pdf = new window.jspdf.jsPDF({ unit:'mm', format:'a4', orientation:'portrait' });
+    const pw = pdf.internal.pageSize.getWidth(), ph = pdf.internal.pageSize.getHeight(), m = 10, usableW = pw - 2 * m, usableH = ph - 2 * m;
+    let y = m;
+    for(const el of els){
+      const canvas = await window.html2canvas(el, { scale:2, backgroundColor:'#ffffff', logging:false });
+      let w = usableW, h = canvas.height * w / canvas.width;
+      if(h > usableH){ w = w * usableH / h; h = usableH; }
+      if(y + h > ph - m && y > m){ pdf.addPage(); y = m; }
+      pdf.addImage(canvas.toDataURL('image/jpeg', 0.92), 'JPEG', m, y, w, h);
+      y += h + 1.5;
+    }
+    pdf.save(filename);
+    return true;
+  }catch(err){ console.error(err); toast('Could not make the PDF'); return false; }
+  finally{ wrap.remove(); }
+}
+function rvfPdfHeader(title, lines){
+  return `<div style="padding:4px 2px 10px;"><div style="font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:#4f46e5; font-weight:700;">Riyadh Velvet Factory</div>
+    <div style="font-family:'Oswald',sans-serif; font-size:24px; font-weight:700; color:#0f172a; margin:2px 0 4px;">${assignEsc(title)}</div>
+    ${lines.filter(Boolean).map(l => `<div style="font-size:11px; color:#64748b; margin-top:2px;">${assignEsc(l)}</div>`).join('')}</div>`;
+}
+// A table split into pages' worth of rows, each piece repeating the column headings.
+function rvfTableBlocks(theadHtml, rowsHtml, perBlock, cls){
+  const out = [];
+  for(let i = 0; i < rowsHtml.length; i += perBlock)
+    out.push(`<div class="table-scroll"><table class="report-table ${cls || ''}"><thead>${theadHtml}</thead><tbody>${rowsHtml.slice(i, i + perBlock).join('')}</tbody></table></div>`);
+  return out;
+}
+
+async function asumDownloadPdf(mountId, key, staged){
+  const root = $(mountId); const st = asumGet(key);
+  if(!root) return;
+  const D = asumScope(asumBuild(staged), st), esc = assignEsc;
+  const viewName = { supervisor:'By supervisor', operator:'By operator', machine:'By machine' }[st.view];
+  const unsaved = staged && assignBuildChanges().length ? 'Includes changes that are not saved yet' : '';
+  const blocks = [rvfPdfHeader('Team & Machine Summary', [viewName + ' \u00B7 ' + rvfNowText(), asumFilterText(st, D), unsaved])];
+  const tiles = root.querySelector('.asumTile') ? root.querySelector('.asumTile').parentElement.cloneNode(true) : null;
+  if(tiles){ tiles.querySelectorAll('.asumTile').forEach(t => { t.style.outline = 'none'; t.style.cursor = 'default'; t.style.boxShadow = 'none'; t.style.transform = 'none'; }); blocks.push(tiles.outerHTML); }
+  const body = $(mountId + 'Body');
+  if(body){
+    const clone = body.cloneNode(true);
+    const chunkTable = (tbl) => {
+      const head = tbl.tHead ? tbl.tHead.innerHTML : '';
+      return rvfTableBlocks(head, Array.from(tbl.tBodies[0].rows).map(r => r.outerHTML), 26);
+    };
+    const cards = clone.querySelectorAll('details.asumSup');
+    if(cards.length){
+      cards.forEach(c => {
+        const sum = c.querySelector('summary'), tbl = c.querySelector('table');
+        const headHtml = `<div class="card" style="margin-bottom:6px; padding:14px 16px; display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:8px;">${sum.innerHTML.replace(/<svg[^>]*asumChev[\s\S]*?<\/svg>/, '')}</div>`;
+        if(!tbl){ blocks.push(headHtml); return; }
+        const parts = chunkTable(tbl);
+        parts.forEach((p, i) => blocks.push((i === 0 ? headHtml : '') + p));
+      });
+    } else {
+      const tbl = clone.querySelector('table');
+      if(tbl) chunkTable(tbl).forEach(p => blocks.push(p)); else blocks.push('<div style="padding:12px; color:#64748b;">Nothing matches.</div>');
+    }
+  }
+  toast('Making the PDF\u2026');
+  await rvfMakePdf(blocks, 'team-machine-summary-' + rvfDateStamp() + '.pdf');
+}
+function asumDownloadExcel(key, staged){
+  if(typeof XLSX === 'undefined'){ toast('Excel tool not loaded \u2014 check your connection'); return; }
+  const st = asumGet(key), D = asumScope(asumBuild(staged), st), ok = asumFilterFn(st), anyFilter = !!(st.fOp || st.fMach || st.fSup || st.gap);
+  const shiftTag = (s) => s === 'Day' ? 'Day' : s === 'Night' ? 'Night' : 'Both';
+  const mlist = (o) => o.machines.map(machineName).join(', ');
+  const covered = D.machines.filter(x => !x.gap).length;
+  const wb = XLSX.utils.book_new();
+  const add = (name, aoa, wch) => { const ws = XLSX.utils.aoa_to_sheet(aoa); ws['!cols'] = wch.map(w => ({ wch:w })); XLSX.utils.book_append_sheet(wb, ws, name); };
+  const note = (staged && assignBuildChanges().length) ? 'Includes changes that are not saved yet' : '';
+  add('Summary', [
+    ['Team & Machine Summary'], ['Created', rvfNowText()], ['Filters', asumFilterText(st, D) || 'none'], note ? ['Note', note] : [], [],
+    ['Operators', D.ops.length], ['  on Day shift', D.ops.filter(o => o.shift === 'Day').length], ['  on Night shift', D.ops.filter(o => o.shift === 'Night').length],
+    ['Supervisors', D.sups.length], ['Machines (not permanently stopped)', D.machines.length], ['Machines fully covered', covered],
+    ['Machines with nobody on a running shift', D.machines.length - covered], ['Operators with no supervisor', D.ops.filter(o => !o.sup).length]
+  ], [38, 40]);
+  const sRows = [['Supervisor', 'Supervisor ID', 'Operator', 'Operator ID', 'Department', 'Shift', 'Machine count', 'Machines']];
+  asumBuckets(D, ok, anyFilter).forEach(x => {
+    if(!x.ops.length) sRows.push([x.b.name + x.b.note, x.b.id === '__none__' ? '' : x.b.id, '(no operators)', '', '', '', 0, '']);
+    x.ops.forEach(o => sRows.push([x.b.name + x.b.note, x.b.id === '__none__' ? '' : x.b.id, o.name, o.id, o.dept, shiftTag(o.shift), o.machines.length, mlist(o)]));
+  });
+  add('By supervisor', sRows, [24, 14, 24, 12, 14, 8, 14, 60]);
+  const oRows = [['Operator', 'Operator ID', 'Department', 'Shift', 'Supervisor', 'Machine count', 'Machines']];
+  D.ops.filter(ok).forEach(o => oRows.push([o.name, o.id, o.dept, shiftTag(o.shift), o.sup ? o.sup.name : 'None', o.machines.length, mlist(o)]));
+  add('By operator', oRows, [24, 12, 14, 8, 24, 14, 60]);
+  const mRows = [['Machine', 'Machine ID', 'Department', 'Status', 'Shift setting', 'Day operator', 'Night operator', 'Supervisor']];
+  asumMachineRows(D, st, ok).forEach(x => {
+    const names = []; x.d.concat(x.n).forEach(o => { const nm = o.sup ? o.sup.name + ' (' + o.sup.id + ')' : 'No supervisor'; if(!names.includes(nm)) names.push(nm); });
+    const cellOf = (held, runs) => held.length ? held.map(h => h.name + ' (' + h.id + ')').join(', ') : (runs ? 'NOBODY' : '-');
+    mRows.push([x.m.name, x.m.id, x.m.department || '', x.m.status === 'stopped' ? 'Stopped' : 'Running', (x.m.shiftRun === 'Day' || x.m.shiftRun === 'Night') ? x.m.shiftRun + ' only' : 'Both',
+      cellOf(x.d, machineRunsShift(x.m, 'Day')), cellOf(x.n, machineRunsShift(x.m, 'Night')), names.join(', ')]);
+  });
+  add('By machine', mRows, [20, 11, 14, 10, 12, 30, 30, 32]);
+  XLSX.writeFile(wb, 'team-machine-summary-' + rvfDateStamp() + '.xlsx');
+  toast('Excel file downloaded');
+}
+
+const ASUM_ICON_FILTER = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>';
+const ASUM_ICON_DOWNLOAD = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
+// The department and shift filters set the "scope" of the whole section: every number, list and download inside it follows.
+function asumScope(D, st){
+  const dOk = (v) => !st.fDept || v === st.fDept;
+  const ops = D.ops.filter(o => dOk(o.dept) && (!st.fShift || o.shift === 'Both' || o.shift === st.fShift));
+  const scoped = !!(st.fDept || st.fShift);
+  const sups = D.sups.filter(s => (dOk(s.dept) && (!st.fShift || !s.shift || s.shift === 'Both' || s.shift === st.fShift)) || (scoped && ops.some(o => o.sup && o.sup.id === s.id)));
+  const machines = D.machines.filter(x => dOk(x.m.department || '') && (!st.fShift || machineRunsShift(x.m, st.fShift)))
+    .map(x => Object.assign({}, x, { gap: st.fShift === 'Day' ? x.gapDay : st.fShift === 'Night' ? x.gapNight : x.gap }));
+  return Object.assign({}, D, { ops, sups, machines });
+}
+function renderAssignSummary(mountId, key, staged){
+  const root = $(mountId); if(!root) return;
+  const st = asumGet(key);
+  if(!state.users || !state.users.length || !state.machines){ root.innerHTML = ''; return; }
+  const D0 = asumBuild(staged), D = asumScope(D0, st), esc = assignEsc;
+  // keep filters valid if people or machines changed under them
+  if(st.fOp && !D.ops.some(o => o.id === st.fOp)) st.fOp = '';
+  if(st.fMach && !D.machines.some(x => String(x.m.id) === st.fMach)) st.fMach = '';
+  if(st.fSup && st.fSup !== '__none__' && !D.sups.some(s => s.id === st.fSup) && !D.ops.some(o => o.sup && o.sup.id === st.fSup)) st.fSup = '';
+
+  const opOk = asumFilterFn(st);
+  const anyNarrow = !!(st.fOp || st.fMach || st.fSup || st.gap);
+  const activeCount = (st.fDept ? 1 : 0) + (st.fShift ? 1 : 0) + (st.fSup ? 1 : 0) + (st.fOp ? 1 : 0) + (st.fMach ? 1 : 0) + (st.gap ? 1 : 0);
+  const covered = D.machines.filter(x => !x.gap).length, uncovered = D.machines.length - covered;
+  const noAppr = D.ops.filter(o => !o.sup).length;
+  const dayOps = D.ops.filter(o => o.shift === 'Day').length, nightOps = D.ops.filter(o => o.shift === 'Night').length, bothOps = D.ops.length - dayOps - nightOps;
+  const chip = (mid) => `<span class="asumChip">${esc(machineName(mid))}</span>`;
+  const chips = (arr) => arr.length ? arr.map(chip).join('') : '<span style="color:var(--muted);">—</span>';
+  const shiftTag = (s) => s === 'Day' ? 'Day' : s === 'Night' ? 'Night' : 'Both';
+  const idTag = (t) => `<span style="color:var(--muted); font-size:11px;">${esc(t)}</span>`;
+
+  // ---- top row: filter button, what is filtered, downloads ----
+  const labels = [];
+  if(st.fDept) labels.push(['fDept', 'Dept: ' + st.fDept]);
+  if(st.fShift) labels.push(['fShift', st.fShift + ' shift']);
+  if(st.fSup) labels.push(['fSup', 'Supervisor: ' + (st.fSup === '__none__' ? 'none' : ((D0.sups.find(x => x.id === st.fSup) || {}).name || st.fSup))]);
+  if(st.fOp) labels.push(['fOp', 'Operator: ' + ((D0.ops.find(x => x.id === st.fOp) || {}).name || st.fOp)]);
+  if(st.fMach) labels.push(['fMach', 'Machine: ' + machineName(st.fMach)]);
+  if(st.gap) labels.push(['gap', 'Nobody assigned']);
+  const top = `<div class="asumTop">
+      <button type="button" class="iconBtn asumFiltBtn ${st.panel || activeCount ? 'on' : ''}" title="Filters" aria-label="Filters" aria-expanded="${st.panel ? 'true' : 'false'}">${ASUM_ICON_FILTER}${activeCount ? `<span class="iconBadge">${activeCount}</span>` : ''}</button>
+      <span style="flex:1;"></span>
+      <button type="button" class="pillBtn asumPdf" title="Download as PDF" aria-label="Download PDF">${ASUM_ICON_DOWNLOAD}PDF</button>
+      <button type="button" class="pillBtn asumXls" title="Download as Excel" aria-label="Download Excel">${ASUM_ICON_DOWNLOAD}Excel</button>
+    </div>
+    <div class="asumActive">${labels.map(l => `<span class="fChip">${esc(l[1])}<button type="button" class="asumChipX" data-f="${l[0]}" aria-label="Remove filter">&times;</button></span>`).join('')}</div>`;
+
+  // ---- the filter panel (closed until the filter button is pressed) ----
+  const allDepts = Array.from(new Set(D0.ops.map(o => o.dept).concat(D0.sups.map(s => s.dept), D0.machines.map(x => x.m.department || '')).filter(Boolean))).sort();
+  const sel = (f, ico, lbl, opts) => `<div class="fItem"><label>${ico}${lbl}</label><select class="asumSel" data-f="${f}">${opts}</select></div>`;
+  const panel = st.panel ? `<div class="fPanel">
+      <div class="fHead"><span class="fTitle"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>Filters</span><button type="button" class="fClear asumClear" style="${activeCount ? '' : 'visibility:hidden;'}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>Clear all</button></div>
+      <div class="fGrid">
+      ${sel('fDept', '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 22v-4h6v4M8 6h.01M12 6h.01M16 6h.01M8 10h.01M12 10h.01M16 10h.01M8 14h.01M12 14h.01M16 14h.01"/></svg>', 'Department', '<option value="">All departments</option>' + allDepts.map(d => `<option value="${esc(d)}" ${st.fDept === d ? 'selected' : ''}>${esc(d)}</option>`).join(''))}
+      ${sel('fShift', '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>', 'Shift', `<option value="">Day &amp; Night</option><option value="Day" ${st.fShift === 'Day' ? 'selected' : ''}>Day</option><option value="Night" ${st.fShift === 'Night' ? 'selected' : ''}>Night</option>`)}
+      ${sel('fSup', '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><polyline points="16 11 18 13 22 9"/></svg>', 'Supervisor', `<option value="">All supervisors</option><option value="__none__" ${st.fSup === '__none__' ? 'selected' : ''}>No supervisor</option>` + D.sups.map(s => `<option value="${esc(s.id)}" ${st.fSup === s.id ? 'selected' : ''}>${esc(s.name)}</option>`).join(''))}
+      ${sel('fOp', '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>', 'Operator', '<option value="">All operators</option>' + D.ops.map(o => `<option value="${esc(o.id)}" ${st.fOp === o.id ? 'selected' : ''}>${esc(o.name)}</option>`).join(''))}
+      ${sel('fMach', '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 14h3M1 9h3M1 14h3"/></svg>', 'Machine', '<option value="">All machines</option>' + D.machines.map(x => `<option value="${esc(x.m.id)}" ${st.fMach === String(x.m.id) ? 'selected' : ''}>${esc(x.m.name)}</option>`).join(''))}
+      </div>
+      <div class="fHint">Department and Shift change every number below. Supervisor, Operator and Machine narrow the lists.</div>
+    </div>` : '';
+
+  // Same soft-tint tiles as Machine & Production: a colour per meaning, no outlines. The tab bar below shows which list is open.
+  const tone = { operators:['var(--acc-blue-soft)', 'var(--acc-blue)'], supervisors:['var(--acc-purple-soft)', 'var(--acc-purple)'], machines:['var(--lcd-dim)', 'var(--ok)'] };
+  const tile = (id, big, label, active, warn) => {
+    const t = tone[id] || (warn ? (id === 'gaps' ? ['var(--danger-soft)', 'var(--danger)'] : ['var(--warn-soft)', 'var(--warn)']) : ['var(--panel-2)', 'var(--text-strong)']);
+    return `<div class="asumTile" data-t="${id}" style="cursor:pointer; text-align:center; background:${t[0]}; border-radius:12px; padding:10px 4px; transition:transform .15s, box-shadow .15s; ${active ? 'box-shadow:0 4px 14px rgba(15,23,42,.14); transform:translateY(-1px);' : ''}">
+      <div style="font-family:'JetBrains Mono',monospace; font-weight:700; font-size:18px; color:${t[1]};">${big}</div>
+      <div style="font-size:8.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.03em; margin-top:2px;">${label}</div></div>`;
+  };
+  const tiles = `<div class="asumTiles" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(96px,1fr)); gap:8px; margin-bottom:12px;">
+      ${tile('operators', D.ops.length, 'Operators (' + dayOps + ' day / ' + nightOps + ' night' + (bothOps ? ' / ' + bothOps + ' both' : '') + ')', st.view === 'operator' && !anyNarrow)}
+      ${tile('supervisors', D.sups.length, 'Supervisors', st.view === 'supervisor' && !anyNarrow)}
+      ${tile('machines', covered + '/' + D.machines.length, 'Machines covered', st.view === 'machine' && !anyNarrow)}
+      ${tile('gaps', uncovered, 'Machines with nobody', st.gap, uncovered > 0)}
+      ${tile('noappr', noAppr, 'Operators with no supervisor', st.fSup === '__none__', noAppr > 0)}
+    </div>`;
+  const views = [['supervisor', 'By supervisor'], ['operator', 'By operator'], ['machine', 'By machine']];
+  const bar = `<div class="seg">${views.map(v => `<button type="button" class="asumView ${st.view === v[0] ? 'active' : ''}" data-v="${v[0]}">${v[1]}</button>`).join('')}</div>`;
+
+  let body = '';
+  if(st.view === 'operator'){
+    const rows = D.ops.filter(opOk);
+    body = rows.length ? `<div class="table-scroll"><table class="report-table"><thead><tr><th style="width:26%;">Operator</th><th style="width:15%;">Dept &middot; shift</th><th style="width:22%;">Supervisor</th><th>Machines</th></tr></thead><tbody>${rows.map(o =>
+      `<tr><td>${esc(o.name)} <span style="color:var(--muted); font-size:11px;">${esc(o.id)}</span></td><td>${esc(o.dept || '—')} &middot; ${shiftTag(o.shift)}</td>
+       <td>${o.sup ? esc(o.sup.name) + ' ' + idTag(o.sup.id) + (o.sup.current ? '' : ' <span style="color:var(--warn);" title="No longer a supervisor">&#9888;</span>') : '<span style="color:var(--warn);">None</span>'}</td>
+       <td style="font-size:12px;"><b>${o.machines.length}</b> &middot; ${chips(o.machines)}</td></tr>`).join('')}</tbody></table></div>
+      <div class="hint" style="text-align:left; margin:6px 0 0;">${rows.length} operator${rows.length === 1 ? '' : 's'} shown.</div>` : '<div class="empty-state">No operators match.</div>';
+  } else if(st.view === 'machine'){
+    const rows = asumMachineRows(D, st, opOk);
+    const showDay = st.fShift !== 'Night', showNight = st.fShift !== 'Day';
+    const cellOf = (x, slot) => {
+      const held = slot === 'Day' ? x.d : x.n, runs = machineRunsShift(x.m, slot);
+      if(!held.length) return runs ? '<span style="color:var(--warn); font-weight:700;">Nobody</span>' : '<span style="color:var(--muted);">—</span>';
+      return held.map(h => `<span class="asumNm">${esc(h.name)} ${idTag(h.id)}</span>`).join('') + (runs ? '' : ' <span style="color:var(--warn);" title="This machine is set not to run this shift">&#9888;</span>');
+    };
+    const supOf = (x) => { const seen = new Set(), out = []; (showDay ? x.d : []).concat(showNight ? x.n : []).slice().sort((p, q) => ((p.sup && p.sup.name) || '~').localeCompare((q.sup && q.sup.name) || '~')).forEach(o => { const k = o.sup ? o.sup.id : '__none__'; if(seen.has(k)) return; seen.add(k); out.push(o.sup ? `<span class="asumNm">${esc(o.sup.name)} ${idTag(o.sup.id)}</span>` : '<span class="asumNm" style="color:var(--warn);">No supervisor</span>'); }); return out.length ? out.join('') : '—'; };
+    body = rows.length ? `<div class="table-scroll"><table class="report-table"><thead><tr><th style="width:15%;">Machine</th>${showDay ? '<th style="width:28%;">Day operator</th>' : ''}${showNight ? '<th style="width:28%;">Night operator</th>' : ''}<th>Supervisor</th></tr></thead><tbody>${rows.map(x =>
+      `<tr><td>${esc(x.m.name)}${x.m.status === 'stopped' ? ' <span style="color:var(--muted); font-size:11px;">stopped</span>' : ''}</td>${showDay ? `<td>${cellOf(x, 'Day')}</td>` : ''}${showNight ? `<td>${cellOf(x, 'Night')}</td>` : ''}<td style="font-size:12px;">${supOf(x)}</td></tr>`).join('')}</tbody></table></div>
+      <div class="hint" style="text-align:left; margin:6px 0 0;">${rows.length} machine${rows.length === 1 ? '' : 's'} shown. Permanently stopped machines are left out.</div>` : '<div class="empty-state">No machines match.</div>';
+  } else {
+    // one card per supervisor: tap to open the team, with each operator's shift and machines
+    const shown = asumBuckets(D, opOk, anyNarrow);
+    body = shown.length ? '<div class="asumGrid">' + shown.map(x => {
+      const ms = new Set(); x.ops.forEach(o => o.machines.forEach(mid => ms.add(mid)));
+      const msl = Array.from(ms).sort((p, q) => (Number(p) || 0) - (Number(q) || 0));
+      const openAttr = (st.open.has(x.b.id) || anyNarrow) ? 'open' : '';
+      return `<details class="asumSup card" data-id="${esc(x.b.id)}" ${openAttr} style="margin-bottom:10px;">
+        <summary>
+          <span><span style="font-size:13px; font-weight:600; color:${x.b.warn ? 'var(--warn)' : 'var(--text-strong)'};">${esc(x.b.name)}${esc(x.b.note)}</span><br>${idTag(x.b.id === '__none__' ? 'Not assigned to a supervisor' : [x.b.id, x.b.dept, x.b.shift ? (x.b.shift === 'Both' ? 'Day & Night' : x.b.shift) : ''].filter(Boolean).join(' \u00B7 '))}</span>
+          <span style="display:inline-flex; align-items:center; gap:6px;"><span class="asumBadge b-op">${x.ops.length} operator${x.ops.length === 1 ? '' : 's'}</span><span class="asumBadge b-mc">${msl.length} machine${msl.length === 1 ? '' : 's'}</span><svg class="asumChev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span></summary>
+        ${x.ops.length ? `<div class="table-scroll"><table class="report-table"><thead><tr><th style="width:42%;">Operator</th><th style="width:14%;">Shift</th><th>Machines</th></tr></thead><tbody>${x.ops.map(o =>
+          `<tr><td>${esc(o.name)} <span style="color:var(--muted); font-size:11px;">${esc(o.id)}</span></td><td>${shiftTag(o.shift)}</td><td style="font-size:12px;">${chips(o.machines)}</td></tr>`).join('')}</tbody></table></div>` : '<div class="hint" style="text-align:left; margin:0 16px 14px;">No operators under this supervisor yet.</div>'}
+      </details>`;
+    }).join('') + '</div>' : '<div class="empty-state">Nothing matches.</div>';
+  }
+
+  root.innerHTML = top + panel + tiles + bar + `<div id="${mountId}Body">${body}</div>`;
+  const redraw = () => renderAssignSummary(mountId, key, staged);
+  const clearNarrow = () => { st.fSup = ''; st.fOp = ''; st.fMach = ''; st.gap = false; };
+  root.querySelectorAll('.asumTile').forEach(t => t.addEventListener('click', () => {
+    const k = t.dataset.t; clearNarrow();
+    if(k === 'operators') st.view = 'operator'; else if(k === 'supervisors') st.view = 'supervisor'; else if(k === 'machines') st.view = 'machine';
+    else if(k === 'gaps'){ st.view = 'machine'; st.gap = true; } else if(k === 'noappr'){ st.view = 'operator'; st.fSup = '__none__'; }
+    redraw();
+  }));
+  root.querySelectorAll('.asumView').forEach(b => b.addEventListener('click', () => { st.view = b.dataset.v; redraw(); }));
+  root.querySelector('.asumFiltBtn').addEventListener('click', () => { st.panel = !st.panel; redraw(); });
+  root.querySelectorAll('.asumSel').forEach(s => s.addEventListener('change', () => { st[s.dataset.f] = s.value; if(s.dataset.f === 'fOp' || s.dataset.f === 'fSup' || (s.dataset.f === 'fMach' && s.value)) st.gap = false; redraw(); }));
+  root.querySelectorAll('.asumChipX').forEach(x => x.addEventListener('click', () => { if(x.dataset.f === 'gap') st.gap = false; else st[x.dataset.f] = ''; redraw(); }));
+  root.querySelector('.asumPdf').addEventListener('click', () => asumDownloadPdf(mountId, key, staged));
+  root.querySelector('.asumXls').addEventListener('click', () => asumDownloadExcel(key, staged));
+  const clr = root.querySelector('.asumClear'); if(clr) clr.addEventListener('click', () => { st.fDept = ''; st.fShift = ''; clearNarrow(); redraw(); });
+  root.querySelectorAll('details.asumSup').forEach(d => d.addEventListener('toggle', () => { if(anyNarrow) return; if(d.open) st.open.add(d.dataset.id); else st.open.delete(d.dataset.id); }));
+}
 
 function renderAssignChecks(){
   const box = $('assignChecks'); if(!box) return;
@@ -8677,7 +9228,7 @@ async function renderAssignBoard(){
     body.innerHTML = '<div class="empty-state">Loading…</div>';
     try{ state.users = await window.__db.listUsers(); }catch(err){ console.error(err); body.innerHTML = '<div class="empty-state">Could not load people.</div>'; return; }
   }
-  renderAssignChecks(); renderAssignViewBar();
+  renderAssignChecks(); try{ renderAssignSummary('assignSummary', 'adm', true); }catch(err){ console.error(err); } renderAssignViewBar();
   if(assignUI.view === 'machines') renderAssignMachines(body); else renderAssignApprovers(body);
   renderAssignSaveBar();
 }
@@ -10177,6 +10728,7 @@ async function loadCeoDashboard(){
     renderDocumentRenewalsBox(users);
     await renderMachineProductionBox();
     await renderPerformanceBox();
+    try{ renderAssignSummary('asumDash', 'dash', false); }catch(err){ console.error(err); }   // uses the people already loaded above: no extra reads
 
     // machines by department (kept as its own small section — useful factory-floor view)
     const byDept = {};
