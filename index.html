@@ -1849,6 +1849,30 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
   /* one button shape across the app: fully round, like the main buttons and the Employee Overview filter button */
   .pillBtn, .refreshBtn{ border-radius:9999px; }
   .iconBtn{ border-radius:50%; }
+  /* phone: stack the summary tiles one per row, exactly like the Employee Overview (live screen only; the PDF keeps its own layout) */
+  @media (max-width:699px){
+    #asumDash .asumTiles, #assignSummary .asumTiles{ grid-template-columns:1fr !important; gap:12px !important; }
+    #asumDash .asumTiles > .asumTile, #assignSummary .asumTiles > .asumTile{ grid-column:1 / -1 !important; padding:18px 14px; border-radius:16px; }
+    #asumDash .asumTiles > .asumTile .ic, #assignSummary .asumTiles > .asumTile .ic{ width:40px; height:40px; margin-bottom:12px; }
+    #asumDash .asumTiles > .asumTile .n, #assignSummary .asumTiles > .asumTile .n{ font-size:28px; }
+    #asumDash .asumTiles > .asumTile .l, #assignSummary .asumTiles > .asumTile .l{ font-size:10.5px; margin-top:7px; }
+  }
+  /* the two check tiles: small and quiet, like the last row of the Employee Overview; hidden until "Checks" is pressed (Dashboard) */
+  .asumTiles.chkOff > .asumTile.chk{ display:none !important; }
+  .asumTiles > .asumTile.chk{ grid-column:span 3 !important; text-align:center !important; padding:12px 8px !important; border-radius:12px !important; }
+  .asumTiles > .asumTile.chk .ic{ display:none !important; }
+  .asumTiles > .asumTile.chk .n{ font-size:20px !important; }
+  .asumTiles > .asumTile.chk .l{ font-size:10px !important; margin-top:4px !important; }
+  .asumTiles > .asumTile.t-gaps.bad .n{ color:var(--danger) !important; } .asumTiles > .asumTile.t-noappr.bad .n{ color:var(--warn) !important; }
+  .asumTiles > .asumTile.on.chk .n{ color:var(--text-strong) !important; }
+  .asumChkBtn.on{ background:var(--amber-soft); color:var(--amber); border-color:var(--amber-dim); }
+  .asumChkN{ min-width:17px; height:17px; padding:0 5px; border-radius:9px; background:var(--danger); color:#fff; font-size:10px; font-weight:700; display:inline-flex; align-items:center; justify-content:center; margin-left:2px; }
+  @media (max-width:699px){
+    #asumDash .asumTiles > .asumTile.chk, #assignSummary .asumTiles > .asumTile.chk{ padding:12px 8px !important; border-radius:12px !important; }
+    #asumDash .asumTiles > .asumTile.chk .n, #assignSummary .asumTiles > .asumTile.chk .n{ font-size:20px !important; }
+    #asumDash .asumTiles > .asumTile.chk .l, #assignSummary .asumTiles > .asumTile.chk .l{ font-size:10px !important; margin-top:4px !important; }
+    #asumDash .asumTiles, #assignSummary .asumTiles{ gap:10px !important; }
+  }
 </style>
 </head>
 <body>
@@ -9184,8 +9208,10 @@ function renderAssignSummary(mountId, key, staged){
   if(st.fOp) labels.push(['fOp', 'Operator: ' + ((D0.ops.find(x => x.id === st.fOp) || {}).name || st.fOp)]);
   if(st.fMach) labels.push(['fMach', 'Machine: ' + machineName(st.fMach)]);
   if(st.gap) labels.push(['gap', 'Nobody assigned']);
+  const chkOpen = st.chk === undefined ? key === 'adm' : st.chk;   // the two check tiles: shown in Admin → Assign, tucked away on the Dashboard until "Checks" is pressed
   const top = `<div class="asumTop">
       <button type="button" class="iconBtn asumFiltBtn ${st.panel || activeCount ? 'on' : ''}" title="Filters" aria-label="Filters" aria-expanded="${st.panel ? 'true' : 'false'}">${ASUM_ICON_FILTER}${activeCount ? `<span class="iconBadge">${activeCount}</span>` : ''}</button>
+      <button type="button" class="pillBtn asumChkBtn ${chkOpen ? 'on' : ''}" title="Machines with nobody / operators with no supervisor" aria-expanded="${chkOpen ? 'true' : 'false'}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>Checks${(uncovered + noAppr) ? `<span class="asumChkN">${uncovered + noAppr}</span>` : ''}</button>
       <span style="flex:1;"></span>
       <button type="button" class="pillBtn asumPdf" title="Download as PDF" aria-label="Download PDF">${ASUM_ICON_DOWNLOAD}PDF</button>
       <button type="button" class="pillBtn asumXls" title="Download as Excel" aria-label="Download Excel">${ASUM_ICON_DOWNLOAD}Excel</button>
@@ -9211,14 +9237,14 @@ function renderAssignSummary(mountId, key, staged){
   const SIC = { operators:'<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/>', supervisors:'<path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><polyline points="17 11 19 13 23 9"/>', machines:'<rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 14h3M1 9h3M1 14h3"/>', gaps:'<path d="M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>', noappr:'<path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="18" y1="11" x2="23" y2="11"/>' };
   const tile = (id, big, label, active, warn) => {
     const main = true;
-    const cls = 'asumTile ' + (main ? 'big ' : 'sm ') + 't-' + id + (active ? ' on' : '');
+    const cls = 'asumTile ' + (main ? 'big ' : 'sm ') + 't-' + id + ((id === 'gaps' || id === 'noappr') ? ' chk' : '') + (warn ? ' bad' : '') + (active ? ' on' : '');
     return main
       ? `<div class="${cls}" data-t="${id}"><span class="ic"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${SIC[id]}</svg></span><span class="n">${big}</span>
       <span class="l">${label}</span></div>`
       : `<div class="${cls}" data-t="${id}"><span class="n">${big}</span>
       <span class="l">${label}</span></div>`;
   };
-  const tiles = `<div class="asumTiles">
+  const tiles = `<div class="asumTiles${chkOpen ? '' : ' chkOff'}">
       ${tile('operators', D.ops.length, 'Operators (' + dayOps + ' day / ' + nightOps + ' night' + (bothOps ? ' / ' + bothOps + ' both' : '') + ')', st.view === 'operator' && !anyNarrow)}
       ${tile('supervisors', D.sups.length, 'Supervisors', st.view === 'supervisor' && !anyNarrow)}
       ${tile('machines', covered + '/' + D.machines.length, 'Machines covered', st.view === 'machine' && !anyNarrow)}
@@ -9274,6 +9300,7 @@ function renderAssignSummary(mountId, key, staged){
     else if(k === 'gaps'){ st.view = 'machine'; st.gap = true; } else if(k === 'noappr'){ st.view = 'operator'; st.fSup = '__none__'; }
     redraw();
   }));
+  root.querySelector('.asumChkBtn').addEventListener('click', () => { st.chk = !chkOpen; redraw(); });
   root.querySelectorAll('.asumView').forEach(b => b.addEventListener('click', () => { st.view = b.dataset.v; redraw(); }));
   root.querySelector('.asumFiltBtn').addEventListener('click', () => { st.panel = !st.panel; redraw(); });
   root.querySelectorAll('.asumSel').forEach(s => s.addEventListener('change', () => { st[s.dataset.f] = s.value; if(s.dataset.f === 'fOp' || s.dataset.f === 'fSup' || (s.dataset.f === 'fMach' && s.value)) st.gap = false; redraw(); }));
