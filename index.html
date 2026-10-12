@@ -2260,6 +2260,28 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
   .pcDetail .pcItTotal{ background:#fff; border-top:1px solid var(--line); }
   .pcFMore{ background:var(--panel-2); border-top:0; }
   @media (max-width:700px){ .pcDetail .pcFacts{ grid-template-columns:1fr 1fr; } .pcDetail .pcItG > *, .pcDetail .pcItG .c-nums > *{ padding:0; } }
+  /* ===== v11: last bought + date columns, receiving strip, currency ===== */
+  .pcItG{ grid-template-columns:26px minmax(0,1.3fr) minmax(0,1.5fr) 50px 54px 70px 84px 100px 82px minmax(0,1.3fr); }
+  .pcIt .c-ldate{ text-align:right; justify-content:flex-end; font-size:11px; color:#a3acba; font-family:inherit; white-space:nowrap; }
+  .pcIt .c-last{ color:var(--text); }
+  .pcRecStrip{ display:flex; flex-wrap:wrap; align-items:center; gap:8px 14px; padding:8px 12px 10px 38px; background:var(--panel-2); font-size:12px; }
+  .pcRecIn{ display:inline-flex; align-items:center; gap:6px; font-size:11px; color:var(--muted); } .pcRecIn input{ width:78px; height:30px; padding:0 8px; border-radius:9px; font-size:12.5px; background:#fff; }
+  .pcItTotal.pcAct{ border-top:0; padding-top:0; } .pcItTotal.pcAct span{ color:var(--muted); }
+  .pcOrderHead .c-tot small{ font-size:10px; color:var(--muted); font-weight:600; margin-right:3px; }
+  .pcFRow{ grid-template-columns:26px minmax(0,1.3fr) minmax(0,1.5fr) 64px 84px 84px 100px minmax(0,1.2fr) 72px; }
+  .pcFR .c-last{ flex-direction:column; align-items:flex-start; justify-content:center; line-height:1.2; }
+  .pcFR .c-last b{ font-size:12.5px; font-weight:600; color:var(--text-strong); } .pcFR .c-last small{ font-size:10.5px; color:#a3acba; } .pcNone{ color:#c3c9d4; }
+  .pcRecRow, .pcRecHead{ display:grid; grid-template-columns:minmax(0,1fr) 96px 96px; gap:8px; align-items:center; }
+  .pcRecHead{ font-size:10px; text-transform:uppercase; letter-spacing:.05em; font-weight:700; color:var(--muted); margin-bottom:4px; }
+  .pcRecRow input{ width:100%; height:36px; }
+  @media (max-width:700px){
+    .pcItG, .pcIts .pcItG{ grid-template-columns:24px 1fr auto; }
+    .pcIt .c-ldate{ font-size:10.5px; } .pcIt .c-nums{ flex-wrap:wrap; }
+    .pcRecStrip{ padding-left:10px; }
+    .pcFRow{ grid-template-columns:1fr 1fr 1fr; } .pcFRow > .c-last{ grid-column:1/-1; flex-direction:row; align-items:baseline; gap:8px; }
+    .pcFR .c-last .fl{ display:block; }
+  }
+  .rfMachChips{ display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; } .rfMachChips:empty{ display:none; }
 
 </style>
 </head>
@@ -2899,7 +2921,7 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
           <div class="fItem"><label><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>Shift</label><select id="rfShift"></select></div>
           <div class="fItem" id="rfWSup"><label><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><polyline points="16 11 18 13 22 9"/></svg>Supervisor</label><select id="rfSup"></select></div>
           <div class="fItem" id="rfWOp"><label><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Operator</label><select id="rfOp"></select></div>
-          <div class="fItem"><label><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 14h3M1 9h3M1 14h3"/></svg>Machine</label><select id="rfMach"></select></div>
+          <div class="fItem"><label><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 14h3M1 9h3M1 14h3"/></svg>Machine</label><select id="rfMach"></select><div class="rfMachChips" id="rfMachChips"></div></div>
         </div>
         <div class="fItem" style="margin-top:12px;"><label><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>Entries</label>
           <div class="seg" id="rfView"><button type="button" data-v="separate"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>Starting &amp; Ending</button><button type="button" data-v="combined"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><line x1="3" y1="12" x2="21" y2="12" stroke-dasharray="0"/></svg>One row each</button></div></div>
@@ -8038,8 +8060,8 @@ function combineReportRows(rows){
   return out;
 }
 function reportDisplayRows(rows){ return (reportView === 'combined' && !reportReview) ? combineReportRows(rows) : rows; }
-const reportFilter = { dept:'', shift:'', sup:'', op:'', mach:'' };
-function reportFilterActive(){ return !!(reportFilter.dept || reportFilter.shift || reportFilter.sup || reportFilter.op || reportFilter.mach); }
+const reportFilter = { dept:'', shift:'', sup:'', op:'', mach:[] };
+function reportFilterActive(){ return !!(reportFilter.dept || reportFilter.shift || reportFilter.sup || reportFilter.op || reportFilter.mach.length); }
 function reportOperatorsOf(supId){
   const set = new Set();
   (state.users || []).forEach(u => { const a = u.profile && u.profile.directSupervisor; if(a && a.loginId === supId) set.add(u.loginId); });
@@ -8048,7 +8070,7 @@ function reportOperatorsOf(supId){
 function reportMachineDept(mid){ const m = state.machines.find(x => String(x.id) === String(mid)); return (m && m.department) || ''; }
 function applyReportFilter(rows){
   const ops = reportFilter.sup ? reportOperatorsOf(reportFilter.sup) : null;
-  return rows.filter(r => (!reportFilter.op || r.enteredById === reportFilter.op) && (!reportFilter.mach || String(r.machineId) === reportFilter.mach) && (!ops || ops.has(r.enteredById)) &&
+  return rows.filter(r => (!reportFilter.op || r.enteredById === reportFilter.op) && (!reportFilter.mach.length || reportFilter.mach.includes(String(r.machineId))) && (!ops || ops.has(r.enteredById)) &&
     (!reportFilter.shift || r.shift === reportFilter.shift) && (!reportFilter.dept || reportMachineDept(r.machineId) === reportFilter.dept));
 }
 function drawReportFiltered(rows){
@@ -8061,7 +8083,7 @@ function reportFilterLabels(){
   if(reportFilter.shift) out.push(['shift', reportFilter.shift + ' shift']);
   if(reportFilter.sup){ const u = (state.users || []).find(x => x.loginId === reportFilter.sup); out.push(['sup', 'Supervisor: ' + (u ? u.name : reportFilter.sup)]); }
   if(reportFilter.op){ const r = reportAllRows.find(x => x.enteredById === reportFilter.op); out.push(['op', 'Operator: ' + (r ? r.enteredBy : reportFilter.op)]); }
-  if(reportFilter.mach) out.push(['mach', 'Machine: ' + machineName(reportFilter.mach)]);
+  reportFilter.mach.forEach(id => out.push(['mach:' + id, 'Machine: ' + machineName(id)]));
   if(reportView === 'combined') out.push(['view', 'One row each']);
   return out;
 }
@@ -8079,19 +8101,21 @@ function renderReportFilterBox(){
   const rowOps = new Set(reportAllRows.map(r => r.enteredById));
   const supList = usersReady ? assignSupervisors().slice().sort(assignByName).filter(sp => Array.from(reportOperatorsOf(sp.loginId)).some(id => rowOps.has(id))) : [];
   if(reportFilter.op && !opMap[reportFilter.op]) reportFilter.op = '';
-  if(reportFilter.mach && !machMap[reportFilter.mach]) reportFilter.mach = '';
+  reportFilter.mach = reportFilter.mach.filter(id => machMap[id]);
   if(reportFilter.dept && !deptList.includes(reportFilter.dept)) reportFilter.dept = '';
   if(reportFilter.sup && usersReady && !supList.some(sp => sp.loginId === reportFilter.sup)) reportFilter.sup = '';
   $('rfDept').innerHTML = '<option value="">All departments</option>' + deptList.map(d => `<option value="${esc(d)}" ${reportFilter.dept === d ? 'selected' : ''}>${esc(d)}</option>`).join('');
   $('rfShift').innerHTML = `<option value="">Day &amp; Night</option><option value="Day" ${reportFilter.shift === 'Day' ? 'selected' : ''}>Day</option><option value="Night" ${reportFilter.shift === 'Night' ? 'selected' : ''}>Night</option>`;
   $('rfSup').innerHTML = `<option value="">${usersReady ? 'All supervisors' : 'Supervisors loading…'}</option>` + supList.map(sp => `<option value="${esc(sp.loginId)}" ${reportFilter.sup === sp.loginId ? 'selected' : ''}>${esc(sp.name)}</option>`).join('');
   $('rfOp').innerHTML = '<option value="">All operators</option>' + opIds.map(id => `<option value="${esc(id)}" ${reportFilter.op === id ? 'selected' : ''}>${esc(opMap[id])}</option>`).join('');
-  $('rfMach').innerHTML = '<option value="">All machines</option>' + machIds.map(id => `<option value="${esc(id)}" ${reportFilter.mach === id ? 'selected' : ''}>${esc(machMap[id])}</option>`).join('');
+  $('rfMach').innerHTML = `<option value="">${reportFilter.mach.length ? 'Add another machine\u2026' : 'All machines'}</option>` + machIds.filter(id => !reportFilter.mach.includes(id)).map(id => `<option value="${esc(id)}">${esc(machMap[id])}</option>`).join('');
+  $('rfMachChips').innerHTML = reportFilter.mach.map(id => `<span class="fChip">${esc(machMap[id])}<button type="button" class="rfMachX" data-m="${esc(id)}" aria-label="Remove machine">&times;</button></span>`).join('');
+  $('rfMachChips').querySelectorAll('.rfMachX').forEach(x => x.addEventListener('click', () => { reportFilter.mach = reportFilter.mach.filter(id => id !== x.dataset.m); applyReportFilterNow(); }));
   // an operator only ever sees their own entries, so only shift and machine are useful to them
   ['rfWDept', 'rfWSup', 'rfWOp'].forEach(id => { $(id).style.display = isOperator ? 'none' : ''; });
   const labels = reportFilterLabels();
   $('rfActive').innerHTML = labels.map(l => `<span class="fChip">${esc(l[1])}<button type="button" class="rfChipX" data-f="${l[0]}" aria-label="Remove filter">&times;</button></span>`).join('');
-  $('rfActive').querySelectorAll('.rfChipX').forEach(x => x.addEventListener('click', () => { if(x.dataset.f === 'view') setReportView('separate'); else reportFilter[x.dataset.f] = ''; applyReportFilterNow(); }));
+  $('rfActive').querySelectorAll('.rfChipX').forEach(x => x.addEventListener('click', () => { if(x.dataset.f === 'view') setReportView('separate'); else if(x.dataset.f.indexOf('mach:') === 0){ const mid = x.dataset.f.slice(5); reportFilter.mach = reportFilter.mach.filter(id => id !== mid); } else reportFilter[x.dataset.f] = ''; applyReportFilterNow(); }));
   $('rfBadge').style.display = labels.length ? '' : 'none'; $('rfBadge').textContent = labels.length;
   tg.style.display = ''; tg.classList.toggle('on', reportFilterOpen || labels.length > 0); tg.setAttribute('aria-expanded', reportFilterOpen ? 'true' : 'false');
   $('rfClear').style.visibility = labels.length ? 'visible' : 'hidden';
@@ -8112,11 +8136,12 @@ function applyReportFilterNow(){
   renderReportFilterBox();
 }
 function onReportFilterChange(){
-  reportFilter.dept = $('rfDept').value; reportFilter.shift = $('rfShift').value; reportFilter.sup = $('rfSup').value; reportFilter.op = $('rfOp').value; reportFilter.mach = $('rfMach').value;
+  reportFilter.dept = $('rfDept').value; reportFilter.shift = $('rfShift').value; reportFilter.sup = $('rfSup').value; reportFilter.op = $('rfOp').value;
+  const addM = $('rfMach').value; if(addM && !reportFilter.mach.includes(addM)) reportFilter.mach.push(addM);
   applyReportFilterNow();
 }
 ['rfDept', 'rfShift', 'rfSup', 'rfOp', 'rfMach'].forEach(id => $(id).addEventListener('change', onReportFilterChange));
-$('rfClear').addEventListener('click', () => { reportFilter.dept = reportFilter.shift = reportFilter.sup = reportFilter.op = reportFilter.mach = ''; setReportView('separate'); applyReportFilterNow(); });
+$('rfClear').addEventListener('click', () => { reportFilter.dept = reportFilter.shift = reportFilter.sup = reportFilter.op = ''; reportFilter.mach = []; setReportView('separate'); applyReportFilterNow(); });
 $('rfView').querySelectorAll('button').forEach(bt => bt.addEventListener('click', () => { setReportView(bt.dataset.v); applyReportFilterNow(); }));
 $('rfToggle').addEventListener('click', () => { reportFilterOpen = !reportFilterOpen; renderReportFilterBox(); });
 
@@ -13540,6 +13565,9 @@ const PC_DEF = {
 };
 const PC_LABEL = { new: 'New', approval: 'Awaiting approval', approved: 'Approved', rejected: 'Rejected', ordered: 'Ordered', partial: 'Partly received', received: 'Received', cancelled: 'Cancelled' };
 const PC_OPEN = ['new', 'approval', 'approved', 'rejected', 'ordered'];
+// the money used in international trade (SAR is the default for local buying)
+const PC_CUR = [['SAR', 'Saudi riyal'], ['USD', 'US dollar'], ['EUR', 'Euro'], ['CNY', 'Chinese yuan'], ['AED', 'UAE dirham'], ['GBP', 'British pound'], ['INR', 'Indian rupee']];
+const pcCur = (o) => (o && o.cur) || 'SAR';
 
 const pc = { settings: null, open: null, loadedAt: 0, closed: {}, catalog: null, forUser: null, users: null,
   ui: pcNewUi() };
@@ -13570,6 +13598,8 @@ function pcNo(n){ return 'PO-' + String(n).padStart(4, '0'); }
 function pcStatusKey(o){ return ((o.status === 'ordered' || o.status === 'approved') && (o.items || []).some(i => (i.rec || 0) > 0)) ? 'partial' : o.status; }
 function pcPendingItems(o){ return (o.items || []).filter(i => (i.rec || 0) < (i.q || 0)); }
 function pcIsOpen(o){ return PC_OPEN.includes(o.status); }
+// a completed order still needs the real quantity and price the buyer paid
+function pcInfoMissing(o){ return o.status === 'received' && (o.items || []).some(i => !(i.ap > 0) || i.recAuto); }
 function pcFind(docId){
   let o = (pc.open || []).find(x => x.docId === docId); if(o) return o;
   for(const m of Object.keys(pc.closed)){ o = (pc.closed[m] || []).find(x => x.docId === docId); if(o) return o; }
@@ -13614,7 +13644,7 @@ function pcPhone(u){
   if(!s) return ''; s = s.replace(/^\+/, '').replace(/^00/, ''); return s.length >= 8 ? s : '';
 }
 async function pcPersist(o){
-  o.open = pcIsOpen(o);
+  o.open = pcIsOpen(o) || pcInfoMissing(o);
   o.closedMonth = o.open ? '' : pcMonthStr(o.closedAt || Date.now());
   if(JSON.stringify(o).length > 950000) throw new Error('TOO_BIG');
   await window.__db.poSave(o.docId, o);
@@ -13680,10 +13710,11 @@ function pcTasks(){
   const R = pcRoles(), me = pcMe(), S = pc.settings || PC_DEF, out = [];
   (pc.open || []).forEach(o => {
     const urgent = o.priority === 'urgent', base = { docId: o.docId, urgent };
-    if(o.createdBy === me){
+    if(o.status === 'received' && pcInfoMissing(o) && (o.createdBy === me || R.proc)) out.push(Object.assign({ kind: 'actual', level: 'soon', title: o.id + ' \u2014 add the real quantity and price', sub: (o.dept || '') + ' \u00B7 what was actually bought and paid', btn: 'Add' }, base));
+    if(o.createdBy === me && pcIsOpen(o)){
       if(o.status === 'rejected') out.push(Object.assign({ kind: 'rejected', level: 'late', title: o.id + ' was rejected', sub: o.rejectReason ? 'Reason: ' + o.rejectReason : 'Talk to the procurement officer', btn: 'Open' }, base));
       const since = Math.max(o.createdAt || 0, o.lastRemindAt || 0), d = pcDaysSince(since);
-      if(o.status !== 'rejected' && d >= S.remindDays) out.push(Object.assign({ kind: 'remind', level: 'late', title: 'Send an update for ' + o.id, sub: (o.dept || '') + ' · ' + (o.reqBy ? o.reqBy.name : '') + ' · not received after ' + pcDaysSince(o.createdAt) + ' days', btn: 'Send update' }, base));
+      if(pcIsOpen(o) && o.status !== 'rejected' && d >= S.remindDays) out.push(Object.assign({ kind: 'remind', level: 'late', title: 'Send an update for ' + o.id, sub: (o.dept || '') + ' · ' + (o.reqBy ? o.reqBy.name : '') + ' · not received after ' + pcDaysSince(o.createdAt) + ' days', btn: 'Send update' }, base));
     }
     if(R.proc){
       if(o.status === 'new') out.push(Object.assign({ kind: 'send', level: urgent ? 'late' : 'soon', title: 'New order ' + o.id + ' — send for approval', sub: (o.dept || '') + ' · ' + o.items.length + ' item(s) · by ' + o.createdByName, btn: 'Open' }, base));
@@ -13763,7 +13794,7 @@ function pcListHtml(){
   const R = pcRoles(), U = pc.ui, mine = pcScope(pc.open || []), tasks = pcTasks();
   const cnt = { todo: tasks.length, new: 0, approval: 0, approved: 0, rejected: 0, ordered: 0 };
   mine.forEach(o => { const t = pcTabOf(o); if(cnt[t] != null) cnt[t]++; });
-  const urgentOpen = mine.filter(o => o.priority === 'urgent').length;
+  const urgentOpen = mine.filter(o => o.priority === 'urgent' && pcIsOpen(o)).length;
   let h = `<div class="pcTop">${R.req ? `<button class="pcBtnMain" data-pc="new">${pcSvg('plus', 16)}New order</button>` : ''}<span class="grow"></span>${urgentOpen ? `<span class="pcUrgent">${urgentOpen} URGENT</span>` : ''}<button class="pillBtn" data-pc="refresh" title="Load the latest orders">${pcSvg('clock', 14)}Refresh</button></div>`;
   const tabs = '<div class="hrTabs">' + PC_TABS.map(t => `<button class="${U.tab === t[0] ? 'active' : ''}" data-pc="tab" data-v="${t[0]}">${t[1]}${cnt[t[0]] ? `<span class="${t[0] === 'todo' ? 'hrCnt' : 'pcCnt'}">${cnt[t[0]]}</span>` : ''}</button>`).join('') + '</div>';
   if(U.tab === 'todo') h += '<div class="card pcCtrl">' + tabs + '</div><div class="card pcListCard">' + pcTodoHtml(tasks) + '</div>';
@@ -13782,7 +13813,7 @@ function pcFilterPanel(list){
 }
 function pcTodoHtml(tasks){
   if(!tasks.length) return '<div class="hrEmpty">Nothing to do right now. \uD83C\uDF89<br><span class="hrNote">Approvals, new orders and reminders appear here.</span></div>';
-  const ic = { remind: ['wa', 'ic-green'], rejected: ['alert', 'ic-red'], send: ['send', 'ic-blue'], revise: ['alert', 'ic-red'], order: ['cart', 'ic-green'], approve: ['stamp', 'ic-yellow'], paper: ['stamp', 'ic-yellow'] };
+  const ic = { remind: ['wa', 'ic-green'], rejected: ['alert', 'ic-red'], send: ['send', 'ic-blue'], revise: ['alert', 'ic-red'], order: ['cart', 'ic-green'], actual: ['edit', 'ic-yellow'], approve: ['stamp', 'ic-yellow'], paper: ['stamp', 'ic-yellow'] };
   return tasks.map(t => {
     const i = ic[t.kind] || ['file', 'ic-grey'];
     return `<div class="pcOrder"><div class="pcOrderHead" data-pc="task" data-id="${pcEsc(t.docId)}" data-k="${t.kind}"><span class="ic ${i[1]}">${pcSvg(i[0], 17)}</span>
@@ -13795,7 +13826,7 @@ function pcOrdersHtml(mine){
   const card = (inner) => '<div class="card pcListCard">' + inner + '</div>';
   if(U.tab === 'done'){
     const m = U.month || (U.month = pcMonthStr(Date.now()));
-    base = pcScope(pc.closed[m] || []);
+    base = pcScope((pc.closed[m] || []).concat(mine.filter(o => pcTabOf(o) === 'done' && pcMonthStr(o.closedAt || Date.now()) === m)));
     mon = `<input type="month" class="pcMonth" data-pc="month" value="${m}" title="Month"><button class="pillBtn" data-pc="reloadclosed" title="Load this month again">${pcSvg('clock', 14)}Reload</button>`;
   } else base = mine.filter(o => pcTabOf(o) === U.tab);
   const act = pcFilterActive();
@@ -13817,12 +13848,13 @@ function pcOrderRow(o){
     <div class="c-items" title="${pcEsc(names)}"><span class="lbl">Items</span>${pcEsc(names)}</div>
     <div class="c-req"><span class="lbl">For</span>${pcEsc(o.reqBy ? o.reqBy.name : '')}</div>
     <div class="c-age">${when}</div>
-    <div class="c-tot">${tot ? pcMoney(tot) : '\u2013'}</div>
+    <div class="c-tot">${tot ? (pcCur(o) !== 'SAR' ? '<small>' + pcCur(o) + '</small> ' : '') + pcMoney(tot) : '\u2013'}</div>
     <div class="c-st"><span class="pcSt s-${sk}">${PC_LABEL[sk]}</span><span class="pcChev">${pcSvg('chev', 15)}</span></div></div>
     ${open ? '<div class="pcDetail">' + pcDetailHtml(o) + '</div>' : ''}</div>`;
 }
 function pcCanEdit(o){ const R = pcRoles(); return (o.status === 'new' || o.status === 'rejected') && (R.admin || R.proc || o.createdBy === pcMe()); }
 function pcCanReceive(o){ const R = pcRoles(); return (o.status === 'ordered' || o.status === 'approved') && (R.admin || R.proc || o.createdBy === pcMe()); }
+function pcCanActual(o){ const R = pcRoles(); return pcInfoMissing(o) && (R.admin || R.proc || o.createdBy === pcMe()); }
 function pcRemarks(it, docId, i){
   const tags = [];
   if(it.phys) tags.push(`<span class="pcTag${!it.link && !(it.photos || []).length ? ' warn' : ''}" title="${pcEsc(pcSampleText(it).t)}">${!it.link && !(it.photos || []).length ? 'Physical sample only' : 'Physical sample'}</span>`);
@@ -13830,25 +13862,28 @@ function pcRemarks(it, docId, i){
   (it.photos || []).forEach((p, k) => tags.push(`<a class="pcTag" href="#" data-pc="photo" data-id="${pcEsc(docId)}" data-i="${i}" data-k="${k}">${pcSvg('cam', 11)}Photo ${k + 1}</a>`));
   return tags.join('') + (it.note ? `<span class="pcItNote">${pcEsc(it.note)}</span>` : '');
 }
-const pcLast = (it) => it.lp ? pcMoney(it.lp) + (it.ld ? ' \u00B7 ' + fmtDate(pcDateStr(it.ld)).slice(0, 6) : '') : '\u2013';
+const pcLastP = (it, cur) => it.lp ? (it.lc && it.lc !== (cur || 'SAR') ? it.lc + ' ' : '') + pcMoney(it.lp) : '\u2013';
+const pcLastD = (it) => it.lp && it.ld ? fmtDate(pcDateStr(it.ld)) : '';
+const pcLast = (it, cur) => it.lp ? pcLastP(it, cur) + (it.ld ? ' \u00B7 ' + fmtDate(pcDateStr(it.ld)).slice(0, 6) : '') : '\u2013';
 // Items: one line per item, columns side by side (same layout as the printed paper)
 function pcItemsTable(o, rec){
-  const showRec = rec !== false && (['ordered', 'approved', 'received'].includes(o.status) || pcStatusKey(o) === 'partial'), canRec = pcCanReceive(o);
-  let h = `<div class="pcIts${showRec ? ' withrec' : ''}"><div class="pcItsH pcItG"><span>#</span><span>Item name</span><span>Description</span><span class="r">Qty</span><span>Unit</span><span class="r">Price</span><span class="r">Last bought</span><span class="r">Total</span><span>Remarks</span>${showRec ? '<span>Received</span>' : ''}</div>`;
+  const showRec = rec !== false && (['ordered', 'approved', 'received'].includes(o.status) || pcStatusKey(o) === 'partial'), canRec = pcCanReceive(o), cur = pcCur(o), canAct = pcCanActual(o);
+  let h = `<div class="pcIts"><div class="pcItsH pcItG"><span>#</span><span>Item name</span><span>Description</span><span class="r">Qty</span><span>Unit</span><span class="r">Price${cur !== 'SAR' ? ' (' + cur + ')' : ''}</span><span class="r">Last bought</span><span class="r">Last date</span><span class="r">Total</span><span>Remarks</span></div>`;
   o.items.forEach((it, i) => {
     const left = it.q - (it.rec || 0), desc = [it.d, it.b].filter(Boolean).map(pcEsc).join(', ');
-    let recCell = '';
+    let strip = '';
     if(showRec){
-      if(left <= 0) recCell = '<span class="pcSt s-received">Received</span>';
-      else if(canRec) recCell = `<span class="pcRecCell"><span class="hrNote">${it.rec || 0}/${it.q}</span><input type="number" min="1" max="${left}" value="${left}" id="pcRq_${i}"><button class="pcBtnSoft ok sm" data-pc="recitem" data-id="${pcEsc(o.docId)}" data-i="${i}">${pcSvg('check', 13)}Got it</button></span>`;
-      else recCell = `<span class="pcSt s-new">Pending ${left}</span>`;
+      const ph = it.p > 0 ? pcMoney(it.p) : '0.00';
+      if(left > 0 && canRec) strip = `<span class="hrNote">Received ${it.rec || 0} of ${it.q} ${pcEsc(it.u || '')}</span><label class="pcRecIn"><span>Qty bought</span><input type="number" min="0" step="any" value="${left}" id="pcRq_${i}"></label><label class="pcRecIn"><span>Actual price</span><input type="number" min="0" step="any" placeholder="${ph}" value="${it.ap > 0 ? it.ap : ''}" id="pcRp_${i}"></label><button class="pcBtnSoft ok sm" data-pc="recitem" data-id="${pcEsc(o.docId)}" data-i="${i}">${pcSvg('check', 13)}Got it</button>`;
+      else if(left > 0) strip = `<span class="pcSt s-new">Still to receive: ${left} ${pcEsc(it.u || '')}</span>`;
+      else strip = `<span class="pcSt s-received">Received ${it.rec}${it.rec !== it.q ? ' (ordered ' + it.q + ')' : ''} ${pcEsc(it.u || '')}</span>` + (it.ap > 0 ? `<span class="hrNote">Actual price <b>${pcMoney(it.ap)}</b> ${cur} \u00B7 total <b>${pcMoney(it.ap * it.rec)}</b></span>` : '') + ((!(it.ap > 0) || it.recAuto) ? `<span class="pcTag warn">${it.ap > 0 ? 'Check the real quantity' : 'Real price missing'}</span>` : '') + (canAct && (!(it.ap > 0) || it.recAuto) ? `<button class="pcBtnSoft sm" data-pc="actual" data-id="${pcEsc(o.docId)}">Add it</button>` : '');
     }
     h += `<div class="pcIt pcItG"><span class="c-no">${i + 1}</span><div class="c-name">${pcEsc(it.n)}</div><div class="c-desc" title="${desc}">${desc}</div>
-      <div class="c-nums"><span class="c-qty">${it.q}</span><span class="c-unit">${pcEsc(it.u || '')}</span><span class="c-price"><span class="lbl">Price </span>${pcMoney(it.p)}</span><span class="c-last"><span class="lbl">Last </span>${pcLast(it)}</span></div>
-      <span class="c-tot">${pcMoney(pcLine(it))}</span><div class="c-rem">${pcRemarks(it, o.docId, i)}</div>${showRec ? `<div class="c-rec">${recCell}</div>` : ''}</div>`;
+      <div class="c-nums"><span class="c-qty">${it.q}</span><span class="c-unit">${pcEsc(it.u || '')}</span><span class="c-price"><span class="lbl">Price </span>${pcMoney(it.p)}</span><span class="c-last"><span class="lbl">Last bought </span>${pcLastP(it, cur)}</span><span class="c-ldate">${pcLastD(it)}</span></div>
+      <span class="c-tot">${pcMoney(pcLine(it))}</span><div class="c-rem">${pcRemarks(it, o.docId, i)}</div></div>${strip ? `<div class="pcRecStrip">${strip}</div>` : ''}`;
   });
-  const tot = pcTotal(o);
-  return h + (tot ? `<div class="pcItTotal"><span>Total (SAR)</span><b>${pcMoney(tot)}</b></div>` : '') + '</div>';
+  const tot = pcTotal(o), act = o.items.reduce((t, it) => t + (it.ap > 0 ? it.ap * (it.rec || 0) : 0), 0);
+  return h + (tot ? `<div class="pcItTotal"><span>Total (${cur})</span><b>${pcMoney(tot)}</b></div>` : '') + (act > 0 ? `<div class="pcItTotal pcAct"><span>Actual paid (${cur})</span><b>${pcMoney(act)}</b></div>` : '') + '</div>';
 }
 const PC_STEPS = [['new', 'Created'], ['approval', 'Approval'], ['approved', 'Approved'], ['ordered', 'Ordered'], ['received', 'Received']];
 function pcStepsHtml(o){
@@ -13862,6 +13897,7 @@ function pcDetailHtml(o){
   const b = (act, label, ic, cls) => `<button class="pcBtnSoft ${cls || ''}" data-pc="${act}" data-id="${pcEsc(o.docId)}">${pcSvg(ic, 14)}${label}</button>`;
   const main = (act, label, ic) => `<button class="pcBtnMain sm" data-pc="${act}" data-id="${pcEsc(o.docId)}">${pcSvg(ic, 15)}${label}</button>`;
   const facts = [['Department', o.dept], ['Requested by', o.reqBy && o.reqBy.name], ['Created by', o.createdByName], ['Created', pcFmt(o.createdAt)]];
+  if(pcCur(o) !== 'SAR') facts.push(['Prices in', pcCur(o)]);
   if(o.proc && o.proc.supplier) facts.push(['Supplier', o.proc.supplier]);
   if(o.status === 'approval') facts.push(['Waiting for', paper ? 'Signature on paper' + (o.proc.approverName ? ' \u00B7 ' + o.proc.approverName : '') : (o.proc && o.proc.approverId ? pcNameOf(o.proc.approverId) : 'Executive')]);
   if(o.approvedAt) facts.push(['Approved', pcFmt(o.approvedAt) + (o.approvedByName ? ' \u00B7 ' + o.approvedByName : '')]);
@@ -13880,6 +13916,7 @@ function pcDetailHtml(o){
   if(R.proc && o.status === 'approval' && paper) a += main('paperok', 'Signed \u2014 mark approved', 'check') + b('reject', 'Rejected', 'x', 'danger');
   if(R.proc && o.status === 'approved') a += main('ordered', 'Mark as ordered', 'cart');
   if(pcCanReceive(o) && !(o.status === 'approved' && !R.proc)) a += main('recall', 'All received', 'check');
+  if(pcCanActual(o)) a += main('actual', 'Add real quantity & price', 'edit');
   const dl = b('pdfreq', 'Requisition PDF', 'down') + (o.status === 'new' ? '' : b('pdfpo', 'Order PDF', 'file'));
   let more = '';
   if(pcCanEdit(o)) more += b('edit', 'Edit order', 'edit');
@@ -13895,25 +13932,27 @@ function pcDetailHtml(o){
 }
 
 /* ---------- create / edit form ---------- */
-function pcBlankItem(){ return { lp: 0, ld: 0, n: '', d: '', b: '', q: 1, u: ((pc.settings || PC_DEF).units[0] || 'pcs'), p: '', phys: false, link: '', photos: [], note: '', more: false }; }
-function pcNewForm(){ return { docId: '', priority: 'regular', dept: '', reqBy: { id: '', name: '' }, note: '', items: [pcBlankItem()], recPhotos: [] }; }
+function pcBlankItem(){ return { lp: 0, ld: 0, lc: '', n: '', d: '', b: '', q: 1, u: ((pc.settings || PC_DEF).units[0] || 'pcs'), p: '', phys: false, link: '', photos: [], note: '', more: false }; }
+function pcNewForm(){ return { docId: '', cur: 'SAR', priority: 'regular', dept: '', reqBy: { id: '', name: '' }, note: '', items: [pcBlankItem()], recPhotos: [] }; }
 function pcFormFromOrder(o, asCopy){
-  return { docId: asCopy ? '' : o.docId, priority: o.priority, dept: o.dept, reqBy: Object.assign({}, o.reqBy), note: o.note || '', recPhotos: asCopy ? [] : (o.recPhotos || []).slice(),
-    items: o.items.map(i => ({ lp: i.lp || 0, ld: i.ld || 0, n: i.n, d: i.d || '', b: i.b || '', q: i.q, u: i.u, p: i.p || '', phys: !!i.phys, link: i.link || '', photos: (i.photos || []).slice(), note: i.note || '', more: !!(i.b || i.p || i.note || i.phys || i.link || (i.photos || []).length) })) };
+  return { docId: asCopy ? '' : o.docId, cur: o.cur || 'SAR', priority: o.priority, dept: o.dept, reqBy: Object.assign({}, o.reqBy), note: o.note || '', recPhotos: asCopy ? [] : (o.recPhotos || []).slice(),
+    items: o.items.map(i => ({ lp: i.lp || 0, ld: i.ld || 0, lc: i.lc || '', n: i.n, d: i.d || '', b: i.b || '', q: i.q, u: i.u, p: i.p || '', phys: !!i.phys, link: i.link || '', photos: (i.photos || []).slice(), note: i.note || '', more: !!(i.b || i.p || i.note || i.phys || i.link || (i.photos || []).length) })) };
 }
 function pcFormHtml(){
   const F = pc.ui.form, S = pc.settings, depts = pcDepts();
   return `<button class="pcBack" data-pc="back">${pcSvg('back', 15)}Back</button><div class="card pcForm"><h2 style="margin-top:0">${F.docId ? 'Edit order' : 'New order'}</h2>
-    <div class="field"><label>Priority</label><div class="pcSeg"><button data-pc="prio" data-v="regular" class="${F.priority === 'regular' ? 'on' : ''}">Regular</button><button data-pc="prio" data-v="urgent" class="urgent ${F.priority === 'urgent' ? 'on' : ''}">${pcSvg('flame', 15)}Urgent</button></div></div>
-    <div class="hrForm"><div class="field"><label>Requested by department</label><select data-pc="dept"><option value="">Select…</option>${depts.map(d => `<option ${F.dept === d ? 'selected' : ''}>${pcEsc(d)}</option>`).join('')}${F.dept && !depts.includes(F.dept) ? `<option selected>${pcEsc(F.dept)}</option>` : ''}</select></div>
+    <div class="hrForm"><div class="field"><label>Priority</label><div class="pcSeg"><button data-pc="prio" data-v="regular" class="${F.priority === 'regular' ? 'on' : ''}">Regular</button><button data-pc="prio" data-v="urgent" class="urgent ${F.priority === 'urgent' ? 'on' : ''}">${pcSvg('flame', 15)}Urgent</button></div></div>
+    <div class="field"><label>Prices in (change only for international buying)</label><select data-pc="cur">${PC_CUR.map(c => `<option value="${c[0]}" ${F.cur === c[0] ? 'selected' : ''}>${c[0]} \u2014 ${c[1]}</option>`).join('')}</select></div>
+    <div class="field"><label>Requested by department</label><select data-pc="dept"><option value="">Select…</option>${depts.map(d => `<option ${F.dept === d ? 'selected' : ''}>${pcEsc(d)}</option>`).join('')}${F.dept && !depts.includes(F.dept) ? `<option selected>${pcEsc(F.dept)}</option>` : ''}</select></div>
     <div class="field pcWho"><label>Requested by person (search or type)</label><input type="text" data-pc="who" autocomplete="off" placeholder="Start typing a name…" value="${pcEsc(F.reqBy.name)}"><div class="pcSug" id="pcWhoSug" style="display:none"></div></div></div>
-    <div class="pcSection" style="margin-top:6px">Items</div><div class="pcFT"><div class="pcFTH pcFRow"><span>#</span><span>Item name</span><span>Description</span><span>Qty</span><span>Unit</span><span>Price</span><span>Remarks</span><span></span></div><div id="pcItems">${F.items.map((it, i) => pcItemHtml(it, i, S.units)).join('')}</div></div>
+    <div class="pcSection" style="margin-top:6px">Items</div><div class="pcFT"><div class="pcFTH pcFRow"><span>#</span><span>Item name</span><span>Description</span><span>Qty</span><span>Unit</span><span>Price (${F.cur})</span><span>Last bought</span><span>Remarks</span><span></span></div><div id="pcItems">${F.items.map((it, i) => pcItemHtml(it, i, S.units)).join('')}</div></div>
     <button class="pcBtnSoft" data-pc="additem" style="margin-bottom:14px">${pcSvg('plus', 14)}Add another item</button>
     <div class="field"><label>Note (optional)</label><input type="text" data-pc="note" placeholder="Anything the buyer should know" value="${pcEsc(F.note)}"></div>
     <div class="field"><label>Photo of the signed requisition (optional — you can also add it later)</label><div class="pcThumbs">${F.recPhotos.map((p, k) => `<div class="pcThumb"><img src="${p}" alt=""><button data-pc="delrec" data-k="${k}" aria-label="Remove photo">×</button></div>`).join('')}
       ${F.recPhotos.length < 3 ? `<label class="pcBtnSoft">${pcSvg('cam', 14)}Add photo<input type="file" accept="image/*" data-pc="frec" style="display:none"></label>` : ''}</div></div>
     <div class="pcTop" style="margin:6px 0 0"><button class="pcBtnMain" data-pc="save" ${pc.ui.busy ? 'disabled' : ''}>${pcSvg('check', 16)}${F.docId ? 'Save changes' : 'Create order'}</button><button class="pcBtnSoft" data-pc="back">Cancel</button></div></div>`;
 }
+function pcLastCell(it){ return it.lp ? `<b>${(it.lc && it.lc !== 'SAR' ? it.lc + ' ' : '') + pcMoney(it.lp)}</b>${it.ld ? `<small>${fmtDate(pcDateStr(it.ld))}</small>` : ''}` : '<span class="pcNone">\u2013</span>'; }
 function pcItemHtml(it, i, units){
   const us = units.includes(it.u) ? units : units.concat([it.u]), sm = pcSampleText(it), n = pc.ui.form.items.length;
   const L = (t) => `<span class="fl">${t}</span>`;
@@ -13924,6 +13963,7 @@ function pcItemHtml(it, i, units){
     <div class="c-qty">${L('Qty')}<input type="number" min="1" step="any" data-pc="iqty" data-i="${i}" value="${it.q}"></div>
     <div class="c-unit">${L('Unit')}<select data-pc="iunit" data-i="${i}">${us.map(u => `<option ${u === it.u ? 'selected' : ''}>${pcEsc(u)}</option>`).join('')}</select></div>
     <div class="c-price">${L('Price (if known)')}<input type="number" min="0" step="any" data-pc="iprice" data-i="${i}" placeholder="0.00" value="${pcEsc(it.p)}"></div>
+    <div class="c-last">${L('Last bought')}<span class="pcLastTxt" id="pcLast${i}">${pcLastCell(it)}</span></div>
     <div class="c-rem">${L('Remarks')}<input type="text" data-pc="inote" data-i="${i}" placeholder="Colour, quality, where to buy" value="${pcEsc(it.note)}"></div>
     <div class="c-act"><button class="pcIconBtn" data-pc="imore" data-i="${i}" title="Sample, link, photos, brand" aria-label="More">${pcSvg('chev', 14)}</button>${n > 1 ? `<button class="pcIconBtn" data-pc="delitem" data-i="${i}" title="Remove" aria-label="Remove">${pcSvg('trash', 14)}</button>` : ''}</div></div>
     ${it.more ? `<div class="pcItemMore pcFMore"><div class="field">${L('Brand / manufacturer')}<input type="text" data-pc="ibrand" data-i="${i}" value="${pcEsc(it.b)}"></div>
@@ -13960,7 +14000,8 @@ async function pcSaveForm(){
   const F = pc.ui.form;
   if(pc.ui.busy) return;
   const cat = (pc.catalog && pc.catalog.items) || {};
-  const items = F.items.filter(i => i.n.trim()).map(i => ({ lp: i.lp || (cat[i.n.trim().toLowerCase()] || {}).lp || 0, ld: i.ld || (cat[i.n.trim().toLowerCase()] || {}).ld || 0, n: i.n.trim(), d: (i.d || '').trim(), b: (i.b || '').trim(), q: Number(i.q), u: i.u, p: Number(i.p) > 0 ? Number(i.p) : 0, phys: !!i.phys, link: pcSafeUrl(i.link), photos: i.photos.slice(0, 3), note: (i.note || '').trim() }));
+  const lastOf = (i) => cat[i.n.trim().toLowerCase()] || {};
+  const items = F.items.filter(i => i.n.trim()).map(i => ({ lp: lastOf(i).lp || 0, ld: lastOf(i).ld || 0, lc: lastOf(i).lc || '', n: i.n.trim(), d: (i.d || '').trim(), b: (i.b || '').trim(), q: Number(i.q), u: i.u, p: Number(i.p) > 0 ? Number(i.p) : 0, phys: !!i.phys, link: pcSafeUrl(i.link), photos: i.photos.slice(0, 3), note: (i.note || '').trim() }));
   if(!F.dept) return toast('Choose the department');
   if(!F.reqBy.name.trim()) return toast('Write who requested it');
   if(!items.length) return toast('Add at least one item');
@@ -13971,14 +14012,14 @@ async function pcSaveForm(){
     if(F.docId){
       o = await pcMutate(F.docId, (fresh) => {
         if(fresh.status !== 'new' && fresh.status !== 'rejected') throw new Error('LOCKED');
-        fresh.priority = F.priority; fresh.dept = F.dept; fresh.reqBy = { id: F.reqBy.id || '', name: F.reqBy.name.trim() }; fresh.note = F.note.trim();
+        fresh.priority = F.priority; fresh.cur = F.cur || 'SAR'; fresh.dept = F.dept; fresh.reqBy = { id: F.reqBy.id || '', name: F.reqBy.name.trim() }; fresh.note = F.note.trim();
         fresh.items = items.map(n => Object.assign({ rec: 0 }, n)); fresh.recPhotos = F.recPhotos.slice();
         pcLog(fresh, 'Edited the order');
       });
     } else {
       const n = await window.__db.poNextNo(), now = Date.now();
       o = { docId: 'po_' + String(n).padStart(4, '0'), id: pcNo(n), no: n, createdAt: now, createdBy: pcMe(), createdByName: state.user.name || pcMe(), status: 'new',
-        priority: F.priority, dept: F.dept, reqBy: { id: F.reqBy.id || '', name: F.reqBy.name.trim() }, note: F.note.trim(),
+        priority: F.priority, cur: F.cur || 'SAR', dept: F.dept, reqBy: { id: F.reqBy.id || '', name: F.reqBy.name.trim() }, note: F.note.trim(),
         items: items.map(i => Object.assign({ rec: 0 }, i)), recPhotos: F.recPhotos.slice(), proc: {}, log: [] };
       pcLog(o, 'Created the order' + (F.priority === 'urgent' ? ' (URGENT)' : '') + ' and sent it to procurement');
       await pcPersist(o);
@@ -14001,10 +14042,10 @@ async function pcSaveCatalog(items){
   if(keys.length > 1500) keys.sort((a, b) => (cat.items[a].last || 0) - (cat.items[b].last || 0)).slice(0, keys.length - 1500).forEach(k => delete cat.items[k]);
   await window.__db.saveConfigObject('purchaseCatalog', { items: cat.items });
 }
-// remember the prices as the "last bought" price for next time (one read + one write of the product list)
+// remember what was REALLY paid as the "last bought" price (one read + one write of the product list)
 async function pcSavePrices(o){
   const cat = await pcLoadCatalog(), now = Date.now(); let ch = false;
-  o.items.forEach(i => { if(!(i.p > 0)) return; const k = i.n.toLowerCase(), e = cat.items[k] || (cat.items[k] = { n: i.n, d: i.d || '', b: i.b || '', u: i.u, p: 0, link: i.link || '', phys: !!i.phys, note: '', uses: 1, last: now }); e.lp = i.p; e.ld = now; ch = true; });
+  o.items.forEach(i => { if(!(i.ap > 0)) return; const k = i.n.toLowerCase(), e = cat.items[k] || (cat.items[k] = { n: i.n, d: i.d || '', b: i.b || '', u: i.u, p: 0, link: i.link || '', phys: !!i.phys, note: '', uses: 1, last: now }); e.lp = i.ap; e.ld = now; e.lc = pcCur(o); ch = true; });
   if(ch) await window.__db.saveConfigObject('purchaseCatalog', { items: cat.items });
 }
 function pcDoneHtml(){
@@ -14041,9 +14082,9 @@ function pcOpenSendAppr(o){
     <div id="pcmPaperBox" style="display:none"><div class="field"><label>Who signs it? (optional)</label><input type="text" id="pcmWho" placeholder="e.g. the boss"></div>
       <label class="pcChk" style="margin-bottom:12px"><input type="checkbox" id="pcmSigned"> It is already signed \u2014 mark as approved now</label></div>
     <div class="field"><label>Supplier (optional)</label><input type="text" id="pcmSup" value="${pcEsc(o.proc && o.proc.supplier || '')}"></div>
-    <div class="pcSection" style="margin-top:0">Unit prices (SAR)</div>
+    <div class="pcSection" style="margin-top:0">Unit prices (${pcCur(o)})</div>
     ${o.items.map((it, i) => `<div class="pcPriceRow"><div class="pcPriceName"><b>${pcEsc(it.n)}</b><span class="hrNote">${it.q} ${pcEsc(it.u || '')}${it.b ? ' \u00B7 ' + pcEsc(it.b) : ''}</span></div><input type="number" min="0" step="any" id="pcmP_${i}" data-pc="pcmprice" value="${it.p || ''}" placeholder="0.00"></div>`).join('')}
-    <div class="pcPriceTot">Total <b id="pcmTot">SAR ${pcMoney(pcTotal(o))}</b></div>
+    <div class="pcPriceTot">Total <b id="pcmTot">${pcCur(o)} ${pcMoney(pcTotal(o))}</b></div>
     <div class="field"><label>Note (optional)</label><input type="text" id="pcmNote" value="${pcEsc(o.proc && o.proc.note || '')}"></div>
     <button class="pcBtnMain" data-pc="dosendappr" data-id="${pcEsc(o.docId)}">${pcSvg('send', 15)}Continue</button>`);
 }
@@ -14054,7 +14095,7 @@ function pcOpenPaperOk(o){
 function pcUpdateModalTotal(){
   const o = pcFind(pc.ui.modalId); if(!o) return; let t = 0;
   o.items.forEach((it, i) => { const e = $('pcmP_' + i); t += (parseFloat(e && e.value) || 0) * it.q; });
-  const el = $('pcmTot'); if(el) el.textContent = 'SAR ' + pcMoney(t);
+  const el = $('pcmTot'); if(el) el.textContent = pcCur(o) + ' ' + pcMoney(t);
 }
 function pcOpenReject(o){
   pcModalOpen(pcModalHead('Reject ' + o.id, 'Tell procurement why, so they can fix it.') + `<div class="field"><label>Reason</label><input type="text" id="pcmReason" placeholder="e.g. Price too high, get another quotation"></div>
@@ -14106,11 +14147,11 @@ function pcActSendAppr(id){
   const mode = $('pcmMode').dataset.v, sup = $('pcmSup').value.trim(), note = $('pcmNote').value.trim();
   const ap = mode === 'app' ? $('pcmAppr').value : '', who = mode === 'paper' ? $('pcmWho').value.trim() : '', signed = mode === 'paper' && $('pcmSigned').checked;
   const prices = pcFind(id).items.map((it, i) => { const e = $('pcmP_' + i); return Math.max(0, parseFloat(e && e.value) || 0); });
-  return pcRun(async () => { const o2 = await pcMutate(id, (o) => { pcNeed(o.status === 'new' || o.status === 'rejected');
+  return pcRun(async () => { await pcMutate(id, (o) => { pcNeed(o.status === 'new' || o.status === 'rejected');
     o.items.forEach((it, i) => { if(prices[i] != null) it.p = prices[i]; });
     o.rejectReason = ''; o.proc = { approverId: ap, supplier: sup, note, sentAt: Date.now(), paper: mode === 'paper', approverName: who };
     if(signed){ o.status = 'approved'; o.approvedAt = Date.now(); o.approvedBy = pcMe(); o.approvedByName = who || 'Signed on paper'; pcLog(o, 'Approved \u2014 already signed on paper' + (who ? ' by ' + who : '')); }
-    else { o.status = 'approval'; pcLog(o, mode === 'paper' ? 'Sent for approval on paper' + (who ? ' to ' + who : '') : 'Sent for approval to ' + (ap ? pcNameOf(ap) : 'the executive')); } }); if(o2) pcSavePrices(o2).catch(() => {}); }, signed ? 'Marked as approved' : 'Sent for approval');
+    else { o.status = 'approval'; pcLog(o, mode === 'paper' ? 'Sent for approval on paper' + (who ? ' to ' + who : '') : 'Sent for approval to ' + (ap ? pcNameOf(ap) : 'the executive')); } }); }, signed ? 'Marked as approved' : 'Sent for approval');
 }
 function pcActPaperOk(id){
   const who = ($('pcmWho').value || '').trim();
@@ -14132,18 +14173,41 @@ function pcActCancel(id){
   return pcRun(() => pcMutate(id, (o) => { pcNeed(pcIsOpen(o)); o.status = 'cancelled'; o.closedAt = Date.now(); pcLog(o, 'Cancelled' + (r ? ': ' + r : '')); }), 'Order cancelled');
 }
 function pcActRecItem(id, i){
-  const el = $('pcRq_' + i), q = el ? Number(el.value) : 0;
-  return pcRun(() => pcMutate(id, (o) => { pcNeed(o.status === 'ordered' || o.status === 'approved'); const it = o.items[i]; pcNeed(!!it);
-    const left = it.q - (it.rec || 0), take = Math.min(left, Math.max(0, q || left)); if(take <= 0) return false;
-    it.rec = (it.rec || 0) + take; it.recAt = Date.now();
-    pcLog(o, 'Received ' + take + ' ' + (it.u || '') + ' of ' + it.n);
-    if(!pcPendingItems(o).length){ o.status = 'received'; o.closedAt = Date.now(); pcLog(o, 'All items received — order complete'); } }), 'Marked as received');
+  const eq = $('pcRq_' + i), ep = $('pcRp_' + i), q = eq ? Number(eq.value) : 0, price = ep ? Number(ep.value) : 0;
+  if(eq && !(q > 0)) return toast('Write how many were bought');
+  return pcRun(async () => { const o2 = await pcMutate(id, (o) => { pcNeed(o.status === 'ordered' || o.status === 'approved'); const it = o.items[i]; pcNeed(!!it);
+    it.rec = (it.rec || 0) + q; it.recAt = Date.now(); it.recAuto = false; if(price > 0) it.ap = price;
+    pcLog(o, 'Received ' + q + ' ' + (it.u || '') + ' of ' + it.n + (price > 0 ? ' at ' + pcCur(o) + ' ' + price : ''));
+    if(!pcPendingItems(o).length){ o.status = 'received'; o.closedAt = Date.now(); pcLog(o, 'All items received \u2014 order complete'); } });
+    if(o2 && price > 0) pcSavePrices(o2).catch(() => {}); }, 'Marked as received');
 }
-function pcActRecAll(id){
-  return pcRun(() => pcMutate(id, (o) => { pcNeed(o.status === 'ordered' || o.status === 'approved');
-    o.items.forEach(it => { if((it.rec || 0) < it.q){ it.rec = it.q; it.recAt = Date.now(); } });
-    o.status = 'received'; o.closedAt = Date.now(); pcLog(o, 'All items received — order complete'); }), 'Order complete');
+// "All received" and "Add real quantity & price" share one small sheet
+function pcOpenRecModal(o, mode){
+  pc.ui.modalId = o.docId;
+  const cur = pcCur(o), all = mode === 'all';
+  pcModalOpen(pcModalHead(all ? 'All received \u2014 ' + o.id : 'Real quantity and price \u2014 ' + o.id, 'Write what was really bought and the price paid for one piece (' + cur + '). The quantity can be more or less than ordered.') + `
+    <div class="pcRecHead"><span>Item</span><span>Quantity bought</span><span>Actual price</span></div>
+    ${o.items.map((it, i) => `<div class="pcPriceRow pcRecRow"><div class="pcPriceName"><b>${pcEsc(it.n)}</b><span class="hrNote">Ordered ${it.q} ${pcEsc(it.u || '')}</span></div>
+      <input type="number" min="0" step="any" id="pcRM_q_${i}" value="${all ? Math.max(0, it.q - (it.rec || 0)) + (it.rec || 0) : (it.rec || '')}" aria-label="Quantity bought">
+      <input type="number" min="0" step="any" id="pcRM_p_${i}" value="${it.ap > 0 ? it.ap : ''}" placeholder="${it.p > 0 ? pcMoney(it.p) : '0.00'}" aria-label="Actual price"></div>`).join('')}
+    <div class="pcTop" style="margin-top:12px"><button class="pcBtnMain" data-pc="dorecmodal" data-mode="${mode}" data-id="${pcEsc(o.docId)}">${pcSvg('check', 15)}Save</button>${all ? `<button class="pcBtnSoft" data-pc="dorecmodal" data-mode="skip" data-id="${pcEsc(o.docId)}">Skip \u2014 I will add it later</button>` : ''}</div>
+    ${all ? '<div class="hrNote" style="margin-top:8px">If you skip, the order is marked complete and a task in your To do reminds you to add them.</div>' : ''}`);
 }
+function pcActRecModal(id, mode){
+  const src = pcFind(id); if(!src) return;
+  const vals = src.items.map((it, i) => { const eq = $('pcRM_q_' + i), ep = $('pcRM_p_' + i); return { q: Number(eq && eq.value) || 0, p: Number(ep && ep.value) || 0 }; });
+  return pcRun(async () => { const o2 = await pcMutate(id, (o) => {
+    pcNeed(mode === 'actual' ? o.status === 'received' : (o.status === 'ordered' || o.status === 'approved'));
+    o.items.forEach((it, i) => { const v = vals[i] || { q: 0, p: 0 };
+      if(mode === 'skip'){ if((it.rec || 0) < it.q){ it.rec = it.q; it.recAuto = true; it.recAt = Date.now(); } return; }
+      if(v.q > 0){ it.rec = v.q; it.recAuto = false; it.recAt = Date.now(); } else if(mode === 'all' && (it.rec || 0) < it.q){ it.rec = it.q; it.recAuto = true; it.recAt = Date.now(); }
+      if(v.p > 0) it.ap = v.p; });
+    if(mode === 'actual') pcLog(o, 'Added the real quantity and price');
+    else if(!pcPendingItems(o).length){ o.status = 'received'; o.closedAt = Date.now(); pcLog(o, 'All items received \u2014 order complete' + (mode === 'skip' ? ' (real quantity and price to be added)' : '')); }
+    else pcLog(o, 'Received part of the items'); });
+    pcModalClose(); if(o2) pcSavePrices(o2).catch(() => {}); }, 'Saved');
+}
+function pcActRecAll(id){ const o = pcFind(id); if(o) pcOpenRecModal(o, 'all'); }
 function pcActRemindDone(id){
   return pcRun(() => pcMutate(id, (o) => { pcNeed(pcIsOpen(o)); o.lastRemindAt = Date.now(); pcLog(o, 'Update sent on WhatsApp'); }), 'Done — next reminder in ' + pc.settings.remindDays + ' days');
 }
@@ -14193,7 +14257,7 @@ function pcPdfBlocks(o, kind, T, L){
   const total = pcTotal(o), per = 22;
   for(let i = 0; i < rows.length; i += per){
     const last = i + per >= rows.length;
-    const foot = (isPO && total && last) ? `<tr><td colspan="5" style="text-align:right;font-weight:700;background:#f8fafc">TOTAL (SAR)</td><td style="text-align:right;font-weight:700;background:#f8fafc">${pcMoney(total)}</td><td style="background:#f8fafc"></td></tr>` : '';
+    const foot = (isPO && total && last) ? `<tr><td colspan="5" style="text-align:right;font-weight:700;background:#f8fafc">TOTAL (${pcCur(o)})</td><td style="text-align:right;font-weight:700;background:#f8fafc">${pcMoney(total)}</td><td style="background:#f8fafc"></td></tr>` : '';
     blocks.push(`${css}<table class="pcPdfT"><thead><tr>${th}</tr></thead><tbody>${rows.slice(i, i + per).join('')}${foot}</tbody></table>`);
   }
   blocks.push(`<div style="${F};padding-top:12px">${closing ? `<div style="font-size:11.5px;color:#334155;line-height:1.5;margin-bottom:20px;white-space:pre-line">${esc(closing)}</div>` : '<div style="height:10px"></div>'}
@@ -14205,15 +14269,16 @@ function pcPdfBlocks(o, kind, T, L){
 function pcPdfModel(o, kind, T, L){
   const S = pc.settings || PC_DEF; T = T || S.tpl; const isPO = kind === 'po';
   const remarks = (it) => [it.phys ? ((it.link || (it.photos || []).length) ? 'Physical sample' : 'PHYSICAL SAMPLE ONLY - take it when buying') : '', it.link ? 'Link: ' + pcShortUrl(it.link) : '', (it.photos || []).length ? 'Photo(s) in the app' : '', it.note].filter(Boolean).join(' | ');
-  const head = isPO ? ['#', 'Item name', 'Description', 'Qty', 'Unit', 'Price', 'Last bought', 'Total', 'Remarks'] : ['#', 'Item name', 'Description', 'Qty', 'Unit', 'Remarks'];
-  const w = isPO ? [10, 25, 32, 10, 10, 14, 25, 16, 26] : [10, 40, 46, 14, 16, 56];
-  const right = isPO ? [3, 5, 6, 7] : [3];
+  const cur = pcCur(o), sd = (t) => { if(!t) return ''; const d = new Date(t); return d.getDate() + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getMonth()] + ' ' + String(d.getFullYear()).slice(2); };
+  const head = isPO ? ['#', 'Item name', 'Description', 'Qty', 'Unit', 'Price', 'Last bought', 'Last date', 'Total', 'Remarks'] : ['#', 'Item name', 'Description', 'Qty', 'Unit', 'Remarks'];
+  const w = isPO ? [7, 17, 23, 8, 8, 11, 14, 15, 12, 22] : [10, 40, 46, 14, 16, 56];
+  const right = isPO ? [3, 5, 6, 8] : [3];
   const rows = o.items.map((it, i) => { const d = [it.d, it.b].filter(Boolean).join(', ');
-    return isPO ? [String(i + 1), it.n, d, String(it.q), it.u || '', pcMoney(it.p), pcLast(it), pcMoney(pcLine(it)), remarks(it)] : [String(i + 1), it.n, d, String(it.q), it.u || '', remarks(it)]; });
+    return isPO ? [String(i + 1), it.n, d, String(it.q), it.u || '', pcMoney(it.p), it.lp ? pcLastP(it, cur) : '-', it.lp ? sd(it.ld) : '', pcMoney(pcLine(it)), remarks(it)] : [String(i + 1), it.n, d, String(it.q), it.u || '', remarks(it)]; });
   const info = [[['P.O. No.', o.id], ['Date', pcFmt(o.createdAt)], ['Department', o.dept], ['Requested by', o.reqBy && o.reqBy.name], ['Priority', o.priority === 'urgent' ? 'URGENT' : 'Regular']]];
-  if(isPO) info.push([['Supplier', o.proc && o.proc.supplier], ['Approved', o.approvedAt ? pcFmt(o.approvedAt) + (o.approvedByName ? ' - ' + o.approvedByName : '') : ''], ['Expected delivery', o.expected ? fmtDate(o.expected) : '']]);
+  if(isPO) info.push([['Supplier', o.proc && o.proc.supplier], ['Approved', o.approvedAt ? pcFmt(o.approvedAt) + (o.approvedByName ? ' - ' + o.approvedByName : '') : ''], ['Expected delivery', o.expected ? fmtDate(o.expected) : ''], ['Currency', pcCur(o)]]);
   return { kind, title: isPO ? T.poTitle : T.reqTitle, intro: isPO ? T.poIntro : T.reqIntro, closing: isPO ? T.poClosing : T.reqClosing, signers: (isPO ? T.poSigners : T.reqSigners) || [],
-    info, head, w, right, rows, total: isPO ? pcTotal(o) : 0, L };
+    info, head, w, right, rows, total: isPO ? pcTotal(o) : 0, ti: 8, cur, L };
 }
 function pcAscii(v){ return String(v == null ? '' : v).replace(/[‘’]/g, "'").replace(/[“”]/g, '"').replace(/…/g, '...').replace(/[^\u0000-ÿ–—•]/g, '?'); }
 const PC_AR = /[\u0590-\u08FF]/;
@@ -14247,7 +14312,7 @@ async function pcTextPdf(m, filename){
   pdf.setFont('helvetica', 'bold'); pdf.setFontSize(15); pdf.setTextColor(15, 23, 42); txt(String(m.title).toUpperCase(), PW / 2, y, { align: 'center' }); y += 6;
   // info boxes (soft grey rounded boxes, same look as the app)
   const GREY = [244, 245, 250], LINE = [226, 229, 238];
-  m.info.forEach((row, ri) => { const cw = ri === 0 ? [30, 32, 40, 48, 32] : [60, 80, 42], rh = 11.5, gap = 2, tot = cw.slice(0, row.length).reduce((p, q) => p + q, 0); let x = M;
+  m.info.forEach((row, ri) => { const cw = ri === 0 ? [30, 32, 40, 48, 32] : [44, 62, 38, 26], rh = 11.5, gap = 2, tot = cw.slice(0, row.length).reduce((p, q) => p + q, 0); let x = M;
     row.forEach((c, i) => { const wd = cw[i] / tot * (CW - gap * (row.length - 1)); pdf.setFillColor(GREY[0], GREY[1], GREY[2]); pdf.roundedRect(x, y, wd, rh, 2.5, 2.5, 'F');
       pdf.setFont('helvetica', 'normal'); pdf.setFontSize(6.5); pdf.setTextColor(100, 116, 139); txt(String(c[0]).toUpperCase(), x + 3, y + 4);
       pdf.setFont('helvetica', 'normal'); pdf.setFontSize(9.5); pdf.setTextColor(15, 23, 42); txt(wrap(c[1] || '\u2014', wd - 6)[0], x + 3, y + 8.6); x += wd + gap; });
@@ -14258,9 +14323,9 @@ async function pcTextPdf(m, filename){
   const LH = 3.7, PAD = 1.9, xs = []; { let x = M; const sum = m.w.reduce((p, q) => p + q, 0); m.w.forEach(wd => { const ww = wd * CW / sum; xs.push([x, ww]); x += ww; }); }
   let top = y;
   const closeCard = () => { pdf.setDrawColor(LINE[0], LINE[1], LINE[2]); pdf.setLineWidth(0.25); pdf.roundedRect(M, top, CW, y - top, 3, 3, 'S'); };
-  const drawHead = () => { const h = 7; top = y; pdf.setFillColor(GREY[0], GREY[1], GREY[2]); pdf.roundedRect(M, y, CW, h, 3, 3, 'F'); pdf.rect(M, y + 3, CW, h - 3, 'F');
-    pdf.setFont('helvetica', 'bold'); pdf.setFontSize(7); pdf.setTextColor(100, 116, 139);
-    m.head.forEach((t, i) => { const [x, ww] = xs[i]; if(m.right.includes(i)) txt(t.toUpperCase(), x + ww - 2.5, y + 4.5, { align: 'right' }); else txt(t.toUpperCase(), x + 2.5, y + 4.5); }); y += h; };
+  const drawHead = () => { pdf.setFont('helvetica', 'bold'); pdf.setFontSize(7); const hl = m.head.map((t, i) => pdf.splitTextToSize(A(t.toUpperCase()), xs[i][1] - 4)), h = Math.max(...hl.map(l => l.length)) * 3 + 4;
+    top = y; pdf.setFillColor(GREY[0], GREY[1], GREY[2]); pdf.roundedRect(M, y, CW, h, 3, 3, 'F'); pdf.rect(M, y + 3, CW, h - 3, 'F'); pdf.setTextColor(100, 116, 139);
+    hl.forEach((ls, i) => { const [x, ww] = xs[i]; ls.forEach((ln, k) => { if(m.right.includes(i)) pdf.text(ln, x + ww - 2.5, y + 4.3 + k * 3, { align: 'right' }); else pdf.text(ln, x + 2.5, y + 4.3 + k * 3); }); }); y += h; };
   drawHead();
   m.rows.forEach(r => {
     pdf.setFont('helvetica', 'normal'); pdf.setFontSize(8.5);
@@ -14269,12 +14334,12 @@ async function pcTextPdf(m, filename){
     pdf.setDrawColor(LINE[0], LINE[1], LINE[2]); pdf.setLineWidth(0.2); pdf.line(M, y, M + CW, y);
     cells.forEach((c, i) => { const [x, ww] = xs[i];
       const warn = i === m.head.length - 1 && /PHYSICAL SAMPLE ONLY/.test(r[i]);
-      pdf.setFont('helvetica', i === 1 || (i === 7 && m.kind === 'po') || warn ? 'bold' : 'normal'); pdf.setTextColor(warn ? 185 : 15, warn ? 28 : 23, warn ? 28 : 42);
-      if(i === 0 || i === 4 && m.kind === 'po' && false || i === 2 || (i === m.head.length - 1 && !warn)) pdf.setTextColor(100, 116, 139);
+      pdf.setFont('helvetica', i === 1 || (i === m.ti && m.kind === 'po') || warn ? 'bold' : 'normal'); pdf.setTextColor(warn ? 185 : 15, warn ? 28 : 23, warn ? 28 : 42);
+      if(i === 0 || (i === 7 && m.kind === 'po') || i === 2 || (i === m.head.length - 1 && !warn)) pdf.setTextColor(100, 116, 139);
       if(m.right.includes(i)) c.forEach((ln, k) => txt(ln, x + ww - 2.5, y + PAD + 2.8 + k * LH, { align: 'right' })); else c.forEach((ln, k) => txt(ln, x + 2.5, y + PAD + 2.8 + k * LH)); });
     y += h; });
-  if(m.total){ const h = 7.5; if(y + h > BOT){ closeCard(); pdf.addPage(); y = M; top = y; } pdf.setDrawColor(LINE[0], LINE[1], LINE[2]); pdf.line(M, y, M + CW, y); const t = xs[7]; pdf.setFont('helvetica', 'normal'); pdf.setFontSize(8); pdf.setTextColor(100, 116, 139);
-    txt('Total (SAR)', xs[7][0] - 2, y + 4.8, { align: 'right' }); pdf.setFont('helvetica', 'bold'); pdf.setFontSize(10); pdf.setTextColor(15, 23, 42); txt(pcMoney(m.total), t[0] + t[1] - 2.5, y + 4.9, { align: 'right' }); y += h; }
+  if(m.total){ const h = 7.5; if(y + h > BOT){ closeCard(); pdf.addPage(); y = M; top = y; } pdf.setDrawColor(LINE[0], LINE[1], LINE[2]); pdf.line(M, y, M + CW, y); const t = xs[m.ti]; pdf.setFont('helvetica', 'normal'); pdf.setFontSize(8); pdf.setTextColor(100, 116, 139);
+    txt('Total (' + m.cur + ')', xs[m.ti][0] - 2, y + 4.8, { align: 'right' }); pdf.setFont('helvetica', 'bold'); pdf.setFontSize(10); pdf.setTextColor(15, 23, 42); txt(pcMoney(m.total), t[0] + t[1] - 2.5, y + 4.9, { align: 'right' }); y += h; }
   closeCard();
   y += 8;
   // closing + signatures
@@ -14355,7 +14420,7 @@ async function pcOnClick(e){
     case 'tab': U.tab = el.dataset.v; U.q = ''; U.openId = null; U.limit = 30; pcRender();
       if(U.tab === 'done'){ const m = U.month || (U.month = pcMonthStr(Date.now())); if(!pc.closed[m]){ await pcLoadMonth(m); pcRender(); } }
       break;
-    case 'task': { const o = pcFind(id); if(!o) break; if(el.dataset.k === 'remind') pcOpenRemind(o); else { U.tab = pcTabOf(o); U.openId = id; pcRender(); const n = document.querySelector('.pcDetail'); if(n) n.scrollIntoView({ block: 'nearest' }); } break; }
+    case 'task': { const o = pcFind(id); if(!o) break; if(el.dataset.k === 'remind') pcOpenRemind(o); else if(el.dataset.k === 'actual') pcOpenRecModal(o, 'actual'); else { U.tab = pcTabOf(o); U.openId = id; pcRender(); const n = document.querySelector('.pcDetail'); if(n) n.scrollIntoView({ block: 'nearest' }); } break; }
     case 'toggle': U.openId = U.openId === id ? null : id; pcKeepScroll(pcRender); break;
     case 'more': U.limit += 30; pcKeepScroll(pcRender); break;
     case 'ftoggle': U.fopen = !U.fopen; pcKeepScroll(pcRender); break;
@@ -14376,7 +14441,7 @@ async function pcOnClick(e){
     case 'delrec': F.recPhotos.splice(Number(el.dataset.k), 1); pcKeepScroll(pcRender); break;
     case 'sugwho': { const rows = el.parentElement._rows, r = rows && rows[Number(el.dataset.n)]; if(r){ F.reqBy = { id: r.id, name: r.label }; if(!F.dept && r.dept) F.dept = r.dept; pcKeepScroll(pcRender); } break; }
     case 'sugitem': { const rows = el.parentElement._rows, r = rows && rows[Number(el.dataset.n)]; if(r){ const c = r.c, it = F.items[i];
-      it.n = c.n; it.lp = c.lp || 0; it.ld = c.ld || 0; it.d = c.d || it.d; it.b = c.b || ''; it.u = c.u || it.u; it.p = c.p || ''; it.link = c.link || ''; it.phys = !!c.phys; it.note = c.note || ''; it.more = !!(it.b || it.p || it.link || it.phys || it.note); pcKeepScroll(pcRender); } break; }
+      it.n = c.n; it.lp = c.lp || 0; it.ld = c.ld || 0; it.lc = c.lc || ''; it.d = c.d || it.d; it.b = c.b || ''; it.u = c.u || it.u; it.p = c.p || ''; it.link = c.link || ''; it.phys = !!c.phys; it.note = c.note || ''; it.more = !!(it.b || it.p || it.link || it.phys || it.note); pcKeepScroll(pcRender); } break; }
     case 'save': pcSaveForm(); break;
     case 'edit': if(O){ U.form = pcFormFromOrder(O, false); U.view = 'form'; pcRender(); window.scrollTo(0, 0); pcLoadCatalog().catch(() => {}); } break;
     case 'reorder': if(O){ U.form = pcFormFromOrder(O, true); U.view = 'form'; pcRender(); window.scrollTo(0, 0); pcLoadCatalog().catch(() => {}); } break;
@@ -14389,6 +14454,8 @@ async function pcOnClick(e){
     case 'ordered': if(O) pcOpenOrdered(O); break;
     case 'cancel': if(O) pcOpenCancel(O); break;
     case 'recall': pcActRecAll(id); break;
+    case 'actual': if(O) pcOpenRecModal(O, 'actual'); break;
+    case 'dorecmodal': pcActRecModal(id, el.dataset.mode); break;
     case 'recitem': pcActRecItem(id, i); break;
     case 'remind': if(O) pcOpenRemind(O); break;
     case 'pdfreq': pcPdf(id, 'req'); break;
@@ -14424,7 +14491,7 @@ function pcOnInput(e){
         pcShowSug($('pcWhoSug'), us.filter(u => (u.name || '').toLowerCase().includes(q) || (u.loginId || '').toLowerCase().includes(q)).slice(0, 6).map(u => ({ id: u.loginId, label: u.name || u.loginId, sub: u.department || '', dept: u.department || '' })), 'sugwho', 0); };
       if(pc.users) show(pc.users); else pcLoadUsers().then(show).catch(() => {});
       break; }
-    case 'iname': { F.items[i].n = el.value; pcShowSug($('pcItSug' + i), pcCatalogMatches(el.value).map(c => ({ label: c.n, sub: c.d || c.u || '', c })), 'sugitem', i); break; }
+    case 'iname': { F.items[i].n = el.value; { const c = pc.catalog && pc.catalog.items[el.value.trim().toLowerCase()], it = F.items[i]; it.lp = c ? c.lp || 0 : 0; it.ld = c ? c.ld || 0 : 0; it.lc = c ? c.lc || '' : ''; const cell = $('pcLast' + i); if(cell) cell.innerHTML = pcLastCell(it); } pcShowSug($('pcItSug' + i), pcCatalogMatches(el.value).map(c => ({ label: c.n, sub: (c.d || c.u || '') + (c.lp ? ' \u00B7 last ' + pcMoney(c.lp) : ''), c })), 'sugitem', i); break; }
     case 'iqty': F.items[i].q = el.value; break;
     case 'idesc': F.items[i].d = el.value; break;
     case 'ibrand': F.items[i].b = el.value; break;
@@ -14440,6 +14507,7 @@ async function pcOnChange(e){
   const U = pc.ui, F = U.form, i = el.dataset.i != null ? Number(el.dataset.i) : -1;
   switch(a){
     case 'dept': F.dept = el.value; break;
+    case 'cur': F.cur = el.value; pcKeepScroll(pcRender); break;
     case 'iunit': F.items[i].u = el.value; break;
     case 'iphys': F.items[i].phys = el.checked; pcKeepScroll(pcRender); break;
     case 'iphoto': { const f = el.files && el.files[0]; if(!f) break;
