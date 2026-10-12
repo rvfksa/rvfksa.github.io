@@ -1086,6 +1086,37 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
       await setDoc(doc(db, "config", key), { data: obj });
     },
 
+    /* ---------- Purchase orders (small documents in "config"; only OPEN orders are read by default) ---------- */
+    async poLoadOpen() {
+      if (!dbReady) throw new Error('NOT_CONFIGURED');
+      const snap = await getDocs(query(collection(db, "config"), where("kind", "==", "po"), where("open", "==", true)));
+      return snap.docs.map(d => Object.assign({}, d.data().data, { docId: d.id }));
+    },
+    async poLoadClosed(month) {
+      if (!dbReady) throw new Error('NOT_CONFIGURED');
+      const snap = await getDocs(query(collection(db, "config"), where("kind", "==", "po"), where("closedMonth", "==", month)));
+      return snap.docs.map(d => Object.assign({}, d.data().data, { docId: d.id }));
+    },
+    async poGet(docId) {
+      if (!dbReady) throw new Error('NOT_CONFIGURED');
+      const snap = await getDoc(doc(db, "config", docId));
+      return snap.exists() ? Object.assign({}, snap.data().data, { docId }) : null;
+    },
+    async poSave(docId, o) {
+      if (!dbReady) throw new Error('NOT_CONFIGURED');
+      await setDoc(doc(db, "config", docId), { kind: 'po', open: !!o.open, closedMonth: o.closedMonth || '', status: o.status, data: o });
+    },
+    async poNextNo() {
+      if (!dbReady) throw new Error('NOT_CONFIGURED');
+      const ref = doc(db, "config", "poCounter");
+      return await runTransaction(db, async (tx) => {
+        const snap = await tx.get(ref);
+        const n = (snap.exists() ? (snap.data().n || 0) : 0) + 1;
+        tx.set(ref, { n });
+        return n;
+      });
+    },
+
     /* ---------- vacations (own collection so attachments never bloat the user doc) ---------- */
     async saveVacation(record) {
       if (!dbReady) throw new Error('NOT_CONFIGURED');
@@ -1873,6 +1904,363 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
     #asumDash .asumTiles > .asumTile.chk .l, #assignSummary .asumTiles > .asumTile.chk .l{ font-size:10px !important; margin-top:4px !important; }
     #asumDash .asumTiles, #assignSummary .asumTiles{ gap:10px !important; }
   }
+  /* ===== Purchase page (same look as the Employee Overview / HR Assistant) ===== */
+  .pcWrap .pcTop{ display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-bottom:14px; }
+  .pcWrap .pcTop .grow{ flex:1; }
+  .pcBtnMain{ height:40px; padding:0 20px; border-radius:9999px; border:0; background:var(--amber); color:#fff; font:inherit; font-size:13px; font-weight:600; display:inline-flex; align-items:center; gap:8px; cursor:pointer; box-shadow:0 1px 3px rgba(79,70,229,.35); }
+  .pcBtnMain:hover{ filter:brightness(1.08); } .pcBtnMain[disabled]{ opacity:.5; cursor:default; }
+  .pcBtnMain.sm{ height:34px; padding:0 15px; font-size:12.5px; }
+  .pcBtnSoft{ height:34px; padding:0 14px; border-radius:9999px; border:1px solid rgba(15,23,42,.10); background:#fff; color:var(--text); font:inherit; font-size:12.5px; font-weight:600; display:inline-flex; align-items:center; gap:7px; cursor:pointer; }
+  .pcBtnSoft:hover{ background:var(--amber-soft); color:var(--amber); border-color:var(--amber-dim); }
+  .pcBtnSoft.danger{ color:var(--danger); } .pcBtnSoft.danger:hover{ background:var(--danger-soft); border-color:var(--danger-soft); color:var(--danger); }
+  .pcBtnSoft.ok{ color:#166534; } .pcBtnSoft.ok:hover{ background:var(--lcd-dim); border-color:var(--lcd-dim); color:#166534; }
+  .pcTiles{ display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:14px; }
+  .pcTile{ background:var(--panel-2); border-radius:16px; padding:18px 14px; cursor:pointer; text-align:left; border:0; font:inherit; transition:background .15s; }
+  .pcTile:hover{ background:#eceef5; }
+  .pcTile .ic{ width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; margin-bottom:12px; }
+  .pcTile .n{ display:block; font-family:'JetBrains Mono',monospace; font-size:28px; font-weight:700; line-height:1; color:var(--text-strong); }
+  .pcTile .l{ display:block; font-size:10.5px; text-transform:uppercase; letter-spacing:.04em; font-weight:600; color:var(--muted); margin-top:7px; }
+  .ic-blue{ background:var(--acc-blue-soft); color:var(--acc-blue); } .ic-red{ background:var(--danger-soft); color:var(--danger); } .ic-yellow{ background:var(--warn-soft); color:var(--warn); } .ic-green{ background:var(--lcd-dim); color:var(--ok); } .ic-purple{ background:var(--acc-purple-soft); color:var(--acc-purple); } .ic-grey{ background:var(--panel-2); color:var(--muted); }
+  @media (max-width:699px){ .pcTiles{ grid-template-columns:1fr 1fr; gap:10px; } .pcTile{ padding:14px 12px; } }
+  .pcSearch{ margin:0 0 6px; }
+  .pcOrder{ border-bottom:1px solid var(--line); }
+  .pcOrder:last-child{ border-bottom:0; }
+  .pcOrderHead{ display:flex; align-items:center; gap:14px; padding:16px 0; cursor:pointer; }
+  .pcOrderHead .ic{ width:38px; height:38px; border-radius:50%; flex:none; display:flex; align-items:center; justify-content:center; }
+  .pcOrderMain{ flex:1; min-width:0; }
+  .pcOrderTitle{ font-size:14px; font-weight:600; color:var(--text-strong); display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .pcOrderSub{ font-size:12.5px; color:var(--muted); margin-top:3px; }
+  .pcOrderSide{ display:flex; flex-direction:column; align-items:flex-end; gap:6px; flex:none; }
+  .pcSt{ display:inline-flex; align-items:center; border-radius:9999px; padding:3px 10px; font-size:11px; font-weight:600; white-space:nowrap; }
+  .pcSt.s-new{ background:var(--panel-2); color:var(--text); } .pcSt.s-approval{ background:var(--warn-soft); color:var(--warn); } .pcSt.s-approved{ background:var(--lcd-dim); color:#166534; } .pcSt.s-rejected{ background:var(--danger-soft); color:var(--danger); } .pcSt.s-ordered{ background:var(--acc-blue-soft); color:#1e40af; } .pcSt.s-partial{ background:var(--acc-purple-soft); color:#5b21b6; } .pcSt.s-received{ background:var(--lcd-dim); color:#166534; } .pcSt.s-cancelled{ background:var(--panel-2); color:var(--muted); }
+  .pcUrgent{ background:var(--danger); color:#fff; border-radius:9999px; padding:2px 9px; font-size:10px; font-weight:700; letter-spacing:.05em; }
+  .pcDays{ font-size:11.5px; color:var(--muted); }
+  .pcDetail{ padding:2px 0 18px 52px; }
+  @media (max-width:560px){ .pcDetail{ padding-left:0; } .pcOrderHead{ flex-wrap:wrap; } .pcOrderSide{ flex-direction:row; align-items:center; width:100%; justify-content:space-between; padding-left:52px; } }
+  .pcFacts{ display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:8px; margin-bottom:12px; }
+  .pcFact{ background:var(--panel-2); border-radius:12px; padding:9px 12px; } .pcFact .k{ font-size:9.5px; text-transform:uppercase; letter-spacing:.05em; font-weight:600; color:var(--muted); } .pcFact .v{ font-size:13px; font-weight:600; color:var(--text-strong); margin-top:2px; word-break:break-word; }
+  .pcTbl{ width:100%; border-collapse:collapse; font-size:13px; } .pcTblWrap{ overflow-x:auto; border-radius:12px; border:1px solid var(--line); margin-bottom:12px; }
+  .pcTbl th{ text-align:left; padding:10px 10px; color:var(--muted); text-transform:uppercase; font-size:10.5px; letter-spacing:.05em; background:var(--panel-2); border-bottom:1px solid var(--line); white-space:nowrap; }
+  .pcTbl td{ padding:11px 10px; border-bottom:1px solid var(--line); vertical-align:middle; } .pcTbl tr:last-child td{ border-bottom:0; }
+  .pcTbl input[type=number]{ width:70px; padding:7px 8px; font-size:13px; }
+  .pcTag{ display:inline-flex; align-items:center; gap:4px; background:var(--panel-2); border-radius:9999px; padding:2px 9px; font-size:11px; color:var(--text); margin:2px 4px 2px 0; text-decoration:none; }
+  .pcTag.warn{ background:var(--warn-soft); color:var(--warn); }
+  .pcActs{ display:flex; flex-wrap:wrap; gap:8px; margin:4px 0 12px; }
+  .pcLog{ font-size:12px; color:var(--muted); line-height:1.7; }
+  .pcSection{ font-size:10.5px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); font-weight:600; margin:20px 0 4px; }
+  .pcForm .field{ margin-bottom:12px; }
+  .pcSeg{ display:flex; gap:2px; background:var(--panel-2); border-radius:12px; padding:3px; }
+  .pcSeg button{ flex:1; border:0; background:transparent; padding:10px 6px; border-radius:9px; font:inherit; font-size:13px; font-weight:600; color:var(--muted); cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; }
+  .pcSeg button.on{ background:#fff; color:var(--text-strong); box-shadow:0 1px 3px rgba(15,23,42,.14); }
+  .pcSeg button.on.urgent{ color:var(--danger); }
+  .pcItem{ background:var(--panel-2); border-radius:16px; padding:14px; margin-bottom:10px; }
+  .pcItemRow{ display:grid; grid-template-columns:1fr 84px 96px; gap:10px; align-items:end; }
+  .pcItemRow .field{ margin-bottom:0; }
+  @media (max-width:560px){ .pcItemRow{ grid-template-columns:1fr 1fr; } .pcItemRow .field:first-child{ grid-column:1/-1; } }
+  .pcItemMore{ margin-top:10px; display:grid; gap:10px; }
+  .pcItemTop{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; font-size:11px; text-transform:uppercase; letter-spacing:.05em; font-weight:600; color:var(--muted); }
+  .pcThumbs{ display:flex; flex-wrap:wrap; gap:8px; }
+  .pcThumb{ position:relative; width:62px; height:62px; border-radius:10px; overflow:hidden; background:#fff; }
+  .pcThumb img{ width:100%; height:100%; object-fit:cover; }
+  .pcThumb button{ position:absolute; top:2px; right:2px; width:20px; height:20px; border-radius:50%; border:0; background:rgba(15,23,42,.65); color:#fff; font-size:13px; line-height:1; cursor:pointer; padding:0; }
+  .pcChk{ display:flex; align-items:center; gap:9px; font-size:13px; color:var(--text); cursor:pointer; }
+  .pcChk input{ width:auto; margin:0; }
+  .pcBack{ display:inline-flex; align-items:center; gap:6px; border:0; background:transparent; color:var(--muted); font:inherit; font-size:13px; font-weight:600; cursor:pointer; padding:4px 0; margin-bottom:8px; }
+  .pcBack:hover{ color:var(--amber); }
+  .pcDone{ text-align:center; padding:26px 10px 10px; }
+  .pcDone .ic{ width:56px; height:56px; border-radius:50%; margin:0 auto 14px; display:flex; align-items:center; justify-content:center; }
+  .pcWho{ position:relative; }
+  .pcSug{ position:absolute; left:0; right:0; top:100%; z-index:20; background:#fff; border:1px solid var(--line); border-radius:12px; box-shadow:0 8px 24px rgba(15,23,42,.14); max-height:220px; overflow:auto; margin-top:4px; }
+  .pcSug div{ padding:10px 12px; font-size:13px; cursor:pointer; border-bottom:1px solid var(--line); } .pcSug div:last-child{ border-bottom:0; } .pcSug div:hover{ background:var(--panel-2); } .pcSug small{ color:var(--muted); margin-left:6px; }
+  .pcNavBadge{ display:inline-flex; align-items:center; justify-content:center; min-width:17px; height:17px; border-radius:9px; background:var(--danger); color:#fff; font-size:10px; font-weight:700; padding:0 4px; margin-left:6px; vertical-align:1px; }
+  .pcAdm .pcPick{ display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:4px 14px; max-height:230px; overflow:auto; padding:10px 12px; background:var(--panel-2); border-radius:12px; margin-bottom:14px; }
+  .pcAdm .pcPick label{ display:flex; align-items:center; gap:8px; font-size:12.5px; margin:0; text-transform:none; letter-spacing:0; font-weight:500; color:var(--text); }
+  .pcAdm .pcPick input{ width:auto; margin:0; }
+  .pcAdm h3{ font-family:'Oswald',sans-serif; font-size:15px; margin:20px 0 6px; color:var(--text-strong); }
+  .pcAdm .hrForm textarea{ min-height:64px; font-size:13px; }
+  .pcDashCard .pcApr{ padding:14px 0; border-bottom:1px solid var(--line); } .pcDashCard .pcApr:last-child{ border-bottom:0; }
+.pcTile.on{ background:var(--amber-soft); }
+  .pcWrap label.pcBtnSoft, .hrSheet label.pcBtnSoft, .pcAdm label.pcBtnSoft{ text-transform:none; letter-spacing:0; font-size:12.5px; margin:0; color:var(--text); }
+  .pcSearch input{ width:100%; height:38px; padding-left:36px; border-radius:11px; border:1px solid var(--line); background:var(--panel-2); outline:none; box-shadow:none; }
+  .pcSearch input:focus{ border-color:var(--amber-dim); background:#fff; }
+  .pcSearch{ position:relative; margin-bottom:6px; } .pcSearch svg{ position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--muted); pointer-events:none; }
+  /* ---- v2: compact rows, chips, filter, action bar ---- */
+  .pcChips{ display:flex; gap:8px; overflow-x:auto; padding:2px 0 12px; margin-bottom:2px; scrollbar-width:none; }
+  .pcChips::-webkit-scrollbar{ display:none; }
+  .pcChip{ flex:none; height:36px; padding:0 15px; border-radius:9999px; border:0; background:var(--panel-2); color:var(--text); font:inherit; font-size:13px; font-weight:600; display:inline-flex; align-items:center; gap:8px; cursor:pointer; white-space:nowrap; }
+  .pcChip:hover{ background:#eceef5; }
+  .pcChip.on{ background:var(--amber-soft); color:var(--amber); }
+  .pcChip .c{ font-family:'JetBrains Mono',monospace; font-size:11.5px; font-weight:700; min-width:20px; height:20px; padding:0 6px; border-radius:10px; background:#fff; color:var(--text); display:inline-flex; align-items:center; justify-content:center; }
+  .pcChip.on .c{ color:var(--amber); } .pcChip .c.hot{ background:var(--danger); color:#fff; }
+  .pcListCard{ padding-top:14px; padding-bottom:6px; }
+  .pcSearchRow{ display:flex; gap:8px; align-items:center; margin-bottom:6px; }
+  .pcSearchRow .pcSearch{ flex:1; margin:0; }
+  .pcIconBtn{ position:relative; width:38px; height:38px; flex:none; border-radius:50%; border:1px solid rgba(15,23,42,.10); background:#fff; color:var(--muted); display:inline-flex; align-items:center; justify-content:center; cursor:pointer; padding:0; }
+  .pcIconBtn:hover{ background:var(--amber-soft); color:var(--amber); }
+  .pcIconBtn.on{ background:var(--amber-soft); color:var(--amber); border-color:var(--amber-dim); }
+  .pcIconBtn i{ position:absolute; top:6px; right:6px; width:8px; height:8px; border-radius:50%; background:var(--amber); }
+  .pcFilter{ background:var(--panel-2); border-radius:14px; padding:12px; margin:4px 0 8px; }
+  .pcFilter .hrForm{ grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); }
+  .pcOrderHead{ padding:12px 0; gap:12px; }
+  .pcOrderHead .ic{ width:34px; height:34px; }
+  .pcOrderTitle{ font-size:13.5px; } .pcOrderSub{ font-size:12px; }
+  .pcOrder.open > .pcOrderHead{ padding-bottom:8px; }
+  .pcDetail{ padding:2px 0 16px 46px; }
+  @media (max-width:560px){ .pcDetail{ padding-left:0; } .pcOrderSide{ flex-direction:column; align-items:flex-end; width:auto; padding-left:0; } .pcOrderHead{ flex-wrap:nowrap; } }
+  .pcBtnSoft.sm, .pcBtnMain.sm{ height:30px; padding:0 12px; font-size:12px; }
+  span.pcBtnSoft.sm{ cursor:pointer; }
+  .pcFacts{ display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:4px 18px; margin:8px 0 12px; }
+  .pcFact{ background:transparent; border-radius:0; padding:0; display:flex; gap:8px; font-size:12.5px; }
+  .pcFact .k{ font-size:11px; text-transform:none; letter-spacing:0; font-weight:500; color:var(--muted); min-width:86px; } .pcFact .v{ margin:0; font-size:12.5px; font-weight:600; }
+  .pcSteps{ display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin:6px 0 4px; }
+  .pcSteps i{ width:14px; height:1px; background:var(--line-strong, #cbd5e1); }
+  .pcStep{ font-size:11px; font-weight:600; color:var(--muted); background:var(--panel-2); border-radius:9999px; padding:3px 10px; }
+  .pcStep.done{ background:var(--lcd-dim); color:#166534; } .pcStep.now{ background:var(--amber-soft); color:var(--amber); } .pcStep.bad{ background:var(--danger-soft); color:var(--danger); }
+  .pcAlert{ background:var(--danger-soft); color:var(--danger); border-radius:12px; padding:9px 12px; font-size:12.5px; font-weight:600; margin-bottom:10px; }
+  .pcTbl{ min-width:760px; } .pcTbl th.r, .pcTbl td.r{ text-align:right; } .pcTbl td{ font-size:12.5px; } .pcTbl tfoot td{ background:var(--panel-2); border-bottom:0; }
+  .pcRecCell{ display:flex; gap:6px; align-items:center; white-space:nowrap; } .pcRecCell input{ width:60px; }
+  .pcBar{ display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px; margin:2px 0 8px; }
+  .pcBarMain, .pcBarTools{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+  .pcMore{ position:relative; } .pcMore summary{ list-style:none; cursor:pointer; } .pcMore summary::-webkit-details-marker{ display:none; }
+  .pcMoreList{ position:absolute; right:0; top:calc(100% + 6px); z-index:15; background:#fff; border:1px solid var(--line); border-radius:14px; box-shadow:0 8px 24px rgba(15,23,42,.14); padding:8px; display:flex; flex-direction:column; gap:6px; min-width:210px; }
+  .pcMoreList .pcBtnSoft{ justify-content:flex-start; border-color:transparent; } .pcMoreList:empty{ display:none; }
+  .pcHist summary{ cursor:pointer; font-size:11.5px; color:var(--muted); font-weight:600; padding:6px 0; list-style:none; } .pcHist summary::-webkit-details-marker{ display:none; }
+  .pcItemRow2{ display:grid; grid-template-columns:1fr 1fr; gap:10px; } @media (max-width:560px){ .pcItemRow2{ grid-template-columns:1fr; } }
+  .pcPriceRow{ display:flex; align-items:center; gap:10px; padding:7px 0; border-bottom:1px solid var(--line); } .pcPriceRow input{ width:110px; flex:none; }
+  .pcPriceName{ flex:1; min-width:0; display:flex; flex-direction:column; font-size:13px; }
+  .pcPriceTot{ display:flex; justify-content:space-between; padding:10px 2px 12px; font-size:13px; color:var(--muted); } .pcPriceTot b{ color:var(--text-strong); font-family:'JetBrains Mono',monospace; }
+  .pcRoleTag{ display:inline-flex; align-items:center; gap:4px; background:var(--amber-soft); color:var(--amber); border-radius:9999px; padding:3px 4px 3px 11px; font-size:11.5px; font-weight:600; }
+  .pcRoleTag button{ width:18px; height:18px; border-radius:50%; border:0; background:transparent; color:var(--amber); cursor:pointer; font-size:14px; line-height:1; padding:0; } .pcRoleTag button:hover{ background:#fff; }
+  .pcDashCard .pcBar{ margin-top:6px; }
+  /* ---- v3: cleaner rows, item list, mouse-friendly wrapping ---- */
+  .pcListCard{ padding:4px 14px 6px; }
+  .pcOrderHead{ padding:13px 0; gap:12px; align-items:center; }
+  .pcOrderMain{ min-width:0; }
+  .pcOrderTitle{ font-size:14px; gap:6px; } .pcOrderTitle b{ font-weight:700; color:var(--text-strong); } .pcDot{ color:var(--muted); }
+  .pcOrderItems{ font-size:12.5px; color:var(--text); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .pcOrderSub{ font-size:11.5px; color:var(--muted); margin-top:2px; }
+  .pcOrderSide{ flex-direction:row; align-items:center; gap:8px; }
+  .pcChev{ color:var(--muted); display:inline-flex; transition:transform .15s; } .pcOrder.open .pcChev{ transform:rotate(180deg); }
+  .pcOrder.open{ background:transparent; }
+  .pcDetail{ padding:0 0 14px 0; }
+  .pcOrder.open > .pcOrderHead{ padding-bottom:6px; }
+  @media (max-width:560px){ .pcOrderSide{ flex-direction:column; align-items:flex-end; gap:4px; width:auto; padding:0; } .pcChev{ display:none; } .pcListCard{ padding:2px 12px 4px; } }
+  .pcFacts{ display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px 18px; margin:12px 0 14px; }
+  .pcFact{ display:block; } .pcFact .k{ display:block; min-width:0; font-size:10px; text-transform:uppercase; letter-spacing:.05em; font-weight:600; color:var(--muted); }
+  .pcFact .v{ display:block; margin-top:2px; font-size:13px; font-weight:600; color:var(--text-strong); word-break:break-word; }
+  .pcIts{ border:1px solid var(--line); border-radius:14px; margin-bottom:12px; overflow:hidden; background:#fff; }
+  .pcIt{ padding:11px 14px; border-bottom:1px solid var(--line); } .pcIt:last-of-type{ border-bottom:0; }
+  .pcItHead{ display:flex; gap:10px; align-items:flex-start; }
+  .pcItHead .no{ flex:none; width:22px; height:22px; border-radius:50%; background:var(--panel-2); color:var(--muted); font-size:11px; font-weight:700; display:inline-flex; align-items:center; justify-content:center; margin-top:1px; }
+  .pcItMain{ flex:1; min-width:0; } .pcItName{ font-size:13.5px; font-weight:700; color:var(--text-strong); word-break:break-word; } .pcItSub{ font-size:12px; color:var(--muted); margin-top:1px; word-break:break-word; }
+  .pcItNum{ flex:none; text-align:right; } .pcItNum .q{ font-size:13px; font-weight:600; color:var(--text-strong); white-space:nowrap; } .pcItNum .p{ font-size:11px; color:var(--muted); white-space:nowrap; } .pcItNum .t{ font-family:'JetBrains Mono',monospace; font-size:12.5px; font-weight:700; color:var(--text-strong); }
+  .pcItTags{ margin:6px 0 0 32px; } .pcItNote{ font-size:12px; color:var(--muted); margin-top:3px; }
+  .pcItRec{ margin:8px 0 0 32px; display:flex; gap:8px; align-items:center; flex-wrap:wrap; } .pcItRec input{ width:64px; }
+  .pcItTotal{ display:flex; justify-content:space-between; align-items:center; padding:10px 14px; background:var(--panel-2); font-size:12.5px; color:var(--muted); font-weight:600; } .pcItTotal b{ font-family:'JetBrains Mono',monospace; font-size:14px; color:var(--text-strong); }
+  .pcSigRow{ display:flex; gap:8px; align-items:center; margin-bottom:6px; } .pcSigRow b{ flex:none; max-width:44%; font-size:12.5px; } .pcSigRow input{ flex:1; min-width:0; height:34px; padding:0 10px; }
+  @media (hover:hover) and (pointer:fine){
+    .navbar{ flex-wrap:wrap; overflow-x:visible; }
+    .pcChips{ flex-wrap:wrap; overflow-x:visible; }
+  }
+  /* ---- v4: use the width — column layout on computers, clear panel when opened ---- */
+  .pcRowG{ display:grid; align-items:center; column-gap:16px; grid-template-columns:34px minmax(150px,1.1fr) minmax(0,2fr) minmax(0,1.2fr) 110px 150px; }
+  .pcListHead{ padding:4px 0 8px; border-bottom:1px solid var(--line); font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; font-weight:600; color:var(--muted); margin-top:4px; }
+  .pcListHead .r{ text-align:right; }
+  .pcOrderHead.pcRowG{ display:grid; }
+  .pcOrderHead .c-items .val, .pcOrderHead .c-req .val{ display:block; font-size:13px; color:var(--text-strong); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .pcOrderHead .c-tot{ text-align:right; } .pcOrderHead .c-tot .val{ font-family:'JetBrains Mono',monospace; font-size:12.5px; font-weight:700; color:var(--text-strong); white-space:nowrap; }
+  .pcOrderHead .c-st{ display:flex; justify-content:flex-end; align-items:center; gap:8px; }
+  .pcOrderHead .lbl{ display:none; }
+  .pcOrderHead .c-ord{ min-width:0; }
+  .pcOrder.open > .pcOrderHead{ padding-bottom:12px; }
+  .pcDetail{ background:var(--panel-2); border-radius:16px; padding:6px 20px 20px; margin:2px 0 16px; }
+  .pcDSec{ margin-top:18px; } .pcDLabel{ font-size:10.5px; text-transform:uppercase; letter-spacing:.06em; font-weight:700; color:var(--muted); margin-bottom:9px; }
+  .pcDetail .pcSteps{ margin:0; } .pcDetail .pcStep{ background:#fff; } .pcDetail .pcStep.done{ background:var(--lcd-dim); } .pcDetail .pcStep.now{ background:var(--amber-soft); } .pcDetail .pcStep.bad{ background:var(--danger-soft); }
+  .pcDetail .pcFacts{ margin:0; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:14px 26px; }
+  .pcDetail .pcBar{ margin-top:18px; padding-top:16px; border-top:1px solid var(--line-strong, #dfe2ec); }
+  .pcDetail .pcHist{ margin-top:6px; }
+  .pcDetail .pcAlert{ margin-top:14px; margin-bottom:0; }
+  @media (max-width:700px){
+    .pcListHead{ display:none; }
+    .pcRowG{ grid-template-columns:34px 1fr auto; row-gap:3px; column-gap:12px; }
+    .pcOrderHead .ic{ grid-row:1 / span 3; align-self:start; }
+    .pcOrderHead .c-ord{ grid-column:2; grid-row:1; } .pcOrderHead .c-st{ grid-column:3; grid-row:1; }
+    .pcOrderHead .c-items{ grid-column:2 / 4; grid-row:2; } .pcOrderHead .c-req{ grid-column:2; grid-row:3; } .pcOrderHead .c-tot{ grid-column:3; grid-row:3; }
+    .pcOrderHead .lbl{ display:inline; font-size:11px; color:var(--muted); margin-right:5px; }
+    .pcOrderHead .c-items .val, .pcOrderHead .c-req .val{ display:inline; }
+    .pcOrderHead .c-items{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .pcDetail{ padding:2px 14px 16px; margin-left:-4px; margin-right:-4px; }
+    .pcChev{ display:inline-flex !important; }
+  }
+  @media (max-width:700px){ .pcDetail .pcFacts{ grid-template-columns:1fr 1fr; gap:12px 16px; } }
+  /* ===== v5: one-line rows, columns side by side ===== */
+  .pcRowG{ grid-template-columns:30px 150px 110px minmax(0,1fr) 140px 52px 92px 128px; column-gap:12px; }
+  .pcOrderHead{ padding:9px 0; }
+  .pcOrderHead .ic{ width:28px; height:28px; grid-row:auto; align-self:center; }
+  .pcOrderHead > div{ min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-size:13px; color:var(--text-strong); }
+  .pcOrderHead .c-po{ display:flex; align-items:center; gap:6px; overflow:visible; }
+  .pcOrderHead .c-po .dm{ display:none; }
+  .pcOrderHead .c-age{ color:var(--muted); font-size:12px; }
+  .pcOrderHead .c-tot{ text-align:right; font-family:'JetBrains Mono',monospace; font-size:12.5px; font-weight:700; }
+  .pcOrderHead .c-st{ display:flex; justify-content:flex-end; align-items:center; gap:6px; overflow:visible; }
+  .pcOrderHead .lbl{ display:none; }
+  .pcUrgent{ padding:1px 7px; font-size:9px; }
+  .pcDetail{ padding:2px 14px 14px; margin:0 0 10px; }
+  .pcDetail .pcFacts{ grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:6px 18px; }
+  .pcDetail .pcBar{ margin-top:12px; padding-top:12px; }
+  .pcDetail > * + *{ margin-top:10px; }
+  /* items table */
+  .pcIts{ background:#fff; border-radius:12px; overflow:hidden; }
+  .pcItG{ display:grid; align-items:center; column-gap:10px; grid-template-columns:26px minmax(0,2.6fr) 84px 76px 112px 88px minmax(0,1.6fr); padding:6px 12px; }
+  .pcIts.withrec .pcItG{ grid-template-columns:26px minmax(0,2.4fr) 84px 76px 112px 88px minmax(0,1.4fr) 200px; }
+  .pcItsH{ background:#f1f2f7; font-size:10px; text-transform:uppercase; letter-spacing:.05em; font-weight:700; color:var(--muted); padding-top:7px; padding-bottom:7px; }
+  .pcItG .r, .pcIt .c-qty, .pcIt .c-price, .pcIt .c-last, .pcIt .c-tot{ text-align:right; }
+  .pcIt{ border-top:1px solid var(--line); font-size:12.5px; }
+  .pcIt > *{ min-width:0; }
+  .pcIt .c-no{ color:var(--muted); font-size:11.5px; }
+  .pcIt .c-name{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .pcIt .c-name .d{ color:var(--muted); }
+  .pcIt .c-nums{ display:contents; }
+  .pcIt .c-tot{ font-family:'JetBrains Mono',monospace; font-weight:700; }
+  .pcIt .c-price, .pcIt .c-last, .pcIt .c-qty{ font-family:'JetBrains Mono',monospace; font-size:12px; white-space:nowrap; }
+  .pcIt .lbl{ display:none; }
+  .pcIt .c-rem{ display:flex; gap:4px; flex-wrap:wrap; font-size:11px; }
+  .pcIt .c-rec .pcRecCell{ display:flex; align-items:center; gap:6px; }
+  .pcIt .c-rec input{ width:54px; }
+  .pcItTotal{ display:flex; justify-content:flex-end; gap:16px; padding:8px 12px; border-top:2px solid var(--line-strong,#dfe2ec); font-size:12.5px; }
+  .pcItTotal b{ font-family:'JetBrains Mono',monospace; }
+  @media (max-width:700px){
+    .pcRowG{ grid-template-columns:30px 1fr auto; row-gap:2px; column-gap:10px; }
+    .pcOrderHead .ic{ grid-row:1 / span 3; align-self:start; }
+    .pcOrderHead .c-po{ grid-column:2; grid-row:1; } .pcOrderHead .c-po .dm{ display:inline; color:var(--muted); font-weight:400; }
+    .pcOrderHead .c-dept{ display:none; }
+    .pcOrderHead .c-st{ grid-column:3; grid-row:1; }
+    .pcOrderHead .c-items{ grid-column:2 / 4; grid-row:2; }
+    .pcOrderHead .c-req{ grid-column:2; grid-row:3; font-size:12px; } .pcOrderHead .c-age{ display:none; }
+    .pcOrderHead .c-tot{ grid-column:3; grid-row:3; }
+    .pcOrderHead .lbl{ display:inline; font-size:11px; color:var(--muted); margin-right:5px; }
+    .pcItsH{ display:none; }
+    .pcItG, .pcIts.withrec .pcItG{ grid-template-columns:24px 1fr auto; row-gap:2px; padding:8px 10px; }
+    .pcIt .c-no{ grid-row:1 / span 3; align-self:start; }
+    .pcIt .c-name{ grid-column:2; white-space:normal; } .pcIt .c-tot{ grid-column:3; grid-row:1; }
+    .pcIt .c-nums{ display:flex; gap:12px; grid-column:2 / 4; font-size:11.5px; }
+    .pcIt .c-nums > span{ text-align:left; } .pcIt .lbl{ display:inline; color:var(--muted); font-family:inherit; }
+    .pcIt .c-rem{ grid-column:2 / 4; } .pcIt .c-rec{ grid-column:2 / 4; }
+  }
+  .pcIt .c-rec input{ width:48px; height:28px; padding:0 6px; border-radius:9999px; font-size:12px; text-align:center; }
+  .pcIt .c-rec .hrNote{ font-size:11px; white-space:nowrap; }
+  .pcIt .c-rem .pcTag{ white-space:nowrap; }
+  /* ===== v6: separate columns, quiet facts line, steps at the bottom, one-line to-do ===== */
+  .pcDetail .pcFacts{ display:flex; flex-wrap:wrap; gap:2px 18px; margin:0; font-size:11.5px; color:var(--muted); }
+  .pcDetail .pcFact{ display:inline; } .pcDetail .pcFact .k{ display:inline; font-size:11.5px; text-transform:none; letter-spacing:0; font-weight:400; color:var(--muted); min-width:0; }
+  .pcDetail .pcFact .v{ display:inline; margin:0; font-size:11.5px; font-weight:500; color:var(--text); }
+  .pcItG{ grid-template-columns:26px minmax(0,1.3fr) minmax(0,1.5fr) 50px 54px 70px 98px 82px minmax(0,1.3fr); }
+  .pcIts.withrec .pcItG{ grid-template-columns:26px minmax(0,1.2fr) minmax(0,1.3fr) 46px 50px 66px 92px 78px minmax(0,1.1fr) 190px; }
+  .pcIt .c-name{ font-weight:700; color:var(--text-strong); font-size:13px; }
+  .pcIt .c-desc{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--muted); }
+  .pcIt .c-unit{ text-align:left; color:var(--muted); font-family:inherit; }
+  .pcIt .c-qty{ font-weight:600; }
+  .pcIt .c-rem{ flex-wrap:nowrap; overflow:hidden; }
+  .pcFoot{ display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:6px 16px; margin-top:12px; }
+  .pcFoot .pcSteps{ margin:0; } .pcFoot .pcStep{ font-size:10.5px; padding:2px 8px; }
+  .pcFoot .pcHist{ margin:0; }
+  @media (min-width:701px){
+    .pcOrderMain{ display:flex; align-items:baseline; gap:12px; overflow:hidden; white-space:nowrap; }
+    .pcOrderMain .pcOrderTitle{ flex:none; } .pcOrderMain .pcOrderSub{ margin:0; overflow:hidden; text-overflow:ellipsis; min-width:0; }
+  }
+  @media (max-width:700px){
+    .pcItG, .pcIts.withrec .pcItG{ grid-template-columns:24px 1fr auto; }
+    .pcIt .c-name{ grid-column:2; } .pcIt .c-desc{ grid-column:2 / 4; grid-row:2; white-space:normal; font-size:11.5px; }
+    .pcIt .c-tot{ grid-column:3; grid-row:1; }
+    .pcIt .c-nums{ grid-column:2 / 4; grid-row:3; }
+    .pcIt .c-unit{ margin-left:-8px; }
+    .pcIt .c-rem{ grid-row:4; } .pcIt .c-rec{ grid-row:5; }
+    .pcIt .c-no{ grid-row:1 / span 5; }
+  }
+  .pcIt .c-name{ white-space:normal; overflow:visible; line-height:1.25; }
+  .pcIt .c-desc{ white-space:normal; line-height:1.25; }
+  /* ===== v7: plain white, bordered table like the PDF ===== */
+  .pcDetail{ background:#fff; border-top:1px solid var(--line); border-radius:0; padding:14px 4px 10px; margin:0 0 6px; }
+  .pcDetail .pcFacts{ display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:0; border:1px solid #cbd5e1; border-radius:6px; overflow:hidden; font-size:inherit; }
+  .pcDetail .pcFact{ display:block; padding:6px 10px; border-left:1px solid #cbd5e1; border-top:1px solid #cbd5e1; margin:-1px 0 0 -1px; min-width:0; }
+  .pcDetail .pcFact .k{ display:block; font-size:9.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); font-weight:600; }
+  .pcDetail .pcFact .v{ display:block; font-size:13px; font-weight:700; color:var(--text-strong); margin-top:1px; word-break:break-word; }
+  .pcDetail .pcFact .k::after{ content:''; }
+  .pcDetail .pcIts{ margin-top:12px; background:#fff; border:1px solid #cbd5e1; border-radius:6px; }
+  .pcDetail .pcItG{ column-gap:0; padding:0; }
+  .pcDetail .pcItG > *, .pcDetail .pcItG .c-nums > *{ padding:8px 9px; border-left:1px solid #e2e8f0; align-self:stretch; display:flex; align-items:center; min-width:0; }
+  .pcDetail .pcItG > :first-child{ border-left:0; }
+  .pcDetail .pcItsH{ background:#f1f5f9; border-bottom:1px solid #cbd5e1; }
+  .pcDetail .pcItsH > *{ border-left-color:#cbd5e1; padding:7px 9px; }
+  .pcDetail .pcItG .r, .pcDetail .pcIt .c-qty, .pcDetail .pcIt .c-price, .pcDetail .pcIt .c-last, .pcDetail .pcIt .c-tot{ justify-content:flex-end; text-align:right; }
+  .pcDetail .pcIt{ border-top:1px solid #e2e8f0; font-size:13px; }
+  .pcDetail .pcIt:first-of-type{ border-top:0; }
+  .pcDetail .pcIt .c-name{ font-size:13px; } .pcDetail .pcIt .c-desc{ color:var(--text); }
+  .pcDetail .pcItTotal{ background:#f8fafc; border-top:1px solid #cbd5e1; }
+  .pcDetail .pcIt .c-rem{ flex-wrap:wrap; }
+  @media (max-width:700px){
+    .pcDetail .pcItG > *, .pcDetail .pcItG .c-nums > *{ display:block; border-left:0; padding:0; }
+    .pcDetail .pcItG{ padding:8px 10px; }
+    .pcDetail .pcItG .c-nums{ display:flex; }
+    .pcDetail .pcItG .c-nums > *{ display:inline; }
+    .pcDetail .pcItG .c-rem{ display:flex; } .pcDetail .pcItG .c-tot{ text-align:right; }
+    .pcDetail .pcFacts{ grid-template-columns:1fr 1fr; }
+  }
+  .pcDetail .pcItG > .c-nums{ display:contents; padding:0; border:0; }
+  .pcDetail .pcFacts{ border:0; border-top:1px solid #cbd5e1; border-left:1px solid #cbd5e1; border-radius:0; }
+  .pcDetail .pcFact{ border:0; border-right:1px solid #cbd5e1; border-bottom:1px solid #cbd5e1; margin:0; }
+  @media (max-width:700px){ .pcDetail .pcItG > .c-nums{ display:flex; } }
+  .pcSearchCard{ padding:10px 12px; margin-bottom:12px; } .pcSearchCard .pcSearchRow{ margin:0; } .pcSearchCard .pcFilterPanel, .pcSearchCard > div:last-child:not(.pcSearchRow){ margin-top:10px; }
+  .pcDetail .pcFacts{ grid-template-columns:repeat(var(--n,4),minmax(0,1fr)); }
+  @media (max-width:700px){ .pcDetail .pcFacts{ grid-template-columns:1fr 1fr; } }
+  /* ===== v8: same look as the other pages (HR tabs, toolbar, filter panel) ===== */
+  .pcCtrl{ padding:12px 14px 12px; margin-bottom:12px; } .pcCtrl .hrTabs{ margin-bottom:10px; flex-wrap:wrap; overflow:visible; } .pcCtrl .hrTabs button{ font-size:12.5px; }
+  .pcCtrl .hrToolbar{ margin:0; } .pcCtrl .fPanel{ margin:10px 0 0; box-shadow:none; background:var(--panel-2); border:0; }
+  .pcCtrl .fPanel select, .pcCtrl .fPanel input{ background:#fff; }
+  .pcCnt{ min-width:16px; height:16px; border-radius:8px; background:#fff; color:var(--text); font-size:10px; font-weight:700; display:inline-flex; align-items:center; justify-content:center; padding:0 4px; }
+  .hrTabs button.active .pcCnt{ background:var(--amber-soft); color:var(--amber); }
+  .pcMonth{ width:auto; height:34px; padding:0 10px; border-radius:11px; }
+  .pcSearch{ margin:0; } .pcSearch input{ height:34px; }
+  /* details: small, one quiet line of boxes, no bold */
+  .pcDetail .pcFact{ padding:4px 10px; } .pcDetail .pcFact .k{ font-size:9px; } .pcDetail .pcFact .v{ font-size:12px; font-weight:400; color:var(--text); margin-top:0; }
+  /* ===== v9: the order form is laid out like the table (one row per item) ===== */
+  .pcFT{ border:1px solid #cbd5e1; border-radius:6px; margin-bottom:12px; }
+  .pcFRow{ display:grid; grid-template-columns:26px minmax(0,1.3fr) minmax(0,1.5fr) 64px 84px 84px minmax(0,1.2fr) 72px; column-gap:0; align-items:stretch; }
+  .pcFRow > *{ padding:6px 6px; border-left:1px solid #e2e8f0; min-width:0; display:flex; align-items:center; position:relative; }
+  .pcFRow > :first-child{ border-left:0; justify-content:center; color:var(--muted); font-size:11.5px; }
+  .pcFTH{ background:#f1f5f9; border-bottom:1px solid #cbd5e1; font-size:10px; text-transform:uppercase; letter-spacing:.05em; font-weight:700; color:var(--muted); }
+  .pcFTH > *{ padding:7px 9px; border-left-color:#cbd5e1; }
+  .pcFR{ border-top:1px solid #e2e8f0; } .pcFR:first-child{ border-top:0; }
+  .pcFR .fl{ display:none; }
+  .pcFR input[type=text], .pcFR input[type=number], .pcFR select{ width:100%; height:34px; border-radius:8px; padding:0 9px; font-size:13px; }
+  .pcFR .c-act{ gap:4px; justify-content:center; padding:6px 4px; }
+  .pcFR .c-act .pcIconBtn{ width:28px; height:28px; } .pcFR.open .c-act .pcIconBtn:first-child{ transform:rotate(180deg); background:var(--amber-soft); color:var(--amber); }
+  .pcFMore{ display:grid; grid-template-columns:1fr 1fr; gap:10px 12px; padding:10px 14px 12px 40px; background:#f8fafc; border-top:1px dashed #e2e8f0; }
+  .pcFMore .field{ margin:0; } .pcFMore .fl{ display:block; font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; font-weight:600; color:var(--muted); margin-bottom:4px; }
+  .pcFMore .pcFTag{ grid-column:1/-1; }
+  @media (max-width:700px){
+    .pcFTH{ display:none; }
+    .pcFRow{ grid-template-columns:1fr 1fr 1fr; gap:8px; padding:10px; }
+    .pcFRow > *{ border-left:0; padding:0; display:block; }
+    .pcFR .fl{ display:block; font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; font-weight:600; color:var(--muted); margin-bottom:3px; }
+    .pcFRow > .c-no{ display:none; } .pcFRow > .c-name, .pcFRow > .c-desc, .pcFRow > .c-rem{ grid-column:1/-1; }
+    .pcFRow > .c-act{ grid-column:1/-1; display:flex; justify-content:flex-end; }
+    .pcFMore{ grid-template-columns:1fr; padding:10px; }
+  }
+  /* ===== v10: same look as the dashboard tables (rounded white card, grey heading, soft lines, no outlines) ===== */
+  .pcDetail .pcFacts{ grid-template-columns:repeat(var(--n,4),minmax(0,1fr)); gap:8px; border:0; }
+  .pcDetail .pcFact{ background:var(--panel-2); border:0; border-radius:12px; padding:8px 12px; }
+  .pcDetail .pcFact .k{ font-size:9.5px; } .pcDetail .pcFact .v{ font-size:12.5px; font-weight:400; margin-top:1px; }
+  .pcDetail .pcIts, .pcFT{ border:0; border-radius:14px; overflow:hidden; box-shadow:0 0 0 1px var(--line), 0 4px 14px rgba(15,23,42,.05); background:#fff; }
+  .pcDetail .pcItsH, .pcFTH{ background:var(--panel-2); border-bottom:0; }
+  .pcDetail .pcItG > *, .pcDetail .pcItG .c-nums > *, .pcFRow > *{ border-left:0; }
+  .pcDetail .pcItsH > *, .pcFTH > *{ padding:9px 10px; }
+  .pcDetail .pcItG > *, .pcDetail .pcItG .c-nums > *{ padding:10px 10px; }
+  .pcDetail .pcIt, .pcFR{ border-top:1px solid var(--line); }
+  .pcDetail .pcItTotal{ background:#fff; border-top:1px solid var(--line); }
+  .pcFMore{ background:var(--panel-2); border-top:0; }
+  @media (max-width:700px){ .pcDetail .pcFacts{ grid-template-columns:1fr 1fr; } .pcDetail .pcItG > *, .pcDetail .pcItG .c-nums > *{ padding:0; } }
+
 </style>
 </head>
 <body>
@@ -2110,6 +2498,7 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
         <div class="auth-tab" data-admintab="passportaccess">Passport Access</div>
         <div class="auth-tab" data-admintab="holidays">Holidays</div>
         <div class="auth-tab" data-admintab="config">Dropdowns</div>
+        <div class="auth-tab" data-admintab="purchase">Purchase</div>
       </div>
 
       <div class="auth-pane active" id="admin-users">
@@ -2406,6 +2795,8 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
         <div id="holidayList"></div>
       </div>
 
+      <div class="auth-pane" id="admin-purchase"></div>
+
       <div class="auth-pane" id="admin-config">
         <h2 style="margin-top:0;">Departments</h2>
         <p class="sub">Used across machines, employees, and the CEO Dashboard filters.</p>
@@ -2688,6 +3079,8 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
       <div class="report-toolbar" style="margin-bottom:16px;">
         <button class="btn btn-ghost" id="refreshCeoBtn">Refresh</button>
       </div>
+
+      <div id="pcDashApprovals"></div>
 
       <div id="employeeOverviewMountCeo"></div>
 
@@ -3008,6 +3401,15 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
       <p class="sub">Salary and payroll calculations will be added here later. For now, this gives a quick employee and vacation-money reference.</p>
       <div id="accountsBody"></div>
     </section>
+
+    <!-- PURCHASE -->
+    <section class="screen" id="screen-purchase">
+      <div class="eyebrow">Purchase</div>
+      <h1>Purchase Orders</h1>
+      <p class="sub" style="margin-bottom:18px;">Create orders, send them for approval, and never forget a delivery.</p>
+      <div class="pcWrap" id="purchaseMount"></div>
+    </section>
+
 
   </main>
 </div>
@@ -3658,7 +4060,8 @@ const PAGE_DEFS = {
   leave:      { label: 'Leave / Request' },
   ceo:        { label: 'Dashboard' },
   employees:  { label: 'Employees' },
-  accounts:   { label: 'Accounts' }
+  accounts:   { label: 'Accounts' },
+  purchase:   { label: 'Purchase' }
 };
 function defaultPagesForRole(role){
   if(role === 'admin') return ['admin','approvals','select','report','profile','leave','employees'];
@@ -3686,6 +4089,7 @@ function renderNav(){
     b.addEventListener('click', () => { state.execViewTarget = null; goTo(key); });
     nav.appendChild(b);
   });
+  try{ if(typeof pcAfterNav === 'function') pcAfterNav(); }catch(e){}
 }
 
 function markNavActive(key){
@@ -3717,7 +4121,8 @@ function goTo(key){
   else if(key === 'leave'){ showScreen('screen-leave'); loadLeavePage(); }
   else if(key === 'ceo'){ showScreen('screen-ceo'); loadCeoDashboard(); }
   else if(key === 'employees'){ showScreen('screen-employees'); loadEmployeesPage(); }
-  else if(key === 'accounts'){ showScreen('screen-accounts'); loadAccountsPage(); }
+  else if(key==='accounts'){ showScreen('screen-accounts'); loadAccountsPage(); }
+  else if(key === 'purchase'){ showScreen('screen-purchase'); loadPurchasePage(); }
 }
 
 $('logoutBtn').addEventListener('click', () => {
@@ -9070,6 +9475,11 @@ async function rvfMakePdf(blocks, filename){
     const pw = pdf.internal.pageSize.getWidth(), ph = pdf.internal.pageSize.getHeight(), m = 10, usableW = pw - 2 * m, usableH = ph - 2 * m;
     let y = m;
     for(const el of els){
+      if(!RVF_AR.test(el.textContent)){
+        const kk = usableW / el.offsetWidth; let hh = el.offsetHeight * kk, sc = 1; if(hh > usableH){ sc = usableH / hh; hh = usableH; }
+        if(y + hh > ph - m && y > m){ pdf.addPage(); y = m; }
+        await rvfVecBlock(pdf, el, m, y, kk * sc); y += hh + 1.5; continue;
+      }
       const canvas = await window.html2canvas(el, { scale:2, backgroundColor:'#ffffff', logging:false });
       let w = usableW, h = canvas.height * w / canvas.width;
       if(h > usableH){ w = w * usableH / h; h = usableH; }
@@ -10978,6 +11388,7 @@ function mountDocumentRenewals(mountId){ mountSharedBlock('documentRenewalsBlock
 
 async function loadCeoDashboard(){
   if(!requireDb()) return;
+  try{ pcRenderDash(); }catch(e){}
   try{
     mountEmployeeOverview('employeeOverviewMountCeo');
     mountDocumentRenewals('documentRenewalsMountCeo');
@@ -12032,6 +12443,7 @@ $('refreshCeoBtn').addEventListener('click', async () => {
   const btn = $('refreshCeoBtn');
   const label = btn.textContent;
   btn.disabled = true; btn.textContent = 'Refreshing…';
+  pcDashForce = true;
   try{ await loadCeoDashboard(); }
   finally{ btn.disabled = false; btn.textContent = label; }
 });
@@ -13022,6 +13434,1148 @@ async function loadAccountsPage(){
     }).join('') || '<div class="empty-state">No employees yet.</div>';
   }catch(err){ console.error(err); toast('Could not load'); }
 }
+
+/* ---------- text PDF: draws a rendered block as real text, shapes and lines (no picture) ---------- */
+const RVF_AR = /[֐-ࣿ]/;
+async function rvfSvgPng(svg){
+  const r = svg.getBoundingClientRect(); if(!(r.width > 0 && r.height > 0)) return null;
+  const clone = svg.cloneNode(true), srcAll = [svg].concat(Array.from(svg.querySelectorAll('*'))), dstAll = [clone].concat(Array.from(clone.querySelectorAll('*')));
+  srcAll.forEach((n, i) => { const cs = getComputedStyle(n), d = dstAll[i]; ['fill', 'stroke', 'stroke-width', 'stroke-linecap', 'stroke-linejoin', 'opacity'].forEach(p => { const v = cs.getPropertyValue(p); if(v) d.setAttribute(p, v); }); });
+  clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg'); clone.setAttribute('width', r.width); clone.setAttribute('height', r.height); clone.removeAttribute('style');
+  const img = new Image(); const url = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(new XMLSerializer().serializeToString(clone));
+  await new Promise(res => { img.onload = res; img.onerror = res; img.src = url; });
+  if(!img.naturalWidth) return null;
+  const c = document.createElement('canvas'), z = 4; c.width = Math.ceil(r.width * z); c.height = Math.ceil(r.height * z); c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+  return c.toDataURL('image/png');
+}
+async function rvfVecBlock(pdf, root, ox, oy, k){
+  const svgImgs = new Map(); for(const sv of Array.from(root.querySelectorAll('svg'))){ try{ const d = await rvfSvgPng(sv); if(d) svgImgs.set(sv, d); }catch(e){} }
+  const R = root.getBoundingClientRect();
+  const X = v => ox + (v - R.left) * k, Y = v => oy + (v - R.top) * k;
+  const parse = (c) => { const m = String(c || '').match(/rgba?\(([^)]+)\)/); if(!m) return null; const p = m[1].split(',').map(parseFloat); return { r: p[0], g: p[1], b: p[2], a: p.length > 3 ? p[3] : 1 }; };
+  const mix = (c) => c ? [255 - (255 - c.r) * c.a, 255 - (255 - c.g) * c.a, 255 - (255 - c.b) * c.a].map(Math.round) : null;
+  const asc = (t) => String(t).replace(/[‘’]/g, "'").replace(/[“”]/g, '"').replace(/…/g, '...').replace(/ /g, ' ').replace(/[^ -ÿ–—•]/g, '?');
+  const drawText = (node, cs) => {
+    const s = node.nodeValue; if(!/\S/.test(s)) return;
+    let tt = cs.textTransform; const fpx = parseFloat(cs.fontSize) || 12, wt = parseInt(cs.fontWeight, 10) || 400, mono = /mono/i.test(cs.fontFamily);
+    const col = mix(parse(cs.color)) || [15, 23, 42];
+    pdf.setFont(mono ? 'courier' : 'helvetica', wt >= 600 ? 'bold' : 'normal'); pdf.setFontSize(fpx * k * 72 / 25.4); pdf.setTextColor(col[0], col[1], col[2]);
+    const rg = document.createRange(), lines = []; const re = /\S+/g; let m;
+    while((m = re.exec(s))){ rg.setStart(node, m.index); rg.setEnd(node, m.index + m[0].length); const rc = rg.getClientRects()[0]; if(!rc || !rc.width) continue;
+      let L = lines.find(l => Math.abs(l.top - rc.top) < fpx * 0.5); if(!L){ L = { top: rc.top, h: rc.height, l: rc.left, r: rc.right, w: [] }; lines.push(L); }
+      L.l = Math.min(L.l, rc.left); L.r = Math.max(L.r, rc.right); L.w.push(m[0]); }
+    const al = cs.textAlign;
+    lines.forEach(L => { let str = L.w.join(' '); if(tt === 'uppercase') str = str.toUpperCase(); else if(tt === 'lowercase') str = str.toLowerCase();
+      const y = Y(L.top + L.h * 0.8);
+      if(al === 'right' || al === 'end') pdf.text(asc(str), X(L.r), y, { align: 'right' });
+      else if(al === 'center') pdf.text(asc(str), X((L.l + L.r) / 2), y, { align: 'center' });
+      else pdf.text(asc(str), X(L.l), y); });
+  };
+  const walk = (el) => {
+    const cs = getComputedStyle(el); if(cs.display === 'none' || cs.visibility === 'hidden') return;
+    const tag = el.tagName; if(tag === 'SCRIPT' || tag === 'STYLE') return;
+    if(tag === 'svg' || tag === 'SVG'){ const d = svgImgs.get(el), rr = el.getBoundingClientRect(); if(d) try{ pdf.addImage(d, 'PNG', X(rr.left), Y(rr.top), rr.width * k, rr.height * k); }catch(e){} return; }
+    const r = el.getBoundingClientRect(), w = r.width * k, h = r.height * k;
+    if(r.width > 0 && r.height > 0){
+      const bg = mix(parse(cs.backgroundColor)), rad = Math.min(parseFloat(cs.borderTopLeftRadius) || 0, r.width / 2, r.height / 2) * k;
+      if(bg && !(bg[0] === 255 && bg[1] === 255 && bg[2] === 255)){ pdf.setFillColor(bg[0], bg[1], bg[2]); if(rad > 0.3) pdf.roundedRect(X(r.left), Y(r.top), w, h, rad, rad, 'F'); else pdf.rect(X(r.left), Y(r.top), w, h, 'F'); }
+      const sides = ['Top', 'Right', 'Bottom', 'Left'].map(n => ({ w: parseFloat(cs['border' + n + 'Width']) || 0, st: cs['border' + n + 'Style'], c: mix(parse(cs['border' + n + 'Color'])) }));
+      const vis = sides.map(sd => sd.w > 0 && sd.st !== 'none' && sd.c);
+      if(vis.every(Boolean) && rad > 0.3){ const sd = sides[0]; pdf.setDrawColor(sd.c[0], sd.c[1], sd.c[2]); pdf.setLineWidth(Math.max(0.1, sd.w * k)); pdf.roundedRect(X(r.left), Y(r.top), w, h, rad, rad, 'S'); }
+      else sides.forEach((sd, i) => { if(!vis[i]) return; pdf.setDrawColor(sd.c[0], sd.c[1], sd.c[2]); pdf.setLineWidth(Math.max(0.1, sd.w * k));
+        const x1 = X(r.left), x2 = X(r.right), y1 = Y(r.top), y2 = Y(r.bottom);
+        if(i === 0) pdf.line(x1, y1, x2, y1); else if(i === 2) pdf.line(x1, y2, x2, y2); else if(i === 1) pdf.line(x2, y1, x2, y2); else pdf.line(x1, y1, x1, y2); });
+      if(tag === 'IMG' && el.naturalWidth){ try{ let src = el.currentSrc || el.src, fmt = /image\/png/.test(src) ? 'PNG' : 'JPEG';
+        if(!/^data:/.test(src)){ const c = document.createElement('canvas'); c.width = el.naturalWidth; c.height = el.naturalHeight; c.getContext('2d').drawImage(el, 0, 0); src = c.toDataURL('image/png'); fmt = 'PNG'; }
+        pdf.addImage(src, fmt, X(r.left), Y(r.top), w, h); }catch(e){ console.warn('pdf image skipped', e); } }
+    }
+    el.childNodes.forEach(n => { if(n.nodeType === 3) drawText(n, cs); else if(n.nodeType === 1) walk(n); });
+  };
+  walk(root);
+}
+/* ============================================================
+   PURCHASE MANAGEMENT
+   Orders live in the same "config" collection the HR settings use (no new database rules needed): one small document per
+   order, plus one settings document, one product list and one counter. The page reads only the OPEN orders; finished
+   orders are read only when someone opens Completed for a month. Every action is one write on one order.
+   ============================================================ */
+const PC_IC = {
+  cart:'<circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>',
+  plus:'<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
+  flame:'<path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.07-2.14-.22-4.05 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.15.43-2.29 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>',
+  check:'<polyline points="20 6 9 17 4 12"/>',
+  x:'<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>',
+  file:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>',
+  down:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>',
+  wa:'<path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>',
+  bell:'<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>',
+  clock:'<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+  trash:'<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/>',
+  edit:'<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/>',
+  cam:'<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>',
+  link:'<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
+  box:'<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/>',
+  send:'<line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>',
+  back:'<polyline points="15 18 9 12 15 6"/>',
+  chev:'<polyline points="6 9 12 15 18 9"/>',
+  todo:'<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>',
+  list:'<line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>',
+  alert:'<path d="M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
+  archive:'<polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/>',
+  filter:'<polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>',
+  stamp:'<path d="M5 22h14"/><path d="M19.27 13.73A2.5 2.5 0 0 0 17.5 13h-11A2.5 2.5 0 0 0 4 15.5V17a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-1.5c0-.66-.26-1.3-.73-1.77z"/><path d="M14 13V8.5C14 7 15 7 15 5a3 3 0 0 0-3-3c-1.66 0-3 1-3 3s1 2 1 3.5V13"/>'
+};
+function pcSvg(n, s){ s = s || 16; return `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${PC_IC[n] || ''}</svg>`; }
+const pcEsc = (t) => String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+const PC_DEF = {
+  requesters: [], procurement: [], approvers: [], remindDays: 7,
+  waMessage: 'Hello, update on purchase order {po} for {dept}.\nStatus: {status}.\nItems still pending: {pending}.\nIt is {days} days since the order was created. We will let you know as soon as it is received. Thank you.',
+  units: ['pcs', 'kg', 'm', 'roll', 'box', 'set', 'litre', 'pack'],
+  tpl: {
+    poTitle: 'Purchase Order', poIntro: 'Please supply the items listed below as per the details given.', poClosing: 'Kindly confirm receipt of this order and the expected delivery date.',
+    reqTitle: 'Purchase Requisition', reqIntro: 'The following items are requested for the department shown below.', reqClosing: '',
+    reqSigners: [], poSigners: []
+  }
+};
+const PC_LABEL = { new: 'New', approval: 'Awaiting approval', approved: 'Approved', rejected: 'Rejected', ordered: 'Ordered', partial: 'Partly received', received: 'Received', cancelled: 'Cancelled' };
+const PC_OPEN = ['new', 'approval', 'approved', 'rejected', 'ordered'];
+
+const pc = { settings: null, open: null, loadedAt: 0, closed: {}, catalog: null, forUser: null, users: null,
+  ui: pcNewUi() };
+function pcNewUi(){ return { tab: 'todo', view: 'list', q: '', openId: null, month: '', form: null, busy: false, fopen: false, f: { dept: '', prio: '', by: '', from: '', to: '' }, limit: 30 }; }
+
+function pcMergeSettings(d){
+  const out = Object.assign({}, PC_DEF, d || {});
+  out.tpl = Object.assign({}, PC_DEF.tpl, (d && d.tpl) || {});
+  ['requesters', 'procurement', 'approvers', 'units'].forEach(k => { if(!Array.isArray(out[k])) out[k] = PC_DEF[k].slice(); });
+  ['reqSigners', 'poSigners'].forEach(k => { if(!Array.isArray(out.tpl[k])) out.tpl[k] = []; });
+  { const n = parseInt(out.remindDays, 10); out.remindDays = isNaN(n) ? 7 : Math.max(0, Math.min(90, n)); }
+  return out;
+}
+const pcMoney = (n) => (n || n === 0) && Number(n) > 0 ? Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '\u2013';
+const pcLine = (it) => (Number(it.p) || 0) * (Number(it.q) || 0);
+const pcTotal = (o) => (o.items || []).reduce((t, i) => t + pcLine(i), 0);
+function pcMe(){ return state.user ? state.user.loginId : ''; }
+function pcRoles(){
+  const S = pc.settings || PC_DEF, me = pcMe(), u = state.user || {}, admin = u.role === 'admin';
+  const inL = (k) => (S[k] || []).includes(me), ap = S.approvers || [];
+  return { admin, req: admin || inL('requesters'), proc: admin || inL('procurement'),
+    appr: ap.length ? ap.includes(me) : (u.role === 'executive' || admin) };
+}
+function pcDateStr(ms){ const d = new Date(ms); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+function pcMonthStr(ms){ return pcDateStr(ms).slice(0, 7); }
+function pcDaysSince(ms){ return Math.max(0, Math.floor((Date.now() - ms) / 86400000)); }
+function pcNo(n){ return 'PO-' + String(n).padStart(4, '0'); }
+function pcStatusKey(o){ return ((o.status === 'ordered' || o.status === 'approved') && (o.items || []).some(i => (i.rec || 0) > 0)) ? 'partial' : o.status; }
+function pcPendingItems(o){ return (o.items || []).filter(i => (i.rec || 0) < (i.q || 0)); }
+function pcIsOpen(o){ return PC_OPEN.includes(o.status); }
+function pcFind(docId){
+  let o = (pc.open || []).find(x => x.docId === docId); if(o) return o;
+  for(const m of Object.keys(pc.closed)){ o = (pc.closed[m] || []).find(x => x.docId === docId); if(o) return o; }
+  return null;
+}
+function pcLog(o, text){ (o.log = o.log || []).push({ t: Date.now(), by: (state.user && state.user.name) || pcMe(), a: text }); }
+
+async function pcLoadSettings(force){
+  if(pc.settings && !force) return pc.settings;
+  const d = await window.__db.getConfigObject('purchaseSettings', {});
+  pc.settings = pcMergeSettings(d);
+  return pc.settings;
+}
+async function pcLoad(force){
+  if(pc.inflight && !force) return pc.inflight;
+  const run = pcLoadInner(force);
+  pc.inflight = run; run.then(() => { if(pc.inflight === run) pc.inflight = null; }, () => { if(pc.inflight === run) pc.inflight = null; });
+  return run;
+}
+async function pcLoadInner(force){
+  if(!requireDb()) return false;
+  if(pc.forUser !== pcMe()){ pc.settings = null; pc.open = null; pc.closed = {}; pc.catalog = null; pc.users = null; pc.forUser = pcMe(); pc.ui = pcNewUi(); }
+  await pcLoadSettings(force);
+  if(force || !pc.open || Date.now() - pc.loadedAt > 600000){
+    pc.open = await window.__db.poLoadOpen();
+    pc.loadedAt = Date.now();
+  }
+  return true;
+}
+async function pcLoadCatalog(){
+  if(pc.catalog) return pc.catalog;
+  const d = await window.__db.getConfigObject('purchaseCatalog', { items: {} });
+  pc.catalog = { items: (d && d.items) || {} };
+  return pc.catalog;
+}
+async function pcLoadUsers(){
+  if(!pc.users){ const us = await window.__db.listUsersOnce(); state.users = us; pc.users = us.filter(u => u.role !== 'pending' && !isExitedEmployee(u)).sort((a, b) => (a.name || '').localeCompare(b.name || '')); }
+  return pc.users;
+}
+function pcPhone(u){
+  const p = (u && u.profile) || {}; let s = String(p.phone || ((p.phoneCode || '') + ' ' + (p.phoneNumber || ''))).replace(/[^\d+]/g, '');
+  if(!s) return ''; s = s.replace(/^\+/, '').replace(/^00/, ''); return s.length >= 8 ? s : '';
+}
+async function pcPersist(o){
+  o.open = pcIsOpen(o);
+  o.closedMonth = o.open ? '' : pcMonthStr(o.closedAt || Date.now());
+  if(JSON.stringify(o).length > 950000) throw new Error('TOO_BIG');
+  await window.__db.poSave(o.docId, o);
+  pc.open = pc.open || [];
+  const i = pc.open.findIndex(x => x.docId === o.docId);
+  if(o.open){ if(i >= 0) pc.open[i] = o; else pc.open.push(o); }
+  else {
+    if(i >= 0) pc.open.splice(i, 1);
+    const m = o.closedMonth, arr = pc.closed[m];
+    if(arr){ const j = arr.findIndex(x => x.docId === o.docId); if(j >= 0) arr[j] = o; else arr.push(o); }
+  }
+}
+// Every change re-reads that ONE order first (1 read), so two people working at once never overwrite each other (1 write).
+async function pcMutate(docId, fn){
+  const fresh = await window.__db.poGet(docId);
+  if(!fresh) throw new Error('GONE');
+  fresh.docId = docId;
+  const res = fn(fresh);
+  if(res === false) return null;
+  await pcPersist(fresh);
+  return fresh;
+}
+
+/* ---------- small helpers ---------- */
+function pcDepts(){ return (state.departments && state.departments.length) ? state.departments : (pc.depts || []); }
+async function pcEnsureDepts(){
+  if(state.departments && state.departments.length) return;
+  if(pc.depts) return;
+  try{ pc.depts = await window.__db.getConfigList('departments', ['Weaving','Maintenance','HR','Accounts','Quality']); }catch(e){ pc.depts = []; }
+}
+const pcFmt = (ms) => ms ? fmtDate(pcDateStr(ms)) : '—';
+function pcNameOf(id){ const S = pc.settings || {}; return (S.names && S.names[id]) || id || ''; }
+function pcPendingText(o){ const p = pcPendingItems(o); return p.length ? p.map(i => i.n + ' (' + (i.q - (i.rec || 0)) + ' ' + (i.u || '') + ')').join(', ') : 'none'; }
+function pcWaText(o){
+  const S = pc.settings || PC_DEF;
+  return String(S.waMessage || PC_DEF.waMessage)
+    .replace(/\{po\}/g, o.id).replace(/\{dept\}/g, o.dept || '').replace(/\{person\}/g, (o.reqBy && o.reqBy.name) || '')
+    .replace(/\{status\}/g, PC_LABEL[pcStatusKey(o)] || o.status).replace(/\{pending\}/g, pcPendingText(o))
+    .replace(/\{days\}/g, String(pcDaysSince(o.createdAt)));
+}
+function pcPhoneOf(o){
+  const id = o.reqBy && o.reqBy.id; if(!id) return '';
+  const u = (state.users || pc.users || []).find(x => x.loginId === id);
+  return u ? pcPhone(u) : '';
+}
+function pcSampleText(it){
+  const hasRef = !!(it.link || (it.photos && it.photos.length));
+  if(it.phys && !hasRef) return { t: 'Physical sample only — take it when buying', warn: true };
+  if(it.phys) return { t: 'Physical sample + reference', warn: false };
+  if(hasRef) return { t: 'See link / photo', warn: false };
+  return { t: 'No sample', warn: false };
+}
+function pcShortUrl(u){ try{ const x = new URL(u); return x.hostname.replace(/^www\./, ''); }catch(e){ return String(u).slice(0, 30); } }
+function pcSafeUrl(u){ u = String(u || '').trim(); if(!u) return ''; if(!/^https?:\/\//i.test(u)) u = 'https://' + u; try{ new URL(u); return u; }catch(e){ return ''; } }
+
+/* ---------- visible orders and to-do list ---------- */
+function pcScope(list){
+  const R = pcRoles();
+  if(R.admin || R.proc || R.appr) return list;
+  return list.filter(o => o.createdBy === pcMe());
+}
+function pcTasks(){
+  const R = pcRoles(), me = pcMe(), S = pc.settings || PC_DEF, out = [];
+  (pc.open || []).forEach(o => {
+    const urgent = o.priority === 'urgent', base = { docId: o.docId, urgent };
+    if(o.createdBy === me){
+      if(o.status === 'rejected') out.push(Object.assign({ kind: 'rejected', level: 'late', title: o.id + ' was rejected', sub: o.rejectReason ? 'Reason: ' + o.rejectReason : 'Talk to the procurement officer', btn: 'Open' }, base));
+      const since = Math.max(o.createdAt || 0, o.lastRemindAt || 0), d = pcDaysSince(since);
+      if(o.status !== 'rejected' && d >= S.remindDays) out.push(Object.assign({ kind: 'remind', level: 'late', title: 'Send an update for ' + o.id, sub: (o.dept || '') + ' · ' + (o.reqBy ? o.reqBy.name : '') + ' · not received after ' + pcDaysSince(o.createdAt) + ' days', btn: 'Send update' }, base));
+    }
+    if(R.proc){
+      if(o.status === 'new') out.push(Object.assign({ kind: 'send', level: urgent ? 'late' : 'soon', title: 'New order ' + o.id + ' — send for approval', sub: (o.dept || '') + ' · ' + o.items.length + ' item(s) · by ' + o.createdByName, btn: 'Open' }, base));
+      if(o.status === 'rejected' && o.createdBy !== me) out.push(Object.assign({ kind: 'revise', level: 'soon', title: o.id + ' rejected — revise or cancel', sub: o.rejectReason ? 'Reason: ' + o.rejectReason : '', btn: 'Open' }, base));
+      if(o.status === 'approval' && o.proc && o.proc.paper) out.push(Object.assign({ kind: 'paper', level: 'soon', title: o.id + ' waiting for the signature', sub: (o.dept || '') + ' \u00B7 mark it approved when the signed paper is back', btn: 'Open' }, base));
+      if(o.status === 'approved') out.push(Object.assign({ kind: 'order', level: urgent ? 'late' : 'soon', title: o.id + ' approved — place the order', sub: (o.dept || '') + ' · print the PDF, sign it, then mark as ordered', btn: 'Open' }, base));
+    }
+    if(pcIsMyApproval(o) && (!R.admin || !(o.proc && o.proc.approverId) || o.proc.approverId === me))
+      out.push(Object.assign({ kind: 'approve', level: urgent ? 'late' : 'soon', title: o.id + ' needs your approval', sub: (o.dept || '') + ' · ' + o.items.length + ' item(s)', btn: 'Review' }, base));
+  });
+  const seen = new Set();
+  const list = out.filter(t => { const k = t.kind + t.docId; if(seen.has(k)) return false; seen.add(k); return true; });
+  const lv = { late: 0, soon: 1, info: 2 };
+  list.sort((a, b) => (b.urgent - a.urgent) || (lv[a.level] - lv[b.level]));
+  return list;
+}
+function pcBadge(){
+  const b = document.querySelector('.nav-btn[data-route="purchase"]'); if(!b) return;
+  const old = b.querySelector('.pcNavBadge'); if(old) old.remove();
+  let n = 0; try{ n = pcTasks().length; }catch(e){}
+  if(n){ const s = document.createElement('span'); s.className = 'pcNavBadge'; s.textContent = n > 9 ? '9+' : n; b.appendChild(s); }
+}
+let pcBgBusy = false;
+function pcAfterNav(){
+  try{
+    if(!state.user || !userPages(state.user).includes('purchase')) return;
+    pcBadge();
+    if(pcBgBusy || (pc.forUser === pcMe() && pc.open && Date.now() - pc.loadedAt < 600000)) return;
+    pcBgBusy = true;
+    pcLoad(false).then(() => pcBadge()).catch(() => {}).finally(() => { pcBgBusy = false; });
+  }catch(e){}
+}
+
+/* ---------- page ---------- */
+async function loadPurchasePage(){
+  const mount = $('purchaseMount'); if(!mount) return;
+  pcBindOnce();
+  if(!pc.open || pc.forUser !== pcMe()) mount.innerHTML = '<div class="hrEmpty">Loading\u2026</div>';
+  try{
+    if(!(await pcLoad(false))) return;
+    await pcEnsureDepts();
+  }catch(err){ console.error(err); mount.innerHTML = '<div class="hrEmpty">Could not load. Check your connection and tap Refresh.</div><div style="text-align:center"><button class="pcBtnSoft" data-pc="refresh">Refresh</button></div>'; return; }
+  if(pc.ui.view === 'form' && !pc.ui.form) pc.ui.view = 'list';
+  pcRender(); pcBadge();
+}
+function pcRender(){
+  const mount = $('purchaseMount'); if(!mount) return;
+  const R = pcRoles();
+  if(!R.req && !R.proc && !R.appr && !R.admin){ mount.innerHTML = '<div class="hrEmpty">You do not have access to Purchase yet. Ask the Admin.</div>'; return; }
+  if(pc.ui.view === 'form') { mount.innerHTML = pcFormHtml(); return; }
+  if(pc.ui.view === 'done') { mount.innerHTML = pcDoneHtml(); return; }
+  mount.innerHTML = pcListHtml();
+}
+function pcTabOf(o){
+  if(o.status === 'new') return 'new';
+  if(o.status === 'rejected') return 'rejected';
+  if(o.status === 'approval') return 'approval';
+  if(o.status === 'approved') return 'approved';
+  if(o.status === 'ordered') return 'ordered';
+  return 'done';
+}
+const PC_TABS = [['todo', 'To do'], ['new', 'New'], ['approval', 'Approval'], ['approved', 'Approved'], ['rejected', 'Rejected'], ['ordered', 'Ordered'], ['done', 'Completed']];
+function pcFilterActive(){ const f = pc.ui.f; return !!(f.dept || f.prio || f.by || f.from || f.to); }
+function pcApplyFilters(list){
+  const f = pc.ui.f, q = (pc.ui.q || '').trim().toLowerCase();
+  return list.filter(o => {
+    if(f.dept && o.dept !== f.dept) return false;
+    if(f.prio && o.priority !== f.prio) return false;
+    if(f.by && o.createdBy !== f.by) return false;
+    if(f.from && pcDateStr(o.createdAt) < f.from) return false;
+    if(f.to && pcDateStr(o.createdAt) > f.to) return false;
+    if(q && ![o.id, o.dept, o.reqBy && o.reqBy.name, o.createdByName, o.proc && o.proc.supplier, o.items.map(i => i.n + ' ' + (i.b || '')).join(' ')].join(' ').toLowerCase().includes(q)) return false;
+    return true;
+  });
+}
+function pcListHtml(){
+  const R = pcRoles(), U = pc.ui, mine = pcScope(pc.open || []), tasks = pcTasks();
+  const cnt = { todo: tasks.length, new: 0, approval: 0, approved: 0, rejected: 0, ordered: 0 };
+  mine.forEach(o => { const t = pcTabOf(o); if(cnt[t] != null) cnt[t]++; });
+  const urgentOpen = mine.filter(o => o.priority === 'urgent').length;
+  let h = `<div class="pcTop">${R.req ? `<button class="pcBtnMain" data-pc="new">${pcSvg('plus', 16)}New order</button>` : ''}<span class="grow"></span>${urgentOpen ? `<span class="pcUrgent">${urgentOpen} URGENT</span>` : ''}<button class="pillBtn" data-pc="refresh" title="Load the latest orders">${pcSvg('clock', 14)}Refresh</button></div>`;
+  const tabs = '<div class="hrTabs">' + PC_TABS.map(t => `<button class="${U.tab === t[0] ? 'active' : ''}" data-pc="tab" data-v="${t[0]}">${t[1]}${cnt[t[0]] ? `<span class="${t[0] === 'todo' ? 'hrCnt' : 'pcCnt'}">${cnt[t[0]]}</span>` : ''}</button>`).join('') + '</div>';
+  if(U.tab === 'todo') h += '<div class="card pcCtrl">' + tabs + '</div><div class="card pcListCard">' + pcTodoHtml(tasks) + '</div>';
+  else { const r = pcOrdersHtml(mine); h += '<div class="card pcCtrl">' + tabs + r[0] + '</div>' + r[1]; }
+  return h;
+}
+function pcFilterPanel(list){
+  const f = pc.ui.f, depts = Array.from(new Set(list.map(o => o.dept).filter(Boolean))).sort();
+  const bys = Array.from(new Map(list.map(o => [o.createdBy, o.createdByName])).entries());
+  return `<div class="fPanel"><div class="fHead"><span class="fTitle">${pcSvg('filter', 14)}Filters</span><button class="fClear" data-pc="fclear">Clear all</button></div><div class="fGrid">
+    <div class="fItem"><label>Department</label><select data-pc="fdept"><option value="">All</option>${depts.map(d => `<option ${f.dept === d ? 'selected' : ''}>${pcEsc(d)}</option>`).join('')}</select></div>
+    <div class="fItem"><label>Priority</label><select data-pc="fprio"><option value="">All</option><option value="urgent" ${f.prio === 'urgent' ? 'selected' : ''}>Urgent only</option><option value="regular" ${f.prio === 'regular' ? 'selected' : ''}>Regular only</option></select></div>
+    <div class="fItem"><label>Created by</label><select data-pc="fby"><option value="">Everyone</option>${bys.map(b => `<option value="${pcEsc(b[0])}" ${f.by === b[0] ? 'selected' : ''}>${pcEsc(b[1] || b[0])}</option>`).join('')}</select></div>
+    <div class="fItem"><label>Created from</label><input type="date" data-pc="ffrom" value="${pcEsc(f.from)}"></div>
+    <div class="fItem"><label>Created to</label><input type="date" data-pc="fto" value="${pcEsc(f.to)}"></div></div></div>`;
+}
+function pcTodoHtml(tasks){
+  if(!tasks.length) return '<div class="hrEmpty">Nothing to do right now. \uD83C\uDF89<br><span class="hrNote">Approvals, new orders and reminders appear here.</span></div>';
+  const ic = { remind: ['wa', 'ic-green'], rejected: ['alert', 'ic-red'], send: ['send', 'ic-blue'], revise: ['alert', 'ic-red'], order: ['cart', 'ic-green'], approve: ['stamp', 'ic-yellow'], paper: ['stamp', 'ic-yellow'] };
+  return tasks.map(t => {
+    const i = ic[t.kind] || ['file', 'ic-grey'];
+    return `<div class="pcOrder"><div class="pcOrderHead" data-pc="task" data-id="${pcEsc(t.docId)}" data-k="${t.kind}"><span class="ic ${i[1]}">${pcSvg(i[0], 17)}</span>
+      <div class="pcOrderMain"><div class="pcOrderTitle">${pcEsc(t.title)}${t.urgent ? '<span class="pcUrgent">URGENT</span>' : ''}</div><div class="pcOrderSub">${pcEsc(t.sub)}</div></div>
+      <div class="pcOrderSide"><span class="pcBtnSoft sm">${pcEsc(t.btn)}</span></div></div></div>`;
+  }).join('');
+}
+function pcOrdersHtml(mine){
+  const U = pc.ui; let base, mon = '';
+  const card = (inner) => '<div class="card pcListCard">' + inner + '</div>';
+  if(U.tab === 'done'){
+    const m = U.month || (U.month = pcMonthStr(Date.now()));
+    base = pcScope(pc.closed[m] || []);
+    mon = `<input type="month" class="pcMonth" data-pc="month" value="${m}" title="Month"><button class="pillBtn" data-pc="reloadclosed" title="Load this month again">${pcSvg('clock', 14)}Reload</button>`;
+  } else base = mine.filter(o => pcTabOf(o) === U.tab);
+  const act = pcFilterActive();
+  const bar = `<div class="hrToolbar"><div class="hrSearch pcSearch">${pcSvg('list', 15)}<input type="text" data-pc="q" placeholder="Search order, item, department or person\u2026" value="${pcEsc(U.q)}"></div>
+    <button class="iconBtn${act ? ' on' : ''}" data-pc="ftoggle" title="Filters" aria-label="Filters">${pcSvg('filter', 17)}</button>${mon}</div>${U.fopen ? pcFilterPanel(base) : ''}`;
+  if(U.tab === 'done' && !pc.closed[U.month]) return [bar, card('<div class="hrEmpty">Loading\u2026</div>')];
+  let list = pcApplyFilters(base).sort((a, b) => ((b.priority === 'urgent') - (a.priority === 'urgent')) || (b.createdAt - a.createdAt));
+  if(!list.length) return [bar, card('<div class="hrEmpty">No orders here.</div>')];
+  const shown = list.slice(0, U.limit);
+  return [bar, card('<div class="pcListHead pcRowG"><span></span><span>Order</span><span>Department</span><span>Items</span><span>Requested for</span><span>Age</span><span class="r">Total</span><span class="r">Status</span></div>' + shown.map(pcOrderRow).join('') + (list.length > shown.length ? `<div style="text-align:center;padding:12px"><button class="pcBtnSoft" data-pc="more">Show more (${list.length - shown.length})</button></div>` : ''))];
+}
+function pcOrderRow(o){
+  const U = pc.ui, open = U.openId === o.docId, sk = pcStatusKey(o), urgent = o.priority === 'urgent';
+  const icCls = urgent ? 'ic-red' : ({ new: 'ic-blue', approval: 'ic-yellow', approved: 'ic-green', rejected: 'ic-red', ordered: 'ic-blue', partial: 'ic-purple', received: 'ic-green', cancelled: 'ic-grey' }[sk] || 'ic-grey');
+  const when = pcIsOpen(o) ? pcDaysSince(o.createdAt) + ' d' : pcFmt(o.closedAt), tot = pcTotal(o), names = o.items.map(i => i.n).join(', ');
+  return `<div class="pcOrder${open ? ' open' : ''}"><div class="pcOrderHead pcRowG" data-pc="toggle" data-id="${pcEsc(o.docId)}"><span class="ic ${icCls}">${pcSvg(urgent ? 'flame' : 'cart', 15)}</span>
+    <div class="c-po"><b>${pcEsc(o.id)}</b>${urgent ? '<span class="pcUrgent">URGENT</span>' : ''}<span class="dm"> \u00B7 ${pcEsc(o.dept || '')}</span></div>
+    <div class="c-dept">${pcEsc(o.dept || '')}</div>
+    <div class="c-items" title="${pcEsc(names)}"><span class="lbl">Items</span>${pcEsc(names)}</div>
+    <div class="c-req"><span class="lbl">For</span>${pcEsc(o.reqBy ? o.reqBy.name : '')}</div>
+    <div class="c-age">${when}</div>
+    <div class="c-tot">${tot ? pcMoney(tot) : '\u2013'}</div>
+    <div class="c-st"><span class="pcSt s-${sk}">${PC_LABEL[sk]}</span><span class="pcChev">${pcSvg('chev', 15)}</span></div></div>
+    ${open ? '<div class="pcDetail">' + pcDetailHtml(o) + '</div>' : ''}</div>`;
+}
+function pcCanEdit(o){ const R = pcRoles(); return (o.status === 'new' || o.status === 'rejected') && (R.admin || R.proc || o.createdBy === pcMe()); }
+function pcCanReceive(o){ const R = pcRoles(); return (o.status === 'ordered' || o.status === 'approved') && (R.admin || R.proc || o.createdBy === pcMe()); }
+function pcRemarks(it, docId, i){
+  const tags = [];
+  if(it.phys) tags.push(`<span class="pcTag${!it.link && !(it.photos || []).length ? ' warn' : ''}" title="${pcEsc(pcSampleText(it).t)}">${!it.link && !(it.photos || []).length ? 'Physical sample only' : 'Physical sample'}</span>`);
+  if(it.link) tags.push(`<a class="pcTag" href="${pcEsc(pcSafeUrl(it.link))}" target="_blank" rel="noopener">${pcSvg('link', 11)}${pcEsc(pcShortUrl(it.link))}</a>`);
+  (it.photos || []).forEach((p, k) => tags.push(`<a class="pcTag" href="#" data-pc="photo" data-id="${pcEsc(docId)}" data-i="${i}" data-k="${k}">${pcSvg('cam', 11)}Photo ${k + 1}</a>`));
+  return tags.join('') + (it.note ? `<span class="pcItNote">${pcEsc(it.note)}</span>` : '');
+}
+const pcLast = (it) => it.lp ? pcMoney(it.lp) + (it.ld ? ' \u00B7 ' + fmtDate(pcDateStr(it.ld)).slice(0, 6) : '') : '\u2013';
+// Items: one line per item, columns side by side (same layout as the printed paper)
+function pcItemsTable(o, rec){
+  const showRec = rec !== false && (['ordered', 'approved', 'received'].includes(o.status) || pcStatusKey(o) === 'partial'), canRec = pcCanReceive(o);
+  let h = `<div class="pcIts${showRec ? ' withrec' : ''}"><div class="pcItsH pcItG"><span>#</span><span>Item name</span><span>Description</span><span class="r">Qty</span><span>Unit</span><span class="r">Price</span><span class="r">Last bought</span><span class="r">Total</span><span>Remarks</span>${showRec ? '<span>Received</span>' : ''}</div>`;
+  o.items.forEach((it, i) => {
+    const left = it.q - (it.rec || 0), desc = [it.d, it.b].filter(Boolean).map(pcEsc).join(', ');
+    let recCell = '';
+    if(showRec){
+      if(left <= 0) recCell = '<span class="pcSt s-received">Received</span>';
+      else if(canRec) recCell = `<span class="pcRecCell"><span class="hrNote">${it.rec || 0}/${it.q}</span><input type="number" min="1" max="${left}" value="${left}" id="pcRq_${i}"><button class="pcBtnSoft ok sm" data-pc="recitem" data-id="${pcEsc(o.docId)}" data-i="${i}">${pcSvg('check', 13)}Got it</button></span>`;
+      else recCell = `<span class="pcSt s-new">Pending ${left}</span>`;
+    }
+    h += `<div class="pcIt pcItG"><span class="c-no">${i + 1}</span><div class="c-name">${pcEsc(it.n)}</div><div class="c-desc" title="${desc}">${desc}</div>
+      <div class="c-nums"><span class="c-qty">${it.q}</span><span class="c-unit">${pcEsc(it.u || '')}</span><span class="c-price"><span class="lbl">Price </span>${pcMoney(it.p)}</span><span class="c-last"><span class="lbl">Last </span>${pcLast(it)}</span></div>
+      <span class="c-tot">${pcMoney(pcLine(it))}</span><div class="c-rem">${pcRemarks(it, o.docId, i)}</div>${showRec ? `<div class="c-rec">${recCell}</div>` : ''}</div>`;
+  });
+  const tot = pcTotal(o);
+  return h + (tot ? `<div class="pcItTotal"><span>Total (SAR)</span><b>${pcMoney(tot)}</b></div>` : '') + '</div>';
+}
+const PC_STEPS = [['new', 'Created'], ['approval', 'Approval'], ['approved', 'Approved'], ['ordered', 'Ordered'], ['received', 'Received']];
+function pcStepsHtml(o){
+  if(o.status === 'cancelled') return '<div class="pcSteps"><span class="pcStep bad">Cancelled</span></div>';
+  const idx = { new: 0, rejected: 1, approval: 1, approved: 2, ordered: 3, received: 4 }[o.status] || 0;
+  return '<div class="pcSteps">' + PC_STEPS.map((s, i) => `<span class="pcStep${i < idx || o.status === 'received' ? ' done' : ''}${i === idx && o.status !== 'received' ? (o.status === 'rejected' ? ' bad' : ' now') : ''}">${i === 1 && o.status === 'rejected' ? 'Rejected' : s[1]}</span>`).join('<i></i>') + '</div>';
+}
+function pcMenu(label, icon, inner){ return inner ? `<details class="pcMore"><summary class="pcBtnSoft">${pcSvg(icon, 14)}${label}</summary><div class="pcMoreList">${inner}</div></details>` : ''; }
+function pcDetailHtml(o){
+  const R = pcRoles(), me = pcMe(), mine = o.createdBy === me || R.admin, paper = !!(o.proc && o.proc.paper);
+  const b = (act, label, ic, cls) => `<button class="pcBtnSoft ${cls || ''}" data-pc="${act}" data-id="${pcEsc(o.docId)}">${pcSvg(ic, 14)}${label}</button>`;
+  const main = (act, label, ic) => `<button class="pcBtnMain sm" data-pc="${act}" data-id="${pcEsc(o.docId)}">${pcSvg(ic, 15)}${label}</button>`;
+  const facts = [['Department', o.dept], ['Requested by', o.reqBy && o.reqBy.name], ['Created by', o.createdByName], ['Created', pcFmt(o.createdAt)]];
+  if(o.proc && o.proc.supplier) facts.push(['Supplier', o.proc.supplier]);
+  if(o.status === 'approval') facts.push(['Waiting for', paper ? 'Signature on paper' + (o.proc.approverName ? ' \u00B7 ' + o.proc.approverName : '') : (o.proc && o.proc.approverId ? pcNameOf(o.proc.approverId) : 'Executive')]);
+  if(o.approvedAt) facts.push(['Approved', pcFmt(o.approvedAt) + (o.approvedByName ? ' \u00B7 ' + o.approvedByName : '')]);
+  if(o.orderedAt) facts.push(['Ordered', pcFmt(o.orderedAt)]);
+  if(o.expected) facts.push(['Expected', fmtDate(o.expected)]);
+  const sec = (label, inner) => inner;
+  let h = `<div class="pcFacts" style="--n:${facts.length <= 6 ? facts.length : Math.ceil(facts.length / 2)}">` + facts.map(f => `<span class="pcFact"><span class="k">${f[0]}:</span> <span class="v">${pcEsc(f[1] || '\u2014')}</span></span>`).join('') + '</div>';
+  if(o.status === 'rejected') h += `<div class="pcAlert">Rejected${o.rejectReason ? ': ' + pcEsc(o.rejectReason) : ''}</div>`;
+  if(o.proc && o.proc.note && o.status === 'approval') h += `<div class="hrNote" style="margin-bottom:8px">Note to approver: ${pcEsc(o.proc.note)}</div>`;
+  if(o.note) h += `<div class="hrNote" style="margin-bottom:8px">Note: ${pcEsc(o.note)}</div>`;
+  h += sec('Items (' + o.items.length + ')', pcItemsTable(o));
+  // only the buttons that belong to this step
+  let a = '';
+  if(pcIsMyApproval(o)) a += main('approve', 'Approve', 'check') + b('reject', 'Reject', 'x', 'danger');
+  if(R.proc && (o.status === 'new' || o.status === 'rejected')) a += main('sendappr', o.status === 'rejected' ? 'Send for approval again' : 'Send for approval', 'send');
+  if(R.proc && o.status === 'approval' && paper) a += main('paperok', 'Signed \u2014 mark approved', 'check') + b('reject', 'Rejected', 'x', 'danger');
+  if(R.proc && o.status === 'approved') a += main('ordered', 'Mark as ordered', 'cart');
+  if(pcCanReceive(o) && !(o.status === 'approved' && !R.proc)) a += main('recall', 'All received', 'check');
+  const dl = b('pdfreq', 'Requisition PDF', 'down') + (o.status === 'new' ? '' : b('pdfpo', 'Order PDF', 'file'));
+  let more = '';
+  if(pcCanEdit(o)) more += b('edit', 'Edit order', 'edit');
+  if(mine) more += b('recphoto', 'Signed requisition photo' + ((o.recPhotos || []).length ? ' (' + o.recPhotos.length + ')' : ''), 'cam');
+  else if((o.recPhotos || []).length) more += b('recphoto', 'View signed requisition (' + o.recPhotos.length + ')', 'cam');
+  if(R.proc && o.status === 'approval' && !paper) more += b('paperok', 'Already signed on paper', 'stamp');
+  if(R.req || R.proc) more += b('reorder', 'Order again', 'plus');
+  if(o.createdBy === me && pcIsOpen(o)) more += b('remind', 'WhatsApp update', 'wa');
+  if(pcIsOpen(o) && (R.admin || R.proc || o.createdBy === me)) more += b('cancel', 'Cancel order', 'trash', 'danger');
+  h += `<div class="pcBar"><div class="pcBarMain">${a}</div><div class="pcBarTools">${pcMenu('Download', 'down', dl)}${pcMenu('More', 'list', more)}</div></div>`;
+  h += '<div class="pcFoot">' + pcStepsHtml(o) + '<details class="pcHist"><summary>History</summary><div class="pcLog">' + (o.log || []).slice().reverse().map(l => `${pcFmt(l.t)} \u00B7 ${pcEsc(l.by)} \u00B7 ${pcEsc(l.a)}`).join('<br>') + '</div></details></div>';
+  return h;
+}
+
+/* ---------- create / edit form ---------- */
+function pcBlankItem(){ return { lp: 0, ld: 0, n: '', d: '', b: '', q: 1, u: ((pc.settings || PC_DEF).units[0] || 'pcs'), p: '', phys: false, link: '', photos: [], note: '', more: false }; }
+function pcNewForm(){ return { docId: '', priority: 'regular', dept: '', reqBy: { id: '', name: '' }, note: '', items: [pcBlankItem()], recPhotos: [] }; }
+function pcFormFromOrder(o, asCopy){
+  return { docId: asCopy ? '' : o.docId, priority: o.priority, dept: o.dept, reqBy: Object.assign({}, o.reqBy), note: o.note || '', recPhotos: asCopy ? [] : (o.recPhotos || []).slice(),
+    items: o.items.map(i => ({ lp: i.lp || 0, ld: i.ld || 0, n: i.n, d: i.d || '', b: i.b || '', q: i.q, u: i.u, p: i.p || '', phys: !!i.phys, link: i.link || '', photos: (i.photos || []).slice(), note: i.note || '', more: !!(i.b || i.p || i.note || i.phys || i.link || (i.photos || []).length) })) };
+}
+function pcFormHtml(){
+  const F = pc.ui.form, S = pc.settings, depts = pcDepts();
+  return `<button class="pcBack" data-pc="back">${pcSvg('back', 15)}Back</button><div class="card pcForm"><h2 style="margin-top:0">${F.docId ? 'Edit order' : 'New order'}</h2>
+    <div class="field"><label>Priority</label><div class="pcSeg"><button data-pc="prio" data-v="regular" class="${F.priority === 'regular' ? 'on' : ''}">Regular</button><button data-pc="prio" data-v="urgent" class="urgent ${F.priority === 'urgent' ? 'on' : ''}">${pcSvg('flame', 15)}Urgent</button></div></div>
+    <div class="hrForm"><div class="field"><label>Requested by department</label><select data-pc="dept"><option value="">Select…</option>${depts.map(d => `<option ${F.dept === d ? 'selected' : ''}>${pcEsc(d)}</option>`).join('')}${F.dept && !depts.includes(F.dept) ? `<option selected>${pcEsc(F.dept)}</option>` : ''}</select></div>
+    <div class="field pcWho"><label>Requested by person (search or type)</label><input type="text" data-pc="who" autocomplete="off" placeholder="Start typing a name…" value="${pcEsc(F.reqBy.name)}"><div class="pcSug" id="pcWhoSug" style="display:none"></div></div></div>
+    <div class="pcSection" style="margin-top:6px">Items</div><div class="pcFT"><div class="pcFTH pcFRow"><span>#</span><span>Item name</span><span>Description</span><span>Qty</span><span>Unit</span><span>Price</span><span>Remarks</span><span></span></div><div id="pcItems">${F.items.map((it, i) => pcItemHtml(it, i, S.units)).join('')}</div></div>
+    <button class="pcBtnSoft" data-pc="additem" style="margin-bottom:14px">${pcSvg('plus', 14)}Add another item</button>
+    <div class="field"><label>Note (optional)</label><input type="text" data-pc="note" placeholder="Anything the buyer should know" value="${pcEsc(F.note)}"></div>
+    <div class="field"><label>Photo of the signed requisition (optional — you can also add it later)</label><div class="pcThumbs">${F.recPhotos.map((p, k) => `<div class="pcThumb"><img src="${p}" alt=""><button data-pc="delrec" data-k="${k}" aria-label="Remove photo">×</button></div>`).join('')}
+      ${F.recPhotos.length < 3 ? `<label class="pcBtnSoft">${pcSvg('cam', 14)}Add photo<input type="file" accept="image/*" data-pc="frec" style="display:none"></label>` : ''}</div></div>
+    <div class="pcTop" style="margin:6px 0 0"><button class="pcBtnMain" data-pc="save" ${pc.ui.busy ? 'disabled' : ''}>${pcSvg('check', 16)}${F.docId ? 'Save changes' : 'Create order'}</button><button class="pcBtnSoft" data-pc="back">Cancel</button></div></div>`;
+}
+function pcItemHtml(it, i, units){
+  const us = units.includes(it.u) ? units : units.concat([it.u]), sm = pcSampleText(it), n = pc.ui.form.items.length;
+  const L = (t) => `<span class="fl">${t}</span>`;
+  return `<div class="pcFR${it.more ? ' open' : ''}" data-idx="${i}"><div class="pcFRow">
+    <span class="c-no">${i + 1}</span>
+    <div class="c-name pcWho">${L('Item name')}<input type="text" data-pc="iname" data-i="${i}" autocomplete="off" placeholder="e.g. Needle" value="${pcEsc(it.n)}"><div class="pcSug" id="pcItSug${i}" style="display:none"></div></div>
+    <div class="c-desc">${L('Description')}<input type="text" data-pc="idesc" data-i="${i}" placeholder="Size, model, specification" value="${pcEsc(it.d)}"></div>
+    <div class="c-qty">${L('Qty')}<input type="number" min="1" step="any" data-pc="iqty" data-i="${i}" value="${it.q}"></div>
+    <div class="c-unit">${L('Unit')}<select data-pc="iunit" data-i="${i}">${us.map(u => `<option ${u === it.u ? 'selected' : ''}>${pcEsc(u)}</option>`).join('')}</select></div>
+    <div class="c-price">${L('Price (if known)')}<input type="number" min="0" step="any" data-pc="iprice" data-i="${i}" placeholder="0.00" value="${pcEsc(it.p)}"></div>
+    <div class="c-rem">${L('Remarks')}<input type="text" data-pc="inote" data-i="${i}" placeholder="Colour, quality, where to buy" value="${pcEsc(it.note)}"></div>
+    <div class="c-act"><button class="pcIconBtn" data-pc="imore" data-i="${i}" title="Sample, link, photos, brand" aria-label="More">${pcSvg('chev', 14)}</button>${n > 1 ? `<button class="pcIconBtn" data-pc="delitem" data-i="${i}" title="Remove" aria-label="Remove">${pcSvg('trash', 14)}</button>` : ''}</div></div>
+    ${it.more ? `<div class="pcItemMore pcFMore"><div class="field">${L('Brand / manufacturer')}<input type="text" data-pc="ibrand" data-i="${i}" value="${pcEsc(it.b)}"></div>
+      <div class="field">${L('Online link (optional)')}<input type="text" inputmode="url" data-pc="ilink" data-i="${i}" placeholder="https://\u2026" value="${pcEsc(it.link)}"></div>
+      <label class="pcChk"><input type="checkbox" data-pc="iphys" data-i="${i}" ${it.phys ? 'checked' : ''}> I have a physical sample (the buyer must take it)</label>
+      <div class="field">${L('Photos (optional, up to 3)')}<div class="pcThumbs">${it.photos.map((p, k) => `<div class="pcThumb"><img src="${p}" alt=""><button data-pc="delphoto" data-i="${i}" data-k="${k}" aria-label="Remove photo">\u00D7</button></div>`).join('')}
+        ${it.photos.length < 3 ? `<label class="pcBtnSoft sm">${pcSvg('cam', 13)}Add<input type="file" accept="image/*" data-pc="iphoto" data-i="${i}" style="display:none"></label>` : ''}</div></div>
+      ${it.phys || it.link || it.photos.length ? `<div class="pcFTag"><span class="pcTag${sm.warn ? ' warn' : ''}">${pcEsc(sm.t)}</span></div>` : ''}</div>` : ''}</div>`;
+}
+function pcCompress(file, maxDim, q, png){
+  return new Promise((res, rej) => {
+    const url = URL.createObjectURL(file), img = new Image();
+    img.onload = () => {
+      const k = Math.min(1, maxDim / Math.max(img.width, img.height)), c = document.createElement('canvas');
+      c.width = Math.max(1, Math.round(img.width * k)); c.height = Math.max(1, Math.round(img.height * k));
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(url);
+      res(png ? c.toDataURL('image/png') : c.toDataURL('image/jpeg', q));
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); rej(new Error('IMG')); };
+    img.src = url;
+  });
+}
+function pcCatalogMatches(q){
+  q = q.trim().toLowerCase(); if(q.length < 2 || !pc.catalog) return [];
+  return Object.values(pc.catalog.items).filter(c => c.n.toLowerCase().includes(q)).sort((a, b) => (b.uses || 0) - (a.uses || 0)).slice(0, 6);
+}
+function pcShowSug(el, rows, kind, idx){
+  if(!el) return;
+  if(!rows.length){ el.style.display = 'none'; el.innerHTML = ''; return; }
+  el.innerHTML = rows.map((r, n) => `<div data-pc="${kind}" data-i="${idx}" data-n="${n}">${pcEsc(r.label)}${r.sub ? `<small>${pcEsc(r.sub)}</small>` : ''}</div>`).join('');
+  el.style.display = 'block'; el._rows = rows;
+}
+async function pcSaveForm(){
+  const F = pc.ui.form;
+  if(pc.ui.busy) return;
+  const cat = (pc.catalog && pc.catalog.items) || {};
+  const items = F.items.filter(i => i.n.trim()).map(i => ({ lp: i.lp || (cat[i.n.trim().toLowerCase()] || {}).lp || 0, ld: i.ld || (cat[i.n.trim().toLowerCase()] || {}).ld || 0, n: i.n.trim(), d: (i.d || '').trim(), b: (i.b || '').trim(), q: Number(i.q), u: i.u, p: Number(i.p) > 0 ? Number(i.p) : 0, phys: !!i.phys, link: pcSafeUrl(i.link), photos: i.photos.slice(0, 3), note: (i.note || '').trim() }));
+  if(!F.dept) return toast('Choose the department');
+  if(!F.reqBy.name.trim()) return toast('Write who requested it');
+  if(!items.length) return toast('Add at least one item');
+  if(items.some(i => !(i.q > 0))) return toast('Every item needs a quantity');
+  pc.ui.busy = true;
+  try{
+    let o;
+    if(F.docId){
+      o = await pcMutate(F.docId, (fresh) => {
+        if(fresh.status !== 'new' && fresh.status !== 'rejected') throw new Error('LOCKED');
+        fresh.priority = F.priority; fresh.dept = F.dept; fresh.reqBy = { id: F.reqBy.id || '', name: F.reqBy.name.trim() }; fresh.note = F.note.trim();
+        fresh.items = items.map(n => Object.assign({ rec: 0 }, n)); fresh.recPhotos = F.recPhotos.slice();
+        pcLog(fresh, 'Edited the order');
+      });
+    } else {
+      const n = await window.__db.poNextNo(), now = Date.now();
+      o = { docId: 'po_' + String(n).padStart(4, '0'), id: pcNo(n), no: n, createdAt: now, createdBy: pcMe(), createdByName: state.user.name || pcMe(), status: 'new',
+        priority: F.priority, dept: F.dept, reqBy: { id: F.reqBy.id || '', name: F.reqBy.name.trim() }, note: F.note.trim(),
+        items: items.map(i => Object.assign({ rec: 0 }, i)), recPhotos: F.recPhotos.slice(), proc: {}, log: [] };
+      pcLog(o, 'Created the order' + (F.priority === 'urgent' ? ' (URGENT)' : '') + ' and sent it to procurement');
+      await pcPersist(o);
+      pcSaveCatalog(items).catch(() => {});
+    }
+    pc.ui.view = 'done'; pc.ui.doneId = o.docId; pc.ui.form = null; pc.ui.openId = o.docId; pc.ui.tab = pcTabOf(o); pc.ui.isEdit = !!F.docId;
+  }catch(err){
+    console.error(err);
+    toast(err.message === 'LOCKED' ? 'This order has moved on and can no longer be edited' : err.message === 'TOO_BIG' ? 'Photos are too large — remove one and try again' : 'Could not save — please try again');
+  }finally{ pc.ui.busy = false; }
+  pcRender(); pcBadge();
+}
+async function pcSaveCatalog(items){
+  const cat = await pcLoadCatalog(), now = Date.now();
+  items.forEach(i => {
+    const k = i.n.toLowerCase(), old = cat.items[k];
+    cat.items[k] = { n: i.n, d: i.d || '', b: i.b || '', u: i.u, p: i.p || (old && old.p) || 0, link: i.link || (old && old.link) || '', phys: i.phys, note: i.note || '', lp: (old && old.lp) || 0, ld: (old && old.ld) || 0, uses: ((old && old.uses) || 0) + 1, last: now };
+  });
+  const keys = Object.keys(cat.items);
+  if(keys.length > 1500) keys.sort((a, b) => (cat.items[a].last || 0) - (cat.items[b].last || 0)).slice(0, keys.length - 1500).forEach(k => delete cat.items[k]);
+  await window.__db.saveConfigObject('purchaseCatalog', { items: cat.items });
+}
+// remember the prices as the "last bought" price for next time (one read + one write of the product list)
+async function pcSavePrices(o){
+  const cat = await pcLoadCatalog(), now = Date.now(); let ch = false;
+  o.items.forEach(i => { if(!(i.p > 0)) return; const k = i.n.toLowerCase(), e = cat.items[k] || (cat.items[k] = { n: i.n, d: i.d || '', b: i.b || '', u: i.u, p: 0, link: i.link || '', phys: !!i.phys, note: '', uses: 1, last: now }); e.lp = i.p; e.ld = now; ch = true; });
+  if(ch) await window.__db.saveConfigObject('purchaseCatalog', { items: cat.items });
+}
+function pcDoneHtml(){
+  const o = pcFind(pc.ui.doneId); if(!o) return '<div class="hrEmpty">Saved.</div>';
+  const next = pc.ui.isEdit ? 'Your changes are saved.' : 'It is now with the procurement officer.';
+  return `<div class="card"><div class="pcDone"><div class="ic ic-green">${pcSvg('check', 26)}</div><h2 style="margin:0 0 4px">${pcEsc(o.id)} ${pc.ui.isEdit ? 'updated' : 'created'}</h2>
+    <p class="sub" style="margin:0 0 16px">${next}</p></div>
+    <div class="pcFacts">${[['Department', o.dept], ['Requested by', o.reqBy.name], ['Priority', o.priority === 'urgent' ? 'URGENT' : 'Regular']].map(f => `<div class="pcFact"><span class="k">${f[0]}</span><span class="v">${pcEsc(f[1])}</span></div>`).join('')}</div>
+    ${pcItemsTable(o, false)}
+    <div class="pcSection" style="margin-top:4px">Next</div><p class="hrNote" style="margin:0 0 12px">1. Download the requisition and get it signed. 2. Add a photo of the signed copy (now or later). 3. Procurement takes over.</p>
+    <div class="pcActs"><button class="pcBtnMain" data-pc="pdfreq" data-id="${pcEsc(o.docId)}">${pcSvg('down', 16)}Requisition PDF</button><button class="pcBtnSoft" data-pc="recphoto" data-id="${pcEsc(o.docId)}">${pcSvg('cam', 14)}Add signed copy photo</button>
+    <button class="pcBtnSoft" data-pc="new">${pcSvg('plus', 14)}Create another</button><button class="pcBtnSoft" data-pc="back">Go to my orders</button></div></div>`;
+}
+
+/* ---------- modal ---------- */
+function pcModalOpen(html){
+  let m = $('pcModal');
+  if(!m){ m = document.createElement('div'); m.id = 'pcModal'; m.className = 'hrModal'; m.innerHTML = '<div class="hrSheet" id="pcSheet"></div>'; document.body.appendChild(m);
+    m.addEventListener('click', (e) => { if(e.target === m) pcModalClose(); }); }
+  $('pcSheet').innerHTML = html; m.style.display = 'flex';
+}
+function pcModalClose(){ const m = $('pcModal'); if(m) m.style.display = 'none'; }
+function pcModalHead(title, sub){ return `<div class="hrSheetHead"><div style="flex:1"><div style="font-family:'Oswald',sans-serif;font-size:18px;font-weight:600;color:var(--text-strong)">${pcEsc(title)}</div>${sub ? `<div class="hrNote">${pcEsc(sub)}</div>` : ''}</div><button class="pcBtnSoft" data-pc="mclose" style="width:34px;padding:0;justify-content:center">×</button></div>`; }
+function pcApproverOptions(o){
+  const ids = (pc.settings || {}).approvers || [], cur = o.proc && o.proc.approverId;
+  if(!ids.length) return '<option value="">Executive (anyone)</option>';
+  return ids.map(id => `<option value="${pcEsc(id)}" ${cur === id ? 'selected' : ''}>${pcEsc(pcNameOf(id))}</option>`).join('');
+}
+function pcOpenSendAppr(o){
+  pc.ui.modalId = o.docId;
+  pcModalOpen(pcModalHead('Send ' + o.id + ' for approval', 'Add the prices you found, then choose how it gets approved.') + `
+    <div class="pcSeg" id="pcmMode" data-v="app" style="margin-bottom:12px"><button data-pc="pcmmode" data-v="app" class="on">In the app</button><button data-pc="pcmmode" data-v="paper">On paper</button></div>
+    <div id="pcmAppBox" class="field"><label>Who approves? (they will see it on their dashboard)</label><select id="pcmAppr">${pcApproverOptions(o)}</select></div>
+    <div id="pcmPaperBox" style="display:none"><div class="field"><label>Who signs it? (optional)</label><input type="text" id="pcmWho" placeholder="e.g. the boss"></div>
+      <label class="pcChk" style="margin-bottom:12px"><input type="checkbox" id="pcmSigned"> It is already signed \u2014 mark as approved now</label></div>
+    <div class="field"><label>Supplier (optional)</label><input type="text" id="pcmSup" value="${pcEsc(o.proc && o.proc.supplier || '')}"></div>
+    <div class="pcSection" style="margin-top:0">Unit prices (SAR)</div>
+    ${o.items.map((it, i) => `<div class="pcPriceRow"><div class="pcPriceName"><b>${pcEsc(it.n)}</b><span class="hrNote">${it.q} ${pcEsc(it.u || '')}${it.b ? ' \u00B7 ' + pcEsc(it.b) : ''}</span></div><input type="number" min="0" step="any" id="pcmP_${i}" data-pc="pcmprice" value="${it.p || ''}" placeholder="0.00"></div>`).join('')}
+    <div class="pcPriceTot">Total <b id="pcmTot">SAR ${pcMoney(pcTotal(o))}</b></div>
+    <div class="field"><label>Note (optional)</label><input type="text" id="pcmNote" value="${pcEsc(o.proc && o.proc.note || '')}"></div>
+    <button class="pcBtnMain" data-pc="dosendappr" data-id="${pcEsc(o.docId)}">${pcSvg('send', 15)}Continue</button>`);
+}
+function pcOpenPaperOk(o){
+  pcModalOpen(pcModalHead('Mark ' + o.id + ' as approved', 'The signed paper is back.') + `<div class="field"><label>Signed by (optional)</label><input type="text" id="pcmWho" value="${pcEsc(o.proc && o.proc.approverName || '')}" placeholder="e.g. the boss"></div>
+    <button class="pcBtnMain" data-pc="dopaperok" data-id="${pcEsc(o.docId)}">${pcSvg('check', 15)}Mark as approved</button>`);
+}
+function pcUpdateModalTotal(){
+  const o = pcFind(pc.ui.modalId); if(!o) return; let t = 0;
+  o.items.forEach((it, i) => { const e = $('pcmP_' + i); t += (parseFloat(e && e.value) || 0) * it.q; });
+  const el = $('pcmTot'); if(el) el.textContent = 'SAR ' + pcMoney(t);
+}
+function pcOpenReject(o){
+  pcModalOpen(pcModalHead('Reject ' + o.id, 'Tell procurement why, so they can fix it.') + `<div class="field"><label>Reason</label><input type="text" id="pcmReason" placeholder="e.g. Price too high, get another quotation"></div>
+    <button class="pcBtnMain" data-pc="doreject" data-id="${pcEsc(o.docId)}">Reject order</button>`);
+}
+function pcOpenOrdered(o){
+  pcModalOpen(pcModalHead('Mark ' + o.id + ' as ordered', 'Reminders to the creator continue until everything is received.') + `<div class="hrForm">
+    <div class="field"><label>Supplier</label><input type="text" id="pcmSup" value="${pcEsc(o.proc && o.proc.supplier || '')}"></div>
+    <div class="field"><label>Expected delivery (optional)</label><input type="date" id="pcmExp" value="${pcEsc(o.expected || '')}"></div></div>
+    <button class="pcBtnMain" data-pc="doordered" data-id="${pcEsc(o.docId)}">${pcSvg('cart', 15)}Mark as ordered</button>`);
+}
+function pcOpenCancel(o){
+  pcModalOpen(pcModalHead('Cancel ' + o.id + '?', 'This closes the order. You can still find it under Completed.') + `<div class="field"><label>Reason (optional)</label><input type="text" id="pcmReason"></div>
+    <button class="pcBtnMain" style="background:var(--danger)" data-pc="docancel" data-id="${pcEsc(o.docId)}">Yes, cancel the order</button>`);
+}
+function pcOpenRemind(o){
+  const phone = pcPhoneOf(o);
+  pcModalOpen(pcModalHead('Send an update on ' + o.id, 'Edit the message if you like, send it on WhatsApp, then tap "I sent it".') +
+    `<div class="field"><label>Message</label><textarea id="pcmMsg" rows="6" style="width:100%">${pcEsc(pcWaText(o))}</textarea></div>
+    <div class="pcActs">${phone ? `<button class="pcBtnMain sm" data-pc="waopen" data-t="person" data-id="${pcEsc(o.docId)}">${pcSvg('wa', 14)}WhatsApp ${pcEsc((o.reqBy.name || '').split(' ')[0] || 'person')}</button>` : ''}
+    <button class="${phone ? 'pcBtnSoft' : 'pcBtnMain sm'}" data-pc="waopen" data-t="group" data-id="${pcEsc(o.docId)}">${pcSvg('wa', 14)}WhatsApp group / other</button>
+    <button class="pcBtnSoft" data-pc="wacopy">Copy</button></div>
+    <button class="pcBtnSoft ok" data-pc="wadone" data-id="${pcEsc(o.docId)}">${pcSvg('check', 14)}I sent it — ${pc.settings.remindDays ? 'remind me again in ' + pc.settings.remindDays + ' days' : 'test mode: it will show again straight away'}</button>`);
+}
+function pcOpenPhoto(o, i, k){
+  const p = o.items[i] && o.items[i].photos && o.items[i].photos[k]; if(!p) return;
+  pcModalOpen(pcModalHead(o.items[i].n, 'Photo ' + (k + 1)) + `<img src="${p}" alt="" style="width:100%;border-radius:12px">`);
+}
+function pcOpenRecPhoto(o){
+  const R = pcRoles(), can = R.admin || o.createdBy === pcMe(), ph = o.recPhotos || [];
+  pc.ui.modalId = o.docId;
+  pcModalOpen(pcModalHead('Signed requisition — ' + o.id, can ? 'Photo of the paper copy signed by the department.' : 'Added by ' + (o.createdByName || 'the creator') + '.') +
+    (ph.length ? ph.map((p, k) => `<div style="position:relative;margin-bottom:10px"><img src="${p}" alt="" style="width:100%;border-radius:12px;display:block">${can ? `<button class="pcBtnSoft danger sm" style="position:absolute;top:8px;right:8px;background:#fff" data-pc="recdel" data-id="${pcEsc(o.docId)}" data-k="${k}">${pcSvg('trash', 13)}Remove</button>` : ''}</div>`).join('') : '<div class="hrEmpty">No photo yet.</div>') +
+    (can && ph.length < 3 ? `<label class="pcBtnMain sm" style="cursor:pointer;display:inline-flex">${pcSvg('cam', 15)}Add photo<input type="file" accept="image/*" data-pc="recadd" data-id="${pcEsc(o.docId)}" style="display:none"></label>` : ''));
+}
+
+/* ---------- order actions ---------- */
+async function pcRun(fn, okMsg, keepModal){
+  if(pc.ui.busy) return;
+  pc.ui.busy = true;
+  try{ await fn(); if(okMsg) toast(okMsg); }
+  catch(err){ console.error(err); toast(err.message === 'GONE' ? 'That order no longer exists' : err.message === 'STALE' ? 'This order was just changed by someone else — refreshed' : err.message === 'TOO_BIG' ? 'Too many photos on this order' : 'Could not save — please try again'); if(err.message === 'STALE'){ try{ await pcLoad(true); }catch(e){} } }
+  finally{ pc.ui.busy = false; }
+  if(!keepModal) pcModalClose();
+  pcRender(); pcBadge(); try{ pcRenderDash(); }catch(e){}
+}
+const pcNeed = (cond) => { if(!cond) throw new Error('STALE'); };
+function pcActSendAppr(id){
+  const mode = $('pcmMode').dataset.v, sup = $('pcmSup').value.trim(), note = $('pcmNote').value.trim();
+  const ap = mode === 'app' ? $('pcmAppr').value : '', who = mode === 'paper' ? $('pcmWho').value.trim() : '', signed = mode === 'paper' && $('pcmSigned').checked;
+  const prices = pcFind(id).items.map((it, i) => { const e = $('pcmP_' + i); return Math.max(0, parseFloat(e && e.value) || 0); });
+  return pcRun(async () => { const o2 = await pcMutate(id, (o) => { pcNeed(o.status === 'new' || o.status === 'rejected');
+    o.items.forEach((it, i) => { if(prices[i] != null) it.p = prices[i]; });
+    o.rejectReason = ''; o.proc = { approverId: ap, supplier: sup, note, sentAt: Date.now(), paper: mode === 'paper', approverName: who };
+    if(signed){ o.status = 'approved'; o.approvedAt = Date.now(); o.approvedBy = pcMe(); o.approvedByName = who || 'Signed on paper'; pcLog(o, 'Approved \u2014 already signed on paper' + (who ? ' by ' + who : '')); }
+    else { o.status = 'approval'; pcLog(o, mode === 'paper' ? 'Sent for approval on paper' + (who ? ' to ' + who : '') : 'Sent for approval to ' + (ap ? pcNameOf(ap) : 'the executive')); } }); if(o2) pcSavePrices(o2).catch(() => {}); }, signed ? 'Marked as approved' : 'Sent for approval');
+}
+function pcActPaperOk(id){
+  const who = ($('pcmWho').value || '').trim();
+  return pcRun(() => pcMutate(id, (o) => { pcNeed(o.status === 'approval'); o.status = 'approved'; o.approvedAt = Date.now(); o.approvedBy = pcMe(); o.approvedByName = who || 'Signed on paper'; pcLog(o, 'Approved \u2014 signed on paper' + (who ? ' by ' + who : '')); }), 'Marked as approved');
+}
+function pcActApprove(id){
+  return pcRun(() => pcMutate(id, (o) => { pcNeed(o.status === 'approval'); o.status = 'approved'; o.approvedAt = Date.now(); o.approvedBy = pcMe(); o.approvedByName = state.user.name || pcMe(); pcLog(o, 'Approved'); }), 'Approved');
+}
+function pcActReject(id){
+  const r = ($('pcmReason').value || '').trim();
+  return pcRun(() => pcMutate(id, (o) => { pcNeed(o.status === 'approval'); o.status = 'rejected'; o.rejectReason = r; pcLog(o, 'Rejected' + (r ? ': ' + r : '')); }), 'Order rejected');
+}
+function pcActOrdered(id){
+  const sup = $('pcmSup').value.trim(), exp = $('pcmExp').value;
+  return pcRun(() => pcMutate(id, (o) => { pcNeed(o.status === 'approved'); o.status = 'ordered'; o.orderedAt = Date.now(); o.signed = true; o.signedAt = o.signedAt || Date.now(); o.proc = Object.assign({}, o.proc, { supplier: sup }); o.expected = exp || ''; pcLog(o, 'Ordered' + (sup ? ' from ' + sup : '')); }), 'Marked as ordered');
+}
+function pcActCancel(id){
+  const r = ($('pcmReason').value || '').trim();
+  return pcRun(() => pcMutate(id, (o) => { pcNeed(pcIsOpen(o)); o.status = 'cancelled'; o.closedAt = Date.now(); pcLog(o, 'Cancelled' + (r ? ': ' + r : '')); }), 'Order cancelled');
+}
+function pcActRecItem(id, i){
+  const el = $('pcRq_' + i), q = el ? Number(el.value) : 0;
+  return pcRun(() => pcMutate(id, (o) => { pcNeed(o.status === 'ordered' || o.status === 'approved'); const it = o.items[i]; pcNeed(!!it);
+    const left = it.q - (it.rec || 0), take = Math.min(left, Math.max(0, q || left)); if(take <= 0) return false;
+    it.rec = (it.rec || 0) + take; it.recAt = Date.now();
+    pcLog(o, 'Received ' + take + ' ' + (it.u || '') + ' of ' + it.n);
+    if(!pcPendingItems(o).length){ o.status = 'received'; o.closedAt = Date.now(); pcLog(o, 'All items received — order complete'); } }), 'Marked as received');
+}
+function pcActRecAll(id){
+  return pcRun(() => pcMutate(id, (o) => { pcNeed(o.status === 'ordered' || o.status === 'approved');
+    o.items.forEach(it => { if((it.rec || 0) < it.q){ it.rec = it.q; it.recAt = Date.now(); } });
+    o.status = 'received'; o.closedAt = Date.now(); pcLog(o, 'All items received — order complete'); }), 'Order complete');
+}
+function pcActRemindDone(id){
+  return pcRun(() => pcMutate(id, (o) => { pcNeed(pcIsOpen(o)); o.lastRemindAt = Date.now(); pcLog(o, 'Update sent on WhatsApp'); }), 'Done — next reminder in ' + pc.settings.remindDays + ' days');
+}
+async function pcActRecAdd(id, file){
+  const d = await pcCompress(file, 1100, 0.6);
+  await pcRun(() => pcMutate(id, (o) => { o.recPhotos = (o.recPhotos || []); pcNeed(o.recPhotos.length < 3); o.recPhotos.push(d); pcLog(o, 'Added a photo of the signed requisition'); }), 'Photo added', true);
+  const o = pcFind(id); if(o) pcOpenRecPhoto(o);
+}
+async function pcActRecDel(id, k){
+  await pcRun(() => pcMutate(id, (o) => { (o.recPhotos || []).splice(k, 1); pcLog(o, 'Removed a requisition photo'); }), 'Photo removed', true);
+  const o = pcFind(id); if(o) pcOpenRecPhoto(o);
+}
+async function pcLoadMonth(m, force){
+  if(pc.closed[m] && !force) return;
+  try{ pc.closed[m] = await window.__db.poLoadClosed(m); }catch(err){ console.error(err); toast('Could not load completed orders'); pc.closed[m] = []; }
+}
+
+/* ---------- PDFs (the letterhead is the one set in HR Assistant > Settings > Letterhead) ---------- */
+async function pcLetterhead(){
+  let S = null; try{ S = await hrLoadSettings(); }catch(e){}
+  const lh = (S && S.letterhead) || {};
+  return { company: lh.company || (S && S.company) || 'Riyadh Velvet Factory', logo: lh.logo || '', color: /^#[0-9a-fA-F]{6}$/.test(lh.color || '') ? lh.color : '#4f46e5', line1: lh.line1 || '', line2: lh.line2 || '', footer: lh.footer || '', stamp: !!lh.stamp };
+}
+function pcPdfBlocks(o, kind, T, L){
+  const S = pc.settings || PC_DEF; T = T || S.tpl; const esc = pcEsc, col = L.color, isPO = kind === 'po';
+  const title = isPO ? T.poTitle : T.reqTitle, intro = isPO ? T.poIntro : T.reqIntro, closing = isPO ? T.poClosing : T.reqClosing, sign = (isPO ? T.poSigners : T.reqSigners) || [];
+  const blocks = [], F = "font-family:'Inter',sans-serif";
+  blocks.push(`<div style="display:flex;align-items:center;gap:16px;padding:4px 0 12px;border-bottom:3px solid ${col};${F}">${L.logo ? `<img src="${L.logo}" alt="" style="max-height:62px;max-width:180px;object-fit:contain">` : ''}
+    <div><div style="font-family:'Oswald',sans-serif;font-size:23px;font-weight:700;color:${col};line-height:1.2">${esc(L.company)}</div>${L.line1 ? `<div style="font-size:11px;color:#64748b;margin-top:2px">${esc(L.line1)}</div>` : ''}${L.line2 ? `<div style="font-size:11px;color:#64748b">${esc(L.line2)}</div>` : ''}</div></div>`);
+  const cell = (k, v, w) => `<td style="width:${w}%;padding:5px 8px;border:1px solid #cbd5e1;vertical-align:top"><div style="font-size:8.5px;text-transform:uppercase;letter-spacing:.05em;color:#64748b;font-weight:600">${k}</div><div style="font-size:12px;font-weight:700;color:#0f172a;margin-top:1px">${esc(v || '\u2014')}</div></td>`;
+  const row1 = [cell('P.O. No.', o.id, 16), cell('Date', pcFmt(o.createdAt), 18), cell('Department', o.dept, 24), cell('Requested by', o.reqBy && o.reqBy.name, 26), cell('Priority', o.priority === 'urgent' ? 'URGENT' : 'Regular', 16)].join('');
+  const extra = isPO ? [['Supplier', o.proc && o.proc.supplier], ['Approved', o.approvedAt ? pcFmt(o.approvedAt) + (o.approvedByName ? ' \u00B7 ' + o.approvedByName : '') : ''], ['Expected delivery', o.expected ? fmtDate(o.expected) : '']] : [];
+  blocks.push(`<div style="padding:14px 0 6px;${F}"><div style="text-align:center;font-family:'Oswald',sans-serif;font-size:22px;font-weight:700;color:#0f172a;letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px">${esc(title)}</div>
+    <table style="width:100%;border-collapse:collapse;table-layout:fixed"><tr>${row1}</tr>${extra.length ? `<tr>${extra.map((x, i) => `<td colspan="${i === 0 ? 2 : i === 1 ? 2 : 1}" style="padding:5px 8px;border:1px solid #cbd5e1;vertical-align:top"><div style="font-size:8.5px;text-transform:uppercase;letter-spacing:.05em;color:#64748b;font-weight:600">${x[0]}</div><div style="font-size:12px;font-weight:700;color:#0f172a;margin-top:1px">${esc(x[1] || '\u2014')}</div></td>`).join('')}</tr>` : ''}</table>
+    ${intro ? `<div style="font-size:11.5px;color:#334155;margin-top:10px;line-height:1.5;white-space:pre-line">${esc(intro)}</div>` : ''}</div>`);
+  const W = isPO ? [4, 31, 9, 10, 13, 10, 23] : [5, 45, 12, 38];
+  const heads = isPO ? ['#', 'Description', 'Qty', 'Approx price', 'Last price / date', 'Total', 'Remarks'] : ['#', 'Description', 'Qty', 'Remarks'];
+  const th = heads.map((h, i) => `<th style="width:${W[i]}%;${/Qty|price|Last|Total/.test(h) ? 'text-align:right' : ''}">${h}</th>`).join('');
+  const remarks = (it) => [it.phys ? ((it.link || (it.photos || []).length) ? 'Physical sample' : 'PHYSICAL SAMPLE ONLY \u2014 take it when buying') : '', it.link ? 'Link: ' + pcShortUrl(it.link) : '', (it.photos || []).length ? 'Photo(s) in the app' : '', it.note].filter(Boolean).join(' \u00B7 ') || '';
+  const rows = o.items.map((it, i) => {
+    const warn = it.phys && !it.link && !(it.photos || []).length, td = (v, r) => `<td${r ? ' style="text-align:right"' : ''}>${v}</td>`;
+    const desc = `<b>${esc(it.n)}</b>${[it.d, it.b].filter(Boolean).length ? ' \u2014 ' + [it.d, it.b].filter(Boolean).map(esc).join(', ') : ''}`;
+    const rem = `<td style="font-size:9.5px;${warn ? 'color:#b91c1c;font-weight:700' : ''}">${esc(remarks(it))}</td>`;
+    const cells = isPO ? [td(i + 1), td(desc), td(it.q + ' ' + esc(it.u || ''), 1), td(pcMoney(it.p), 1), td(pcLast(it), 1), td(`<b>${pcMoney(pcLine(it))}</b>`, 1), rem] : [td(i + 1), td(desc), td(it.q + ' ' + esc(it.u || ''), 1), rem];
+    return `<tr>${cells.join('')}</tr>`; });
+  const css = `<style>.pcPdfT{width:100%;table-layout:fixed;border-collapse:collapse;font-family:'Inter',sans-serif;font-size:10.5px;color:#0f172a}.pcPdfT th{background:#f1f5f9;border:1px solid #94a3b8;padding:5px 5px;font-size:9px;text-transform:uppercase;letter-spacing:.03em;text-align:left}.pcPdfT td{border:1px solid #cbd5e1;padding:4px 5px;vertical-align:top;word-wrap:break-word}</style>`;
+  const total = pcTotal(o), per = 22;
+  for(let i = 0; i < rows.length; i += per){
+    const last = i + per >= rows.length;
+    const foot = (isPO && total && last) ? `<tr><td colspan="5" style="text-align:right;font-weight:700;background:#f8fafc">TOTAL (SAR)</td><td style="text-align:right;font-weight:700;background:#f8fafc">${pcMoney(total)}</td><td style="background:#f8fafc"></td></tr>` : '';
+    blocks.push(`${css}<table class="pcPdfT"><thead><tr>${th}</tr></thead><tbody>${rows.slice(i, i + per).join('')}${foot}</tbody></table>`);
+  }
+  blocks.push(`<div style="${F};padding-top:12px">${closing ? `<div style="font-size:11.5px;color:#334155;line-height:1.5;margin-bottom:20px;white-space:pre-line">${esc(closing)}</div>` : '<div style="height:10px"></div>'}
+    <div style="display:flex;flex-wrap:wrap;gap:18px;align-items:flex-end;justify-content:flex-end">${(sign.length ? sign : [{ name: '', title: 'Authorised signature' }]).map(x => `<div style="flex:0 0 30%;min-width:0;text-align:center"><div style="height:96px"></div><div style="border-top:1px solid #0f172a;padding-top:6px;font-size:12.5px;font-weight:700;color:#0f172a">${esc(x.name || '\u00A0')}</div><div style="font-size:11px;color:#475569">${esc(x.title || '')}</div><div style="font-size:10px;color:#94a3b8;margin-top:4px">Signature / date</div></div>`).join('')}${isPO && L.stamp ? '<div style="width:90px;height:90px;border:1.5px dashed #cbd5e1;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:10px;text-align:center">Company<br>stamp</div>' : ''}</div>
+    ${L.footer ? `<div style="margin-top:22px;padding-top:8px;border-top:1px solid #e2e8f0;font-size:10.5px;color:#64748b;text-align:center">${esc(L.footer)}</div>` : ''}</div>`);
+  return blocks;
+}
+// ---- real text PDF (small, sharp in print, selectable text) ----
+function pcPdfModel(o, kind, T, L){
+  const S = pc.settings || PC_DEF; T = T || S.tpl; const isPO = kind === 'po';
+  const remarks = (it) => [it.phys ? ((it.link || (it.photos || []).length) ? 'Physical sample' : 'PHYSICAL SAMPLE ONLY - take it when buying') : '', it.link ? 'Link: ' + pcShortUrl(it.link) : '', (it.photos || []).length ? 'Photo(s) in the app' : '', it.note].filter(Boolean).join(' | ');
+  const head = isPO ? ['#', 'Item name', 'Description', 'Qty', 'Unit', 'Price', 'Last bought', 'Total', 'Remarks'] : ['#', 'Item name', 'Description', 'Qty', 'Unit', 'Remarks'];
+  const w = isPO ? [10, 25, 32, 10, 10, 14, 25, 16, 26] : [10, 40, 46, 14, 16, 56];
+  const right = isPO ? [3, 5, 6, 7] : [3];
+  const rows = o.items.map((it, i) => { const d = [it.d, it.b].filter(Boolean).join(', ');
+    return isPO ? [String(i + 1), it.n, d, String(it.q), it.u || '', pcMoney(it.p), pcLast(it), pcMoney(pcLine(it)), remarks(it)] : [String(i + 1), it.n, d, String(it.q), it.u || '', remarks(it)]; });
+  const info = [[['P.O. No.', o.id], ['Date', pcFmt(o.createdAt)], ['Department', o.dept], ['Requested by', o.reqBy && o.reqBy.name], ['Priority', o.priority === 'urgent' ? 'URGENT' : 'Regular']]];
+  if(isPO) info.push([['Supplier', o.proc && o.proc.supplier], ['Approved', o.approvedAt ? pcFmt(o.approvedAt) + (o.approvedByName ? ' - ' + o.approvedByName : '') : ''], ['Expected delivery', o.expected ? fmtDate(o.expected) : '']]);
+  return { kind, title: isPO ? T.poTitle : T.reqTitle, intro: isPO ? T.poIntro : T.reqIntro, closing: isPO ? T.poClosing : T.reqClosing, signers: (isPO ? T.poSigners : T.reqSigners) || [],
+    info, head, w, right, rows, total: isPO ? pcTotal(o) : 0, L };
+}
+function pcAscii(v){ return String(v == null ? '' : v).replace(/[‘’]/g, "'").replace(/[“”]/g, '"').replace(/…/g, '...').replace(/[^\u0000-ÿ–—•]/g, '?'); }
+const PC_AR = /[\u0590-\u08FF]/;
+function pcHasArabic(m){ return PC_AR.test(JSON.stringify([m.info, m.rows, m.title, m.intro, m.closing, m.signers])); }
+// the letterhead may be Arabic: only that small band is drawn as a picture, everything else stays text
+async function pcRast(html, px){
+  const el = document.createElement('div'); el.style.cssText = 'position:fixed;left:-10000px;top:0;background:#fff;color:#0f172a;width:' + px + 'px'; el.innerHTML = html; document.body.appendChild(el);
+  try{ const c = await window.html2canvas(el, { scale: 2, backgroundColor: '#ffffff', logging: false }); return { data: c.toDataURL('image/jpeg', 0.92), ratio: c.height / c.width }; } finally { el.remove(); }
+}
+function pcImgSize(src){ return new Promise(res => { const im = new Image(); im.onload = () => res({ w: im.naturalWidth, h: im.naturalHeight }); im.onerror = () => res(null); im.src = src; }); }
+async function pcTextPdf(m, filename){
+  try{ await rvfEnsurePdfLibs(); }catch(err){ console.error(err); toast('Could not load the PDF tool — check your connection'); return false; }
+  const pdf = new window.jspdf.jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait', compress: true });
+  const PW = 210, PH = 297, M = 14, CW = PW - 2 * M, BOT = PH - 18, L = m.L, A = pcAscii;
+  const hex = (h) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)], col = hex(L.color);
+  const txt = (t, x, y, o) => pdf.text(A(t), x, y, o);
+  const wrap = (t, w) => pdf.splitTextToSize(A(t), w);
+  let y = M;
+  // letterhead
+  let tx = M;
+  const lhAr = PC_AR.test([L.company, L.line1, L.line2].join(' ')), ftAr = PC_AR.test(L.footer || '');
+  if(lhAr && m.hdrHtml){ const r = await pcRast(m.hdrHtml, 760); pdf.addImage(r.data, 'JPEG', M, y, CW, CW * r.ratio); y += CW * r.ratio + 6; }
+  else {
+  if(L.logo){ const sz = await pcImgSize(L.logo); if(sz){ const h = 17, w = Math.min(46, h * sz.w / sz.h), hh = w * sz.h / sz.w; try{ pdf.addImage(L.logo, /image\/png/.test(L.logo) ? 'PNG' : 'JPEG', M, y, w, hh); tx = M + w + 5; }catch(e){} } }
+  pdf.setFont('helvetica', 'bold'); pdf.setFontSize(16); pdf.setTextColor(col[0], col[1], col[2]); txt(L.company, tx, y + 6);
+  pdf.setFont('helvetica', 'normal'); pdf.setFontSize(8.5); pdf.setTextColor(100, 116, 139);
+  let ly = y + 11; [L.line1, L.line2].filter(Boolean).forEach(l => { txt(l, tx, ly); ly += 4; });
+  y = Math.max(y + 18, ly) + 1; pdf.setDrawColor(col[0], col[1], col[2]); pdf.setLineWidth(0.8); pdf.line(M, y, M + CW, y); y += 8; }
+  const ftImg = (ftAr && L.footer) ? await pcRast(`<div style="font-size:15px;color:#64748b;text-align:center;padding:2px">${pcEsc(L.footer)}</div>`, 760) : null;
+  // title
+  pdf.setFont('helvetica', 'bold'); pdf.setFontSize(15); pdf.setTextColor(15, 23, 42); txt(String(m.title).toUpperCase(), PW / 2, y, { align: 'center' }); y += 6;
+  // info boxes (soft grey rounded boxes, same look as the app)
+  const GREY = [244, 245, 250], LINE = [226, 229, 238];
+  m.info.forEach((row, ri) => { const cw = ri === 0 ? [30, 32, 40, 48, 32] : [60, 80, 42], rh = 11.5, gap = 2, tot = cw.slice(0, row.length).reduce((p, q) => p + q, 0); let x = M;
+    row.forEach((c, i) => { const wd = cw[i] / tot * (CW - gap * (row.length - 1)); pdf.setFillColor(GREY[0], GREY[1], GREY[2]); pdf.roundedRect(x, y, wd, rh, 2.5, 2.5, 'F');
+      pdf.setFont('helvetica', 'normal'); pdf.setFontSize(6.5); pdf.setTextColor(100, 116, 139); txt(String(c[0]).toUpperCase(), x + 3, y + 4);
+      pdf.setFont('helvetica', 'normal'); pdf.setFontSize(9.5); pdf.setTextColor(15, 23, 42); txt(wrap(c[1] || '\u2014', wd - 6)[0], x + 3, y + 8.6); x += wd + gap; });
+    y += rh + gap; });
+  y += 3;
+  if(m.intro){ pdf.setFont('helvetica', 'normal'); pdf.setFontSize(9.5); pdf.setTextColor(51, 65, 85); const ls = wrap(m.intro, CW); pdf.text(ls, M, y + 3); y += ls.length * 4.2 + 3; }
+  // table: rounded white card, grey heading row, light lines between rows, no vertical lines
+  const LH = 3.7, PAD = 1.9, xs = []; { let x = M; const sum = m.w.reduce((p, q) => p + q, 0); m.w.forEach(wd => { const ww = wd * CW / sum; xs.push([x, ww]); x += ww; }); }
+  let top = y;
+  const closeCard = () => { pdf.setDrawColor(LINE[0], LINE[1], LINE[2]); pdf.setLineWidth(0.25); pdf.roundedRect(M, top, CW, y - top, 3, 3, 'S'); };
+  const drawHead = () => { const h = 7; top = y; pdf.setFillColor(GREY[0], GREY[1], GREY[2]); pdf.roundedRect(M, y, CW, h, 3, 3, 'F'); pdf.rect(M, y + 3, CW, h - 3, 'F');
+    pdf.setFont('helvetica', 'bold'); pdf.setFontSize(7); pdf.setTextColor(100, 116, 139);
+    m.head.forEach((t, i) => { const [x, ww] = xs[i]; if(m.right.includes(i)) txt(t.toUpperCase(), x + ww - 2.5, y + 4.5, { align: 'right' }); else txt(t.toUpperCase(), x + 2.5, y + 4.5); }); y += h; };
+  drawHead();
+  m.rows.forEach(r => {
+    pdf.setFont('helvetica', 'normal'); pdf.setFontSize(8.5);
+    const cells = r.map((t, i) => wrap(t, xs[i][1] - 5)), n = Math.max(...cells.map(c => c.length)), h = n * LH + 2 * PAD;
+    if(y + h > BOT){ closeCard(); pdf.addPage(); y = M; drawHead(); }
+    pdf.setDrawColor(LINE[0], LINE[1], LINE[2]); pdf.setLineWidth(0.2); pdf.line(M, y, M + CW, y);
+    cells.forEach((c, i) => { const [x, ww] = xs[i];
+      const warn = i === m.head.length - 1 && /PHYSICAL SAMPLE ONLY/.test(r[i]);
+      pdf.setFont('helvetica', i === 1 || (i === 7 && m.kind === 'po') || warn ? 'bold' : 'normal'); pdf.setTextColor(warn ? 185 : 15, warn ? 28 : 23, warn ? 28 : 42);
+      if(i === 0 || i === 4 && m.kind === 'po' && false || i === 2 || (i === m.head.length - 1 && !warn)) pdf.setTextColor(100, 116, 139);
+      if(m.right.includes(i)) c.forEach((ln, k) => txt(ln, x + ww - 2.5, y + PAD + 2.8 + k * LH, { align: 'right' })); else c.forEach((ln, k) => txt(ln, x + 2.5, y + PAD + 2.8 + k * LH)); });
+    y += h; });
+  if(m.total){ const h = 7.5; if(y + h > BOT){ closeCard(); pdf.addPage(); y = M; top = y; } pdf.setDrawColor(LINE[0], LINE[1], LINE[2]); pdf.line(M, y, M + CW, y); const t = xs[7]; pdf.setFont('helvetica', 'normal'); pdf.setFontSize(8); pdf.setTextColor(100, 116, 139);
+    txt('Total (SAR)', xs[7][0] - 2, y + 4.8, { align: 'right' }); pdf.setFont('helvetica', 'bold'); pdf.setFontSize(10); pdf.setTextColor(15, 23, 42); txt(pcMoney(m.total), t[0] + t[1] - 2.5, y + 4.9, { align: 'right' }); y += h; }
+  closeCard();
+  y += 8;
+  // closing + signatures
+  const sg = m.signers.length ? m.signers : [{ name: '', title: 'Authorised signature' }];
+  let need = 36 + (m.closing ? wrap(m.closing, CW).length * 4.2 + 6 : 0); if(y + need > BOT){ pdf.addPage(); y = M; }
+  if(m.closing){ pdf.setFont('helvetica', 'normal'); pdf.setFontSize(9.5); pdf.setTextColor(51, 65, 85); const ls = wrap(m.closing, CW); pdf.text(ls, M, y + 3); y += ls.length * 4.2 + 6; }
+  const bw = Math.min(56, (CW - 28) / Math.max(1, sg.length)); let sx = M + CW - sg.length * bw - (sg.length - 1) * 6;
+  pdf.setDrawColor(15, 23, 42); pdf.setLineWidth(0.3);
+  sg.forEach(x => { const cx = sx + bw / 2; pdf.line(sx, y + 22, sx + bw, y + 22);
+    pdf.setFont('helvetica', 'bold'); pdf.setFontSize(10); pdf.setTextColor(15, 23, 42); txt(wrap(x.name || ' ', bw)[0], cx, y + 26.5, { align: 'center' });
+    pdf.setFont('helvetica', 'normal'); pdf.setFontSize(8.5); pdf.setTextColor(71, 85, 105); txt(wrap(x.title || '', bw)[0], cx, y + 30.5, { align: 'center' });
+    pdf.setFontSize(7); pdf.setTextColor(148, 163, 184); txt('Signature / date', cx, y + 34, { align: 'center' }); sx += bw + 6; });
+  if(m.kind === 'po' && L.stamp){ pdf.setDrawColor(203, 213, 225); pdf.setLineDashPattern([1, 1], 0); pdf.circle(M + 14, y + 16, 12); pdf.setLineDashPattern([], 0); pdf.setFontSize(7); pdf.setTextColor(148, 163, 184); txt('Company stamp', M + 14, y + 16.5, { align: 'center' }); }
+  // footer + page numbers on every page
+  const np = pdf.getNumberOfPages();
+  for(let p = 1; p <= np; p++){ pdf.setPage(p); pdf.setFont('helvetica', 'normal'); pdf.setFontSize(8); pdf.setTextColor(100, 116, 139);
+    if(ftImg) pdf.addImage(ftImg.data, 'JPEG', M, PH - 14, CW, Math.min(8, CW * ftImg.ratio)); else if(L.footer) txt(L.footer, PW / 2, PH - 10, { align: 'center' }); if(np > 1) txt('Page ' + p + ' of ' + np, PW - M, PH - 10, { align: 'right' }); }
+  pdf.save(filename); return true;
+}
+async function pcPdf(id, kind){
+  const o = pcFind(id); if(!o) return;
+  toast('Making the PDF…');
+  const L = await pcLetterhead();
+  await pcOut(o, kind, null, L, (kind === 'po' ? 'PurchaseOrder_' : 'Requisition_') + o.id + '.pdf');
+}
+async function pcOut(o, kind, T, L, name){
+  const m = pcPdfModel(o, kind, T, L);
+  if(PC_AR.test([L.company, L.line1, L.line2].join(' '))) m.hdrHtml = pcPdfBlocks(o, kind, T, L)[0];
+  if(pcHasArabic(m)) return rvfMakePdf(pcPdfBlocks(o, kind, T, L), name); // Arabic letters need the picture method
+  return pcTextPdf(m, name);
+}
+
+/* ---------- approvals on the CEO dashboard ---------- */
+let pcDashForce = false;
+function pcIsMyApproval(o){
+  const R = pcRoles(), me = pcMe();
+  if(o.status !== 'approval' || (o.proc && o.proc.paper)) return false;
+  const ap = o.proc && o.proc.approverId;
+  return R.admin || (ap ? ap === me : R.appr);
+}
+async function pcRenderDash(){
+  const el = $('pcDashApprovals'); if(!el || !state.user) return;
+  const f = pcDashForce; pcDashForce = false;
+  try{
+    if(!(await pcLoad(f))) return;
+    const R = pcRoles();
+    if(!(R.appr || R.admin)){ el.innerHTML = ''; return; }
+    const list = (pc.open || []).filter(pcIsMyApproval).sort((a, b) => ((b.priority === 'urgent') - (a.priority === 'urgent')) || (a.createdAt - b.createdAt));
+    if(!list.length){ el.innerHTML = ''; return; }
+    el.innerHTML = `<h2 style="display:flex;align-items:center;justify-content:space-between"><span>Purchase Approvals</span><span class="pcSt s-approval">${list.length} waiting</span></h2><div class="card pcDashCard">` + list.map(o => {
+      const b = (act, label, ic, cls) => `<button class="pcBtnSoft ${cls || ''}" data-pc="${act}" data-id="${pcEsc(o.docId)}">${pcSvg(ic, 14)}${label}</button>`;
+      return `<div class="pcApr"><div class="pcOrderTitle">${pcEsc(o.id)} · ${pcEsc(o.dept || '')}${o.priority === 'urgent' ? '<span class="pcUrgent">URGENT</span>' : ''}</div>
+        <div class="pcOrderSub" style="margin-bottom:10px">Requested by ${pcEsc(o.reqBy ? o.reqBy.name : '')} · prepared by ${pcEsc(o.createdByName || '')}${o.proc && o.proc.supplier ? ' · supplier ' + pcEsc(o.proc.supplier) : ''}${o.proc && o.proc.note ? '<br>Note: ' + pcEsc(o.proc.note) : ''}</div>
+        ${pcItemsTable(o, false)}
+        <div class="pcBar"><div class="pcBarMain"><button class="pcBtnMain sm" data-pc="approve" data-id="${pcEsc(o.docId)}">${pcSvg('check', 15)}Approve</button>${b('reject', 'Reject', 'x', 'danger')}</div><div class="pcBarTools">${b('pdfpo', 'Order PDF', 'file')}${b('pdfreq', 'Requisition PDF', 'down')}</div></div></div>`;
+    }).join('') + '</div>';
+  }catch(err){ console.error(err); el.innerHTML = ''; }
+}
+
+/* ---------- events ---------- */
+let pcBound = false;
+function pcKeepScroll(fn){ const y = window.scrollY; fn(); window.scrollTo(0, y); }
+function pcBindOnce(){
+  if(pcBound) return; pcBound = true;
+  document.addEventListener('click', pcOnClick);
+  document.addEventListener('input', pcOnInput);
+  document.addEventListener('change', pcOnChange);
+}
+pcBindOnce();
+async function pcOnClick(e){
+  const t = e.target;
+  if(!t.closest('.pcWho')) document.querySelectorAll('.pcSug').forEach(s => s.style.display = 'none');
+  document.querySelectorAll('details.pcMore[open]').forEach(d => { if(!d.contains(t)) d.removeAttribute('open'); });
+  const el = t.closest('[data-pc]'); if(!el) return;
+  const a = el.dataset.pc, id = el.dataset.id, i = el.dataset.i != null ? Number(el.dataset.i) : -1, U = pc.ui, F = U.form;
+  const O = id ? pcFind(id) : null;
+  switch(a){
+    case 'tab': U.tab = el.dataset.v; U.q = ''; U.openId = null; U.limit = 30; pcRender();
+      if(U.tab === 'done'){ const m = U.month || (U.month = pcMonthStr(Date.now())); if(!pc.closed[m]){ await pcLoadMonth(m); pcRender(); } }
+      break;
+    case 'task': { const o = pcFind(id); if(!o) break; if(el.dataset.k === 'remind') pcOpenRemind(o); else { U.tab = pcTabOf(o); U.openId = id; pcRender(); const n = document.querySelector('.pcDetail'); if(n) n.scrollIntoView({ block: 'nearest' }); } break; }
+    case 'toggle': U.openId = U.openId === id ? null : id; pcKeepScroll(pcRender); break;
+    case 'more': U.limit += 30; pcKeepScroll(pcRender); break;
+    case 'ftoggle': U.fopen = !U.fopen; pcKeepScroll(pcRender); break;
+    case 'fclear': U.f = { dept: '', prio: '', by: '', from: '', to: '' }; pcKeepScroll(pcRender); break;
+    case 'new': U.form = pcNewForm(); U.view = 'form'; pcRender(); window.scrollTo(0, 0); pcLoadCatalog().catch(() => {}); break;
+    case 'back': U.view = 'list'; U.form = null; U.doneId = null; pcRender(); window.scrollTo(0, 0); break;
+    case 'refresh': {
+      if(U.busy) break; U.busy = true; el.disabled = true;
+      try{ pc.closed = {}; await pcLoad(true); if(U.tab === 'done') await pcLoadMonth(U.month || pcMonthStr(Date.now())); toast('Updated'); }
+      catch(err){ console.error(err); toast('Could not refresh'); }
+      U.busy = false; pcRender(); pcBadge(); pcRenderDash(); break; }
+    case 'reloadclosed': { const m = U.month; delete pc.closed[m]; pcRender(); await pcLoadMonth(m, true); pcRender(); break; }
+    case 'prio': F.priority = el.dataset.v; pcKeepScroll(pcRender); break;
+    case 'additem': F.items.push(pcBlankItem()); pcKeepScroll(pcRender); break;
+    case 'delitem': F.items.splice(i, 1); if(!F.items.length) F.items.push(pcBlankItem()); pcKeepScroll(pcRender); break;
+    case 'imore': F.items[i].more = !F.items[i].more; pcKeepScroll(pcRender); break;
+    case 'delphoto': F.items[i].photos.splice(Number(el.dataset.k), 1); pcKeepScroll(pcRender); break;
+    case 'delrec': F.recPhotos.splice(Number(el.dataset.k), 1); pcKeepScroll(pcRender); break;
+    case 'sugwho': { const rows = el.parentElement._rows, r = rows && rows[Number(el.dataset.n)]; if(r){ F.reqBy = { id: r.id, name: r.label }; if(!F.dept && r.dept) F.dept = r.dept; pcKeepScroll(pcRender); } break; }
+    case 'sugitem': { const rows = el.parentElement._rows, r = rows && rows[Number(el.dataset.n)]; if(r){ const c = r.c, it = F.items[i];
+      it.n = c.n; it.lp = c.lp || 0; it.ld = c.ld || 0; it.d = c.d || it.d; it.b = c.b || ''; it.u = c.u || it.u; it.p = c.p || ''; it.link = c.link || ''; it.phys = !!c.phys; it.note = c.note || ''; it.more = !!(it.b || it.p || it.link || it.phys || it.note); pcKeepScroll(pcRender); } break; }
+    case 'save': pcSaveForm(); break;
+    case 'edit': if(O){ U.form = pcFormFromOrder(O, false); U.view = 'form'; pcRender(); window.scrollTo(0, 0); pcLoadCatalog().catch(() => {}); } break;
+    case 'reorder': if(O){ U.form = pcFormFromOrder(O, true); U.view = 'form'; pcRender(); window.scrollTo(0, 0); pcLoadCatalog().catch(() => {}); } break;
+    case 'sendappr': if(O) pcOpenSendAppr(O); break;
+    case 'pcmmode': { const box = $('pcmMode'); box.dataset.v = el.dataset.v; box.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === el)); $('pcmAppBox').style.display = el.dataset.v === 'app' ? '' : 'none'; $('pcmPaperBox').style.display = el.dataset.v === 'paper' ? '' : 'none'; break; }
+    case 'paperok': if(O) pcOpenPaperOk(O); break;
+    case 'dopaperok': pcActPaperOk(id); break;
+    case 'approve': pcActApprove(id); break;
+    case 'reject': if(O) pcOpenReject(O); break;
+    case 'ordered': if(O) pcOpenOrdered(O); break;
+    case 'cancel': if(O) pcOpenCancel(O); break;
+    case 'recall': pcActRecAll(id); break;
+    case 'recitem': pcActRecItem(id, i); break;
+    case 'remind': if(O) pcOpenRemind(O); break;
+    case 'pdfreq': pcPdf(id, 'req'); break;
+    case 'pdfpo': pcPdf(id, 'po'); break;
+    case 'recphoto': if(O) pcOpenRecPhoto(O); break;
+    case 'recdel': pcActRecDel(id, Number(el.dataset.k)); break;
+    case 'photo': e.preventDefault(); if(O) pcOpenPhoto(O, i, Number(el.dataset.k)); break;
+    case 'mclose': pcModalClose(); break;
+    case 'dosendappr': pcActSendAppr(id); break;
+    case 'doreject': pcActReject(id); break;
+    case 'doordered': pcActOrdered(id); break;
+    case 'docancel': pcActCancel(id); break;
+    case 'waopen': { if(!O) break; const msg = encodeURIComponent($('pcmMsg').value); const ph = el.dataset.t === 'person' ? pcPhoneOf(O) : '';
+      window.open('https://wa.me/' + ph + '?text=' + msg, '_blank'); break; }
+    case 'wacopy': { const v = $('pcmMsg').value; try{ await navigator.clipboard.writeText(v); toast('Copied'); }catch(err){ $('pcmMsg').select(); toast('Select and copy the text'); } break; }
+    case 'wadone': pcActRemindDone(id); break;
+    case 'admadd': pcAdmAdd(); break;
+    case 'admrm': pcAdmRemove(el.dataset.u, el.dataset.k); break;
+    case 'admsave': pcAdmSaveText(); break;
+    case 'admsigadd': pcAdmSigAdd(el.dataset.k); break;
+    case 'admsigrm': pcAdmSigRemove(el.dataset.k, i); break;
+    case 'admprev': pcAdmPreview(el.dataset.v); break;
+  }
+}
+function pcOnInput(e){
+  const el = e.target; const a = el.dataset && el.dataset.pc; if(!a) return;
+  const U = pc.ui, F = U.form, i = el.dataset.i != null ? Number(el.dataset.i) : -1;
+  switch(a){
+    case 'q': { U.q = el.value; const pos = el.selectionStart; pcRender(); const n = document.querySelector('input[data-pc="q"]'); if(n){ n.focus(); try{ n.setSelectionRange(pos, pos); }catch(x){} } break; }
+    case 'who': {
+      F.reqBy = { id: '', name: el.value };
+      const show = (us) => { const q = el.value.trim().toLowerCase(); if(q.length < 2) return pcShowSug($('pcWhoSug'), [], 'sugwho', 0);
+        pcShowSug($('pcWhoSug'), us.filter(u => (u.name || '').toLowerCase().includes(q) || (u.loginId || '').toLowerCase().includes(q)).slice(0, 6).map(u => ({ id: u.loginId, label: u.name || u.loginId, sub: u.department || '', dept: u.department || '' })), 'sugwho', 0); };
+      if(pc.users) show(pc.users); else pcLoadUsers().then(show).catch(() => {});
+      break; }
+    case 'iname': { F.items[i].n = el.value; pcShowSug($('pcItSug' + i), pcCatalogMatches(el.value).map(c => ({ label: c.n, sub: c.d || c.u || '', c })), 'sugitem', i); break; }
+    case 'iqty': F.items[i].q = el.value; break;
+    case 'idesc': F.items[i].d = el.value; break;
+    case 'ibrand': F.items[i].b = el.value; break;
+    case 'iprice': F.items[i].p = el.value; break;
+    case 'ilink': F.items[i].link = el.value; break;
+    case 'inote': F.items[i].note = el.value; break;
+    case 'note': F.note = el.value; break;
+    case 'pcmprice': pcUpdateModalTotal(); break;
+  }
+}
+async function pcOnChange(e){
+  const el = e.target; const a = el.dataset && el.dataset.pc; if(!a) return;
+  const U = pc.ui, F = U.form, i = el.dataset.i != null ? Number(el.dataset.i) : -1;
+  switch(a){
+    case 'dept': F.dept = el.value; break;
+    case 'iunit': F.items[i].u = el.value; break;
+    case 'iphys': F.items[i].phys = el.checked; pcKeepScroll(pcRender); break;
+    case 'iphoto': { const f = el.files && el.files[0]; if(!f) break;
+      try{ const d = await pcCompress(f, 800, 0.6); if(F.items[i].photos.length < 3) F.items[i].photos.push(d); pcKeepScroll(pcRender); }
+      catch(err){ toast('Could not read that photo'); } break; }
+    case 'frec': { const f = el.files && el.files[0]; if(!f) break;
+      try{ const d = await pcCompress(f, 1100, 0.6); if(F.recPhotos.length < 3) F.recPhotos.push(d); pcKeepScroll(pcRender); }
+      catch(err){ toast('Could not read that photo'); } break; }
+    case 'recadd': { const f = el.files && el.files[0]; if(!f) break;
+      try{ await pcActRecAdd(el.dataset.id, f); }catch(err){ toast('Could not read that photo'); } break; }
+    case 'month': U.month = el.value || pcMonthStr(Date.now()); pcRender(); await pcLoadMonth(U.month); pcRender(); break;
+    case 'fdept': U.f.dept = el.value; pcKeepScroll(pcRender); break;
+    case 'fprio': U.f.prio = el.value; pcKeepScroll(pcRender); break;
+    case 'fby': U.f.by = el.value; pcKeepScroll(pcRender); break;
+    case 'ffrom': U.f.from = el.value; pcKeepScroll(pcRender); break;
+    case 'fto': U.f.to = el.value; pcKeepScroll(pcRender); break;
+    case 'admsigtitle': pcAdmSigTitle(el.dataset.k, i, el.value); break;
+  }
+}
+
+/* ---------- Admin > Purchase (same "Add someone" pattern as Passport Access) ---------- */
+const PC_ROLE_DEF = [['requesters', 'Creates orders'], ['procurement', 'Procurement officer'], ['approvers', 'Approver']];
+let pcAdmUsers = [];
+async function pcRenderAdmin(){
+  const root = $('admin-purchase'); if(!root) return;
+  pcBindOnce();
+  if(!requireDb()) return;
+  root.innerHTML = '<div class="hrEmpty">Loading…</div>';
+  try{
+    const S = await pcLoadSettings(false); pcAdmUsers = await pcLoadUsers();
+    const T = S.tpl;
+    const inp = (id, label, val, wide) => `<div class="field${wide ? ' wide' : ''}"><label>${label}</label><input type="text" id="${id}" value="${pcEsc(val)}"></div>`;
+    const ta = (id, label, val) => `<div class="field wide"><label>${label}</label><textarea id="${id}" rows="3" style="width:100%">${pcEsc(val)}</textarea></div>`;
+    root.innerHTML = `<div class="pcAdm"><h2 style="margin-top:0">Purchase</h2>
+      <p class="sub">Choose who works on purchase orders. Everyone you add gets the Purchase page automatically.</p>
+      <div class="card" style="margin-bottom:16px">
+        <div class="sub" style="margin-top:0;font-weight:600;color:var(--text);text-transform:none">Add Someone</div>
+        <div class="grid-2"><div class="field"><label>Employee</label><select id="pcAddUser">${pcAdmUsers.map(u => `<option value="${pcEsc(u.loginId)}">${pcEsc(u.name)} (${pcEsc(u.loginId)})</option>`).join('')}</select></div>
+        <div class="field"><label>Role</label><select id="pcAddRole"><option value="requesters">Creates orders (e.g. Storekeeper)</option><option value="procurement">Procurement officer</option><option value="approvers">Approver</option></select></div></div>
+        <p class="hint" style="text-align:left;margin-left:0">Creates orders: writes the order after taking the requisition. Procurement officer: receives every order, adds prices, sends it for approval and places the order. Approver: approves on the CEO Dashboard — if nobody is added, any Executive can approve. One person can have more than one role.</p>
+        <button class="btn btn-primary btn-sm" data-pc="admadd">Add</button></div>
+      <div id="pcPeople"></div>
+      <div class="card" style="margin-top:16px"><div class="sub" style="margin-top:0;font-weight:600;color:var(--text);text-transform:none">Reminders &amp; wording</div>
+        <p class="hrNote" style="margin:0 0 10px">The letterhead (logo, address, colour, footer) is the same one used for HR letters — change it in HR Assistant → Settings → Letterhead.</p>
+        <div class="hrForm"><div class="field"><label>Remind the creator every (days) \u2014 0 = test mode</label><input type="number" min="0" max="90" id="pcaDays" value="${S.remindDays}"></div>${inp('pcaUnits', 'Units in the item list (comma separated)', S.units.join(', '))}
+        ${ta('pcaWa', 'WhatsApp message (you can use {po} {dept} {person} {status} {pending} {days})', S.waMessage)}
+        ${inp('pcaPoT', 'Purchase Order title', T.poTitle)}${inp('pcaRqT', 'Requisition title', T.reqTitle)}
+        ${ta('pcaPoI', 'Purchase Order — starting text', T.poIntro)}${ta('pcaPoC', 'Purchase Order — ending text', T.poClosing)}
+        ${ta('pcaRqI', 'Requisition — starting text', T.reqIntro)}${ta('pcaRqC', 'Requisition — ending text', T.reqClosing)}
+</div>
+        <div class="sub" style="font-weight:600;color:var(--text);text-transform:none;margin:14px 0 4px">Who signs the printed papers</div>
+        <p class="hrNote" style="margin:0 0 10px">Each person added here gets a signature space with their name and designation. If nobody is added, the paper has one blank "Authorised signature" space.</p>
+        <div class="hrForm"><div class="field"><label>Requisition \u2014 signer</label><div style="display:flex;gap:8px"><select id="pcSigSel_req" style="flex:1">${pcSigOptions()}</select><button class="btn btn-primary btn-sm" data-pc="admsigadd" data-k="req">Add</button></div><div id="pcSigList_req" style="margin-top:8px"></div></div>
+        <div class="field"><label>Purchase Order \u2014 signer</label><div style="display:flex;gap:8px"><select id="pcSigSel_po" style="flex:1">${pcSigOptions()}</select><button class="btn btn-primary btn-sm" data-pc="admsigadd" data-k="po">Add</button></div><div id="pcSigList_po" style="margin-top:8px"></div></div></div>
+        <div class="pcActs"><button class="btn btn-primary btn-sm" data-pc="admsave">Save</button><button class="pcBtnSoft" data-pc="admprev" data-v="req">${pcSvg('file', 14)}Preview requisition</button><button class="pcBtnSoft" data-pc="admprev" data-v="po">${pcSvg('file', 14)}Preview purchase order</button></div></div></div>`;
+    pcAdmPeople(); pcAdmSigList('req'); pcAdmSigList('po');
+  }catch(err){ console.error(err); root.innerHTML = '<div class="hrEmpty">Could not load. Open this tab again.</div>'; }
+}
+function pcAdmPeople(){
+  const S = pc.settings, box = $('pcPeople'); if(!box) return;
+  const ids = []; PC_ROLE_DEF.forEach(r => (S[r[0]] || []).forEach(id => { if(!ids.includes(id)) ids.push(id); }));
+  if(!ids.length){ box.innerHTML = '<div class="empty-state">Nobody added yet — only Admin can use the Purchase page.</div>'; return; }
+  box.innerHTML = ids.map(id => {
+    const u = pcAdmUsers.find(x => x.loginId === id), name = u ? u.name : (S.names && S.names[id]) || id;
+    const badges = PC_ROLE_DEF.filter(r => (S[r[0]] || []).includes(id)).map(r => `<span class="pcRoleTag">${r[1]}<button data-pc="admrm" data-u="${pcEsc(id)}" data-k="${r[0]}" title="Remove this role" aria-label="Remove ${r[1]}">×</button></span>`).join('');
+    return `<div class="card row" style="margin-bottom:8px;flex-wrap:wrap;gap:8px"><span class="k">${pcEsc(name)} (${pcEsc(id)})</span><span style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">${badges}</span></div>`;
+  }).join('');
+}
+async function pcAdmSaveSettings(){
+  const S = pc.settings;
+  if(JSON.stringify(S).length > 600000) throw new Error('TOO_BIG');
+  await window.__db.saveConfigObject('purchaseSettings', S);
+}
+// give / take the Purchase page for one person (one small write, only when it changes)
+async function pcSyncPage(loginId){
+  const S = pc.settings, u = pcAdmUsers.find(x => x.loginId === loginId); if(!u) return;
+  const has = userPages(u).includes('purchase'), want = PC_ROLE_DEF.some(r => (S[r[0]] || []).includes(loginId));
+  if(want && !has){ const pages = userPages(u).concat('purchase'); await window.__db.updateUserQuiet(loginId, { pages }); u.pages = pages; }
+  else if(!want && has && u.pages && u.pages.length){ const pages = u.pages.filter(p => p !== 'purchase'); await window.__db.updateUserQuiet(loginId, { pages }); u.pages = pages; }
+}
+async function pcAdmAdd(){
+  if(pc.ui.busy) return;
+  const id = $('pcAddUser').value, key = $('pcAddRole').value, S = pc.settings; if(!id) return;
+  if((S[key] || []).includes(id)) return toast('Already added with that role');
+  pc.ui.busy = true;
+  try{
+    S[key] = (S[key] || []).concat(id); S.names = S.names || {}; const u = pcAdmUsers.find(x => x.loginId === id); S.names[id] = (u && u.name) || id;
+    await pcAdmSaveSettings(); await pcSyncPage(id); toast('Added');
+  }catch(err){ console.error(err); S[key] = S[key].filter(x => x !== id); toast('Could not save — please try again'); }
+  pc.ui.busy = false; pcAdmPeople();
+}
+async function pcAdmRemove(id, key){
+  if(pc.ui.busy) return; pc.ui.busy = true; const S = pc.settings, old = S[key].slice();
+  try{ S[key] = S[key].filter(x => x !== id); await pcAdmSaveSettings(); await pcSyncPage(id); toast('Removed'); }
+  catch(err){ console.error(err); S[key] = old; toast('Could not save — please try again'); }
+  pc.ui.busy = false; pcAdmPeople();
+}
+function pcAdmReadTpl(){
+  const v = (id) => { const e = $(id); return e ? e.value.trim() : ''; };
+  return { poTitle: v('pcaPoT') || 'Purchase Order', poIntro: v('pcaPoI'), poClosing: v('pcaPoC'), reqTitle: v('pcaRqT') || 'Purchase Requisition', reqIntro: v('pcaRqI'), reqClosing: v('pcaRqC') };
+}
+function pcSigOptions(){ return pcAdmUsers.map(u => `<option value="${pcEsc(u.loginId)}">${pcEsc(u.name)} (${pcEsc(u.loginId)})</option>`).join(''); }
+function pcAdmSigList(k){
+  const box = $('pcSigList_' + k); if(!box) return; const list = pc.settings.tpl[k === 'po' ? 'poSigners' : 'reqSigners'];
+  box.innerHTML = list.length ? list.map((x, i) => `<div class="pcSigRow"><b>${pcEsc(x.name)}</b><input type="text" data-pc="admsigtitle" data-k="${k}" data-i="${i}" value="${pcEsc(x.title)}" placeholder="Designation"><button class="pcIconBtn" data-pc="admsigrm" data-k="${k}" data-i="${i}" title="Remove" aria-label="Remove">\u00D7</button></div>`).join('') : '<span class="hrNote">Nobody added \u2014 one blank signature space.</span>';
+}
+async function pcAdmSigSave(){ try{ await pcAdmSaveSettings(); toast('Saved'); }catch(err){ console.error(err); toast('Could not save \u2014 please try again'); } }
+async function pcAdmSigAdd(k){
+  const id = $('pcSigSel_' + k).value, u = pcAdmUsers.find(x => x.loginId === id); if(!u) return;
+  const list = pc.settings.tpl[k === 'po' ? 'poSigners' : 'reqSigners'];
+  if(list.some(x => x.id === id)) return toast('Already added');
+  list.push({ id, name: u.name || id, title: (u.profile && u.profile.position) || '' });
+  pcAdmSigList(k); await pcAdmSigSave();
+}
+async function pcAdmSigRemove(k, i){ pc.settings.tpl[k === 'po' ? 'poSigners' : 'reqSigners'].splice(i, 1); pcAdmSigList(k); await pcAdmSigSave(); }
+async function pcAdmSigTitle(k, i, val){ const x = pc.settings.tpl[k === 'po' ? 'poSigners' : 'reqSigners'][i]; if(!x) return; x.title = val.trim(); await pcAdmSigSave(); }
+async function pcAdmSaveText(){
+  if(pc.ui.busy) return; pc.ui.busy = true; const S = pc.settings, old = JSON.stringify(S);
+  try{
+    const units = $('pcaUnits').value.split(',').map(x => x.trim()).filter(Boolean);
+    { const n = parseInt($('pcaDays').value, 10); S.remindDays = isNaN(n) ? 7 : Math.max(0, Math.min(90, n)); } S.units = units.length ? units : PC_DEF.units.slice();
+    S.waMessage = $('pcaWa').value.trim() || PC_DEF.waMessage; S.tpl = Object.assign({}, S.tpl, pcAdmReadTpl());
+    await pcAdmSaveSettings(); toast('Purchase settings saved');
+  }catch(err){ console.error(err); Object.assign(S, JSON.parse(old)); toast('Could not save — please try again'); }
+  pc.ui.busy = false;
+}
+async function pcAdmPreview(kind){
+  const now = Date.now();
+  const o = { id: 'PO-0000', createdAt: now, dept: 'Weaving', reqBy: { name: 'Sample Person' }, priority: 'regular', approvedAt: now, expected: pcDateStr(now + 7 * 86400000), proc: { supplier: 'Sample Supplier' },
+    items: [{ n: 'Sample item A', d: 'Size 90/14', b: 'Groz-Beckert', p: 12.5, q: 10, u: 'pcs', phys: false, link: 'https://example.com/a', photos: [] }, { n: 'Sample item B', d: 'White, 5000 m', b: '', p: 40, q: 2, u: 'box', phys: true, link: '', photos: [] }] };
+  toast('Making the preview…');
+  const L = await pcLetterhead();
+  await pcOut(o, kind, Object.assign({}, pc.settings.tpl, pcAdmReadTpl()), L, 'Preview_' + kind + '.pdf');
+}
+
+$('admin-purchase') && document.querySelector('.auth-tab[data-admintab="purchase"]').addEventListener('click', () => pcRenderAdmin());
 
 /* ---------- init ---------- */
 init();
