@@ -2080,7 +2080,7 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
   .pcDetail .pcBar{ margin-top:18px; padding-top:16px; border-top:1px solid var(--line-strong, #dfe2ec); }
   .pcDetail .pcHist{ margin-top:6px; }
   .pcDetail .pcAlert{ margin-top:14px; margin-bottom:0; }
-  @media (max-width:700px){
+  @container (max-width:900px){
     .pcListHead{ display:none; }
     .pcRowG{ grid-template-columns:34px 1fr auto; row-gap:3px; column-gap:12px; }
     .pcOrderHead .ic{ grid-row:1 / span 3; align-self:start; }
@@ -2092,7 +2092,7 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
     .pcDetail{ padding:2px 14px 16px; margin-left:-4px; margin-right:-4px; }
     .pcChev{ display:inline-flex !important; }
   }
-  @media (max-width:700px){ .pcDetail .pcFacts{ grid-template-columns:1fr 1fr; gap:12px 16px; } }
+  @container (max-width:900px){ .pcDetail .pcFacts{ grid-template-columns:1fr 1fr; gap:12px 16px; } }
   /* ===== v5: one-line rows, columns side by side ===== */
   .pcRowG{ grid-template-columns:30px 150px 110px minmax(0,1fr) 140px 52px 92px 128px; column-gap:12px; }
   .pcOrderHead{ padding:9px 0; }
@@ -2129,7 +2129,7 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
   .pcIt .c-rec input{ width:54px; }
   .pcItTotal{ display:flex; justify-content:flex-end; gap:16px; padding:8px 12px; border-top:2px solid var(--line-strong,#dfe2ec); font-size:12.5px; }
   .pcItTotal b{ font-family:'JetBrains Mono',monospace; }
-  @media (max-width:700px){
+  @container (max-width:900px){
     .pcRowG{ grid-template-columns:30px 1fr auto; row-gap:2px; column-gap:10px; }
     .pcOrderHead .ic{ grid-row:1 / span 3; align-self:start; }
     .pcOrderHead .c-po{ grid-column:2; grid-row:1; } .pcOrderHead .c-po .dm{ display:inline; color:var(--muted); font-weight:400; }
@@ -2164,11 +2164,11 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
   .pcFoot{ display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:6px 16px; margin-top:12px; }
   .pcFoot .pcSteps{ margin:0; } .pcFoot .pcStep{ font-size:10.5px; padding:2px 8px; }
   .pcFoot .pcHist{ margin:0; }
-  @media (min-width:701px){
+  @container (min-width:901px){
     .pcOrderMain{ display:flex; align-items:baseline; gap:12px; overflow:hidden; white-space:nowrap; }
     .pcOrderMain .pcOrderTitle{ flex:none; } .pcOrderMain .pcOrderSub{ margin:0; overflow:hidden; text-overflow:ellipsis; min-width:0; }
   }
-  @media (max-width:700px){
+  @container (max-width:900px){
     .pcItG, .pcIts.withrec .pcItG{ grid-template-columns:24px 1fr auto; }
     .pcIt .c-name{ grid-column:2; } .pcIt .c-desc{ grid-column:2 / 4; grid-row:2; white-space:normal; font-size:11.5px; }
     .pcIt .c-tot{ grid-column:3; grid-row:1; }
@@ -2198,7 +2198,7 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
   .pcDetail .pcIt .c-name{ font-size:13px; } .pcDetail .pcIt .c-desc{ color:var(--text); }
   .pcDetail .pcItTotal{ background:#f8fafc; border-top:1px solid #cbd5e1; }
   .pcDetail .pcIt .c-rem{ flex-wrap:wrap; }
-  @media (max-width:700px){
+  @container (max-width:900px){
     .pcDetail .pcItG > *, .pcDetail .pcItG .c-nums > *{ display:block; border-left:0; padding:0; }
     .pcDetail .pcItG{ padding:8px 10px; }
     .pcDetail .pcItG .c-nums{ display:flex; }
@@ -2209,10 +2209,10 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
   .pcDetail .pcItG > .c-nums{ display:contents; padding:0; border:0; }
   .pcDetail .pcFacts{ border:0; border-top:1px solid #cbd5e1; border-left:1px solid #cbd5e1; border-radius:0; }
   .pcDetail .pcFact{ border:0; border-right:1px solid #cbd5e1; border-bottom:1px solid #cbd5e1; margin:0; }
-  @media (max-width:700px){ .pcDetail .pcItG > .c-nums{ display:flex; } }
+  @container (max-width:900px){ .pcDetail .pcItG > .c-nums{ display:flex; } }
   .pcSearchCard{ padding:10px 12px; margin-bottom:12px; } .pcSearchCard .pcSearchRow{ margin:0; } .pcSearchCard .pcFilterPanel, .pcSearchCard > div:last-child:not(.pcSearchRow){ margin-top:10px; }
   .pcDetail .pcFacts{ grid-template-columns:repeat(var(--n,4),minmax(0,1fr)); }
-  @media (max-width:700px){ .pcDetail .pcFacts{ grid-template-columns:1fr 1fr; } }
+  @container (max-width:900px){ .pcDetail .pcFacts{ grid-template-columns:1fr 1fr; } }
   /* ===== v8: same look as the other pages (HR tabs, toolbar, filter panel) ===== */
   .pcCtrl{ padding:12px 14px 12px; margin-bottom:12px; } .pcCtrl .hrTabs{ margin-bottom:10px; flex-wrap:wrap; overflow:visible; } .pcCtrl .hrTabs button{ font-size:12.5px; }
   .pcCtrl .hrToolbar{ margin:0; } .pcCtrl .fPanel{ margin:10px 0 0; box-shadow:none; background:var(--panel-2); border:0; }
@@ -2238,7 +2238,7 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
   .pcFMore{ display:grid; grid-template-columns:1fr 1fr; gap:10px 12px; padding:10px 14px 12px 40px; background:#f8fafc; border-top:1px dashed #e2e8f0; }
   .pcFMore .field{ margin:0; } .pcFMore .fl{ display:block; font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; font-weight:600; color:var(--muted); margin-bottom:4px; }
   .pcFMore .pcFTag{ grid-column:1/-1; }
-  @media (max-width:700px){
+  @container (max-width:900px){
     .pcFTH{ display:none; }
     .pcFRow{ grid-template-columns:1fr 1fr 1fr; gap:8px; padding:10px; }
     .pcFRow > *{ border-left:0; padding:0; display:block; }
@@ -2259,7 +2259,7 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
   .pcDetail .pcIt, .pcFR{ border-top:1px solid var(--line); }
   .pcDetail .pcItTotal{ background:#fff; border-top:1px solid var(--line); }
   .pcFMore{ background:var(--panel-2); border-top:0; }
-  @media (max-width:700px){ .pcDetail .pcFacts{ grid-template-columns:1fr 1fr; } .pcDetail .pcItG > *, .pcDetail .pcItG .c-nums > *{ padding:0; } }
+  @container (max-width:900px){ .pcDetail .pcFacts{ grid-template-columns:1fr 1fr; } .pcDetail .pcItG > *, .pcDetail .pcItG .c-nums > *{ padding:0; } }
   /* ===== v11: last bought + date columns, receiving strip, currency ===== */
   .pcItG{ grid-template-columns:26px minmax(0,1.3fr) minmax(0,1.5fr) 50px 54px 70px 84px 100px 82px minmax(0,1.3fr); }
   .pcIt .c-ldate{ text-align:right; justify-content:flex-end; font-size:11px; color:#a3acba; font-family:inherit; white-space:nowrap; }
@@ -2274,7 +2274,7 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
   .pcRecRow, .pcRecHead{ display:grid; grid-template-columns:minmax(0,1fr) 96px 96px; gap:8px; align-items:center; }
   .pcRecHead{ font-size:10px; text-transform:uppercase; letter-spacing:.05em; font-weight:700; color:var(--muted); margin-bottom:4px; }
   .pcRecRow input{ width:100%; height:36px; }
-  @media (max-width:700px){
+  @container (max-width:900px){
     .pcItG, .pcIts .pcItG{ grid-template-columns:24px 1fr auto; }
     .pcIt .c-ldate{ font-size:10.5px; } .pcIt .c-nums{ flex-wrap:wrap; }
     .pcRecStrip{ padding-left:10px; }
@@ -2282,6 +2282,33 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
     .pcFR .c-last .fl{ display:block; }
   }
   .rfMachChips{ display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; } .rfMachChips:empty{ display:none; }
+  /* ===== v12: form row has real boxes for last price + last date ===== */
+  .pcFRow{ grid-template-columns:26px minmax(0,1.2fr) minmax(0,1.4fr) 66px 78px 76px 80px 128px minmax(0,1fr) 64px; }
+  .pcFR input[type=date]{ padding:0 6px; font-size:12px; }
+  .pcFR .c-lp input, .pcFR .c-ld input{ background:#fff; }
+  @container (max-width:900px){
+    .pcFRow{ grid-template-columns:1fr 1fr 1fr; }
+    .pcFRow > .c-lp{ grid-column:1 / 2; } .pcFRow > .c-ld{ grid-column:2 / 4; }
+  }
+  /* the layout follows the room the block really has (not the screen size), so it fits phones, tablets and any window */
+  .pcListCard, .pcForm{ container-type:inline-size; }
+
+/* v13 touch-friendly sizing for phones and tablets */
+@media (pointer:coarse){
+  .pcForm input,.pcForm select,.pcForm textarea,.hrModal input,.hrModal select,.hrModal textarea,.pcRecIn{font-size:16px;min-height:42px}
+  .pcForm button,.pcDetail button,.hrTabs button{min-height:40px}
+}
+
+/* v13 Team & Machine Summary on phones: same roomy layout as Employee Overview (one big box per row, small boxes two per row) */
+@media (max-width:560px){
+  .asumTiles{ grid-template-columns:repeat(2,1fr) !important; gap:10px !important; }
+  .asumTiles > .asumTile{ grid-column:span 2 !important; padding:16px 18px !important; border-radius:16px !important; }
+  .asumTiles > .asumTile .ic{ width:40px !important; height:40px !important; margin-bottom:12px !important; }
+  .asumTiles > .asumTile .n{ font-size:28px !important; }
+  .asumTiles > .asumTile .l{ font-size:11px !important; margin-top:8px !important; }
+  .asumTiles > .asumTile.sm{ grid-column:span 1 !important; padding:12px 8px !important; border-radius:12px !important; text-align:center; }
+  .asumTiles > .asumTile.sm .n{ font-size:20px !important; } .asumTiles > .asumTile.sm .l{ font-size:10px !important; margin-top:4px !important; }
+}
 
 </style>
 </head>
@@ -13945,7 +13972,7 @@ function pcFormHtml(){
     <div class="field"><label>Prices in (change only for international buying)</label><select data-pc="cur">${PC_CUR.map(c => `<option value="${c[0]}" ${F.cur === c[0] ? 'selected' : ''}>${c[0]} \u2014 ${c[1]}</option>`).join('')}</select></div>
     <div class="field"><label>Requested by department</label><select data-pc="dept"><option value="">Select…</option>${depts.map(d => `<option ${F.dept === d ? 'selected' : ''}>${pcEsc(d)}</option>`).join('')}${F.dept && !depts.includes(F.dept) ? `<option selected>${pcEsc(F.dept)}</option>` : ''}</select></div>
     <div class="field pcWho"><label>Requested by person (search or type)</label><input type="text" data-pc="who" autocomplete="off" placeholder="Start typing a name…" value="${pcEsc(F.reqBy.name)}"><div class="pcSug" id="pcWhoSug" style="display:none"></div></div></div>
-    <div class="pcSection" style="margin-top:6px">Items</div><div class="pcFT"><div class="pcFTH pcFRow"><span>#</span><span>Item name</span><span>Description</span><span>Qty</span><span>Unit</span><span>Price (${F.cur})</span><span>Last bought</span><span>Remarks</span><span></span></div><div id="pcItems">${F.items.map((it, i) => pcItemHtml(it, i, S.units)).join('')}</div></div>
+    <div class="pcSection" style="margin-top:6px">Items</div><div class="pcFT"><div class="pcFTH pcFRow"><span>#</span><span>Item name</span><span>Description</span><span>Qty</span><span>Unit</span><span>Price (${F.cur})</span><span>Last price</span><span>Last date</span><span>Remarks</span><span></span></div><div id="pcItems">${F.items.map((it, i) => pcItemHtml(it, i, S.units)).join('')}</div></div>
     <button class="pcBtnSoft" data-pc="additem" style="margin-bottom:14px">${pcSvg('plus', 14)}Add another item</button>
     <div class="field"><label>Note (optional)</label><input type="text" data-pc="note" placeholder="Anything the buyer should know" value="${pcEsc(F.note)}"></div>
     <div class="field"><label>Photo of the signed requisition (optional — you can also add it later)</label><div class="pcThumbs">${F.recPhotos.map((p, k) => `<div class="pcThumb"><img src="${p}" alt=""><button data-pc="delrec" data-k="${k}" aria-label="Remove photo">×</button></div>`).join('')}
@@ -13963,7 +13990,8 @@ function pcItemHtml(it, i, units){
     <div class="c-qty">${L('Qty')}<input type="number" min="1" step="any" data-pc="iqty" data-i="${i}" value="${it.q}"></div>
     <div class="c-unit">${L('Unit')}<select data-pc="iunit" data-i="${i}">${us.map(u => `<option ${u === it.u ? 'selected' : ''}>${pcEsc(u)}</option>`).join('')}</select></div>
     <div class="c-price">${L('Price (if known)')}<input type="number" min="0" step="any" data-pc="iprice" data-i="${i}" placeholder="0.00" value="${pcEsc(it.p)}"></div>
-    <div class="c-last">${L('Last bought')}<span class="pcLastTxt" id="pcLast${i}">${pcLastCell(it)}</span></div>
+    <div class="c-lp">${L('Last bought price')}<input type="number" min="0" step="any" data-pc="ilp" data-i="${i}" id="pcLp${i}" placeholder="0.00" value="${it.lp > 0 ? it.lp : ''}"></div>
+    <div class="c-ld">${L('Last bought date')}<input type="date" data-pc="ild" data-i="${i}" id="pcLd${i}" value="${it.lp > 0 && it.ld ? pcDateStr(it.ld) : ''}"></div>
     <div class="c-rem">${L('Remarks')}<input type="text" data-pc="inote" data-i="${i}" placeholder="Colour, quality, where to buy" value="${pcEsc(it.note)}"></div>
     <div class="c-act"><button class="pcIconBtn" data-pc="imore" data-i="${i}" title="Sample, link, photos, brand" aria-label="More">${pcSvg('chev', 14)}</button>${n > 1 ? `<button class="pcIconBtn" data-pc="delitem" data-i="${i}" title="Remove" aria-label="Remove">${pcSvg('trash', 14)}</button>` : ''}</div></div>
     ${it.more ? `<div class="pcItemMore pcFMore"><div class="field">${L('Brand / manufacturer')}<input type="text" data-pc="ibrand" data-i="${i}" value="${pcEsc(it.b)}"></div>
@@ -14000,8 +14028,8 @@ async function pcSaveForm(){
   const F = pc.ui.form;
   if(pc.ui.busy) return;
   const cat = (pc.catalog && pc.catalog.items) || {};
-  const lastOf = (i) => cat[i.n.trim().toLowerCase()] || {};
-  const items = F.items.filter(i => i.n.trim()).map(i => ({ lp: lastOf(i).lp || 0, ld: lastOf(i).ld || 0, lc: lastOf(i).lc || '', n: i.n.trim(), d: (i.d || '').trim(), b: (i.b || '').trim(), q: Number(i.q), u: i.u, p: Number(i.p) > 0 ? Number(i.p) : 0, phys: !!i.phys, link: pcSafeUrl(i.link), photos: i.photos.slice(0, 3), note: (i.note || '').trim() }));
+  const items = F.items.filter(i => i.n.trim()).map(i => ({ lp: Number(i.lp) > 0 ? Number(i.lp) : 0, ld: Number(i.lp) > 0 ? (i.ld || Date.now()) : 0, lc: Number(i.lp) > 0 ? (i.lpm ? (F.cur || 'SAR') : (i.lc || 'SAR')) : '', lpm: !!i.lpm, n: i.n.trim(), d: (i.d || '').trim(), b: (i.b || '').trim(), q: Number(i.q), u: i.u, p: Number(i.p) > 0 ? Number(i.p) : 0, phys: !!i.phys, link: pcSafeUrl(i.link), photos: i.photos.slice(0, 3), note: (i.note || '').trim() }));
+  const forCatalog = items.map(i => Object.assign({}, i)); items.forEach(i => { delete i.lpm; });
   if(!F.dept) return toast('Choose the department');
   if(!F.reqBy.name.trim()) return toast('Write who requested it');
   if(!items.length) return toast('Add at least one item');
@@ -14016,6 +14044,7 @@ async function pcSaveForm(){
         fresh.items = items.map(n => Object.assign({ rec: 0 }, n)); fresh.recPhotos = F.recPhotos.slice();
         pcLog(fresh, 'Edited the order');
       });
+      pcSaveCatalog(forCatalog, true).catch(() => {});
     } else {
       const n = await window.__db.poNextNo(), now = Date.now();
       o = { docId: 'po_' + String(n).padStart(4, '0'), id: pcNo(n), no: n, createdAt: now, createdBy: pcMe(), createdByName: state.user.name || pcMe(), status: 'new',
@@ -14023,7 +14052,7 @@ async function pcSaveForm(){
         items: items.map(i => Object.assign({ rec: 0 }, i)), recPhotos: F.recPhotos.slice(), proc: {}, log: [] };
       pcLog(o, 'Created the order' + (F.priority === 'urgent' ? ' (URGENT)' : '') + ' and sent it to procurement');
       await pcPersist(o);
-      pcSaveCatalog(items).catch(() => {});
+      pcSaveCatalog(forCatalog).catch(() => {});
     }
     pc.ui.view = 'done'; pc.ui.doneId = o.docId; pc.ui.form = null; pc.ui.openId = o.docId; pc.ui.tab = pcTabOf(o); pc.ui.isEdit = !!F.docId;
   }catch(err){
@@ -14032,11 +14061,13 @@ async function pcSaveForm(){
   }finally{ pc.ui.busy = false; }
   pcRender(); pcBadge();
 }
-async function pcSaveCatalog(items){
+async function pcSaveCatalog(items, edit){
   const cat = await pcLoadCatalog(), now = Date.now();
   items.forEach(i => {
     const k = i.n.toLowerCase(), old = cat.items[k];
-    cat.items[k] = { n: i.n, d: i.d || '', b: i.b || '', u: i.u, p: i.p || (old && old.p) || 0, link: i.link || (old && old.link) || '', phys: i.phys, note: i.note || '', lp: (old && old.lp) || 0, ld: (old && old.ld) || 0, uses: ((old && old.uses) || 0) + 1, last: now };
+    cat.items[k] = { n: i.n, d: i.d || '', b: i.b || '', u: i.u, p: i.p || (old && old.p) || 0, link: i.link || (old && old.link) || '', phys: i.phys, note: i.note || '', lp: (old && old.lp) || 0, ld: (old && old.ld) || 0, lc: (old && old.lc) || '', uses: ((old && old.uses) || 0) + (edit ? 0 : 1), last: now };
+    // a last-bought price typed by hand becomes the product's history (so it shows by itself next time)
+    if(i.lp > 0 && (i.lpm || !(old && old.lp))){ const e = cat.items[k]; e.lp = i.lp; e.ld = i.ld || now; e.lc = i.lc || 'SAR'; }
   });
   const keys = Object.keys(cat.items);
   if(keys.length > 1500) keys.sort((a, b) => (cat.items[a].last || 0) - (cat.items[b].last || 0)).slice(0, keys.length - 1500).forEach(k => delete cat.items[k]);
@@ -14441,7 +14472,7 @@ async function pcOnClick(e){
     case 'delrec': F.recPhotos.splice(Number(el.dataset.k), 1); pcKeepScroll(pcRender); break;
     case 'sugwho': { const rows = el.parentElement._rows, r = rows && rows[Number(el.dataset.n)]; if(r){ F.reqBy = { id: r.id, name: r.label }; if(!F.dept && r.dept) F.dept = r.dept; pcKeepScroll(pcRender); } break; }
     case 'sugitem': { const rows = el.parentElement._rows, r = rows && rows[Number(el.dataset.n)]; if(r){ const c = r.c, it = F.items[i];
-      it.n = c.n; it.lp = c.lp || 0; it.ld = c.ld || 0; it.lc = c.lc || ''; it.d = c.d || it.d; it.b = c.b || ''; it.u = c.u || it.u; it.p = c.p || ''; it.link = c.link || ''; it.phys = !!c.phys; it.note = c.note || ''; it.more = !!(it.b || it.p || it.link || it.phys || it.note); pcKeepScroll(pcRender); } break; }
+      it.n = c.n; it.lp = c.lp || 0; it.ld = c.ld || 0; it.lc = c.lc || ''; it.lpm = false; it.d = c.d || it.d; it.b = c.b || ''; it.u = c.u || it.u; it.p = c.p || ''; it.link = c.link || ''; it.phys = !!c.phys; it.note = c.note || ''; it.more = !!(it.b || it.p || it.link || it.phys || it.note); pcKeepScroll(pcRender); } break; }
     case 'save': pcSaveForm(); break;
     case 'edit': if(O){ U.form = pcFormFromOrder(O, false); U.view = 'form'; pcRender(); window.scrollTo(0, 0); pcLoadCatalog().catch(() => {}); } break;
     case 'reorder': if(O){ U.form = pcFormFromOrder(O, true); U.view = 'form'; pcRender(); window.scrollTo(0, 0); pcLoadCatalog().catch(() => {}); } break;
@@ -14491,7 +14522,12 @@ function pcOnInput(e){
         pcShowSug($('pcWhoSug'), us.filter(u => (u.name || '').toLowerCase().includes(q) || (u.loginId || '').toLowerCase().includes(q)).slice(0, 6).map(u => ({ id: u.loginId, label: u.name || u.loginId, sub: u.department || '', dept: u.department || '' })), 'sugwho', 0); };
       if(pc.users) show(pc.users); else pcLoadUsers().then(show).catch(() => {});
       break; }
-    case 'iname': { F.items[i].n = el.value; { const c = pc.catalog && pc.catalog.items[el.value.trim().toLowerCase()], it = F.items[i]; it.lp = c ? c.lp || 0 : 0; it.ld = c ? c.ld || 0 : 0; it.lc = c ? c.lc || '' : ''; const cell = $('pcLast' + i); if(cell) cell.innerHTML = pcLastCell(it); } pcShowSug($('pcItSug' + i), pcCatalogMatches(el.value).map(c => ({ label: c.n, sub: (c.d || c.u || '') + (c.lp ? ' \u00B7 last ' + pcMoney(c.lp) : ''), c })), 'sugitem', i); break; }
+    case 'iname': { F.items[i].n = el.value;
+      { const c = pc.catalog && pc.catalog.items[el.value.trim().toLowerCase()], it = F.items[i];
+        if(c && c.lp){ it.lp = c.lp; it.ld = c.ld || 0; it.lc = c.lc || 'SAR'; it.lpm = false; const a1 = $('pcLp' + i), a2 = $('pcLd' + i); if(a1) a1.value = it.lp; if(a2) a2.value = it.ld ? pcDateStr(it.ld) : ''; } }
+      pcShowSug($('pcItSug' + i), pcCatalogMatches(el.value).map(c => ({ label: c.n, sub: (c.d || c.u || '') + (c.lp ? ' \u00B7 last ' + pcMoney(c.lp) : ''), c })), 'sugitem', i); break; }
+    case 'ilp': F.items[i].lp = el.value; F.items[i].lpm = true; if(Number(el.value) > 0 && !F.items[i].ld){ F.items[i].ld = Date.now(); const d = $('pcLd' + i); if(d) d.value = pcDateStr(F.items[i].ld); } break;
+    case 'ild': F.items[i].ld = el.value ? new Date(el.value + 'T12:00:00').getTime() : 0; F.items[i].lpm = true; break;
     case 'iqty': F.items[i].q = el.value; break;
     case 'idesc': F.items[i].d = el.value; break;
     case 'ibrand': F.items[i].b = el.value; break;
