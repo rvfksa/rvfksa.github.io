@@ -2310,6 +2310,27 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
   .asumTiles > .asumTile.sm .n{ font-size:20px !important; } .asumTiles > .asumTile.sm .l{ font-size:10px !important; margin-top:4px !important; }
 }
 
+/* v13: one big button on every order row, backdate box, "not needed" tick boxes */
+.pcBtnMain.xs{ height:30px; padding:0 13px; font-size:12px; gap:6px; }
+@container (min-width:901px){
+  .pcRowG{ grid-template-columns:30px 150px 110px minmax(0,1fr) 140px 52px 92px 112px 128px; }
+  .pcOrderHead .c-act{ display:flex; justify-content:flex-end; overflow:visible; }
+}
+@container (max-width:900px){
+  .pcOrderHead .c-act{ grid-column:2 / 4; grid-row:4; display:flex; justify-content:flex-start; overflow:visible; }
+  .pcOrderHead .c-act:empty{ display:none; }
+  .pcOrderHead .c-act .pcRowBtn{ width:100%; justify-content:center; height:34px; }
+}
+.pcBackBox{ display:flex; flex-wrap:wrap; align-items:flex-end; gap:12px 20px; background:var(--panel-2); border-radius:14px; padding:12px 14px; margin:6px 0 10px; }
+.pcBackBox .field{ margin:0; min-width:170px; }
+.pcLinkBtn{ border:0; background:none; color:var(--muted); font:inherit; font-size:12px; text-decoration:underline; cursor:pointer; padding:6px 2px; }
+.pcLinkBtn:hover{ color:var(--amber); }
+.pcRecRow.withNn, .pcRecHead.withNn{ grid-template-columns:minmax(0,1fr) 88px 88px 54px; }
+.pcNnBox{ display:flex; flex-direction:column; align-items:center; gap:2px; font-size:10px; color:var(--muted); cursor:pointer; }
+.pcNnBox input{ width:20px !important; height:20px !important; accent-color:var(--amber); }
+.pcRecRow input:disabled{ opacity:.45; }
+.pcSt.s-cancelled{ background:var(--panel-2); color:var(--muted); }
+
 </style>
 </head>
 <body>
@@ -3455,7 +3476,7 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
     <section class="screen" id="screen-purchase">
       <div class="eyebrow">Purchase</div>
       <h1>Purchase Orders</h1>
-      <p class="sub" style="margin-bottom:18px;">Create orders, send them for approval, and never forget a delivery.</p>
+      <p class="sub" style="margin-bottom:18px;">Create an order, mark it ordered, then received — and never forget a delivery.</p>
       <div class="pcWrap" id="purchaseMount"></div>
     </section>
 
@@ -13609,7 +13630,7 @@ function pcMergeSettings(d){
   return out;
 }
 const pcMoney = (n) => (n || n === 0) && Number(n) > 0 ? Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '\u2013';
-const pcLine = (it) => (Number(it.p) || 0) * (Number(it.q) || 0);
+const pcLine = (it) => it.nn ? 0 : (Number(it.p) || 0) * (Number(it.q) || 0);
 const pcTotal = (o) => (o.items || []).reduce((t, i) => t + pcLine(i), 0);
 function pcMe(){ return state.user ? state.user.loginId : ''; }
 function pcRoles(){
@@ -13623,10 +13644,12 @@ function pcMonthStr(ms){ return pcDateStr(ms).slice(0, 7); }
 function pcDaysSince(ms){ return Math.max(0, Math.floor((Date.now() - ms) / 86400000)); }
 function pcNo(n){ return 'PO-' + String(n).padStart(4, '0'); }
 function pcStatusKey(o){ return ((o.status === 'ordered' || o.status === 'approved') && (o.items || []).some(i => (i.rec || 0) > 0)) ? 'partial' : o.status; }
-function pcPendingItems(o){ return (o.items || []).filter(i => (i.rec || 0) < (i.q || 0)); }
+// an item is finished when it was received in full, is not needed any more, or was closed short ("nothing more is coming")
+const pcItemDone = (i) => !!(i.nn || i.short || (i.rec || 0) >= (i.q || 0));
+function pcPendingItems(o){ return (o.items || []).filter(i => !pcItemDone(i)); }
 function pcIsOpen(o){ return PC_OPEN.includes(o.status); }
 // a completed order still needs the real quantity and price the buyer paid
-function pcInfoMissing(o){ return o.status === 'received' && (o.items || []).some(i => !(i.ap > 0) || i.recAuto); }
+function pcInfoMissing(o){ return o.status === 'received' && (o.items || []).some(i => !i.nn && (i.rec || 0) > 0 && (!(i.ap > 0) || i.recAuto)); }
 function pcFind(docId){
   let o = (pc.open || []).find(x => x.docId === docId); if(o) return o;
   for(const m of Object.keys(pc.closed)){ o = (pc.closed[m] || []).find(x => x.docId === docId); if(o) return o; }
@@ -13657,10 +13680,23 @@ async function pcLoadInner(force){
   return true;
 }
 async function pcLoadCatalog(){
-  if(pc.catalog) return pc.catalog;
-  const d = await window.__db.getConfigObject('purchaseCatalog', { items: {} });
-  pc.catalog = { items: (d && d.items) || {} };
+  if(!pc.catalog){
+    const d = await window.__db.getConfigObject('purchaseCatalog', { items: {} });
+    pc.catalog = { items: (d && d.items) || {} };
+  }
+  pcMergeOrders();
   return pc.catalog;
+}
+// products from orders that are already on screen join the memory too (no extra reading) - so older orders are never forgotten
+function pcMergeOrders(){
+  const cat = pc.catalog; if(!cat) return;
+  const all = (pc.open || []).slice(); Object.keys(pc.closed || {}).forEach(m => (pc.closed[m] || []).forEach(o => all.push(o)));
+  all.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0)).forEach(o => (o.items || []).forEach(i => {
+    if(!i || !i.n || i.nn) return;
+    const k = pcCatKey(cat.items, i.n, i.d), e = cat.items[k], t = o.closedAt || o.createdAt || 0, ap = i.ap > 0 ? i.ap : 0;
+    if(!e){ cat.items[k] = { n: i.n, d: i.d || '', b: i.b || '', u: i.u, p: i.p || 0, link: i.link || '', phys: !!i.phys, note: i.note || '', lp: ap, ld: ap ? t : 0, lc: ap ? pcCur(o) : '', uses: 1, last: t }; return; }
+    if(ap && (!e.lp || (e.ld || 0) < t)){ e.lp = ap; e.ld = t; e.lc = pcCur(o); }
+  }));
 }
 async function pcLoadUsers(){
   if(!pc.users){ const us = await window.__db.listUsersOnce(); state.users = us; pc.users = us.filter(u => u.role !== 'pending' && !isExitedEmployee(u)).sort((a, b) => (a.name || '').localeCompare(b.name || '')); }
@@ -13744,10 +13780,10 @@ function pcTasks(){
       if(pcIsOpen(o) && o.status !== 'rejected' && d >= S.remindDays) out.push(Object.assign({ kind: 'remind', level: 'late', title: 'Send an update for ' + o.id, sub: (o.dept || '') + ' · ' + (o.reqBy ? o.reqBy.name : '') + ' · not received after ' + pcDaysSince(o.createdAt) + ' days', btn: 'Send update' }, base));
     }
     if(R.proc){
-      if(o.status === 'new') out.push(Object.assign({ kind: 'send', level: urgent ? 'late' : 'soon', title: 'New order ' + o.id + ' — send for approval', sub: (o.dept || '') + ' · ' + o.items.length + ' item(s) · by ' + o.createdByName, btn: 'Open' }, base));
+      if(o.status === 'new') out.push(Object.assign({ kind: 'send', level: urgent ? 'late' : 'soon', title: 'New order ' + o.id + ' \u2014 place the order', sub: (o.dept || '') + ' · ' + o.items.length + ' item(s) · by ' + o.createdByName, btn: 'Ordered' }, base));
       if(o.status === 'rejected' && o.createdBy !== me) out.push(Object.assign({ kind: 'revise', level: 'soon', title: o.id + ' rejected — revise or cancel', sub: o.rejectReason ? 'Reason: ' + o.rejectReason : '', btn: 'Open' }, base));
       if(o.status === 'approval' && o.proc && o.proc.paper) out.push(Object.assign({ kind: 'paper', level: 'soon', title: o.id + ' waiting for the signature', sub: (o.dept || '') + ' \u00B7 mark it approved when the signed paper is back', btn: 'Open' }, base));
-      if(o.status === 'approved') out.push(Object.assign({ kind: 'order', level: urgent ? 'late' : 'soon', title: o.id + ' approved — place the order', sub: (o.dept || '') + ' · print the PDF, sign it, then mark as ordered', btn: 'Open' }, base));
+      if(o.status === 'approved') out.push(Object.assign({ kind: 'order', level: urgent ? 'late' : 'soon', title: o.id + ' approved \u2014 place the order', sub: (o.dept || '') + ' · print the PDF, sign it, then mark as ordered', btn: 'Ordered' }, base));
     }
     if(pcIsMyApproval(o) && (!R.admin || !(o.proc && o.proc.approverId) || o.proc.approverId === me))
       out.push(Object.assign({ kind: 'approve', level: urgent ? 'late' : 'soon', title: o.id + ' needs your approval', sub: (o.dept || '') + ' · ' + o.items.length + ' item(s)', btn: 'Review' }, base));
@@ -13795,15 +13831,13 @@ function pcRender(){
   if(pc.ui.view === 'done') { mount.innerHTML = pcDoneHtml(); return; }
   mount.innerHTML = pcListHtml();
 }
+// three simple stages: New (not ordered yet) -> Ordered -> Completed. Older orders that were waiting for approval stay under New.
 function pcTabOf(o){
-  if(o.status === 'new') return 'new';
-  if(o.status === 'rejected') return 'rejected';
-  if(o.status === 'approval') return 'approval';
-  if(o.status === 'approved') return 'approved';
   if(o.status === 'ordered') return 'ordered';
+  if(pcIsOpen(o)) return 'new';
   return 'done';
 }
-const PC_TABS = [['todo', 'To do'], ['new', 'New'], ['approval', 'Approval'], ['approved', 'Approved'], ['rejected', 'Rejected'], ['ordered', 'Ordered'], ['done', 'Completed']];
+const PC_TABS = [['todo', 'To do'], ['new', 'New'], ['ordered', 'Ordered'], ['done', 'Completed']];
 function pcFilterActive(){ const f = pc.ui.f; return !!(f.dept || f.prio || f.by || f.from || f.to); }
 function pcApplyFilters(list){
   const f = pc.ui.f, q = (pc.ui.q || '').trim().toLowerCase();
@@ -13819,7 +13853,7 @@ function pcApplyFilters(list){
 }
 function pcListHtml(){
   const R = pcRoles(), U = pc.ui, mine = pcScope(pc.open || []), tasks = pcTasks();
-  const cnt = { todo: tasks.length, new: 0, approval: 0, approved: 0, rejected: 0, ordered: 0 };
+  const cnt = { todo: tasks.length, new: 0, ordered: 0 };
   mine.forEach(o => { const t = pcTabOf(o); if(cnt[t] != null) cnt[t]++; });
   const urgentOpen = mine.filter(o => o.priority === 'urgent' && pcIsOpen(o)).length;
   let h = `<div class="pcTop">${R.req ? `<button class="pcBtnMain" data-pc="new">${pcSvg('plus', 16)}New order</button>` : ''}<span class="grow"></span>${urgentOpen ? `<span class="pcUrgent">${urgentOpen} URGENT</span>` : ''}<button class="pillBtn" data-pc="refresh" title="Load the latest orders">${pcSvg('clock', 14)}Refresh</button></div>`;
@@ -13863,7 +13897,7 @@ function pcOrdersHtml(mine){
   let list = pcApplyFilters(base).sort((a, b) => ((b.priority === 'urgent') - (a.priority === 'urgent')) || (b.createdAt - a.createdAt));
   if(!list.length) return [bar, card('<div class="hrEmpty">No orders here.</div>')];
   const shown = list.slice(0, U.limit);
-  return [bar, card('<div class="pcListHead pcRowG"><span></span><span>Order</span><span>Department</span><span>Items</span><span>Requested for</span><span>Age</span><span class="r">Total</span><span class="r">Status</span></div>' + shown.map(pcOrderRow).join('') + (list.length > shown.length ? `<div style="text-align:center;padding:12px"><button class="pcBtnSoft" data-pc="more">Show more (${list.length - shown.length})</button></div>` : ''))];
+  return [bar, card('<div class="pcListHead pcRowG"><span></span><span>Order</span><span>Department</span><span>Items</span><span>Requested for</span><span>Age</span><span class="r">Total</span><span></span><span class="r">Status</span></div>' + shown.map(pcOrderRow).join('') + (list.length > shown.length ? `<div style="text-align:center;padding:12px"><button class="pcBtnSoft" data-pc="more">Show more (${list.length - shown.length})</button></div>` : ''))];
 }
 function pcOrderRow(o){
   const U = pc.ui, open = U.openId === o.docId, sk = pcStatusKey(o), urgent = o.priority === 'urgent';
@@ -13876,11 +13910,19 @@ function pcOrderRow(o){
     <div class="c-req"><span class="lbl">For</span>${pcEsc(o.reqBy ? o.reqBy.name : '')}</div>
     <div class="c-age">${when}</div>
     <div class="c-tot">${tot ? (pcCur(o) !== 'SAR' ? '<small>' + pcCur(o) + '</small> ' : '') + pcMoney(tot) : '\u2013'}</div>
+    <div class="c-act">${pcRowAct(o)}</div>
     <div class="c-st"><span class="pcSt s-${sk}">${PC_LABEL[sk]}</span><span class="pcChev">${pcSvg('chev', 15)}</span></div></div>
     ${open ? '<div class="pcDetail">' + pcDetailHtml(o) + '</div>' : ''}</div>`;
 }
+// the one big button that moves an order to its next step - shown right on the list row
+function pcCanOrder(o){ const R = pcRoles(); return R.proc && (o.status === 'new' || o.status === 'rejected' || o.status === 'approved'); }
+function pcRowAct(o){
+  if(pcCanOrder(o)) return `<button class="pcBtnMain xs pcRowBtn" data-pc="ordered" data-id="${pcEsc(o.docId)}">${pcSvg('cart', 13)}Ordered</button>`;
+  if(o.status === 'ordered' && pcCanReceive(o)) return `<button class="pcBtnMain xs pcRowBtn" data-pc="recall" data-id="${pcEsc(o.docId)}">${pcSvg('check', 13)}Received</button>`;
+  return '';
+}
 function pcCanEdit(o){ const R = pcRoles(); return (o.status === 'new' || o.status === 'rejected') && (R.admin || R.proc || o.createdBy === pcMe()); }
-function pcCanReceive(o){ const R = pcRoles(); return (o.status === 'ordered' || o.status === 'approved') && (R.admin || R.proc || o.createdBy === pcMe()); }
+function pcCanReceive(o){ const R = pcRoles(); return o.status === 'ordered' && (R.admin || R.proc || o.createdBy === pcMe()); }
 function pcCanActual(o){ const R = pcRoles(); return pcInfoMissing(o) && (R.admin || R.proc || o.createdBy === pcMe()); }
 function pcRemarks(it, docId, i){
   const tags = [];
@@ -13897,26 +13939,28 @@ function pcItemsTable(o, rec){
   const showRec = rec !== false && (['ordered', 'approved', 'received'].includes(o.status) || pcStatusKey(o) === 'partial'), canRec = pcCanReceive(o), cur = pcCur(o), canAct = pcCanActual(o);
   let h = `<div class="pcIts"><div class="pcItsH pcItG"><span>#</span><span>Item name</span><span>Description</span><span class="r">Qty</span><span>Unit</span><span class="r">Price${cur !== 'SAR' ? ' (' + cur + ')' : ''}</span><span class="r">Last bought</span><span class="r">Last date</span><span class="r">Total</span><span>Remarks</span></div>`;
   o.items.forEach((it, i) => {
-    const left = it.q - (it.rec || 0), desc = [it.d, it.b].filter(Boolean).map(pcEsc).join(', ');
+    const left = Math.max(0, it.q - (it.rec || 0)), desc = [it.d, it.b].filter(Boolean).map(pcEsc).join(', ');
     let strip = '';
     if(showRec){
       const ph = it.p > 0 ? pcMoney(it.p) : '0.00';
-      if(left > 0 && canRec) strip = `<span class="hrNote">Received ${it.rec || 0} of ${it.q} ${pcEsc(it.u || '')}</span><label class="pcRecIn"><span>Qty bought</span><input type="number" min="0" step="any" value="${left}" id="pcRq_${i}"></label><label class="pcRecIn"><span>Actual price</span><input type="number" min="0" step="any" placeholder="${ph}" value="${it.ap > 0 ? it.ap : ''}" id="pcRp_${i}"></label><button class="pcBtnSoft ok sm" data-pc="recitem" data-id="${pcEsc(o.docId)}" data-i="${i}">${pcSvg('check', 13)}Got it</button>`;
-      else if(left > 0) strip = `<span class="pcSt s-new">Still to receive: ${left} ${pcEsc(it.u || '')}</span>`;
-      else strip = `<span class="pcSt s-received">Received ${it.rec}${it.rec !== it.q ? ' (ordered ' + it.q + ')' : ''} ${pcEsc(it.u || '')}</span>` + (it.ap > 0 ? `<span class="hrNote">Actual price <b>${pcMoney(it.ap)}</b> ${cur} \u00B7 total <b>${pcMoney(it.ap * it.rec)}</b></span>` : '') + ((!(it.ap > 0) || it.recAuto) ? `<span class="pcTag warn">${it.ap > 0 ? 'Check the real quantity' : 'Real price missing'}</span>` : '') + (canAct && (!(it.ap > 0) || it.recAuto) ? `<button class="pcBtnSoft sm" data-pc="actual" data-id="${pcEsc(o.docId)}">Add it</button>` : '');
+      const open = pcIsOpen(o), reopen = open && canRec ? `<button class="pcBtnSoft sm" data-pc="itemun" data-id="${pcEsc(o.docId)}" data-i="${i}">Needed again</button>` : '';
+      if(it.nn) strip = `<span class="pcSt s-cancelled">Not needed</span>${reopen}`;
+      else if(!pcItemDone(it) && canRec) strip = `<span class="hrNote">Received ${it.rec || 0} of ${it.q} ${pcEsc(it.u || '')}</span><label class="pcRecIn"><span>Qty bought</span><input type="number" min="0" step="any" value="${left}" id="pcRq_${i}"></label><label class="pcRecIn"><span>Actual price</span><input type="number" min="0" step="any" placeholder="${ph}" value="${it.ap > 0 ? it.ap : ''}" id="pcRp_${i}"></label><button class="pcBtnSoft ok sm" data-pc="recitem" data-id="${pcEsc(o.docId)}" data-i="${i}">${pcSvg('check', 13)}Got it</button><button class="pcBtnSoft sm" data-pc="itemnn" data-id="${pcEsc(o.docId)}" data-i="${i}" title="${(it.rec || 0) > 0 ? 'Nothing more is coming for this item' : 'This item is not needed any more'}">${(it.rec || 0) > 0 ? 'No more needed' : 'Not needed'}</button>`;
+      else if(!pcItemDone(it)) strip = `<span class="pcSt s-new">Still to receive: ${left} ${pcEsc(it.u || '')}</span>`;
+      else strip = `<span class="pcSt s-received">Received ${it.rec}${it.rec !== it.q ? ' (ordered ' + it.q + ')' : ''} ${pcEsc(it.u || '')}</span>` + (it.short ? '<span class="pcTag">Closed \u2014 no more coming</span>' : '') + (it.ap > 0 ? `<span class="hrNote">Actual price <b>${pcMoney(it.ap)}</b> ${cur} \u00B7 total <b>${pcMoney(it.ap * it.rec)}</b></span>` : '') + ((!(it.ap > 0) || it.recAuto) ? `<span class="pcTag warn">${it.ap > 0 ? 'Check the real quantity' : 'Real price missing'}</span>` : '') + (canAct && (!(it.ap > 0) || it.recAuto) ? `<button class="pcBtnSoft sm" data-pc="actual" data-id="${pcEsc(o.docId)}">Add it</button>` : '') + (open && canRec && it.short ? reopen : '');
     }
-    h += `<div class="pcIt pcItG"><span class="c-no">${i + 1}</span><div class="c-name">${pcEsc(it.n)}</div><div class="c-desc" title="${desc}">${desc}</div>
+    h += `<div class="pcIt pcItG"><span class="c-no">${i + 1}</span><div class="c-name"${it.nn ? ' style="text-decoration:line-through;opacity:.6"' : ''}>${pcEsc(it.n)}</div><div class="c-desc" title="${desc}">${desc}</div>
       <div class="c-nums"><span class="c-qty">${it.q}</span><span class="c-unit">${pcEsc(it.u || '')}</span><span class="c-price"><span class="lbl">Price </span>${pcMoney(it.p)}</span><span class="c-last"><span class="lbl">Last bought </span>${pcLastP(it, cur)}</span><span class="c-ldate">${pcLastD(it)}</span></div>
       <span class="c-tot">${pcMoney(pcLine(it))}</span><div class="c-rem">${pcRemarks(it, o.docId, i)}</div></div>${strip ? `<div class="pcRecStrip">${strip}</div>` : ''}`;
   });
   const tot = pcTotal(o), act = o.items.reduce((t, it) => t + (it.ap > 0 ? it.ap * (it.rec || 0) : 0), 0);
   return h + (tot ? `<div class="pcItTotal"><span>Total (${cur})</span><b>${pcMoney(tot)}</b></div>` : '') + (act > 0 ? `<div class="pcItTotal pcAct"><span>Actual paid (${cur})</span><b>${pcMoney(act)}</b></div>` : '') + '</div>';
 }
-const PC_STEPS = [['new', 'Created'], ['approval', 'Approval'], ['approved', 'Approved'], ['ordered', 'Ordered'], ['received', 'Received']];
+const PC_STEPS = [['new', 'Created'], ['ordered', 'Ordered'], ['received', 'Received']];
 function pcStepsHtml(o){
   if(o.status === 'cancelled') return '<div class="pcSteps"><span class="pcStep bad">Cancelled</span></div>';
-  const idx = { new: 0, rejected: 1, approval: 1, approved: 2, ordered: 3, received: 4 }[o.status] || 0;
-  return '<div class="pcSteps">' + PC_STEPS.map((s, i) => `<span class="pcStep${i < idx || o.status === 'received' ? ' done' : ''}${i === idx && o.status !== 'received' ? (o.status === 'rejected' ? ' bad' : ' now') : ''}">${i === 1 && o.status === 'rejected' ? 'Rejected' : s[1]}</span>`).join('<i></i>') + '</div>';
+  const idx = { new: 0, rejected: 0, approval: 0, approved: 0, ordered: 1, received: 2 }[o.status] || 0;
+  return '<div class="pcSteps">' + PC_STEPS.map((s, i) => `<span class="pcStep${i < idx || o.status === 'received' ? ' done' : ''}${i === idx && o.status !== 'received' ? (o.status === 'rejected' ? ' bad' : ' now') : ''}">${i === 0 && o.status === 'rejected' ? 'Rejected' : i === 0 && o.status === 'approval' ? 'Waiting for approval' : s[1]}</span>`).join('<i></i>') + '</div>';
 }
 function pcMenu(label, icon, inner){ return inner ? `<details class="pcMore"><summary class="pcBtnSoft">${pcSvg(icon, 14)}${label}</summary><div class="pcMoreList">${inner}</div></details>` : ''; }
 function pcDetailHtml(o){
@@ -13939,16 +13983,17 @@ function pcDetailHtml(o){
   // only the buttons that belong to this step
   let a = '';
   if(pcIsMyApproval(o)) a += main('approve', 'Approve', 'check') + b('reject', 'Reject', 'x', 'danger');
-  if(R.proc && (o.status === 'new' || o.status === 'rejected')) a += main('sendappr', o.status === 'rejected' ? 'Send for approval again' : 'Send for approval', 'send');
+  if(pcCanOrder(o)) a += main('ordered', 'Mark as ordered', 'cart');
   if(R.proc && o.status === 'approval' && paper) a += main('paperok', 'Signed \u2014 mark approved', 'check') + b('reject', 'Rejected', 'x', 'danger');
-  if(R.proc && o.status === 'approved') a += main('ordered', 'Mark as ordered', 'cart');
-  if(pcCanReceive(o) && !(o.status === 'approved' && !R.proc)) a += main('recall', 'All received', 'check');
+  if(o.status === 'ordered' && pcCanReceive(o)) a += main('recall', 'Received', 'check');
   if(pcCanActual(o)) a += main('actual', 'Add real quantity & price', 'edit');
   const dl = b('pdfreq', 'Requisition PDF', 'down') + (o.status === 'new' ? '' : b('pdfpo', 'Order PDF', 'file'));
   let more = '';
   if(pcCanEdit(o)) more += b('edit', 'Edit order', 'edit');
   if(mine) more += b('recphoto', 'Signed requisition photo' + ((o.recPhotos || []).length ? ' (' + o.recPhotos.length + ')' : ''), 'cam');
   else if((o.recPhotos || []).length) more += b('recphoto', 'View signed requisition (' + o.recPhotos.length + ')', 'cam');
+  if(R.proc && (o.status === 'new' || o.status === 'rejected')) more += b('sendappr', 'Send for approval (optional)', 'send');
+  if(o.status === 'ordered' && pcCanReceive(o)) more += b('closeshort', 'Close \u2014 nothing more is coming', 'archive');
   if(R.proc && o.status === 'approval' && !paper) more += b('paperok', 'Already signed on paper', 'stamp');
   if(R.req || R.proc) more += b('reorder', 'Order again', 'plus');
   if(o.createdBy === me && pcIsOpen(o)) more += b('remind', 'WhatsApp update', 'wa');
@@ -13960,7 +14005,7 @@ function pcDetailHtml(o){
 
 /* ---------- create / edit form ---------- */
 function pcBlankItem(){ return { lp: 0, ld: 0, lc: '', n: '', d: '', b: '', q: 1, u: ((pc.settings || PC_DEF).units[0] || 'pcs'), p: '', phys: false, link: '', photos: [], note: '', more: false }; }
-function pcNewForm(){ return { docId: '', cur: 'SAR', priority: 'regular', dept: '', reqBy: { id: '', name: '' }, note: '', items: [pcBlankItem()], recPhotos: [] }; }
+function pcNewForm(){ return { docId: '', back: false, backDate: '', backOrdered: false, cur: 'SAR', priority: 'regular', dept: '', reqBy: { id: '', name: '' }, note: '', items: [pcBlankItem()], recPhotos: [] }; }
 function pcFormFromOrder(o, asCopy){
   return { docId: asCopy ? '' : o.docId, cur: o.cur || 'SAR', priority: o.priority, dept: o.dept, reqBy: Object.assign({}, o.reqBy), note: o.note || '', recPhotos: asCopy ? [] : (o.recPhotos || []).slice(),
     items: o.items.map(i => ({ lp: i.lp || 0, ld: i.ld || 0, lc: i.lc || '', n: i.n, d: i.d || '', b: i.b || '', q: i.q, u: i.u, p: i.p || '', phys: !!i.phys, link: i.link || '', photos: (i.photos || []).slice(), note: i.note || '', more: !!(i.b || i.p || i.note || i.phys || i.link || (i.photos || []).length) })) };
@@ -13977,7 +14022,9 @@ function pcFormHtml(){
     <div class="field"><label>Note (optional)</label><input type="text" data-pc="note" placeholder="Anything the buyer should know" value="${pcEsc(F.note)}"></div>
     <div class="field"><label>Photo of the signed requisition (optional — you can also add it later)</label><div class="pcThumbs">${F.recPhotos.map((p, k) => `<div class="pcThumb"><img src="${p}" alt=""><button data-pc="delrec" data-k="${k}" aria-label="Remove photo">×</button></div>`).join('')}
       ${F.recPhotos.length < 3 ? `<label class="pcBtnSoft">${pcSvg('cam', 14)}Add photo<input type="file" accept="image/*" data-pc="frec" style="display:none"></label>` : ''}</div></div>
-    <div class="pcTop" style="margin:6px 0 0"><button class="pcBtnMain" data-pc="save" ${pc.ui.busy ? 'disabled' : ''}>${pcSvg('check', 16)}${F.docId ? 'Save changes' : 'Create order'}</button><button class="pcBtnSoft" data-pc="back">Cancel</button></div></div>`;
+    ${F.back && !F.docId ? `<div class="pcBackBox"><div class="field"><label>Date of the old order</label><input type="date" data-pc="bdate" max="${pcDateStr(Date.now())}" value="${pcEsc(F.backDate)}"></div>
+      <label class="pcChk"><input type="checkbox" data-pc="bord" ${F.backOrdered ? 'checked' : ''}> It was already ordered (put it straight under Ordered)</label></div>` : ''}
+    <div class="pcTop" style="margin:6px 0 0"><button class="pcBtnMain" data-pc="save" ${pc.ui.busy ? 'disabled' : ''}>${pcSvg('check', 16)}${F.docId ? 'Save changes' : 'Create order'}</button><button class="pcBtnSoft" data-pc="back">Cancel</button>${F.docId ? '' : `<span class="grow"></span><button class="pcLinkBtn" data-pc="backtoggle">${F.back ? 'Not an old order' : 'Entering an old order?'}</button>`}</div></div>`;
 }
 function pcLastCell(it){ return it.lp ? `<b>${(it.lc && it.lc !== 'SAR' ? it.lc + ' ' : '') + pcMoney(it.lp)}</b>${it.ld ? `<small>${fmtDate(pcDateStr(it.ld))}</small>` : ''}` : '<span class="pcNone">\u2013</span>'; }
 function pcItemHtml(it, i, units){
@@ -14014,9 +14061,47 @@ function pcCompress(file, maxDim, q, png){
     img.src = url;
   });
 }
-function pcCatalogMatches(q){
-  q = q.trim().toLowerCase(); if(q.length < 2 || !pc.catalog) return [];
-  return Object.values(pc.catalog.items).filter(c => c.n.toLowerCase().includes(q)).sort((a, b) => (b.uses || 0) - (a.uses || 0)).slice(0, 6);
+// ---- product memory: every product (name + description) that was ever ordered is kept, with its brand, unit, link and the last price really paid
+const pcLc = (t) => String(t || '').trim().toLowerCase();
+function pcCatKey(cat, n, d){
+  const nm = pcLc(n), ds = pcLc(d), full = ds ? nm + ' | ' + ds : nm;
+  if(cat[full]) return full;
+  if(cat[nm] && pcLc(cat[nm].d) === ds) return nm;
+  return full;
+}
+// all remembered versions of one product name
+function pcCatByName(name){
+  const q = pcLc(name); if(!q || !pc.catalog) return [];
+  return Object.values(pc.catalog.items).filter(c => pcLc(c.n) === q).sort((a, b) => (b.last || 0) - (a.last || 0));
+}
+function pcCatalogMatches(q, empty){
+  q = pcLc(q); if(!pc.catalog) return [];
+  const all = Object.values(pc.catalog.items);
+  if(!q) return empty ? all.sort((a, b) => (b.uses || 0) - (a.uses || 0) || (b.last || 0) - (a.last || 0)).slice(0, 6) : [];
+  const sc = (c) => { const n = pcLc(c.n); if(n === q) return 0; if(n.startsWith(q)) return 1; if(n.split(/[\s\-\/,()]+/).some(w => w.startsWith(q))) return 2; if(n.includes(q)) return 3; return 9; };
+  return all.map(c => [sc(c), c]).filter(x => x[0] < 9).sort((a, b) => a[0] - b[0] || (b[1].uses || 0) - (a[1].uses || 0) || (b[1].last || 0) - (a[1].last || 0)).slice(0, 8).map(x => x[1]);
+}
+// fill an item row from a remembered product (everything except the quantity)
+function pcFillFromCat(it, c){
+  it.n = c.n; it.d = c.d || ''; it.b = c.b || ''; it.u = c.u || it.u; it.p = c.p || ''; it.link = c.link || ''; it.phys = !!c.phys; it.note = c.note || '';
+  it.lp = c.lp || 0; it.ld = c.ld || 0; it.lc = c.lc || ''; it.lpm = false; it.more = !!(it.b || it.link || it.phys);
+}
+// suggestions while typing an item name (starts at the first letter; the best matches come first)
+async function pcItemSuggest(el, i){
+  const F = pc.ui.form; if(!F || !F.items[i]) return;
+  if(!pc.catalog){ try{ await pcLoadCatalog(); }catch(e){ return; } }
+  if(!pc.ui.form || !F.items[i] || el.value !== (F.items[i].n || '')) return;
+  const it = F.items[i], ex = pcCatByName(el.value);
+  // a name that is remembered with ONE description: show its last price at once
+  if(ex.length === 1 && ex[0].lp && !it.lpm && !(it.d || '').trim()){ it.lp = ex[0].lp; it.ld = ex[0].ld || 0; it.lc = ex[0].lc || 'SAR'; const a1 = $('pcLp' + i), a2 = $('pcLd' + i); if(a1) a1.value = it.lp; if(a2) a2.value = it.ld ? pcDateStr(it.ld) : ''; }
+  pcShowSug($('pcItSug' + i), pcCatalogMatches(el.value, true).map(c => ({ label: c.n, sub: [c.d, c.b, c.u, c.lp ? 'last ' + (c.lc && c.lc !== 'SAR' ? c.lc + ' ' : '') + pcMoney(c.lp) : ''].filter(Boolean).join(' \u00B7 '), c })), 'sugitem', i);
+}
+// show the values of a row that was filled from memory (without redrawing, so the cursor stays)
+function pcSyncRow(i){
+  const F = pc.ui.form, it = F && F.items[i], row = document.querySelector('.pcFR[data-idx="' + i + '"]'); if(!it || !row) return;
+  const set = (sel, v) => { const e = row.querySelector(sel); if(e) e.value = v; };
+  set('[data-pc="idesc"]', it.d || ''); set('[data-pc="iunit"]', it.u || ''); set('[data-pc="iprice"]', it.p || ''); set('[data-pc="inote"]', it.note || '');
+  set('#pcLp' + i, it.lp > 0 ? it.lp : ''); set('#pcLd' + i, it.lp > 0 && it.ld ? pcDateStr(it.ld) : '');
 }
 function pcShowSug(el, rows, kind, idx){
   if(!el) return;
@@ -14044,40 +14129,47 @@ async function pcSaveForm(){
         fresh.items = items.map(n => Object.assign({ rec: 0 }, n)); fresh.recPhotos = F.recPhotos.slice();
         pcLog(fresh, 'Edited the order');
       });
-      pcSaveCatalog(forCatalog, true).catch(() => {});
+      await pcSaveCatalog(forCatalog, true).catch((e) => { console.error(e); });
     } else {
-      const n = await window.__db.poNextNo(), now = Date.now();
+      const n = await window.__db.poNextNo(); let now = Date.now(); const real = now;
+      if(F.back && F.backDate){ const ts = new Date(F.backDate + 'T12:00:00').getTime(); if(!isFinite(ts) || ts > real + 86400000) throw new Error('BADDATE'); now = Math.min(ts, real); }
       o = { docId: 'po_' + String(n).padStart(4, '0'), id: pcNo(n), no: n, createdAt: now, createdBy: pcMe(), createdByName: state.user.name || pcMe(), status: 'new',
         priority: F.priority, cur: F.cur || 'SAR', dept: F.dept, reqBy: { id: F.reqBy.id || '', name: F.reqBy.name.trim() }, note: F.note.trim(),
         items: items.map(i => Object.assign({ rec: 0 }, i)), recPhotos: F.recPhotos.slice(), proc: {}, log: [] };
       pcLog(o, 'Created the order' + (F.priority === 'urgent' ? ' (URGENT)' : '') + ' and sent it to procurement');
+      if(now < real - 86400000){ o.log[0].a = 'Entered an older order, dated ' + fmtDate(pcDateStr(now)) + (F.priority === 'urgent' ? ' (URGENT)' : ''); o.log[0].t = now; }
+      if(F.back && F.backOrdered){ o.status = 'ordered'; o.orderedAt = now; o.approvedAt = now; o.signed = true; o.signedAt = now; pcLog(o, 'Already ordered'); o.log[o.log.length - 1].t = now; }
       await pcPersist(o);
-      pcSaveCatalog(forCatalog).catch(() => {});
+      await pcSaveCatalog(forCatalog).catch((e) => { console.error(e); toast('Order saved, but the item memory could not be updated'); });
     }
     pc.ui.view = 'done'; pc.ui.doneId = o.docId; pc.ui.form = null; pc.ui.openId = o.docId; pc.ui.tab = pcTabOf(o); pc.ui.isEdit = !!F.docId;
   }catch(err){
     console.error(err);
-    toast(err.message === 'LOCKED' ? 'This order has moved on and can no longer be edited' : err.message === 'TOO_BIG' ? 'Photos are too large — remove one and try again' : 'Could not save — please try again');
+    toast(err.message === 'BADDATE' ? 'Choose a date that is not in the future' : err.message === 'LOCKED' ? 'This order has moved on and can no longer be edited' : err.message === 'TOO_BIG' ? 'Photos are too large — remove one and try again' : 'Could not save — please try again');
   }finally{ pc.ui.busy = false; }
   pcRender(); pcBadge();
 }
 async function pcSaveCatalog(items, edit){
   const cat = await pcLoadCatalog(), now = Date.now();
   items.forEach(i => {
-    const k = i.n.toLowerCase(), old = cat.items[k];
-    cat.items[k] = { n: i.n, d: i.d || '', b: i.b || '', u: i.u, p: i.p || (old && old.p) || 0, link: i.link || (old && old.link) || '', phys: i.phys, note: i.note || '', lp: (old && old.lp) || 0, ld: (old && old.ld) || 0, lc: (old && old.lc) || '', uses: ((old && old.uses) || 0) + (edit ? 0 : 1), last: now };
+    const k = pcCatKey(cat.items, i.n, i.d), old = cat.items[k];
+    cat.items[k] = { n: i.n, d: i.d || '', b: i.b || (old && old.b) || '', u: i.u, p: i.p || (old && old.p) || 0, link: i.link || (old && old.link) || '', phys: i.phys, note: i.note || '', lp: (old && old.lp) || 0, ld: (old && old.ld) || 0, lc: (old && old.lc) || '', uses: ((old && old.uses) || 0) + (edit ? 0 : 1), last: now };
     // a last-bought price typed by hand becomes the product's history (so it shows by itself next time)
     if(i.lp > 0 && (i.lpm || !(old && old.lp))){ const e = cat.items[k]; e.lp = i.lp; e.ld = i.ld || now; e.lc = i.lc || 'SAR'; }
   });
+  await pcWriteCatalog(cat);
+}
+async function pcWriteCatalog(cat){
   const keys = Object.keys(cat.items);
-  if(keys.length > 1500) keys.sort((a, b) => (cat.items[a].last || 0) - (cat.items[b].last || 0)).slice(0, keys.length - 1500).forEach(k => delete cat.items[k]);
+  if(keys.length > 2500) keys.sort((a, b) => (cat.items[a].last || 0) - (cat.items[b].last || 0)).slice(0, keys.length - 2500).forEach(k => delete cat.items[k]);
+  while(JSON.stringify(cat.items).length > 900000){ const ks = Object.keys(cat.items).sort((a, b) => (cat.items[a].last || 0) - (cat.items[b].last || 0)); if(ks.length < 10) break; ks.slice(0, 50).forEach(k => delete cat.items[k]); }
   await window.__db.saveConfigObject('purchaseCatalog', { items: cat.items });
 }
-// remember what was REALLY paid as the "last bought" price (one read + one write of the product list)
+// remember what was REALLY paid as the "last bought" price (one write of the product list)
 async function pcSavePrices(o){
   const cat = await pcLoadCatalog(), now = Date.now(); let ch = false;
-  o.items.forEach(i => { if(!(i.ap > 0)) return; const k = i.n.toLowerCase(), e = cat.items[k] || (cat.items[k] = { n: i.n, d: i.d || '', b: i.b || '', u: i.u, p: 0, link: i.link || '', phys: !!i.phys, note: '', uses: 1, last: now }); e.lp = i.ap; e.ld = now; e.lc = pcCur(o); ch = true; });
-  if(ch) await window.__db.saveConfigObject('purchaseCatalog', { items: cat.items });
+  o.items.forEach(i => { if(!(i.ap > 0) || i.nn) return; const k = pcCatKey(cat.items, i.n, i.d), e = cat.items[k] || (cat.items[k] = { n: i.n, d: i.d || '', b: i.b || '', u: i.u, p: 0, link: i.link || '', phys: !!i.phys, note: '', uses: 1, last: now }); e.lp = i.ap; e.ld = now; e.lc = pcCur(o); e.last = now; ch = true; });
+  if(ch) await pcWriteCatalog(cat);
 }
 function pcDoneHtml(){
   const o = pcFind(pc.ui.doneId); if(!o) return '<div class="hrEmpty">Saved.</div>';
@@ -14132,10 +14224,19 @@ function pcOpenReject(o){
   pcModalOpen(pcModalHead('Reject ' + o.id, 'Tell procurement why, so they can fix it.') + `<div class="field"><label>Reason</label><input type="text" id="pcmReason" placeholder="e.g. Price too high, get another quotation"></div>
     <button class="pcBtnMain" data-pc="doreject" data-id="${pcEsc(o.docId)}">Reject order</button>`);
 }
+// ONE sheet to place the order: prices, supplier, delivery date and who signed the paper
 function pcOpenOrdered(o){
-  pcModalOpen(pcModalHead('Mark ' + o.id + ' as ordered', 'Reminders to the creator continue until everything is received.') + `<div class="hrForm">
-    <div class="field"><label>Supplier</label><input type="text" id="pcmSup" value="${pcEsc(o.proc && o.proc.supplier || '')}"></div>
-    <div class="field"><label>Expected delivery (optional)</label><input type="date" id="pcmExp" value="${pcEsc(o.expected || '')}"></div></div>
+  pc.ui.modalId = o.docId;
+  const S = pc.settings || PC_DEF, names = []; (S.approvers || []).concat((S.tpl.poSigners || []).map(x => x.id)).forEach(id => { const n = pcNameOf(id); if(n && !names.includes(n)) names.push(n); });
+  (S.tpl.poSigners || []).forEach(x => { if(x.name && !names.includes(x.name)) names.push(x.name); });
+  const who = (o.proc && o.proc.approverName) || o.approvedByName || names[0] || '';
+  pcModalOpen(pcModalHead('Mark ' + o.id + ' as ordered', 'Check the prices, then confirm. Reminders continue until everything is received.') + `
+    <div class="pcSection" style="margin-top:0">Unit prices (${pcCur(o)})</div>
+    ${o.items.map((it, i) => `<div class="pcPriceRow"><div class="pcPriceName"><b>${pcEsc(it.n)}</b><span class="hrNote">${it.q} ${pcEsc(it.u || '')}${it.d ? ' \u00B7 ' + pcEsc(it.d) : ''}${it.lp ? ' \u00B7 last bought ' + pcLastP(it, pcCur(o)) : ''}</span></div><input type="number" min="0" step="any" id="pcmP_${i}" data-pc="pcmprice" value="${it.p || ''}" placeholder="${it.lp > 0 ? pcMoney(it.lp) : '0.00'}"></div>`).join('')}
+    <div class="pcPriceTot">Total <b id="pcmTot">${pcCur(o)} ${pcMoney(pcTotal(o))}</b></div>
+    <div class="hrForm"><div class="field"><label>Supplier</label><input type="text" id="pcmSup" value="${pcEsc(o.proc && o.proc.supplier || '')}"></div>
+    <div class="field"><label>Expected delivery (optional)</label><input type="date" id="pcmExp" value="${pcEsc(o.expected || '')}"></div>
+    <div class="field"><label>Signed by (the printed paper)</label><input type="text" id="pcmWho" list="pcmWhoL" value="${pcEsc(who)}" placeholder="Name of the person who signs"><datalist id="pcmWhoL">${names.map(n => `<option value="${pcEsc(n)}">`).join('')}</datalist></div></div>
     <button class="pcBtnMain" data-pc="doordered" data-id="${pcEsc(o.docId)}">${pcSvg('cart', 15)}Mark as ordered</button>`);
 }
 function pcOpenCancel(o){
@@ -14196,8 +14297,15 @@ function pcActReject(id){
   return pcRun(() => pcMutate(id, (o) => { pcNeed(o.status === 'approval'); o.status = 'rejected'; o.rejectReason = r; pcLog(o, 'Rejected' + (r ? ': ' + r : '')); }), 'Order rejected');
 }
 function pcActOrdered(id){
-  const sup = $('pcmSup').value.trim(), exp = $('pcmExp').value;
-  return pcRun(() => pcMutate(id, (o) => { pcNeed(o.status === 'approved'); o.status = 'ordered'; o.orderedAt = Date.now(); o.signed = true; o.signedAt = o.signedAt || Date.now(); o.proc = Object.assign({}, o.proc, { supplier: sup }); o.expected = exp || ''; pcLog(o, 'Ordered' + (sup ? ' from ' + sup : '')); }), 'Marked as ordered');
+  const sup = $('pcmSup').value.trim(), exp = $('pcmExp').value, who = $('pcmWho').value.trim();
+  const src = pcFind(id); if(!src) return;
+  const prices = src.items.map((it, i) => { const e = $('pcmP_' + i); return Math.max(0, parseFloat(e && e.value) || 0); });
+  return pcRun(() => pcMutate(id, (o) => { pcNeed(o.status === 'new' || o.status === 'rejected' || o.status === 'approved');
+    o.items.forEach((it, i) => { if(prices[i] != null && (prices[i] > 0 || !(it.p > 0))) it.p = prices[i]; });
+    const now = Date.now(); o.status = 'ordered'; o.orderedAt = now; o.signed = true; o.signedAt = o.signedAt || now; o.rejectReason = '';
+    if(!o.approvedAt){ o.approvedAt = now; o.approvedBy = pcMe(); } if(who) o.approvedByName = who; else if(!o.approvedByName) o.approvedByName = '';
+    o.proc = Object.assign({}, o.proc, { supplier: sup, approverName: who }); o.expected = exp || '';
+    pcLog(o, 'Ordered' + (sup ? ' from ' + sup : '') + (who ? ' \u00B7 signed by ' + who : '')); }), 'Marked as ordered');
 }
 function pcActCancel(id){
   const r = ($('pcmReason').value || '').trim();
@@ -14206,37 +14314,56 @@ function pcActCancel(id){
 function pcActRecItem(id, i){
   const eq = $('pcRq_' + i), ep = $('pcRp_' + i), q = eq ? Number(eq.value) : 0, price = ep ? Number(ep.value) : 0;
   if(eq && !(q > 0)) return toast('Write how many were bought');
-  return pcRun(async () => { const o2 = await pcMutate(id, (o) => { pcNeed(o.status === 'ordered' || o.status === 'approved'); const it = o.items[i]; pcNeed(!!it);
+  return pcRun(async () => { const o2 = await pcMutate(id, (o) => { pcNeed(o.status === 'ordered'); const it = o.items[i]; pcNeed(!!it);
     it.rec = (it.rec || 0) + q; it.recAt = Date.now(); it.recAuto = false; if(price > 0) it.ap = price;
     pcLog(o, 'Received ' + q + ' ' + (it.u || '') + ' of ' + it.n + (price > 0 ? ' at ' + pcCur(o) + ' ' + price : ''));
     if(!pcPendingItems(o).length){ o.status = 'received'; o.closedAt = Date.now(); pcLog(o, 'All items received \u2014 order complete'); } });
     if(o2 && price > 0) pcSavePrices(o2).catch(() => {}); }, 'Marked as received');
 }
-// "All received" and "Add real quantity & price" share one small sheet
-function pcOpenRecModal(o, mode){
+// "Received" and "Add real quantity & price" share one small sheet. Each item can also be marked "not needed".
+function pcOpenRecModal(o, mode, closeAll){
   pc.ui.modalId = o.docId;
   const cur = pcCur(o), all = mode === 'all';
-  pcModalOpen(pcModalHead(all ? 'All received \u2014 ' + o.id : 'Real quantity and price \u2014 ' + o.id, 'Write what was really bought and the price paid for one piece (' + cur + '). The quantity can be more or less than ordered.') + `
-    <div class="pcRecHead"><span>Item</span><span>Quantity bought</span><span>Actual price</span></div>
-    ${o.items.map((it, i) => `<div class="pcPriceRow pcRecRow"><div class="pcPriceName"><b>${pcEsc(it.n)}</b><span class="hrNote">Ordered ${it.q} ${pcEsc(it.u || '')}</span></div>
-      <input type="number" min="0" step="any" id="pcRM_q_${i}" value="${all ? Math.max(0, it.q - (it.rec || 0)) + (it.rec || 0) : (it.rec || '')}" aria-label="Quantity bought">
-      <input type="number" min="0" step="any" id="pcRM_p_${i}" value="${it.ap > 0 ? it.ap : ''}" placeholder="${it.p > 0 ? pcMoney(it.p) : '0.00'}" aria-label="Actual price"></div>`).join('')}
+  pcModalOpen(pcModalHead(all ? 'Received \u2014 ' + o.id : 'Real quantity and price \u2014 ' + o.id, all ? 'Write what was really bought and the price paid for one piece (' + cur + '). If something is not needed any more, tick "Not needed".' : 'Write what was really bought and the price paid for one piece (' + cur + '). The quantity can be more or less than ordered.') + `
+    <div class="pcRecHead${all ? ' withNn' : ''}"><span>Item</span><span>Quantity bought</span><span>Actual price</span>${all ? '<span>Not needed</span>' : ''}</div>
+    ${o.items.map((it, i) => { const dn = pcItemDone(it) && !it.nn; return `<div class="pcPriceRow pcRecRow${all ? ' withNn' : ''}"><div class="pcPriceName"><b>${pcEsc(it.n)}</b><span class="hrNote">Ordered ${it.q} ${pcEsc(it.u || '')}${it.nn ? ' \u00B7 not needed' : ''}</span></div>
+      <input type="number" min="0" step="any" id="pcRM_q_${i}" data-def="${all && !closeAll ? Math.max(0, it.q - (it.rec || 0)) + (it.rec || 0) : (it.rec || '')}" ${it.nn ? 'disabled' : ''} value="${it.nn ? '' : all && !closeAll ? Math.max(0, it.q - (it.rec || 0)) + (it.rec || 0) : (it.rec || '')}" aria-label="Quantity bought">
+      <input type="number" min="0" step="any" id="pcRM_p_${i}" ${it.nn ? 'disabled' : ''} value="${it.ap > 0 ? it.ap : ''}" placeholder="${it.p > 0 ? pcMoney(it.p) : (it.lp > 0 ? pcMoney(it.lp) : '0.00')}" aria-label="Actual price">
+      ${all ? `<label class="pcNnBox" title="Not needed any more"><input type="checkbox" id="pcRM_n_${i}" data-pc="pcnn" data-i="${i}" ${it.nn ? 'checked' : ''} ${dn ? 'disabled' : ''}><span>No</span></label>` : ''}</div>`; }).join('')}
+    ${all ? `<label class="pcChk" style="margin-top:10px"><input type="checkbox" id="pcRM_close" ${closeAll ? 'checked' : ''}> Nothing more is coming \u2014 close the order with what we got</label>` : ''}
     <div class="pcTop" style="margin-top:12px"><button class="pcBtnMain" data-pc="dorecmodal" data-mode="${mode}" data-id="${pcEsc(o.docId)}">${pcSvg('check', 15)}Save</button>${all ? `<button class="pcBtnSoft" data-pc="dorecmodal" data-mode="skip" data-id="${pcEsc(o.docId)}">Skip \u2014 I will add it later</button>` : ''}</div>
-    ${all ? '<div class="hrNote" style="margin-top:8px">If you skip, the order is marked complete and a task in your To do reminds you to add them.</div>' : ''}`);
+    ${all ? '<div class="hrNote" style="margin-top:8px">If you skip, the received items are marked complete and a task in your To do reminds you to add the real quantity and price.</div>' : ''}`);
+}
+const pcShortClose = (it) => { if(!pcItemDone(it)){ if((it.rec || 0) > 0) it.short = true; else it.nn = true; } };
+function pcCompleteIf(o, tail){
+  if(o.status === 'ordered' && !pcPendingItems(o).length){ o.status = 'received'; o.closedAt = Date.now(); pcLog(o, 'All items received \u2014 order complete' + (tail || '')); return true; }
+  return false;
 }
 function pcActRecModal(id, mode){
   const src = pcFind(id); if(!src) return;
-  const vals = src.items.map((it, i) => { const eq = $('pcRM_q_' + i), ep = $('pcRM_p_' + i); return { q: Number(eq && eq.value) || 0, p: Number(ep && ep.value) || 0 }; });
+  const vals = src.items.map((it, i) => { const eq = $('pcRM_q_' + i), ep = $('pcRM_p_' + i), en = $('pcRM_n_' + i); return { q: Number(eq && eq.value) || 0, p: Number(ep && ep.value) || 0, n: !!(en && en.checked && !en.disabled) }; });
+  const closeAll = !!($('pcRM_close') && $('pcRM_close').checked);
   return pcRun(async () => { const o2 = await pcMutate(id, (o) => {
-    pcNeed(mode === 'actual' ? o.status === 'received' : (o.status === 'ordered' || o.status === 'approved'));
-    o.items.forEach((it, i) => { const v = vals[i] || { q: 0, p: 0 };
-      if(mode === 'skip'){ if((it.rec || 0) < it.q){ it.rec = it.q; it.recAuto = true; it.recAt = Date.now(); } return; }
-      if(v.q > 0){ it.rec = v.q; it.recAuto = false; it.recAt = Date.now(); } else if(mode === 'all' && (it.rec || 0) < it.q){ it.rec = it.q; it.recAuto = true; it.recAt = Date.now(); }
+    pcNeed(mode === 'actual' ? o.status === 'received' : o.status === 'ordered');
+    o.items.forEach((it, i) => { const v = vals[i] || { q: 0, p: 0, n: false };
+      if(mode !== 'actual' && v.n && !it.nn){ if((it.rec || 0) > 0 || v.q > 0){ if(v.q > 0){ it.rec = v.q; it.recAuto = false; it.recAt = Date.now(); if(v.p > 0) it.ap = v.p; } it.short = true; } else it.nn = true; return; }
+      if(it.nn || (mode === 'skip' && pcItemDone(it))) return;
+      if(mode === 'skip'){ if(!closeAll && (it.rec || 0) < it.q){ it.rec = it.q; it.recAuto = true; it.recAt = Date.now(); } return; }
+      if(v.q > 0){ it.rec = v.q; it.recAuto = false; it.recAt = Date.now(); } else if(mode === 'all' && !closeAll && (it.rec || 0) < it.q){ it.rec = it.q; it.recAuto = true; it.recAt = Date.now(); }
       if(v.p > 0) it.ap = v.p; });
     if(mode === 'actual') pcLog(o, 'Added the real quantity and price');
-    else if(!pcPendingItems(o).length){ o.status = 'received'; o.closedAt = Date.now(); pcLog(o, 'All items received \u2014 order complete' + (mode === 'skip' ? ' (real quantity and price to be added)' : '')); }
-    else pcLog(o, 'Received part of the items'); });
+    else { if(closeAll) o.items.forEach(pcShortClose);
+      if(!pcCompleteIf(o, (mode === 'skip' ? ' (real quantity and price to be added)' : '') + (closeAll ? ' (closed with what was received)' : ''))) pcLog(o, 'Received part of the items'); } });
     pcModalClose(); if(o2) pcSavePrices(o2).catch(() => {}); }, 'Saved');
+}
+// one tap on an item: it is not needed (or nothing more is coming); and the way back
+function pcActItemNn(id, i){
+  return pcRun(() => pcMutate(id, (o) => { pcNeed(o.status === 'ordered'); const it = o.items[i]; pcNeed(!!it && !pcItemDone(it));
+    if((it.rec || 0) > 0){ it.short = true; pcLog(o, 'No more of ' + it.n + ' is needed (received ' + it.rec + ' of ' + it.q + ')'); } else { it.nn = true; pcLog(o, it.n + ' is not needed any more'); }
+    pcCompleteIf(o); }), 'Saved');
+}
+function pcActItemUn(id, i){
+  return pcRun(() => pcMutate(id, (o) => { pcNeed(o.status === 'ordered'); const it = o.items[i]; pcNeed(!!it && (it.nn || it.short)); it.nn = false; it.short = false; pcLog(o, it.n + ' is needed again'); }), 'Saved');
 }
 function pcActRecAll(id){ const o = pcFind(id); if(o) pcOpenRecModal(o, 'all'); }
 function pcActRemindDone(id){
@@ -14438,6 +14565,7 @@ function pcBindOnce(){
   document.addEventListener('click', pcOnClick);
   document.addEventListener('input', pcOnInput);
   document.addEventListener('change', pcOnChange);
+  document.addEventListener('focusin', (e) => { const el = e.target; if(el && el.dataset && el.dataset.pc === 'iname' && pc.ui.form && !el.value) pcItemSuggest(el, Number(el.dataset.i)); });
 }
 pcBindOnce();
 async function pcOnClick(e){
@@ -14451,7 +14579,7 @@ async function pcOnClick(e){
     case 'tab': U.tab = el.dataset.v; U.q = ''; U.openId = null; U.limit = 30; pcRender();
       if(U.tab === 'done'){ const m = U.month || (U.month = pcMonthStr(Date.now())); if(!pc.closed[m]){ await pcLoadMonth(m); pcRender(); } }
       break;
-    case 'task': { const o = pcFind(id); if(!o) break; if(el.dataset.k === 'remind') pcOpenRemind(o); else if(el.dataset.k === 'actual') pcOpenRecModal(o, 'actual'); else { U.tab = pcTabOf(o); U.openId = id; pcRender(); const n = document.querySelector('.pcDetail'); if(n) n.scrollIntoView({ block: 'nearest' }); } break; }
+    case 'task': { const o = pcFind(id); if(!o) break; if(el.dataset.k === 'remind') pcOpenRemind(o); else if(el.dataset.k === 'actual') pcOpenRecModal(o, 'actual'); else if(el.dataset.k === 'send' || el.dataset.k === 'order') pcOpenOrdered(o); else { U.tab = pcTabOf(o); U.openId = id; pcRender(); const n = document.querySelector('.pcDetail'); if(n) n.scrollIntoView({ block: 'nearest' }); } break; }
     case 'toggle': U.openId = U.openId === id ? null : id; pcKeepScroll(pcRender); break;
     case 'more': U.limit += 30; pcKeepScroll(pcRender); break;
     case 'ftoggle': U.fopen = !U.fopen; pcKeepScroll(pcRender); break;
@@ -14471,8 +14599,7 @@ async function pcOnClick(e){
     case 'delphoto': F.items[i].photos.splice(Number(el.dataset.k), 1); pcKeepScroll(pcRender); break;
     case 'delrec': F.recPhotos.splice(Number(el.dataset.k), 1); pcKeepScroll(pcRender); break;
     case 'sugwho': { const rows = el.parentElement._rows, r = rows && rows[Number(el.dataset.n)]; if(r){ F.reqBy = { id: r.id, name: r.label }; if(!F.dept && r.dept) F.dept = r.dept; pcKeepScroll(pcRender); } break; }
-    case 'sugitem': { const rows = el.parentElement._rows, r = rows && rows[Number(el.dataset.n)]; if(r){ const c = r.c, it = F.items[i];
-      it.n = c.n; it.lp = c.lp || 0; it.ld = c.ld || 0; it.lc = c.lc || ''; it.lpm = false; it.d = c.d || it.d; it.b = c.b || ''; it.u = c.u || it.u; it.p = c.p || ''; it.link = c.link || ''; it.phys = !!c.phys; it.note = c.note || ''; it.more = !!(it.b || it.p || it.link || it.phys || it.note); pcKeepScroll(pcRender); } break; }
+    case 'sugitem': { const rows = el.parentElement._rows, r = rows && rows[Number(el.dataset.n)]; if(r){ pcFillFromCat(F.items[i], r.c); pcKeepScroll(pcRender); } break; }
     case 'save': pcSaveForm(); break;
     case 'edit': if(O){ U.form = pcFormFromOrder(O, false); U.view = 'form'; pcRender(); window.scrollTo(0, 0); pcLoadCatalog().catch(() => {}); } break;
     case 'reorder': if(O){ U.form = pcFormFromOrder(O, true); U.view = 'form'; pcRender(); window.scrollTo(0, 0); pcLoadCatalog().catch(() => {}); } break;
@@ -14485,6 +14612,10 @@ async function pcOnClick(e){
     case 'ordered': if(O) pcOpenOrdered(O); break;
     case 'cancel': if(O) pcOpenCancel(O); break;
     case 'recall': pcActRecAll(id); break;
+    case 'closeshort': if(O) pcOpenRecModal(O, 'all', true); break;
+    case 'itemnn': pcActItemNn(id, i); break;
+    case 'itemun': pcActItemUn(id, i); break;
+    case 'backtoggle': F.back = !F.back; if(!F.back){ F.backDate = ''; F.backOrdered = false; } pcKeepScroll(pcRender); break;
     case 'actual': if(O) pcOpenRecModal(O, 'actual'); break;
     case 'dorecmodal': pcActRecModal(id, el.dataset.mode); break;
     case 'recitem': pcActRecItem(id, i); break;
@@ -14522,14 +14653,12 @@ function pcOnInput(e){
         pcShowSug($('pcWhoSug'), us.filter(u => (u.name || '').toLowerCase().includes(q) || (u.loginId || '').toLowerCase().includes(q)).slice(0, 6).map(u => ({ id: u.loginId, label: u.name || u.loginId, sub: u.department || '', dept: u.department || '' })), 'sugwho', 0); };
       if(pc.users) show(pc.users); else pcLoadUsers().then(show).catch(() => {});
       break; }
-    case 'iname': { F.items[i].n = el.value;
-      { const c = pc.catalog && pc.catalog.items[el.value.trim().toLowerCase()], it = F.items[i];
-        if(c && c.lp){ it.lp = c.lp; it.ld = c.ld || 0; it.lc = c.lc || 'SAR'; it.lpm = false; const a1 = $('pcLp' + i), a2 = $('pcLd' + i); if(a1) a1.value = it.lp; if(a2) a2.value = it.ld ? pcDateStr(it.ld) : ''; } }
-      pcShowSug($('pcItSug' + i), pcCatalogMatches(el.value).map(c => ({ label: c.n, sub: (c.d || c.u || '') + (c.lp ? ' \u00B7 last ' + pcMoney(c.lp) : ''), c })), 'sugitem', i); break; }
+    case 'iname': { F.items[i].n = el.value; pcItemSuggest(el, i); break; }
+    case 'idesc': { const it = F.items[i]; it.d = el.value; const c = pc.catalog && pc.catalog.items[pcCatKey(pc.catalog.items, it.n, it.d)];
+      if(c && pcLc(c.n) === pcLc(it.n) && pcLc(c.d) === pcLc(it.d) && c.lp && !it.lpm){ it.lp = c.lp; it.ld = c.ld || 0; it.lc = c.lc || 'SAR'; const a1 = $('pcLp' + i), a2 = $('pcLd' + i); if(a1) a1.value = it.lp; if(a2) a2.value = it.ld ? pcDateStr(it.ld) : ''; } break; }
     case 'ilp': F.items[i].lp = el.value; F.items[i].lpm = true; if(Number(el.value) > 0 && !F.items[i].ld){ F.items[i].ld = Date.now(); const d = $('pcLd' + i); if(d) d.value = pcDateStr(F.items[i].ld); } break;
     case 'ild': F.items[i].ld = el.value ? new Date(el.value + 'T12:00:00').getTime() : 0; F.items[i].lpm = true; break;
     case 'iqty': F.items[i].q = el.value; break;
-    case 'idesc': F.items[i].d = el.value; break;
     case 'ibrand': F.items[i].b = el.value; break;
     case 'iprice': F.items[i].p = el.value; break;
     case 'ilink': F.items[i].link = el.value; break;
@@ -14543,7 +14672,13 @@ async function pcOnChange(e){
   const U = pc.ui, F = U.form, i = el.dataset.i != null ? Number(el.dataset.i) : -1;
   switch(a){
     case 'dept': F.dept = el.value; break;
+    case 'iname': { const it = F.items[i]; if(!pc.catalog) break; const ex = pcCatByName(it.n);
+      // the whole name is typed and only one version of it is remembered: bring in all its details
+      if(ex.length === 1 && !(it.d || '').trim() && !(it.b || '').trim() && !it.lpm){ pcFillFromCat(it, ex[0]); pcSyncRow(i); } break; }
     case 'cur': F.cur = el.value; pcKeepScroll(pcRender); break;
+    case 'bdate': F.backDate = el.value; break;
+    case 'pcnn': { const q = $('pcRM_q_' + i); if(!q) break; if(el.checked){ if(q.value === q.dataset.def && !(pcFind(pc.ui.modalId).items[i].rec > 0)) q.value = ''; } else if(q.value === '') q.value = q.dataset.def; break; }
+    case 'bord': F.backOrdered = el.checked; break;
     case 'iunit': F.items[i].u = el.value; break;
     case 'iphys': F.items[i].phys = el.checked; pcKeepScroll(pcRender); break;
     case 'iphoto': { const f = el.files && el.files[0]; if(!f) break;
