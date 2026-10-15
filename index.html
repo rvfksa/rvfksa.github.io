@@ -2368,7 +2368,6 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
 .pillBtn.ok{ background:var(--amber); color:#fff; border-color:var(--amber); } .pillBtn.ok:hover{ background:#4338ca; color:#fff; }
 .pillBtn.danger{ color:var(--danger); } .pillBtn.danger:hover{ background:var(--danger-soft); border-color:var(--danger); color:var(--danger); }
 .pillBtn:disabled{ opacity:.45; cursor:not-allowed; }
-#bkOpenBtn{ width:34px; height:34px; padding:0; display:inline-flex; align-items:center; justify-content:center; }
 @media (max-width:640px){
   .bkRow{ grid-template-columns:1fr; gap:6px; }
   .bkItem{ flex-wrap:wrap; } .bkAct{ width:100%; justify-content:flex-end; }
@@ -2396,6 +2395,24 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
 .aiHelp{ margin:8px 0; } .aiHelp summary{ font-size:12px; color:var(--amber); cursor:pointer; font-weight:600; }
 .aiCode{ background:#0f172a; color:#e2e8f0; border-radius:10px; padding:12px; font-size:11px; overflow-x:auto; white-space:pre; }
 #aiLetterBox{ background:#e2e8f0; padding:0; }
+.aiAdm input[type=range]{ accent-color:var(--amber); width:100%; padding:0; } .aiRow select{ min-width:110px; }
+/* AI chat */
+.chBox{ padding:14px; }
+.chTop{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:10px; } .chTop select{ flex:1; min-width:140px; }
+.chModes{ display:inline-flex; flex-wrap:wrap; background:var(--panel-2,#f1f5f9); border-radius:999px; padding:3px; margin-bottom:10px; }
+.chModes button{ border:0; background:transparent; font:inherit; font-size:12px; font-weight:600; color:var(--muted); padding:7px 14px; border-radius:999px; cursor:pointer; }
+.chModes button.on{ background:#fff; color:var(--amber); box-shadow:0 1px 4px rgba(15,23,42,.12); }
+.chMsgs{ background:var(--panel-2,#f8fafc); border-radius:14px; padding:12px; height:min(58vh,520px); overflow-y:auto; display:flex; flex-direction:column; gap:10px; }
+.chMsg{ display:flex; flex-direction:column; max-width:92%; } .chMsg.user{ align-self:flex-end; align-items:flex-end; } .chMsg.assistant{ align-self:flex-start; }
+.chBub{ background:#fff; border:1px solid var(--line); border-radius:14px; padding:10px 13px; font-size:13.5px; line-height:1.55; overflow-wrap:anywhere; max-width:100%; }
+.chMsg.user .chBub{ background:var(--amber); color:#fff; border-color:var(--amber); } .chMsg.err .chBub{ background:var(--danger-soft); color:var(--danger); border-color:transparent; }
+.chAct{ display:flex; gap:6px; flex-wrap:wrap; margin-top:6px; }
+.chCode{ background:#0f172a; color:#e2e8f0; border-radius:10px; padding:10px 12px; font-size:12px; overflow-x:auto; white-space:pre; margin:6px 0; }
+.chBub code{ background:var(--panel-2,#f1f5f9); padding:1px 5px; border-radius:5px; font-size:12px; }
+.chUl{ margin:0 0 8px; padding-left:20px; }
+.chTbl{ border-collapse:collapse; font-size:12px; margin:6px 0; display:block; overflow-x:auto; } .chTbl th,.chTbl td{ border:1px solid var(--line-strong); padding:4px 8px; text-align:left; } .chTbl th{ background:var(--panel-2,#f1f5f9); }
+.chImg{ display:block; max-width:100%; border-radius:10px; margin-top:8px; }
+.chIn{ display:flex; gap:8px; align-items:flex-end; margin-top:10px; } .chIn textarea{ flex:1; min-width:0; font-size:13.5px; } .chAttach{ cursor:pointer; }
 
 </style>
 </head>
@@ -2635,14 +2652,15 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
         <div class="auth-tab" data-admintab="holidays">Holidays</div>
         <div class="auth-tab" data-admintab="config">Dropdowns</div>
         <div class="auth-tab" data-admintab="purchase">Purchase</div>
+        <div class="auth-tab" data-admintab="letterhead">Letterhead</div>
         <div class="auth-tab" data-admintab="ai">AI &amp; Letters</div>
+        <div class="auth-tab" data-admintab="aichat">AI Chat</div>
       </div>
 
       <div class="auth-pane active" id="admin-users">
         <div class="report-toolbar">
           <input type="text" id="userSearchInput" placeholder="Search by name, ID, or department..." style="flex:1; min-width:0;">
           <button class="btn btn-ghost" id="refreshUsersBtn">Refresh</button>
-          <button class="iconBtn" id="bkOpenBtn" title="Add many employees from Excel" aria-label="Add many employees from Excel"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></button>
         </div>
         <div id="userFilterPanel" style="display:none; margin-bottom:14px;">
           <div class="grid-3" style="gap:8px;">
@@ -2676,7 +2694,8 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
         <div class="user-status-tabs">
           <div class="user-status-tab active" data-userstatus="running">Running</div>
           <div class="user-status-tab" data-userstatus="exited">Exit / Terminated</div>
-          <button class="mini-icon-btn" id="userFilterToggleBtn" title="Filter by Employment Type / Shift / Department" style="margin-left:auto;">
+          <button class="mini-icon-btn" id="bkOpenBtn" title="Add many employees from Excel" aria-label="Add many employees from Excel" style="margin-left:auto;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></button>
+          <button class="mini-icon-btn" id="userFilterToggleBtn" title="Filter by Employment Type / Shift / Department">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z"/></svg>
           </button>
         </div>
@@ -2935,7 +2954,11 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
 
       <div class="auth-pane" id="admin-purchase"></div>
 
+      <div class="auth-pane" id="admin-letterhead"></div>
+
       <div class="auth-pane" id="admin-ai"></div>
+
+      <div class="auth-pane" id="admin-aichat"></div>
 
       <div class="auth-pane" id="admin-config">
         <h2 style="margin-top:0;">Departments</h2>
@@ -11667,7 +11690,7 @@ function hrDefaults(){
       { id:'m6', name:'Eid greeting', body:"Eid Mubarak {name}! Wishing you and your family a blessed Eid. - {company}" },
       { id:'m7', name:'Shift change', body:"Dear {name}, your shift will change to [Day / Night] starting [date]. Please confirm. - {company}" }
     ],
-    letterhead: { company:'Riyadh Velvet Factory', line1:'', line2:'', footer:'', color:'#4f46e5', logo:'', signName:'', signTitle:'HR Department', stamp:true },
+    letterhead: { company:'Riyadh Velvet Factory', line1:'', line2:'', footer:'', color:'#4f46e5', logo:'', signName:'', signTitle:'HR Department', stamp:true, logoH:62, nameSize:23, subSize:11, lineW:1.5, align:'left', gap:22, bodySize:14, lineH:1.8 },
     letters: [
       { id:'l_emp', name:'Employment certificate', dir:'ltr', body:"To whom it may concern,\n\nThis is to certify that {name}, {nationality}, holding Iqama No. {iqamaNo}, has been working with {company} as {position} in the {department} department since {joiningDate}, and is still on the job at the date of this letter.\n\nThis letter is issued at the employee's request and carries no liability for the company.\n\nSincerely," },
       { id:'l_exp', name:'Experience letter', dir:'ltr', body:"To whom it may concern,\n\nThis is to certify that {name}, {nationality}, Iqama No. {iqamaNo}, worked with {company} as {position} in the {department} department from {joiningDate} to {endDate} ({years}).\n\nDuring this period he performed his duties with care. We wish him success.\n\nSincerely," },
@@ -12203,10 +12226,9 @@ function hrLetterHtml(d){
   const sign = (lh.signName || lh.signTitle) ? `<div style="margin-top:34px;font-size:14px;line-height:1.5;"><div style="font-weight:700;">${hrEsc(lh.signName)}</div><div style="color:#475569;">${hrEsc(lh.signTitle)}</div><div style="color:#475569;">${hrEsc(lh.company || S.company)}</div></div>` : '';
   const stamp = lh.stamp ? `<div style="width:110px;height:110px;border:1.5px dashed #cbd5e1;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:10px;text-align:center;">Company<br>stamp</div>` : '';
   return `<div style="width:760px;min-height:1040px;box-sizing:border-box;padding:44px 54px 30px;background:#fff;color:#0f172a;font-family:'Inter',sans-serif;display:flex;flex-direction:column;">
-    <div style="display:flex;align-items:center;gap:16px;padding-bottom:14px;border-bottom:3px solid ${col};">${lh.logo ? `<img src="${lh.logo}" alt="" style="max-height:62px;max-width:180px;object-fit:contain;">` : ''}
-      <div><div style="font-family:'Oswald',sans-serif;font-size:23px;font-weight:700;color:${col};line-height:1.2;">${hrEsc(lh.company || S.company)}</div>${lh.line1 ? `<div style="font-size:11px;color:#64748b;margin-top:2px;">${hrEsc(lh.line1)}</div>` : ''}${lh.line2 ? `<div style="font-size:11px;color:#64748b;">${hrEsc(lh.line2)}</div>` : ''}</div></div>
-    <div style="margin-top:22px;font-size:12.5px;color:#475569;">${d.tpl.body.indexOf('{date}') < 0 ? 'Date: ' + hrEsc(d.vars.date) : ''}</div>
-    <div ${rtl ? 'dir="rtl"' : ''} style="margin-top:14px;font-size:14px;line-height:1.8;white-space:pre-wrap;word-break:break-word;${rtl ? 'text-align:right;' : ''}flex:1;">${hrEsc(d.text)}${sign}</div>
+    ${lhHeaderHtml(lh, lh.company || S.company)}
+    <div style="margin-top:${lhFull(lh).gap}px;font-size:12.5px;color:#475569;">${d.tpl.body.indexOf('{date}') < 0 ? 'Date: ' + hrEsc(d.vars.date) : ''}</div>
+    <div ${rtl ? 'dir="rtl"' : ''} style="margin-top:14px;font-size:${lhFull(lh).bodySize}px;line-height:${lhFull(lh).lineH};white-space:pre-wrap;word-break:break-word;${rtl ? 'text-align:right;' : ''}flex:1;">${hrEsc(d.text)}${sign}</div>
     <div style="display:flex;justify-content:flex-end;margin-top:20px;">${stamp}</div>
     ${lh.footer ? `<div style="margin-top:16px;padding-top:10px;border-top:1px solid #e2e8f0;font-size:10.5px;color:#64748b;text-align:center;">${hrEsc(lh.footer)}</div>` : ''}</div>`;
 }
@@ -12229,7 +12251,7 @@ function hrRenderLettersStd(){
       <div class="field wide"><label>Extra text (reason, amount, bank name...)</label><input type="text" data-hrin="letterfield" data-f="note" value="${hrEsc(L.note)}"></div></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;"><button class="btn btn-primary btn-sm" data-hr="lpdf">${hrSvg('down', 14)} Download PDF</button><button class="btn btn-ghost btn-sm" data-hr="lcopy">${hrSvg('copy', 14)} Copy text</button></div>
     <div class="hrLetter" id="hrLetterBox"><div id="hrLetterInner" style="transform-origin:top left;"></div></div>
-    <div class="hrNote" style="margin:8px 0 12px;">Letter wording, letterhead and signature are edited in Settings.</div>`;
+    <div class="hrNote" style="margin:8px 0 12px;">Letter wording is edited in Settings. The letterhead (logo, size, spacing) is in Admin &rarr; Letterhead.</div>`;
   hrRenderLetterPreview();
 }
 function hrRenderLetterPreview(){
@@ -12280,7 +12302,7 @@ function hrRenderSettings(){
   const tpls = `<div class="hrNote" style="margin-bottom:8px;">Words in { } are filled in automatically: {name} {id} {position} {department} {nationality} {iqamaNo} {passportNo} {joiningDate} {endDate} {years} {salary} {date} {from} {to} {note} {company}</div><div id="hrs-tpls">${(S.letters || []).map(t => hrTplEditor(t)).join('')}</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="pillBtn" data-hr="tpladd">${hrSvg('plus', 14)}New letter</button><button class="btn btn-primary btn-sm" data-hr="sv" data-v="letters">Save</button><button class="btn btn-ghost btn-sm" data-hr="sreset" data-v="letters">Restore standard letters</button></div>`;
   $('hrBody').innerHTML = (state.hrSettingsLoaded ? '' : '<div class="hrNote" style="color:var(--danger);margin-bottom:10px;">Saved settings could not be loaded, so saving is switched off. Reload the page.</div>')
-    + hrSetBlock('reminders', 'Reminders', rem) + hrSetBlock('other', 'Numbers &amp; dates', oth) + hrSetBlock('letterhead', 'Letterhead &amp; signature', head) + hrSetBlock('letters', 'Letter templates', tpls);
+    + hrSetBlock('reminders', 'Reminders', rem) + hrSetBlock('other', 'Numbers &amp; dates', oth) + hrSetBlock('letters', 'Letter templates', tpls);
   const lg = $('hrs-lh-logo'); if(lg) lg.addEventListener('change', hrLogoPicked);
   document.querySelectorAll('[data-hrsb]').forEach(d => d.addEventListener('toggle', () => { if(d.open) hrUI.setOpen = d.dataset.hrsb; else if(hrUI.setOpen === d.dataset.hrsb) hrUI.setOpen = ''; }));
 }
@@ -14459,18 +14481,17 @@ async function pcLoadMonth(m, force){
   try{ pc.closed[m] = await window.__db.poLoadClosed(m); }catch(err){ console.error(err); toast('Could not load completed orders'); pc.closed[m] = []; }
 }
 
-/* ---------- PDFs (the letterhead is the one set in HR Assistant > Settings > Letterhead) ---------- */
+/* ---------- PDFs (the letterhead is the one set in Admin > Letterhead) ---------- */
 async function pcLetterhead(){
   let S = null; try{ S = await hrLoadSettings(); }catch(e){}
   const lh = (S && S.letterhead) || {};
-  return { company: lh.company || (S && S.company) || 'Riyadh Velvet Factory', logo: lh.logo || '', color: /^#[0-9a-fA-F]{6}$/.test(lh.color || '') ? lh.color : '#4f46e5', line1: lh.line1 || '', line2: lh.line2 || '', footer: lh.footer || '', stamp: !!lh.stamp };
+  return { company: lh.company || (S && S.company) || 'Riyadh Velvet Factory', logo: lh.logo || '', color: /^#[0-9a-fA-F]{6}$/.test(lh.color || '') ? lh.color : '#4f46e5', line1: lh.line1 || '', line2: lh.line2 || '', footer: lh.footer || '', stamp: !!lh.stamp, align: lh.align, logoH: lhFull(lh).logoH, nameSize: lhFull(lh).nameSize, subSize: lhFull(lh).subSize, lineW: lhFull(lh).lineW, gap: lhFull(lh).gap };
 }
 function pcPdfBlocks(o, kind, T, L){
   const S = pc.settings || PC_DEF; T = T || S.tpl; const esc = pcEsc, col = L.color, isPO = kind === 'po';
   const title = isPO ? T.poTitle : T.reqTitle, intro = isPO ? T.poIntro : T.reqIntro, closing = isPO ? T.poClosing : T.reqClosing, sign = (isPO ? T.poSigners : T.reqSigners) || [];
   const blocks = [], F = "font-family:'Inter',sans-serif";
-  blocks.push(`<div style="display:flex;align-items:center;gap:16px;padding:4px 0 12px;border-bottom:3px solid ${col};${F}">${L.logo ? `<img src="${L.logo}" alt="" style="max-height:62px;max-width:180px;object-fit:contain">` : ''}
-    <div><div style="font-family:'Oswald',sans-serif;font-size:23px;font-weight:700;color:${col};line-height:1.2">${esc(L.company)}</div>${L.line1 ? `<div style="font-size:11px;color:#64748b;margin-top:2px">${esc(L.line1)}</div>` : ''}${L.line2 ? `<div style="font-size:11px;color:#64748b">${esc(L.line2)}</div>` : ''}</div></div>`);
+  blocks.push(lhHeaderHtml(L, L.company, '4px 0 12px'));
   const cell = (k, v, w) => `<td style="width:${w}%;padding:5px 8px;border:1px solid #cbd5e1;vertical-align:top"><div style="font-size:8.5px;text-transform:uppercase;letter-spacing:.05em;color:#64748b;font-weight:600">${k}</div><div style="font-size:12px;font-weight:700;color:#0f172a;margin-top:1px">${esc(v || '\u2014')}</div></td>`;
   const row1 = [cell('P.O. No.', o.id, 16), cell('Date', pcFmt(o.createdAt), 18), cell('Department', o.dept, 24), cell('Requested by', o.reqBy && o.reqBy.name, 26), cell('Priority', o.priority === 'urgent' ? 'URGENT' : 'Regular', 16)].join('');
   const extra = isPO ? [['Supplier', o.proc && o.proc.supplier], ['Approved', o.approvedAt ? pcFmt(o.approvedAt) + (o.approvedByName ? ' \u00B7 ' + o.approvedByName : '') : ''], ['Expected delivery', o.expected ? fmtDate(o.expected) : '']] : [];
@@ -14536,11 +14557,25 @@ async function pcTextPdf(m, filename){
   const lhAr = PC_AR.test([L.company, L.line1, L.line2].join(' ')), ftAr = PC_AR.test(L.footer || '');
   if(lhAr && m.hdrHtml){ const r = await pcRast(m.hdrHtml, 760); pdf.addImage(r.data, 'JPEG', M, y, CW, CW * r.ratio); y += CW * r.ratio + 6; }
   else {
-  if(L.logo){ const sz = await pcImgSize(L.logo); if(sz){ const h = 17, w = Math.min(46, h * sz.w / sz.h), hh = w * sz.h / sz.w; try{ pdf.addImage(L.logo, /image\/png/.test(L.logo) ? 'PNG' : 'JPEG', M, y, w, hh); tx = M + w + 5; }catch(e){} } }
-  pdf.setFont('helvetica', 'bold'); pdf.setFontSize(16); pdf.setTextColor(col[0], col[1], col[2]); txt(L.company, tx, y + 6);
-  pdf.setFont('helvetica', 'normal'); pdf.setFontSize(8.5); pdf.setTextColor(100, 116, 139);
-  let ly = y + 11; [L.line1, L.line2].filter(Boolean).forEach(l => { txt(l, tx, ly); ly += 4; });
-  y = Math.max(y + 18, ly) + 1; pdf.setDrawColor(col[0], col[1], col[2]); pdf.setLineWidth(0.8); pdf.line(M, y, M + CW, y); y += 8; }
+  { const ctr = L.align === 'center', hmm = (L.logoH || 62) * 0.2646, nsz = (L.nameSize || 23) * 0.7, ssz = (L.subSize || 11) * 0.77, lw = L.lineW != null ? L.lineW : 1.5, lines = [L.line1, L.line2].filter(Boolean);
+    let iw = 0, ih = 0;
+    if(L.logo){ const sz = await pcImgSize(L.logo); if(sz){ iw = Math.min(hmm * 3, hmm * sz.w / sz.h); ih = iw * sz.h / sz.w; } }
+    const nh = nsz * 0.3528 * 1.25, blockH = nh + lines.length * (ssz * 0.3528 * 1.4);
+    const setN = () => { pdf.setFont('helvetica', 'bold'); pdf.setFontSize(nsz); pdf.setTextColor(col[0], col[1], col[2]); };
+    const setS = () => { pdf.setFont('helvetica', 'normal'); pdf.setFontSize(ssz); pdf.setTextColor(100, 116, 139); };
+    if(!ctr){
+      const rowH = Math.max(ih, blockH), top = y + (rowH - blockH) / 2; tx = M + (iw ? iw + 5 : 0);
+      if(iw){ try{ pdf.addImage(L.logo, /image\/png/.test(L.logo) ? 'PNG' : 'JPEG', M, y + (rowH - ih) / 2, iw, ih); }catch(e){} }
+      setN(); txt(L.company, tx, top + nh * 0.85); setS(); let ly = top + nh + ssz * 0.3528 * 0.9; lines.forEach(l => { txt(l, tx, ly); ly += ssz * 0.3528 * 1.4; });
+      y += rowH + 3;
+    } else {
+      const cx = PW / 2; if(iw){ try{ pdf.addImage(L.logo, /image\/png/.test(L.logo) ? 'PNG' : 'JPEG', cx - iw / 2, y, iw, ih); }catch(e){} y += ih + 3; }
+      setN(); txt(L.company, cx, y + nh * 0.85, { align: 'center' }); setS(); let ly = y + nh + ssz * 0.3528 * 0.9; lines.forEach(l => { txt(l, cx, ly, { align: 'center' }); ly += ssz * 0.3528 * 1.4; });
+      y += blockH + 3;
+    }
+    if(lw > 0){ pdf.setDrawColor(col[0], col[1], col[2]); pdf.setLineWidth(lw * 0.2646); pdf.line(M, y, M + CW, y); }
+    y += 8; }
+  }
   const ftImg = (ftAr && L.footer) ? await pcRast(`<div style="font-size:15px;color:#64748b;text-align:center;padding:2px">${pcEsc(L.footer)}</div>`, 760) : null;
   // title
   pdf.setFont('helvetica', 'bold'); pdf.setFontSize(15); pdf.setTextColor(15, 23, 42); txt(String(m.title).toUpperCase(), PW / 2, y, { align: 'center' }); y += 6;
@@ -14798,7 +14833,7 @@ async function pcRenderAdmin(){
         <button class="btn btn-primary btn-sm" data-pc="admadd">Add</button></div>
       <div id="pcPeople"></div>
       <div class="card" style="margin-top:16px"><div class="sub" style="margin-top:0;font-weight:600;color:var(--text);text-transform:none">Reminders &amp; wording</div>
-        <p class="hrNote" style="margin:0 0 10px">The letterhead (logo, address, colour, footer) is the same one used for HR letters — change it in HR Assistant → Settings → Letterhead.</p>
+        <p class="hrNote" style="margin:0 0 10px">The letterhead (logo, address, colour, footer) is the same one used for HR letters — change it in Admin → Letterhead.</p>
         <div class="hrForm"><div class="field"><label>Remind the creator every (days) \u2014 0 = test mode</label><input type="number" min="0" max="90" id="pcaDays" value="${S.remindDays}"></div>${inp('pcaUnits', 'Units in the item list (comma separated)', S.units.join(', '))}
         ${ta('pcaWa', 'WhatsApp message (you can use {po} {dept} {person} {status} {pending} {days})', S.waMessage)}
         ${inp('pcaPoT', 'Purchase Order title', T.poTitle)}${inp('pcaRqT', 'Requisition title', T.reqTitle)}
@@ -14891,6 +14926,93 @@ async function pcAdmPreview(kind){
 }
 
 $('admin-purchase') && document.querySelector('.auth-tab[data-admintab="purchase"]').addEventListener('click', () => pcRenderAdmin());
+
+/* ============================================================
+   ONE LETTERHEAD FOR THE WHOLE APP (HR letters, AI letters, purchase PDFs).
+   Settings live in hrSettings.letterhead and are edited in Admin > Letterhead.
+   ============================================================ */
+const LH_DEF = { logoH: 62, nameSize: 23, subSize: 11, lineW: 1.5, align: 'left', gap: 22, bodySize: 14, lineH: 1.8 };
+function lhFull(lh){ const o = Object.assign({}, LH_DEF, lh || {}); Object.keys(LH_DEF).forEach(k => { if(o[k] === '' || o[k] == null || (typeof LH_DEF[k] === 'number' && !isFinite(+o[k]))) o[k] = LH_DEF[k]; else if(typeof LH_DEF[k] === 'number') o[k] = +o[k]; }); return o; }
+function lhEsc(t){ return String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+// the header band: logo + company name + two small lines + one thin line
+function lhHeaderHtml(lhIn, company, pad){
+  const lh = lhFull(lhIn), col = /^#[0-9a-fA-F]{6}$/.test(lh.color || '') ? lh.color : '#4f46e5', ctr = lh.align === 'center';
+  const logo = lh.logo ? `<img src="${lh.logo}" alt="" style="max-height:${lh.logoH}px;max-width:${Math.round(lh.logoH * 3)}px;object-fit:contain;display:block;">` : '';
+  const sub = (t) => t ? `<div style="font-size:${lh.subSize}px;color:#64748b;margin-top:2px;line-height:1.35;">${lhEsc(t)}</div>` : '';
+  const txt = `<div style="${ctr ? 'text-align:center;' : ''}"><div style="font-family:'Oswald',sans-serif;font-size:${lh.nameSize}px;font-weight:700;color:${col};line-height:1.2;">${lhEsc(company || lh.company)}</div>${sub(lh.line1)}${sub(lh.line2)}</div>`;
+  const box = ctr ? 'flex-direction:column;justify-content:center;gap:6px;' : 'align-items:center;gap:16px;';
+  return `<div style="display:flex;${box}padding:${pad || '0 0 14px'};${lh.lineW > 0 ? `border-bottom:${lh.lineW}px solid ${col};` : ''}font-family:'Inter',sans-serif;">${logo}${txt}</div>`;
+}
+
+/* ADMIN > Letterhead: logo, size, spacing, fonts, position. One change shows everywhere. */
+const lhA = { tmp: null, logo: undefined };
+function lhAEsc(t){ return lhEsc(t); }
+async function lhRenderAdmin(){
+  const p = $('admin-letterhead'); if(!p) return;
+  if(!state.user || state.user.role !== 'admin'){ p.innerHTML = '<div class="hrEmpty">Admin only.</div>'; return; }
+  p.innerHTML = '<div class="hrEmpty">Loading…</div>';
+  try{ await hrLoadSettings(); }catch(err){ console.error(err); p.innerHTML = '<div class="hrEmpty">Could not load. Check your connection and open this tab again.</div>'; return; }
+  lhA.tmp = JSON.parse(JSON.stringify(lhFull(state.hrSettings.letterhead))); lhA.tmp.company = lhA.tmp.company || state.hrSettings.company || ''; lhA.logo = undefined;
+  lhDraw();
+}
+function lhDraw(){
+  const p = $('admin-letterhead'), t = lhA.tmp; if(!p || !t) return;
+  const num = (k, l, min, max, step, unit) => `<div class="field"><label>${l}: <b id="lhv-${k}">${t[k]}${unit || ''}</b></label><input type="range" data-lha="n" data-k="${k}" min="${min}" max="${max}" step="${step}" value="${t[k]}"></div>`;
+  const txt = (k, l, wide) => `<div class="field${wide ? ' wide' : ''}"><label>${l}</label><input type="text" data-lha="t" data-k="${k}" value="${lhAEsc(t[k] || '')}"></div>`;
+  p.innerHTML = `<div class="card aiAdm">
+    <div class="hrNote" style="margin-bottom:10px;">This one letterhead is used on every letter and every PDF in the app (HR letters, AI letters, Purchase orders and requisitions). Change it here and it changes everywhere.</div>
+    <div class="aiH">Preview</div>
+    <div class="hrLetter" id="lhBox" style="background:#fff;"><div id="lhPrev" style="transform-origin:top left;"></div></div>
+    <div class="aiH">Text</div>
+    <div class="hrForm">${txt('company', 'Company name on letters', true)}${txt('line1', 'Address line', true)}${txt('line2', 'Phone / email line', true)}${txt('footer', 'Footer (CR number, VAT number...)', true)}
+      <div class="field"><label>Accent colour (name and line)</label><input type="color" data-lha="t" data-k="color" value="${lhAEsc(/^#[0-9a-fA-F]{6}$/.test(t.color || '') ? t.color : '#4f46e5')}" style="height:40px;padding:3px;"></div>
+      <div class="field"><label>Position</label><select data-lha="t" data-k="align"><option value="left" ${t.align !== 'center' ? 'selected' : ''}>Logo on the left, name beside it</option><option value="center" ${t.align === 'center' ? 'selected' : ''}>Everything in the centre</option></select></div>
+      <div class="field"><label>Logo (small picture)</label><input type="file" accept="image/*" id="lhLogoFile"></div>
+      <div class="field"><label>&nbsp;</label>${t.logo ? '<button class="pillBtn danger" data-lha="logodel">Remove logo</button>' : '<span class="hrNote">No logo yet</span>'}</div></div>
+    <div class="aiH">Size and spacing</div>
+    <div class="hrForm">${num('logoH', 'Logo height', 20, 120, 1, ' px')}${num('nameSize', 'Company name size', 14, 40, 1, ' px')}${num('subSize', 'Address lines size', 8, 16, 0.5, ' px')}${num('lineW', 'Line thickness', 0, 5, 0.5, ' px')}${num('gap', 'Space after the letterhead', 8, 70, 1, ' px')}${num('bodySize', 'Letter text size', 11, 18, 0.5, ' px')}${num('lineH', 'Space between text lines', 1.3, 2.4, 0.1, '')}</div>
+    <div class="hrForm"><label class="aiChk"><input type="checkbox" data-lha="stamp" ${t.stamp ? 'checked' : ''}> Leave a space for the company stamp on standard letters</label>${txt('signName', 'Standard letters signed by (name)')}${txt('signTitle', 'Title')}</div>
+    <div class="aiRow"><button class="pillBtn ok" data-lha="save">Save letterhead</button><button class="pillBtn" data-lha="reset">Standard sizes</button><span class="hrNote" id="lhMsg"></span></div></div>`;
+  const f = $('lhLogoFile'); if(f) f.addEventListener('change', lhLogoPicked);
+  lhPrev();
+}
+function lhPrev(){
+  const inner = $('lhPrev'), box = $('lhBox'), t = lhA.tmp; if(!inner || !t) return;
+  const co = t.company || 'Company name';
+  inner.innerHTML = `<div style="width:760px;box-sizing:border-box;padding:30px 54px 22px;background:#fff;color:#0f172a;font-family:'Inter',sans-serif;">${lhHeaderHtml(t, co)}<div style="margin-top:${t.gap}px;font-size:12.5px;color:#475569;">Date: 15 Oct 2026</div><div style="margin-top:14px;font-size:${t.bodySize}px;line-height:${t.lineH};">To whom it may concern,<br><br>This is a sample line to show the letter text size and the space between lines.</div>${t.footer ? `<div style="margin-top:22px;padding-top:8px;border-top:1px solid #e2e8f0;font-size:10.5px;color:#64748b;text-align:center;">${lhEsc(t.footer)}</div>` : ''}</div>`;
+  const k = Math.min(1, (box.clientWidth - 2) / 760); inner.style.transform = 'scale(' + k + ')'; box.style.height = Math.round(inner.firstElementChild.offsetHeight * k + 2) + 'px';
+}
+function lhLogoPicked(e){
+  const f = e.target.files && e.target.files[0]; if(!f) return;
+  const rd = new FileReader();
+  rd.onload = () => { const img = new Image(); img.onload = () => {
+    const k = Math.min(1, 480 / img.width, 160 / img.height), c = document.createElement('canvas');
+    c.width = Math.max(1, Math.round(img.width * k)); c.height = Math.max(1, Math.round(img.height * k));
+    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); lhA.tmp.logo = c.toDataURL('image/png'); lhDraw(); }; img.src = rd.result; };
+  rd.readAsDataURL(f);
+}
+document.addEventListener('input', (e) => {
+  const el = e.target, a = el.dataset && el.dataset.lha; if(!a || !lhA.tmp) return;
+  if(a === 'n'){ lhA.tmp[el.dataset.k] = +el.value; const s = $('lhv-' + el.dataset.k); if(s) s.textContent = el.value + (/Size|logoH|gap|lineW|bodySize|subSize/.test(el.dataset.k) ? ' px' : ''); lhPrev(); }
+  else if(a === 't' && el.type !== 'file' && el.tagName !== 'SELECT'){ lhA.tmp[el.dataset.k] = el.value; lhPrev(); }
+});
+document.addEventListener('change', (e) => {
+  const el = e.target, a = el.dataset && el.dataset.lha; if(!a || !lhA.tmp) return;
+  if(a === 't' && el.tagName === 'SELECT'){ lhA.tmp[el.dataset.k] = el.value; lhPrev(); }
+  else if(a === 'stamp') lhA.tmp.stamp = el.checked;
+});
+document.addEventListener('click', async (e) => {
+  const el = e.target.closest('[data-lha]'); if(!el || !lhA.tmp) return; const a = el.dataset.lha;
+  if(a === 'logodel'){ lhA.tmp.logo = ''; lhDraw(); }
+  else if(a === 'reset'){ Object.assign(lhA.tmp, LH_DEF); lhDraw(); }
+  else if(a === 'save'){
+    const S = state.hrSettings, snap = JSON.stringify(S.letterhead), t = lhA.tmp;
+    Object.assign(S.letterhead, { company: String(t.company || '').trim(), line1: String(t.line1 || '').trim(), line2: String(t.line2 || '').trim(), footer: String(t.footer || '').trim(), color: t.color, logo: t.logo || '', stamp: !!t.stamp, signName: String(t.signName || '').trim(), signTitle: String(t.signTitle || '').trim() });
+    Object.keys(LH_DEF).forEach(k => { S.letterhead[k] = t[k]; });
+    if(await hrSaveSettings()){ toast('Letterhead saved'); const m = $('lhMsg'); if(m) m.textContent = 'Saved. It is now used everywhere.'; }
+    else S.letterhead = JSON.parse(snap);
+  }
+});
 
 /* ============================================================
    BULK ADD EMPLOYEES (Admin > Users > small "Excel" icon)
@@ -15237,7 +15359,7 @@ async function aiSave(){
 async function aiLoadConn(force){
   if(AI.conn && !force) return AI.conn;
   const d = await window.__db.getConfigObject('aiConn', {});
-  AI.conn = { baseUrl: d.baseUrl || 'https://api.groq.com/openai/v1', key: d.key || '', model: d.model || 'llama-3.3-70b-versatile' };
+  AI.conn = { baseUrl: d.baseUrl || 'https://api.groq.com/openai/v1', key: d.key || '', model: d.model || 'llama-3.3-70b-versatile', chatModel: d.chatModel || '', visionModel: d.visionModel || 'meta-llama/llama-4-scout-17b-16e-instruct', imgBaseUrl: d.imgBaseUrl || '', imgKey: d.imgKey || '', imgModel: d.imgModel || '', chatSystem: d.chatSystem || '' };
   return AI.conn;
 }
 async function aiSaveConn(){ await window.__db.saveConfigObject('aiConn', AI.conn); }
@@ -15275,7 +15397,7 @@ function aiParseAnswer(txt){
    LETTERS TAB > "Write with AI": one fixed letterhead (text lines only), the letter body written by AI (or a standard text),
    signatures from the ready-made list, PDF, and optionally saved in the person's Violations.
    ============================================================ */
-const aiU = { typeId: '', emp: '', date: '', from: '', to: '', amount: '', toText: '', pron: 'his', facts: '', subject: '', body: '', mode: 'std', table: [], picks: {}, empSign: false, busy: false, tm: '', tt: '' };
+const aiU = { typeId: '', emp: '', date: '', from: '', to: '', amount: '', toText: '', pron: 'his', facts: '', subject: '', body: '', mode: 'std', table: [], picks: {}, empSign: false, busy: false, tm: '', tt: '', appr: true, sp: { date: 'm', meta: 'm', greet: 'm' }, edit: '' };
 const aiEsc = (t) => String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const AI_MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 function aiLong(ymd){ const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(ymd || ''); return m ? (+m[3]) + ' ' + AI_MONTHS[+m[2] - 1] + ' ' + m[1] : ''; }
@@ -15311,48 +15433,53 @@ function aiModel(){
   const rows = aiU.table.map(id => hrFind(id)).filter(Boolean).map((x, i) => (T.tableCols || ['name', 'id']).map(k => k === 'name' ? x.name : k === 'id' ? x.loginId : k === 'dept' ? x.department || '' : k === 'joining' ? (x.profile && x.profile.joiningDate ? aiLong(x.profile.joiningDate) : '') : k === 'position' ? (x.profile && x.profile.position) || '' : k === 'salary' ? (x.profile && x.profile.salary && x.profile.salary.basicSalary) || '' : ''));
   const bodyV = hrFill(aiBodyText(), V);
   return { T, V, date: aiLong(aiU.date || aiToday()), title: T.title || '', to, from: T.from === 'ceo' ? up(ceo.name) + ', CEO' : '', subject: hrFill(aiU.subject || T.subject || '', V), salutation: hrFill(T.salutation || '', V), body: bodyV,
-    end: T.end, empName, empId: u ? u.loginId : '', empDept: u ? u.department || '' : '', empPos: u && u.profile ? u.profile.position || '' : '', empSign: aiU.empSign, groups, ceo, signoff: T.signoff || 'Sincerely,', closing: T.closing || '', sign: T.sign || '',
+    end: T.end, empName, empId: u ? u.loginId : '', empDept: u ? u.department || '' : '', empPos: u && u.profile ? u.profile.position || '' : '', empSign: aiU.empSign, appr: aiU.appr, groups, ceo, signoff: T.signoff || 'Sincerely,', closing: T.closing || '', sign: T.sign || '',
     table: (T.table && rows.length) ? { heads: ['Sl.'].concat((T.tableCols || ['name', 'id']).map(k => aiCols[k] || k)), rows } : null };
 }
 function aiBodyHtml(text){
-  const out = []; let i = 0; const ps = String(text || '').split(/\n{2,}/);
-  ps.forEach(p => { const lines = p.split('\n'); let buf = [];
-    const flush = () => { if(buf.length){ out.push(`<div style="margin:0 0 10px;">${buf.map(aiEsc).join('<br>')}</div>`); buf = []; } };
-    lines.forEach(l => { if(/^\s*[-•]\s+/.test(l)){ flush(); out.push(`<div style="display:flex;gap:8px;margin:3px 0 3px 16px;"><span>•</span><span style="flex:1;">${aiEsc(l.replace(/^\s*[-•]\s+/, ''))}</span></div>`); } else if(l.trim()) buf.push(l.trim()); });
-    flush(); });
-  return out.join('');
+  const out = []; let buf = [], blank = 0;
+  const flush = () => { if(buf.length){ out.push(`<div style="margin:0 0 10px;">${buf.map(aiEsc).join('<br>')}</div>`); buf = []; } };
+  String(text || '').replace(/\r/g, '').split('\n').forEach(l => {
+    if(/^\s*[-•]\s+/.test(l)){ flush(); out.push(`<div style="display:flex;gap:8px;margin:3px 0 3px 16px;"><span>\u2022</span><span style="flex:1;">${aiEsc(l.replace(/^\s*[-•]\s+/, ''))}</span></div>`); blank = 0; }
+    else if(l.trim()){ buf.push(l.trim()); blank = 0; }
+    else { flush(); blank++; if(blank >= 2) out.push('<div style="height:' + (blank === 2 ? 14 : 14) + 'px;"></div>'); }
+  });
+  flush(); return out.join('');
 }
 function aiSignHtml(g){
   if(!g.people.length) return '';
   return `<div style="margin-top:26px;"><div style="font-size:12.5px;font-weight:700;margin-bottom:34px;">${aiEsc(g.label)}${g.label.slice(-1) === ':' ? '' : ':'}</div><div style="display:flex;gap:46px;flex-wrap:wrap;">${g.people.map(p => `<div style="font-size:12.5px;line-height:1.45;"><div style="font-weight:700;">${aiEsc(String(p.name).toUpperCase())}</div><div style="color:#475569;">${aiEsc(p.title || '')}</div></div>`).join('')}</div></div>`;
 }
+const AI_SP = { s: 3, m: 8, l: 18, x: 30 }, AI_SPG = { s: 4, m: 12, l: 22, x: 36 }, AI_SPD = { s: 8, m: 'gap', l: 34, x: 46 };
+function aiApprHtml(m){
+  if(!m.appr || m.end === 'ceo' || !m.ceo || !m.ceo.name) return '';
+  return `<div style="margin-top:26px;"><div style="font-size:12.5px;font-weight:700;margin-bottom:34px;">Approved By:</div><div style="font-size:12.5px;line-height:1.45;"><div style="font-weight:700;">${aiEsc(String(m.ceo.name).toUpperCase())}</div><div style="color:#475569;">${aiEsc(m.ceo.title || '')}</div></div></div>`;
+}
 function aiLetterHtml(m){
-  const S = state.hrSettings || hrDefaults(), lh = S.letterhead || {}, col = /^#[0-9a-fA-F]{6}$/.test(lh.color || '') ? lh.color : '#4f46e5';
-  const meta = (k, v, bold) => v ? `<div style="display:flex;gap:10px;margin-top:7px;font-size:13px;"><div style="width:78px;font-weight:700;flex:none;">${k}</div><div style="flex:1;${bold ? 'font-weight:700;' : ''}">${v}</div></div>` : '';
-  const head = `<div style="text-align:center;padding-bottom:12px;border-bottom:2px solid ${col};">${lh.logo ? `<img src="${lh.logo}" alt="" style="max-height:54px;max-width:170px;object-fit:contain;margin-bottom:4px;">` : ''}<div style="font-family:'Oswald',sans-serif;font-size:22px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;line-height:1.25;">${aiEsc(lh.company || S.company)}</div>${lh.line1 ? `<div style="font-size:11.5px;color:#475569;margin-top:2px;">${aiEsc(lh.line1)}</div>` : ''}${lh.line2 ? `<div style="font-size:11.5px;color:#475569;">${aiEsc(lh.line2)}</div>` : ''}</div>`;
-  let b = '';
-  if(m.title && m.end !== 'ceo') b += `<div style="margin-top:20px;font-weight:700;font-size:15px;">${aiEsc(m.title)}</div>`;
-  if(m.title && m.end === 'ceo') b += `<div style="margin-top:6px;font-size:13px;">Date: ${aiEsc(m.date)}</div><div style="text-align:center;font-family:'Oswald',sans-serif;font-size:19px;font-weight:700;letter-spacing:.05em;margin:22px 0 4px;">${aiEsc(m.title)}</div>`;
-  else b += meta('DATE:', aiEsc(m.date));
-  if(m.end === 'ceo' && !m.title) b = b.replace('DATE:', 'DATE:');
-  if(m.to.length && m.end !== 'ceo' || (m.end === 'ceo' && m.to.length && m.to[0])) b += meta('TO:', m.to.map(aiEsc).join('<br>'), true);
-  b += meta('FROM:', aiEsc(m.from), true);
-  if(m.subject && m.end !== 'ceo') b += meta('SUBJECT:', aiEsc(m.subject), true);
-  if(m.salutation) b += `<div style="margin-top:16px;font-size:13.5px;${m.end === 'ceo' ? 'font-weight:700;' : ''}">${aiEsc(m.salutation)}</div>`;
-  b += `<div style="margin-top:${m.salutation ? 10 : 18}px;font-size:13.5px;line-height:1.7;">${aiBodyHtml(m.body)}</div>`;
+  const S = state.hrSettings || hrDefaults(), lh = lhFull(S.letterhead), sp = aiU.sp || {};
+  const mt = AI_SP[sp.meta] != null ? AI_SP[sp.meta] : 8, gr = AI_SPG[sp.greet] != null ? AI_SPG[sp.greet] : 12, dg = sp.date === 'm' || !sp.date ? lh.gap : AI_SPD[sp.date];
+  const meta = (k, v) => v ? `<div style="display:flex;gap:10px;margin-top:${mt}px;font-size:13px;"><div style="width:78px;font-weight:700;flex:none;">${k}</div><div style="flex:1;font-weight:700;">${v}</div></div>` : '';
+  const head = lhHeaderHtml(S.letterhead, lh.company || S.company);
+  let b = `<div style="margin-top:${dg}px;font-size:12.5px;color:#475569;">Date: ${aiEsc(fmtDate(aiU.date || aiToday()))}</div>`;
+  if(m.title) b += `<div style="text-align:center;font-family:'Oswald',sans-serif;font-size:19px;font-weight:700;letter-spacing:.05em;margin:${m.end === 'ceo' ? 24 : 16}px 0 4px;">${aiEsc(m.title)}</div>`;
+  const metaHtml = (m.end === 'ceo' ? '' : meta('TO:', m.to.map(aiEsc).join('<br>'))) + meta('FROM:', aiEsc(m.from)) + (m.end === 'ceo' ? '' : meta('SUBJECT:', aiEsc(m.subject)));
+  b += metaHtml ? `<div style="margin-top:${Math.max(6, mt)}px;">${metaHtml}</div>` : '';
+  if(m.salutation) b += `<div style="margin-top:${gr + 6}px;font-size:${lh.bodySize}px;">${aiEsc(m.salutation)}</div>`;
+  b += `<div style="margin-top:${m.salutation ? 10 : 18}px;font-size:${lh.bodySize}px;line-height:${lh.lineH - 0.1};">${aiBodyHtml(m.body)}</div>`;
   if(m.table) b += `<table style="width:100%;border-collapse:collapse;margin:8px 0 6px;font-size:12px;"><thead><tr>${m.table.heads.map(h => `<th style="border:1px solid #94a3b8;padding:5px 6px;text-align:left;background:#f1f5f9;">${aiEsc(h)}</th>`).join('')}</tr></thead><tbody>${m.table.rows.map((r, i) => `<tr><td style="border:1px solid #cbd5e1;padding:5px 6px;">${i + 1}</td>${r.map(c => `<td style="border:1px solid #cbd5e1;padding:5px 6px;">${aiEsc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
   if(m.closing) b += `<div style="margin-top:6px;font-size:13px;font-weight:700;">${aiEsc(m.closing)}</div>`;
   const ack = `<div style="margin-top:28px;font-size:12.5px;line-height:1.5;"><div style="font-weight:700;margin-bottom:30px;">READ AND UNDERSTOOD</div><div style="font-weight:700;">${aiEsc(String(m.empName).toUpperCase())}, ID# ${aiEsc(m.empId)}</div><div style="color:#475569;">${aiEsc(m.empPos || m.empDept)}</div></div>`;
   if(m.end === 'ack'){ if(m.empSign) b += ack; b += m.groups.map(aiSignHtml).join(''); }
   else if(m.end === 'request'){
-    if(!m.T.noSincerely) b += `<div style="margin-top:18px;font-size:13.5px;">Sincerely,</div><div style="margin-top:${m.empSign ? 34 : 8}px;font-size:13px;font-weight:700;">${aiEsc(String(m.empName).toUpperCase())}${m.empId ? ', ID# ' + aiEsc(m.empId) : ''}</div><div style="font-size:12.5px;color:#475569;">Department: ${aiEsc(m.empDept)}</div>`;
+    if(!m.T.noSincerely) b += `<div style="margin-top:18px;font-size:13.5px;">Sincerely,</div>` + (m.empSign ? `<div style="margin-top:34px;font-size:13px;font-weight:700;">${aiEsc(String(m.empName).toUpperCase())}${m.empId ? ', ID# ' + aiEsc(m.empId) : ''}</div><div style="font-size:12.5px;color:#475569;">Department: ${aiEsc(m.empDept)}</div>` : '');
     else b += `<div style="margin-top:18px;font-size:13px;">${aiEsc('Personnel Department')}</div>`;
     b += m.groups.map(aiSignHtml).join('');
-  } else if(m.end === 'ceo') b += `<div style="margin-top:20px;font-size:13.5px;">${aiEsc(m.signoff)}</div><div style="margin-top:38px;font-size:13px;font-weight:700;">${aiEsc(String(m.ceo.name).toUpperCase())}</div><div style="font-size:12.5px;">${aiEsc(m.ceo.title)}</div><div style="font-size:12.5px;">${aiEsc((state.hrSettings.letterhead.company || state.hrSettings.company))}</div>`;
+  } else if(m.end === 'ceo') b += `<div style="margin-top:20px;font-size:13.5px;">${aiEsc(m.signoff)}</div><div style="margin-top:38px;font-size:13px;font-weight:700;">${aiEsc(String(m.ceo.name).toUpperCase())}</div><div style="font-size:12.5px;">${aiEsc(m.ceo.title)}</div><div style="font-size:12.5px;">${aiEsc(lh.company || S.company)}</div>`;
   else if(m.end === 'verified') b += m.groups.map(aiSignHtml).join('');
   else if(m.end === 'notice') b += `<div style="margin-top:26px;font-size:13px;font-weight:700;">${aiEsc(m.sign || 'THE MANAGEMENT')}</div>`;
   if(m.empSign && (m.end === 'verified' || m.end === 'notice' || m.end === 'none')) b += ack;
   if(m.end === 'none') b += m.groups.map(aiSignHtml).join('');
+  b += aiApprHtml(m);
   const foot = lh.footer ? `<div style="margin-top:auto;padding-top:10px;border-top:1px solid #e2e8f0;font-size:10.5px;color:#64748b;text-align:center;">${aiEsc(lh.footer)}</div>` : '';
   return `<div style="width:760px;min-height:1040px;box-sizing:border-box;padding:44px 54px 30px;background:#fff;color:#0f172a;font-family:'Inter',sans-serif;display:flex;flex-direction:column;">${head}<div style="flex:1;">${b}</div>${foot}</div>`;
 }
@@ -15365,7 +15492,7 @@ function aiPlain(m){
 function aiSetType(id){
   const T = ((AI.cfg && AI.cfg.types) || []).find(t => t.id === id); if(!T) return;
   aiU.typeId = id; aiU.subject = ''; aiU.body = ''; aiU.mode = T.std ? 'std' : 'ai'; aiU.table = []; aiU.facts = ''; aiU.amount = '';
-  aiU.empSign = !!(T.ack || T.end === 'request'); aiU.toText = T.toText || ''; aiU.from = ''; aiU.to = '';
+  aiU.empSign = !!(T.ack || T.end === 'request'); aiU.appr = T.end !== 'ceo' && T.end !== 'notice'; aiU.toText = T.toText || ''; aiU.from = ''; aiU.to = '';
   aiU.picks = Object.assign({}, aiPicksLoad(), {});
 }
 function aiRenderLetters(){
@@ -15402,10 +15529,13 @@ function aiDraw(){
   b.innerHTML = aiSwitchHtml() + `<div class="hrForm">${f}</div>
     <div class="aiGen"><button class="btn btn-primary btn-sm" data-ai="gen" ${aiU.busy ? 'disabled' : ''}>${aiIc('spark', 14)} ${aiU.busy ? 'Writing…' : 'Write with AI'}</button>${hasStd ? `<button class="btn btn-ghost btn-sm" data-ai="std">Use the standard text</button>` : ''}<span class="hrNote" id="aiMsg"></span></div>
     <div class="hrForm"><div class="field wide"><label>Letter text (you can change it)</label><textarea rows="9" data-ai="body" id="aiBody">${aiEsc(aiBodyText())}</textarea></div>${groups}
-    ${T.emp ? `<label class="aiChk"><input type="checkbox" data-ai="esign" ${aiU.empSign ? 'checked' : ''}> Add the employee's signature space ("read and understood")</label>` : ''}</div>
+    </div><div class="hrForm" style="margin-top:-2px;"><div class="field wide"><label>Ask the AI to change the text (shorter, more formal, add a sentence, change the subject...)</label><div class="aiAddRow"><input type="text" data-ai="edit" value="${aiEsc(aiU.edit)}" placeholder="e.g. make it more formal and add that the medical paper is attached"><button class="pillBtn" data-ai="editgo" ${aiU.busy ? 'disabled' : ''}>${aiIc('spark', 13)} Change</button></div></div>
+    ${T.emp ? `<label class="aiChk"><input type="checkbox" data-ai="esign" ${aiU.empSign ? 'checked' : ''}> Add the employee's signature and name at the bottom (if unticked, his name, ID and position are written inside the letter text instead)</label>` : ''}
+    ${T.end !== 'ceo' ? `<label class="aiChk"><input type="checkbox" data-ai="appr" ${aiU.appr ? 'checked' : ''}> Add the approver's signature: ${aiEsc(C.approver.name)} (${aiEsc(C.approver.title)})</label>` : ''}
+    <details class="aiHelp field wide"><summary>Spacing</summary><div class="aiRow">${[['date', 'Space after the date'], ['meta', 'Space between To / From / Subject'], ['greet', 'Space before the text']].map(x => `<span class="hrNote">${x[1]}</span><select data-ai="sp" data-k="${x[0]}">${[['s', 'Small'], ['m', 'Normal'], ['l', 'Large'], ['x', 'Extra large']].map(o => `<option value="${o[0]}" ${(aiU.sp[x[0]] || 'm') === o[0] ? 'selected' : ''}>${o[1]}</option>`).join('')}</select>`).join('')}</div><div class="hrNote">Need an extra empty line inside the text? Just press Enter twice or more in the letter text above.</div></details></div>
     <div class="aiGen"><button class="btn btn-primary btn-sm" data-ai="pdf">${aiIc('down', 14)} Download PDF</button><button class="btn btn-ghost btn-sm" data-ai="copy">${aiIc('copy', 14)} Copy text</button>${T.save && u ? `<button class="btn btn-ghost btn-sm" data-ai="viol">${aiIc('save', 14)} Save in ${aiEsc((u.name || '').split(/\s+/)[0])}'s violations</button>` : ''}</div>
     <div class="hrLetter" id="aiLetterBox"><div id="aiLetterInner" style="transform-origin:top left;"></div></div>
-    <div class="hrNote" style="margin:8px 0 12px;">The letterhead (company name and address lines) comes from HR Assistant &rarr; Settings &rarr; Letterhead. Instructions, letter types and signatures are in Admin &rarr; AI &amp; Letters.</div>`;
+    <div class="hrNote" style="margin:8px 0 12px;">The letterhead (company name and address lines) comes from Admin &rarr; Letterhead (logo, size, spacing, fonts). Instructions, letter types and signatures are in Admin &rarr; AI &amp; Letters.</div>`;
   aiPreview();
 }
 function aiPreview(){
@@ -15422,15 +15552,27 @@ async function aiGenerate(){
   aiU.busy = true; aiDraw();
   try{
     const V = aiVars(), P = u && u.profile || {};
-    const sys = AI.cfg.master + '\n\nLETTER TYPE: ' + T.name + '\nINSTRUCTION FOR THIS TYPE: ' + (T.instruction || '') + (T.example ? '\n\nEXAMPLE of this type (copy its structure, tone and length; change only the details):\n"""\n' + T.example + '\n"""' : '');
-    const facts = { letter_type: T.name, employee_name: V.name || undefined, position: V.position || undefined, department: V.department || undefined, joining_date: T.dates && T.end === 'ceo' ? (aiU.from ? aiLong(aiU.from) : V.joiningDate) || undefined : undefined,
+    const intro = (T.end === 'request' && !T.noSincerely && !aiU.empSign) ? '\n\nIMPORTANT FOR THIS LETTER: the employee name is NOT printed at the bottom, so the first sentence of the body must introduce him: his name, ID number, position and department (from the facts), then the request.' : '';
+    const sys = AI.cfg.master + intro + '\n\nIf the HR notes contain wishes about wording or the subject (for example "the subject should be formal"), follow them. Spacing and layout are handled by the application: never write about them.\n\nLETTER TYPE: ' + T.name + '\nINSTRUCTION FOR THIS TYPE: ' + (T.instruction || '') + (T.example ? '\n\nEXAMPLE of this type (copy its structure, tone and length; change only the details):\n"""\n' + T.example + '\n"""' : '');
+    const facts = { letter_type: T.name, employee_name: V.name || undefined, employee_id: V.id || undefined, position: V.position || undefined, department: V.department || undefined, joining_date: T.dates && T.end === 'ceo' ? (aiU.from ? aiLong(aiU.from) : V.joiningDate) || undefined : undefined,
       from_date: T.end === 'ceo' ? undefined : V.from || undefined, to_date: V.to || undefined, days: T.end === 'ceo' ? undefined : V.days || undefined, last_day: T.end === 'ceo' ? V.to || undefined : undefined, deduction_amount_SAR: V.amount || undefined, pronoun: T.pronoun ? aiU.pron : undefined, details_from_hr: aiU.facts.trim() || undefined, other_employees_count: T.table ? aiU.table.length : undefined, letter_date: V.date };
     const raw = await aiAsk(sys, 'Facts for this letter (use only these):\n' + JSON.stringify(facts, null, 1) + '\n\nReturn the JSON now.');
     const r = aiParseAnswer(raw);
-    aiU.body = r.body; aiU.mode = 'ai'; if(!aiU.subject.trim() && r.subject && !T.subject) aiU.subject = r.subject; else if(!aiU.subject.trim() && r.subject && /^(|other)$/.test('')) aiU.subject = r.subject;
-    if(!aiU.subject.trim() && r.subject && !(T.subject || '').trim()) aiU.subject = r.subject;
+    aiU.body = r.body; aiU.mode = 'ai'; if(!aiU.subject.trim() && r.subject && (!(T.subject || '').trim() || /subject/i.test(aiU.facts))) aiU.subject = r.subject;
     aiU.busy = false; aiDraw(); const mm = $('aiMsg'); if(mm) mm.textContent = 'Written. Read it and change anything you like.';
   }catch(err){ console.error(err); aiU.busy = false; aiDraw(); const mm = $('aiMsg'); if(mm){ mm.textContent = aiErrText(err); mm.style.color = 'var(--danger)'; } toast('The AI could not write the letter'); }
+}
+async function aiEditText(){
+  const T = aiType(); if(!T || aiU.busy) return; const ins = aiU.edit.trim(); const cur = aiBodyText();
+  if(!ins){ toast('Write what you want changed'); return; }
+  if(!cur.trim()){ toast('There is no text yet - write it first'); return; }
+  aiU.busy = true; aiDraw();
+  try{
+    const sys = AI.cfg.master + '\n\nEDIT MODE: You are given the current letter body and an instruction from HR. Apply only that instruction and keep every fact, name, date and number unless the instruction changes it. Do not add a letterhead, date, greeting or signature. Spacing and layout are handled by the application. Reply with the JSON {"subject": "...", "body": "..."}; keep the subject as it is unless the instruction asks to change it.';
+    const raw = await aiAsk(sys, JSON.stringify({ letter_type: T.name, current_subject: hrFill(aiU.subject || T.subject || '', aiVars()), current_body: cur, instruction: ins }));
+    const r = aiParseAnswer(raw); aiU.body = r.body; aiU.mode = 'ai'; if(r.subject && /subject|title/i.test(ins)) aiU.subject = r.subject; aiU.edit = '';
+    aiU.busy = false; aiDraw(); const mm = $('aiMsg'); if(mm) mm.textContent = 'Changed. Read it again.';
+  }catch(err){ console.error(err); aiU.busy = false; aiDraw(); const mm = $('aiMsg'); if(mm){ mm.textContent = aiErrText(err); mm.style.color = 'var(--danger)'; } toast('The AI could not change the text'); }
 }
 async function aiPdf(){
   const m = aiModel(); if(!m){ return; }
@@ -15458,6 +15600,7 @@ function aiOnClick(e){
     case 'gen': aiGenerate(); break;
     case 'std': aiU.mode = 'std'; aiDraw(); break;
     case 'pdf': aiPdf(); break;
+    case 'editgo': aiEditText(); break;
     case 'copy': { const m = aiModel(); if(m && m.body.trim()) hrCopy(aiPlain(m), 'Letter text copied'); else toast('The letter has no text yet'); break; }
     case 'viol': aiSaveViolation(); break;
     case 'pick': { const g = el.dataset.g, id = el.dataset.id, l = aiU.picks[g] = (aiU.picks[g] || []).slice(); const i = l.indexOf(id); if(i >= 0) l.splice(i, 1); else l.push(id); aiPicksSave(); aiDraw(); break; }
@@ -15468,6 +15611,7 @@ function aiOnClick(e){
 function aiOnInput(e){
   const el = e.target, a = el.dataset && el.dataset.ai; if(!a || AI.mode !== 'smart') return;
   if(a === 'f'){ aiU[el.dataset.f] = el.value; if(el.dataset.f === 'facts' || el.dataset.f === 'subject' || el.dataset.f === 'date' || el.dataset.f === 'from' || el.dataset.f === 'to' || el.dataset.f === 'amount' || el.dataset.f === 'toText') { if(aiU.mode === 'std'){ const ta = $('aiBody'); if(ta) ta.value = aiBodyText(); } } aiPreview(); }
+  else if(a === 'edit'){ aiU.edit = el.value; }
   else if(a === 'body'){ aiU.body = el.value; aiU.mode = 'edit'; aiPreview(); }
 }
 function aiOnChange(e){
@@ -15477,6 +15621,8 @@ function aiOnChange(e){
     case 'emp': { const id = hrEmpFromLabel(el.value); aiU.emp = id; const u = hrFind(id); if(u && u.profile){ if(aiType() && aiType().end === 'ceo' && aiType().dates){ if(!aiU.from) aiU.from = u.profile.joiningDate || ''; if(!aiU.to) aiU.to = u.profile.endDate || aiToday(); } } aiDraw(); break; }
     case 'f': if(el.dataset.f === 'pron'){ aiU.pron = el.value; aiPreview(); } break;
     case 'esign': aiU.empSign = el.checked; aiPreview(); break;
+    case 'appr': aiU.appr = el.checked; aiPreview(); break;
+    case 'sp': aiU.sp[el.dataset.k] = el.value; aiPreview(); break;
     case 'tadd': { const id = hrEmpFromLabel(el.value); if(id && !aiU.table.includes(id)) aiU.table.push(id); aiDraw(); break; }
     case 'tm': aiU.tm = el.value; break;
     case 'tt': aiU.tt = el.value; break;
@@ -15521,6 +15667,14 @@ function aiAdminDraw(){
       ${fld('Model', `<input type="text" data-aia="cf" data-k="model" value="${aiAEsc(K.model)}">`)}
       ${fld('Address (base URL)', `<input type="text" data-aia="cf" data-k="baseUrl" value="${aiAEsc(K.baseUrl)}">`, true)}
       ${fld('API key', `<input type="password" autocomplete="off" data-aia="cf" data-k="key" value="${aiAEsc(K.key)}" placeholder="paste the key here">`, true)}</div>
+    <div class="aiH" style="margin-top:14px;">Free AI chat and images (Admin &rarr; AI Chat)</div>
+    <div class="hrForm">${fld('Chat model (empty = same as above)', `<input type="text" data-aia="cf" data-k="chatModel" value="${aiAEsc(K.chatModel)}" placeholder="${aiAEsc(K.model)}">`)}
+      ${fld('Model for pictures you upload (vision)', `<input type="text" data-aia="cf" data-k="visionModel" value="${aiAEsc(K.visionModel)}">`)}
+      ${fld('Picture-making service address (OpenAI-compatible, optional)', `<input type="text" data-aia="cf" data-k="imgBaseUrl" value="${aiAEsc(K.imgBaseUrl)}" placeholder="https://api.openai.com/v1">`, true)}
+      ${fld('Picture service key', `<input type="password" autocomplete="off" data-aia="cf" data-k="imgKey" value="${aiAEsc(K.imgKey)}">`)}
+      ${fld('Picture model', `<input type="text" data-aia="cf" data-k="imgModel" value="${aiAEsc(K.imgModel)}" placeholder="gpt-image-1">`)}
+      ${fld('How the free chat should behave (empty = a normal helpful AI)', `<textarea rows="3" data-aia="cf" data-k="chatSystem" placeholder="You are a helpful assistant...">${aiAEsc(K.chatSystem)}</textarea>`, true)}</div>
+    <div class="hrNote">Groq cannot make pictures. To make or edit pictures, add a picture service such as OpenAI here. Text, files, slides, Word, PDF and Excel work with the main connection.</div>
     <div class="aiRow"><button class="pillBtn ok" data-aia="saveconn">Save connection</button><button class="pillBtn" data-aia="test">Test</button><span class="hrNote" id="aiAMsg1">${aiAEsc(aiA.msg)}</span></div>
     <details class="aiHelp"><summary>Important: key safety and the browser block</summary>
       <p class="hrNote">The key is saved in the app database, so any signed-in user could technically read it. Use a key made only for this, with a low limit, and change it if you ever doubt it.</p>
@@ -15586,14 +15740,193 @@ function aiAOnChange(e){
 }
 function aiAOnInput(e){
   const el = e.target, a = el.dataset && el.dataset.aia; if(!a || !AI.cfg) return;
-  if(a === 'cf') AI.conn[el.dataset.k] = el.value.trim();
+  if(a === 'cf') AI.conn[el.dataset.k] = (el.dataset.k === 'chatSystem') ? el.value : el.value.trim();
   else if(a === 'master') AI.cfg.master = el.value;
   else if(a === 'tf' && el.tagName !== 'SELECT'){ const T = AI.cfg.types.find(t => t.id === aiA.sel); if(T) T[el.dataset.k] = el.value; }
 }
 document.addEventListener('click', aiAOnClick); document.addEventListener('change', aiAOnChange); document.addEventListener('input', aiAOnInput);
 
+/* ============================================================
+   ADMIN > AI Chat: a free AI assistant. Chat, upload files and pictures, make slides / Word / PDF / Excel / pictures.
+   Nothing here touches the database except reading the connection (config/aiConn) once. Chats are kept on this device only.
+   ============================================================ */
+const ch = { convs: [], cur: '', mode: 'chat', files: [], busy: false, loaded: false };
+const CH_KEY = 'rvf_ai_chats', CH_MODES = [['chat', 'Chat'], ['slides', 'Slides'], ['doc', 'Document'], ['sheet', 'Excel'], ['image', 'Picture']];
+const CH_SYS = 'You are a capable, friendly AI assistant inside a factory management app. Help with anything the user asks: writing, explaining, translating, analysing files, planning, coding, ideas. Answer directly and fully in the language the user writes in. Use simple Markdown (headings, lists, tables) when it helps.';
+const CH_MODE_SYS = {
+  slides: 'Create a PowerPoint presentation from the request (and any attached file text). Reply with ONLY a JSON object, no other text: {"title":"...","subtitle":"...","slides":[{"title":"...","bullets":["...","..."],"notes":"..."}]}. Use 6 to 12 slides unless the user says otherwise, 3 to 6 short bullets per slide.',
+  doc: 'Write the requested document in full, well structured, using Markdown headings, lists and tables. Output only the document itself.',
+  sheet: 'Create or modify a spreadsheet from the request (and any attached file data). Reply with ONLY a JSON object, no other text: {"sheets":[{"name":"Sheet1","rows":[["Header 1","Header 2"],["a",1]]}]}. The first row is the heading row. Use numbers for numeric cells. When modifying an attached sheet, return the complete updated data.'
+};
+function chStoreLoad(){ try{ return JSON.parse(localStorage.getItem(CH_KEY) || '[]') || []; }catch(e){ return []; } }
+function chStoreSave(){ try{ const c = ch.convs.slice(0, 20).map(v => ({ id: v.id, title: v.title, ts: v.ts, msgs: v.msgs.slice(-60).map(m => ({ role: m.role, content: m.content, files: m.files, art: m.art ? { type: m.art.type, name: m.art.name } : undefined })) })); localStorage.setItem(CH_KEY, JSON.stringify(c)); }catch(e){} }
+function chConv(){ let c = ch.convs.find(x => x.id === ch.cur); if(!c){ c = { id: 'c' + Date.now().toString(36), title: 'New chat', ts: Date.now(), msgs: [] }; ch.convs.unshift(c); ch.cur = c.id; } return c; }
+function chEsc(t){ return aiEsc(t); }
+// small Markdown -> list of HTML blocks
+function chInline(t){ return chEsc(t).replace(/`([^`]+)`/g, '<code>$1</code>').replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>').replace(/(^|[\s(])\*([^*\n]+)\*/g, '$1<i>$2</i>'); }
+function chMdBlocks(md){
+  const L = String(md || '').replace(/\r/g, '').split('\n'), out = []; let i = 0;
+  while(i < L.length){
+    const l = L[i];
+    if(/^```/.test(l)){ const b = []; i++; while(i < L.length && !/^```/.test(L[i])) b.push(L[i++]); i++; out.push(`<pre class="chCode">${chEsc(b.join('\n'))}</pre>`); continue; }
+    if(/^\s*$/.test(l)){ i++; continue; }
+    let m = /^(#{1,4})\s+(.*)$/.exec(l); if(m){ const n = m[1].length; out.push(`<div style="font-weight:700;font-size:${[20, 17, 15, 14][n - 1]}px;margin:10px 0 4px;">${chInline(m[2])}</div>`); i++; continue; }
+    if(/^\s*\|/.test(l) && i + 1 < L.length && /^\s*\|?[\s:|-]+\|[\s:|-]*$/.test(L[i + 1])){
+      const rows = []; while(i < L.length && /^\s*\|/.test(L[i])){ rows.push(L[i].trim().replace(/^\||\|$/g, '').split('|').map(x => x.trim())); i++; }
+      const head = rows[0], body = rows.slice(2);
+      out.push(`<table class="chTbl"><thead><tr>${head.map(h => `<th>${chInline(h)}</th>`).join('')}</tr></thead><tbody>${body.map(r => `<tr>${r.map(c => `<td>${chInline(c)}</td>`).join('')}</tr>`).join('')}</tbody></table>`); continue; }
+    if(/^\s*([-*•]|\d+[.)])\s+/.test(l)){ const it = []; while(i < L.length && /^\s*([-*•]|\d+[.)])\s+/.test(L[i])){ it.push(L[i].replace(/^\s*([-*•]|\d+[.)])\s+/, '')); i++; } out.push(`<ul class="chUl">${it.map(x => `<li>${chInline(x)}</li>`).join('')}</ul>`); continue; }
+    const p = []; while(i < L.length && !/^\s*$/.test(L[i]) && !/^(#{1,4}\s|```|\s*([-*•]|\d+[.)])\s+|\s*\|)/.test(L[i])) p.push(L[i++]);
+    if(!p.length){ p.push(L[i++]); }
+    out.push(`<div style="margin:0 0 8px;">${p.map(chInline).join('<br>')}</div>`);
+  }
+  return out;
+}
+function chDownload(blob, name){ const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500); }
+function chLoadScript(url, test){ return new Promise((res, rej) => { if(test()) return res(); const s = document.createElement('script'); s.src = url; s.onload = () => test() ? res() : rej(new Error('LIB')); s.onerror = () => rej(new Error('LIB')); document.head.appendChild(s); }); }
+function chJson(raw){ const t = String(raw).trim().replace(/^```(?:json)?/i, '').replace(/```$/, ''); const a = t.indexOf('{'), b = t.lastIndexOf('}'); if(a < 0 || b <= a) throw new Error('BADJSON'); return JSON.parse(t.slice(a, b + 1)); }
+/* ----- the AI calls ----- */
+async function chApi(messages, model, maxTokens){
+  const c = await aiLoadConn();
+  if(!c.baseUrl || !(model || c.chatModel || c.model)) throw new Error('NOT_SET');
+  if(!c.key && /api\.(groq|openai)\.com/.test(c.baseUrl)) throw new Error('NO_KEY');
+  const headers = { 'Content-Type': 'application/json' }; if(c.key) headers.Authorization = 'Bearer ' + c.key;
+  const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 120000); let res;
+  try{ res = await fetch(c.baseUrl.replace(/\/+$/, '') + '/chat/completions', { method: 'POST', headers, signal: ctl.signal, body: JSON.stringify({ model: model || c.chatModel || c.model, temperature: 0.7, max_tokens: maxTokens || 4096, messages }) }); }
+  catch(err){ clearTimeout(t); throw new Error(err.name === 'AbortError' ? 'TIMEOUT' : 'NETWORK'); }
+  clearTimeout(t); let j = null; try{ j = await res.json(); }catch(e){}
+  if(!res.ok){ const er = new Error(res.status === 401 || res.status === 403 ? 'KEY' : res.status === 429 ? 'LIMIT' : 'HTTP'); er.detail = String((j && j.error && (j.error.message || j.error)) || '').slice(0, 200); throw er; }
+  const txt = j && j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content; if(!txt) throw new Error('EMPTY'); return String(txt);
+}
+async function chImageApi(prompt, imgFile){
+  const c = await aiLoadConn(); if(!c.imgBaseUrl) throw new Error('NOIMG');
+  const base = c.imgBaseUrl.replace(/\/+$/, ''), h = {}; if(c.imgKey) h.Authorization = 'Bearer ' + c.imgKey; const model = c.imgModel || 'gpt-image-1'; let res;
+  try{
+    if(imgFile){ const fd = new FormData(); fd.append('model', model); fd.append('prompt', prompt); fd.append('image', imgFile.blob, imgFile.name || 'image.png'); res = await fetch(base + '/images/edits', { method: 'POST', headers: h, body: fd }); }
+    else res = await fetch(base + '/images/generations', { method: 'POST', headers: Object.assign({ 'Content-Type': 'application/json' }, h), body: JSON.stringify({ model, prompt, n: 1, size: '1024x1024' }) });
+  }catch(e){ throw new Error('NETWORK'); }
+  let j = null; try{ j = await res.json(); }catch(e){}
+  if(!res.ok){ const er = new Error(res.status === 401 || res.status === 403 ? 'KEY' : res.status === 429 ? 'LIMIT' : 'HTTP'); er.detail = String((j && j.error && (j.error.message || j.error)) || '').slice(0, 200); throw er; }
+  const d = j && j.data && j.data[0]; if(!d) throw new Error('EMPTY'); return d.b64_json ? 'data:image/png;base64,' + d.b64_json : d.url;
+}
+/* ----- files ----- */
+function chFileImage(f){ return new Promise((res, rej) => { const rd = new FileReader(); rd.onload = () => { const im = new Image(); im.onload = () => { const k = Math.min(1, 1280 / Math.max(im.width, im.height)), c = document.createElement('canvas'); c.width = Math.round(im.width * k); c.height = Math.round(im.height * k); const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.drawImage(im, 0, 0, c.width, c.height); res(c.toDataURL('image/jpeg', 0.85)); }; im.onerror = () => rej(new Error('BADFILE')); im.src = rd.result; }; rd.onerror = () => rej(new Error('BADFILE')); rd.readAsDataURL(f); }); }
+async function chReadFile(f){
+  const n = f.name || 'file', ext = (n.split('.').pop() || '').toLowerCase();
+  if(/^image\//.test(f.type) || /^(png|jpe?g|webp|gif|bmp)$/.test(ext)) return { name: n, kind: 'image', data: await chFileImage(f), file: f };
+  if(/^(txt|md|csv|json|html?|xml|log|tsv|js|css|py|sql)$/.test(ext) || /^text\//.test(f.type)) return { name: n, kind: 'text', text: await f.text() };
+  if(/^(xlsx|xls)$/.test(ext)){ if(!window.XLSX) throw new Error('LIB'); const wb = XLSX.read(await f.arrayBuffer(), { type: 'array', cellDates: true }); return { name: n, kind: 'text', text: wb.SheetNames.map(s => 'SHEET: ' + s + '\n' + XLSX.utils.sheet_to_csv(wb.Sheets[s])).join('\n\n') }; }
+  if(ext === 'docx'){ await chLoadScript('https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js', () => window.mammoth); const r = await window.mammoth.extractRawText({ arrayBuffer: await f.arrayBuffer() }); return { name: n, kind: 'text', text: r.value }; }
+  if(ext === 'pdf'){
+    await chLoadScript('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js', () => window.pdfjsLib); window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    const pdf = await window.pdfjsLib.getDocument({ data: new Uint8Array(await f.arrayBuffer()) }).promise; let t = '';
+    for(let p = 1; p <= Math.min(pdf.numPages, 40); p++){ const pg = await pdf.getPage(p), c = await pg.getTextContent(); t += c.items.map(i => i.str).join(' ') + '\n\n'; }
+    return { name: n, kind: 'text', text: t };
+  }
+  throw new Error('BADFILE');
+}
+/* ----- sending ----- */
+function chUserContent(text, files){
+  const tf = files.filter(f => f.kind === 'text'), im = files.filter(f => f.kind === 'image'); let body = text;
+  tf.forEach(f => { body += '\n\n[Attached file: ' + f.name + ']\n' + (f.text.length > 60000 ? f.text.slice(0, 60000) + '\n...[cut: file is longer]' : f.text); });
+  if(!im.length) return body;
+  return [{ type: 'text', text: body }].concat(im.map(f => ({ type: 'image_url', image_url: { url: f.data } })));
+}
+async function chSend(){
+  if(ch.busy) return; const ta = $('chInput'); const text = (ta.value || '').trim(); if(!text && !ch.files.length){ return; }
+  const c = chConv(), files = ch.files.slice(), mode = ch.mode, c0 = await aiLoadConn().catch(() => null);
+  const userMsg = { role: 'user', content: text || '(see the attached file)', files: files.map(f => f.name) };
+  c.msgs.push(userMsg); if(c.title === 'New chat') c.title = (text || files[0].name).slice(0, 40); c.ts = Date.now();
+  ta.value = ''; ch.files = []; ch.busy = true; chDraw(true);
+  try{
+    if(mode === 'image'){
+      const im = files.find(f => f.kind === 'image'), src = await chImageApi(text, im ? { blob: im.file, name: im.name } : null);
+      c.msgs.push({ role: 'assistant', content: 'Here is your picture.', img: src, art: { type: 'image', name: 'picture.png' } });
+    } else {
+      const sys = (c0 && c0.chatSystem ? c0.chatSystem : CH_SYS) + (CH_MODE_SYS[mode] ? '\n\n' + CH_MODE_SYS[mode] : '');
+      const hist = c.msgs.slice(0, -1).filter(m => m.content).slice(-16).map(m => ({ role: m.role, content: m.art && m.art.type !== 'image' && m.role === 'assistant' ? m.content : m.content }));
+      const msgs = [{ role: 'system', content: sys }].concat(hist, [{ role: 'user', content: chUserContent(userMsg.content, files) }]);
+      const raw = await chApi(msgs, files.some(f => f.kind === 'image') ? (c0 && c0.visionModel) : '', mode === 'doc' || mode === 'chat' ? 4096 : 6000);
+      if(mode === 'slides'){ const d = chJson(raw); if(!Array.isArray(d.slides) || !d.slides.length) throw new Error('BADJSON'); c.msgs.push({ role: 'assistant', content: '**' + (d.title || 'Presentation') + '** - ' + d.slides.length + ' slides:\n' + d.slides.map((s, i) => (i + 1) + '. ' + s.title).join('\n'), art: { type: 'pptx', name: (d.title || 'presentation'), data: d } }); }
+      else if(mode === 'sheet'){ const d = chJson(raw); if(!Array.isArray(d.sheets) || !d.sheets.length) throw new Error('BADJSON'); c.msgs.push({ role: 'assistant', content: 'Your spreadsheet is ready: ' + d.sheets.map(s => s.name + ' (' + (s.rows || []).length + ' rows)').join(', ') + '.', art: { type: 'xlsx', name: 'spreadsheet', data: d } }); }
+      else c.msgs.push({ role: 'assistant', content: raw });
+    }
+  }catch(err){
+    console.error(err); const t = err.message === 'NOIMG' ? 'No picture service is set up yet. Admin > AI & Letters > Connection > "Picture-making service". (Groq cannot make pictures.)' : err.message === 'BADJSON' ? 'The AI did not answer in the expected format. Try again, or ask in a simpler way.' : err.message === 'LIB' ? 'A reading tool could not load. Check the internet connection.' : aiErrText(err) + (err.detail ? ' (' + err.detail + ')' : '');
+    c.msgs.push({ role: 'assistant', content: t, err: true });
+  }
+  ch.busy = false; chStoreSave(); chDraw(true);
+}
+/* ----- downloads ----- */
+function chAsHtml(blocks){ return `<div style="width:760px;box-sizing:border-box;padding:36px 54px;background:#fff;color:#0f172a;font-family:'Inter',sans-serif;font-size:13.5px;line-height:1.6;">${blocks.join('')}</div>`; }
+async function chDo(kind, idx){
+  const c = chConv(), m = c.msgs[idx]; if(!m) return; const base = (m.art && m.art.name || c.title || 'ai').replace(/[^\w\- ]+/g, '').trim().replace(/\s+/g, '-').toLowerCase() || 'ai';
+  try{
+    if(kind === 'copy'){ hrCopy(m.content, 'Copied'); return; }
+    if(kind === 'pdf'){ toast('Making the PDF…'); await rvfMakePdf(chMdBlocks(m.content).map(b => chAsHtml([b])), base + '.pdf'); return; }
+    if(kind === 'word'){ const html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"><style>body{font-family:Calibri,Arial;font-size:11pt}table{border-collapse:collapse}td,th{border:1px solid #999;padding:4px}</style></head><body>' + chMdBlocks(m.content).join('') + '</body></html>'; chDownload(new Blob(['﻿', html], { type: 'application/msword' }), base + '.doc'); return; }
+    if(kind === 'file' && m.art){
+      if(m.art.type === 'image'){ const a = document.createElement('a'); a.href = m.img; a.download = 'picture.png'; a.target = '_blank'; document.body.appendChild(a); a.click(); a.remove(); return; }
+      if(m.art.type === 'xlsx'){ if(!window.XLSX){ toast('The Excel tool did not load'); return; } const wb = XLSX.utils.book_new(); m.art.data.sheets.forEach((s, i) => XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(s.rows || []), String(s.name || 'Sheet' + (i + 1)).replace(/[\\/?*[\]:]/g, ' ').slice(0, 31))); XLSX.writeFile(wb, base + '.xlsx'); return; }
+      if(m.art.type === 'pptx'){
+        toast('Making the slides…'); await chLoadScript('https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js', () => window.PptxGenJS);
+        const d = m.art.data, P = new window.PptxGenJS(); P.layout = 'LAYOUT_WIDE';
+        const t = P.addSlide(); t.background = { color: '4F46E5' }; t.addText(String(d.title || ''), { x: 0.7, y: 2.3, w: 11.9, h: 1.4, fontSize: 38, bold: true, color: 'FFFFFF' }); if(d.subtitle) t.addText(String(d.subtitle), { x: 0.7, y: 3.8, w: 11.9, h: 0.8, fontSize: 20, color: 'E0E7FF' });
+        d.slides.forEach(s => { const sl = P.addSlide(); sl.addShape(P.ShapeType.rect, { x: 0, y: 0, w: 13.33, h: 1.1, fill: { color: '4F46E5' } }); sl.addText(String(s.title || ''), { x: 0.6, y: 0.1, w: 12.1, h: 0.9, fontSize: 28, bold: true, color: 'FFFFFF' });
+          sl.addText((s.bullets || []).map(b => ({ text: String(b), options: { bullet: true, breakLine: true } })), { x: 0.7, y: 1.5, w: 11.9, h: 5.2, fontSize: 20, color: '0F172A', valign: 'top', paraSpaceAfter: 10 }); if(s.notes) sl.addNotes(String(s.notes)); });
+        await P.writeFile({ fileName: base + '.pptx' }); return;
+      }
+    }
+  }catch(err){ console.error(err); toast('Could not make the file'); }
+}
+/* ----- screen ----- */
+async function chRender(){
+  const p = $('admin-aichat'); if(!p) return;
+  if(!state.user || state.user.role !== 'admin'){ p.innerHTML = '<div class="hrEmpty">Admin only.</div>'; return; }
+  if(!ch.loaded){ ch.convs = chStoreLoad(); ch.cur = ch.convs[0] ? ch.convs[0].id : ''; ch.loaded = true; }
+  p.innerHTML = '<div class="hrEmpty">Loading…</div>';
+  try{ await aiLoadConn(); }catch(err){ console.error(err); p.innerHTML = '<div class="hrEmpty">Could not load. Check your connection and open this tab again.</div>'; return; }
+  p.innerHTML = `<div class="card chBox"><div class="chTop"><select data-ch="conv">${ch.convs.length ? ch.convs.map(v => `<option value="${chEsc(v.id)}" ${v.id === ch.cur ? 'selected' : ''}>${chEsc(v.title)}</option>`).join('') : '<option>New chat</option>'}</select><button class="pillBtn" data-ch="new">New chat</button><button class="pillBtn danger" data-ch="del">Delete chat</button></div>
+    <div class="chModes">${CH_MODES.map(m => `<button class="${ch.mode === m[0] ? 'on' : ''}" data-ch="mode" data-v="${m[0]}">${m[1]}</button>`).join('')}</div>
+    <div class="chMsgs" id="chMsgs"></div><div id="chFiles" class="aiChips"></div>
+    <div class="chIn"><label class="pillBtn chAttach" title="Attach files or pictures">+ File<input type="file" id="chFile" multiple style="display:none" accept="image/*,.txt,.md,.csv,.json,.xlsx,.xls,.docx,.pdf,.html,.xml,.log,.tsv"></label><textarea id="chInput" rows="2" placeholder="Ask anything…  (Ctrl+Enter to send)"></textarea><button class="btn btn-primary btn-sm" data-ch="send" id="chSend">Send</button></div>
+    <div class="hrNote" id="chHint"></div></div>`;
+  chDraw(true);
+}
+function chDraw(scroll){
+  const box = $('chMsgs'); if(!box) return; const c = ch.convs.find(x => x.id === ch.cur);
+  const hint = { chat: 'Normal AI chat. You can attach files or pictures and ask anything.', slides: 'Describe the presentation (or attach a file to turn into slides). You get a PowerPoint file.', doc: 'Describe the document. You can download it as PDF or Word.', sheet: 'Describe the sheet, or attach an Excel/CSV file and say what to change. You get an Excel file.', image: 'Describe the picture. Attach a picture to edit it. Needs a picture service in Admin > AI & Letters.' }[ch.mode];
+  const h = $('chHint'); if(h) h.textContent = hint;
+  document.querySelectorAll('.chModes button').forEach(b => b.classList.toggle('on', b.dataset.v === ch.mode));
+  box.innerHTML = (c && c.msgs.length ? c.msgs.map((m, i) => `<div class="chMsg ${m.role}${m.err ? ' err' : ''}"><div class="chBub">${m.role === 'user' ? chEsc(m.content).replace(/\n/g, '<br>') + (m.files && m.files.length ? `<div class="hrNote" style="color:inherit;opacity:.8;">${m.files.map(chEsc).join(', ')}</div>` : '') : chMdBlocks(m.content).join('') + (m.img ? `<img class="chImg" src="${m.img}" alt="">` : '')}</div>
+    ${m.role === 'assistant' && !m.err ? `<div class="chAct">${m.art ? `<button class="pillBtn ok" data-ch="file" data-i="${i}">Download ${m.art.type === 'pptx' ? 'PowerPoint' : m.art.type === 'xlsx' ? 'Excel' : 'picture'}</button>` : ''}<button class="pillBtn" data-ch="copy" data-i="${i}">Copy</button>${m.art ? '' : `<button class="pillBtn" data-ch="pdf" data-i="${i}">PDF</button><button class="pillBtn" data-ch="word" data-i="${i}">Word</button>`}</div>` : ''}</div>`).join('') : '<div class="hrEmpty">Ask me anything.<br><span class="hrNote">Write, explain, translate, analyse a file, make slides, a spreadsheet, a document or a picture.</span></div>') + (ch.busy ? '<div class="chMsg assistant"><div class="chBub"><span class="hrNote">Working…</span></div></div>' : '');
+  const fl = $('chFiles'); if(fl) fl.innerHTML = ch.files.map((f, i) => `<span class="aiChip">${chEsc(f.name)}<button data-ch="rmfile" data-i="${i}" aria-label="Remove">&times;</button></span>`).join('');
+  const s = $('chSend'); if(s) s.disabled = ch.busy;
+  if(scroll) box.scrollTop = box.scrollHeight;
+}
+document.addEventListener('click', (e) => {
+  const el = e.target.closest('[data-ch]'); if(!el) return; const a = el.dataset.ch;
+  if(a === 'send') chSend();
+  else if(a === 'new'){ ch.cur = ''; chConv(); chStoreSave(); chRender(); }
+  else if(a === 'del'){ if(!confirm('Delete this chat?')) return; ch.convs = ch.convs.filter(v => v.id !== ch.cur); ch.cur = ch.convs[0] ? ch.convs[0].id : ''; chStoreSave(); chRender(); }
+  else if(a === 'mode'){ ch.mode = el.dataset.v; chDraw(); }
+  else if(a === 'rmfile'){ ch.files.splice(+el.dataset.i, 1); chDraw(); }
+  else if(a === 'copy' || a === 'pdf' || a === 'word' || a === 'file') chDo(a, +el.dataset.i);
+});
+document.addEventListener('change', async (e) => {
+  const el = e.target;
+  if(el.dataset && el.dataset.ch === 'conv'){ ch.cur = el.value; chDraw(true); }
+  else if(el.id === 'chFile'){
+    for(const f of Array.from(el.files || []).slice(0, 5)){ try{ ch.files.push(await chReadFile(f)); }catch(err){ console.error(err); toast(err.message === 'LIB' ? 'A reading tool could not load - check the internet' : 'Cannot read this file type: ' + f.name); } }
+    el.value = ''; chDraw();
+  }
+});
+document.addEventListener('keydown', (e) => { if(e.target && e.target.id === 'chInput' && e.key === 'Enter' && (e.ctrlKey || e.metaKey)){ e.preventDefault(); chSend(); } });
+
 (function(){
   const b=$('bkOpenBtn'); if(b) b.addEventListener('click', () => bkOpen());
+  const lt=document.querySelector('.auth-tab[data-admintab="letterhead"]'); if(lt) lt.addEventListener('click', () => lhRenderAdmin());
+  const ct=document.querySelector('.auth-tab[data-admintab="aichat"]'); if(ct) ct.addEventListener('click', () => chRender());
   const t=document.querySelector('.auth-tab[data-admintab="ai"]'); if(t) t.addEventListener('click', () => aiRenderAdmin());
 })();
 
