@@ -13653,10 +13653,11 @@ async function rvfVecBlock(pdf, root, ox, oy, k){
     const rg = document.createRange(), lines = []; const re = /\S+/g; let m;
     while((m = re.exec(s))){ rg.setStart(node, m.index); rg.setEnd(node, m.index + m[0].length); const rc = rg.getClientRects()[0]; if(!rc || !rc.width) continue;
       let L = lines.find(l => Math.abs(l.top - rc.top) < fpx * 0.5); if(!L){ L = { top: rc.top, h: rc.height, l: rc.left, r: rc.right, w: [] }; lines.push(L); }
-      L.l = Math.min(L.l, rc.left); L.r = Math.max(L.r, rc.right); L.w.push(m[0]); }
+      L.l = Math.min(L.l, rc.left); L.r = Math.max(L.r, rc.right); L.w.push(m[0]); (L.p = L.p || []).push({ t: m[0], l: rc.left }); }
     const al = cs.textAlign;
     lines.forEach(L => { let str = L.w.join(' '); if(tt === 'uppercase') str = str.toUpperCase(); else if(tt === 'lowercase') str = str.toLowerCase();
       const y = Y(L.top + L.h * 0.8);
+      if(al === 'justify' && L.p && L.p.length > 1){ L.p.forEach(wd => { let t1 = wd.t; if(tt === 'uppercase') t1 = t1.toUpperCase(); else if(tt === 'lowercase') t1 = t1.toLowerCase(); pdf.text(asc(t1), X(wd.l), y); }); return; }
       if(al === 'right' || al === 'end') pdf.text(asc(str), X(L.r), y, { align: 'right' });
       else if(al === 'center') pdf.text(asc(str), X((L.l + L.r) / 2), y, { align: 'center' });
       else pdf.text(asc(str), X(L.l), y); });
@@ -15544,6 +15545,7 @@ function aiSetType(id){
   aiU.typeId = id; aiU.subject = ''; aiU.body = ''; aiU.mode = T.std ? 'std' : 'ai'; aiU.table = []; aiU.facts = ''; aiU.amount = '';
   aiU.empSign = !!(T.ack || T.end === 'request'); aiU.appr = T.end !== 'ceo' && T.end !== 'notice'; aiU.toText = T.toText || ''; aiU.from = ''; aiU.to = '';
   aiU.picks = Object.assign({}, aiPicksLoad(), {});
+  aiU.g = Object.assign({}, ((AI.cfg && AI.cfg.layout) || {}).g || {}); aiU.apos = ((AI.cfg && AI.cfg.layout) || {}).apos || 'left'; aiU.just = null;
 }
 function aiRenderLetters(){
   const b = $('hrBody'); if(!b) return;
@@ -15637,7 +15639,7 @@ async function aiSaveLetter(asNew){
   if(T.emp && !aiU.emp){ toast('Choose the employee first'); return; }
   const u = hrFind(aiU.emp), id = (!asNew && aiU.savedId) ? aiU.savedId : 'L' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
   const rec = { id, name: [T.name, u ? u.name : (aiU.toText || ''), aiLong(aiU.date)].filter(Boolean).join(' - '), at: Date.now(), by: state.user.loginId, byName: state.user.name || '',
-    typeId: T.id, emp: aiU.emp, date: aiU.date, from: aiU.from, to: aiU.to, amount: aiU.amount, toText: aiU.toText, pron: aiU.pron, facts: aiU.facts, subject: aiU.subject, body: aiBodyText(), table: aiU.table.slice(), picks: aiU.picks, empSign: aiU.empSign, appr: aiU.appr, just: aiU.just, g: Object.assign({}, aiU.g), apos: aiU.apos };
+    typeId: T.id, emp: aiU.emp, date: aiU.date, from: aiU.from, to: aiU.to, amount: aiU.amount, toText: aiU.toText, pron: aiU.pron, facts: aiU.facts, subject: aiU.subject, body: aiBodyText(), table: aiU.table.slice(), picks: aiU.picks, empSign: aiU.empSign, appr: aiU.appr };
   aiU.busy = true;
   try{
     const list = await aiSavedLoad(), i = list.findIndex(x => x.id === id);
@@ -15652,7 +15654,8 @@ function aiOpenSaved(id){
   const r = (AI.saved || []).find(x => x.id === id); if(!r) return;
   if(!((AI.cfg.types || []).some(t => t.id === r.typeId))){ toast('The letter type of this letter was deleted'); return; }
   aiSetType(r.typeId);
-  Object.assign(aiU, { emp: r.emp || '', date: r.date || aiToday(), from: r.from || '', to: r.to || '', amount: r.amount || '', toText: r.toText || '', pron: r.pron || 'his', facts: r.facts || '', subject: r.subject || '', body: r.body || '', mode: 'edit', table: (r.table || []).slice(), picks: r.picks || {}, empSign: !!r.empSign, appr: r.appr !== false, just: r.just == null ? null : r.just, g: Object.assign({}, r.g || {}), apos: r.apos || 'left', savedId: r.id, showSaved: false });
+  Object.assign(aiU, { emp: r.emp || '', date: r.date || aiToday(), from: r.from || '', to: r.to || '', amount: r.amount || '', toText: r.toText || '', pron: r.pron || 'his', facts: r.facts || '', subject: r.subject || '', body: r.body || '', mode: 'edit', table: (r.table || []).slice(), picks: r.picks || {}, empSign: !!r.empSign, appr: r.appr !== false, just: null, savedId: r.id, showSaved: false });
+  aiU.g = Object.assign({}, (AI.cfg.layout || {}).g || {}); aiU.apos = (AI.cfg.layout || {}).apos || 'left';
   aiDraw(); toast('Letter opened - change anything and press "Update saved letter"');
 }
 async function aiDeleteSaved(id){
