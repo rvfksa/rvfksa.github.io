@@ -2331,6 +2331,72 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
 .pcRecRow input:disabled{ opacity:.45; }
 .pcSt.s-cancelled{ background:var(--panel-2); color:var(--muted); }
 
+/* ===== v15: bulk add from Excel + AI letters ===== */
+.bkOv{ position:fixed; inset:0; z-index:9000; background:var(--bg,#f6f7fb); overflow-y:auto; display:none; -webkit-overflow-scrolling:touch; }
+.bkWrap{ max-width:900px; margin:0 auto; padding:16px 16px 60px; }
+.bkHead{ display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:12px; }
+.bkTitle{ font-size:18px; font-weight:700; color:var(--text); }
+.bkCard{ margin-bottom:12px; }
+.bkStep{ font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); margin-bottom:10px; display:flex; justify-content:space-between; gap:10px; align-items:center; flex-wrap:wrap; }
+.bkFile{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+.bkPick{ cursor:pointer; display:inline-flex; align-items:center; gap:6px; }
+.bkPaste{ margin-top:10px; } .bkPaste summary{ font-size:12px; color:var(--amber); cursor:pointer; font-weight:600; }
+.bkPaste textarea{ width:100%; margin:8px 0; font-size:12px; }
+.bkPrev{ overflow-x:auto; border:1px solid var(--line); border-radius:10px; }
+.bkPrev table{ border-collapse:collapse; font-size:11.5px; width:100%; }
+.bkPrev th{ background:var(--panel-2,#f1f5f9); padding:6px 8px; text-align:left; white-space:nowrap; }
+.bkPrev th small{ margin-left:4px; color:var(--muted); font-weight:500; }
+.bkPrev td{ padding:5px 8px; border-top:1px solid var(--line); white-space:nowrap; }
+.bkPrev tr.hd td{ font-weight:700; background:var(--amber-soft); }
+.bkChk{ font-size:12px; display:inline-flex; align-items:center; gap:6px; font-weight:500; text-transform:none; letter-spacing:0; color:var(--text); }
+.bkMap{ display:flex; flex-direction:column; gap:8px; }
+.bkRow{ display:grid; grid-template-columns:150px 1fr 1.3fr; gap:8px; align-items:center; background:var(--panel-2,#f8fafc); border-radius:12px; padding:8px 10px; font-size:12.5px; }
+.bkRow select, .bkRow input[type=text]{ width:100%; min-width:0; }
+.bkFx{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; } .bkFx > *{ min-width:0; }
+.bkAuto{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; } .bkAuto input[type=text]{ width:70px; }
+.bkTool{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:10px; }
+.bkTool .hrSearch{ flex:1; min-width:160px; }
+.bkList{ display:flex; flex-direction:column; gap:8px; }
+.bkItem{ display:flex; gap:10px; align-items:center; background:var(--panel-2,#f8fafc); border-radius:14px; padding:10px 12px; }
+.bkItem.bad{ box-shadow:inset 3px 0 0 var(--danger); }
+.bkItem.edit{ display:block; }
+.bkSel{ flex:none; } .bkMain{ flex:1; min-width:0; }
+.bkNm{ display:flex; gap:8px; align-items:baseline; flex-wrap:wrap; font-size:14px; } .bkId{ font-size:12px; color:var(--muted); font-weight:600; }
+.bkSub{ font-size:11.5px; color:var(--muted); margin-top:2px; }
+.bkWarn{ font-size:11.5px; color:var(--danger); margin-top:4px; display:flex; gap:5px; align-items:center; flex-wrap:wrap; }
+.bkAct{ display:flex; gap:6px; align-items:center; flex:none; }
+.pillBtn.ok{ background:var(--amber); color:#fff; border-color:var(--amber); } .pillBtn.ok:hover{ background:#4338ca; color:#fff; }
+.pillBtn.danger{ color:var(--danger); } .pillBtn.danger:hover{ background:var(--danger-soft); border-color:var(--danger); color:var(--danger); }
+.pillBtn:disabled{ opacity:.45; cursor:not-allowed; }
+#bkOpenBtn{ width:34px; height:34px; padding:0; display:inline-flex; align-items:center; justify-content:center; }
+@media (max-width:640px){
+  .bkRow{ grid-template-columns:1fr; gap:6px; }
+  .bkItem{ flex-wrap:wrap; } .bkAct{ width:100%; justify-content:flex-end; }
+}
+/* AI letters */
+.aiSeg{ display:inline-flex; background:var(--panel-2,#f1f5f9); border-radius:999px; padding:3px; margin-bottom:12px; }
+.aiSeg button{ border:0; background:transparent; font:inherit; font-size:12px; font-weight:600; color:var(--muted); padding:7px 14px; border-radius:999px; cursor:pointer; display:inline-flex; gap:6px; align-items:center; }
+.aiSeg button.on{ background:#fff; color:var(--amber); box-shadow:0 1px 4px rgba(15,23,42,.12); }
+.aiGen{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin:4px 0 12px; }
+.aiChips{ display:flex; gap:6px; flex-wrap:wrap; margin:4px 0; }
+.aiChip{ background:var(--amber-soft); color:var(--amber); border-radius:999px; padding:5px 6px 5px 11px; font-size:12px; font-weight:600; display:inline-flex; gap:6px; align-items:center; }
+.aiChip small{ color:var(--muted); font-weight:500; }
+.aiChip button{ border:0; background:rgba(79,70,229,.12); color:var(--amber); width:18px; height:18px; border-radius:50%; cursor:pointer; line-height:1; font-size:13px; padding:0; }
+.aiPick{ border:1px solid var(--line-strong); background:#fff; border-radius:12px; padding:6px 11px; font:inherit; font-size:12px; font-weight:600; cursor:pointer; text-align:left; color:var(--text); }
+.aiPick small{ display:block; font-size:10.5px; color:var(--muted); font-weight:500; }
+.aiPick.on{ background:var(--amber); border-color:var(--amber); color:#fff; } .aiPick.on small{ color:rgba(255,255,255,.8); }
+.aiAddRow{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:8px; } .aiAddRow input[type=text]{ flex:1; min-width:140px; }
+.aiChk{ display:flex; gap:8px; align-items:center; font-size:12.5px; margin:6px 0; grid-column:1/-1; }
+#aiBody{ width:100%; font-size:13px; line-height:1.55; }
+.aiAdm .aiH{ font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); margin:22px 0 8px; } .aiAdm .aiH:first-child{ margin-top:0; }
+.aiRow{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin:8px 0; }
+.aiMaster{ width:100%; font-size:12.5px; line-height:1.5; margin-top:8px; }
+.aiFlags{ display:flex; gap:6px 16px; flex-wrap:wrap; }
+.aiShown{ background:var(--panel-2,#f1f5f9); border-radius:10px; padding:9px 12px; font-size:13px; font-weight:700; } .aiShown small{ display:block; font-weight:500; color:var(--muted); }
+.aiHelp{ margin:8px 0; } .aiHelp summary{ font-size:12px; color:var(--amber); cursor:pointer; font-weight:600; }
+.aiCode{ background:#0f172a; color:#e2e8f0; border-radius:10px; padding:12px; font-size:11px; overflow-x:auto; white-space:pre; }
+#aiLetterBox{ background:#e2e8f0; padding:0; }
+
 </style>
 </head>
 <body>
@@ -2569,12 +2635,14 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
         <div class="auth-tab" data-admintab="holidays">Holidays</div>
         <div class="auth-tab" data-admintab="config">Dropdowns</div>
         <div class="auth-tab" data-admintab="purchase">Purchase</div>
+        <div class="auth-tab" data-admintab="ai">AI &amp; Letters</div>
       </div>
 
       <div class="auth-pane active" id="admin-users">
         <div class="report-toolbar">
           <input type="text" id="userSearchInput" placeholder="Search by name, ID, or department..." style="flex:1; min-width:0;">
           <button class="btn btn-ghost" id="refreshUsersBtn">Refresh</button>
+          <button class="iconBtn" id="bkOpenBtn" title="Add many employees from Excel" aria-label="Add many employees from Excel"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></button>
         </div>
         <div id="userFilterPanel" style="display:none; margin-bottom:14px;">
           <div class="grid-3" style="gap:8px;">
@@ -2866,6 +2934,8 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
       </div>
 
       <div class="auth-pane" id="admin-purchase"></div>
+
+      <div class="auth-pane" id="admin-ai"></div>
 
       <div class="auth-pane" id="admin-config">
         <h2 style="margin-top:0;">Departments</h2>
@@ -11145,6 +11215,7 @@ function renderViolationsTab(){
       </div>` : ''}
       ${fieldRow('Date', fmtDate(v.date))}
       ${fieldRow('Reason', v.reason)}
+      ${v.letter && v.letter.body ? `<details style="margin-top:8px;"><summary style="cursor:pointer;color:var(--amber);font-size:12px;font-weight:600;">Letter: ${aiEsc(v.letter.name || '')}</summary><div style="white-space:pre-wrap;font-size:12.5px;line-height:1.55;margin-top:6px;">${aiEsc((v.letter.subject ? v.letter.subject + '\n\n' : '') + v.letter.body)}</div></details>` : ''}
       ${fieldRow('Money Deduction', v.deduction && v.deduction.yes ? ('Yes — ' + v.deduction.amount) : 'No')}
       ${(v.attachments||[]).length ? '<div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;">' + v.attachments.map((a,i)=>`<button class="btn btn-ghost btn-sm docViewBtn" data-ref="${a}">View Attachment ${i+1}</button>`).join('') + '</div>' : ''}
     </div>`;
@@ -12140,6 +12211,11 @@ function hrLetterHtml(d){
     ${lh.footer ? `<div style="margin-top:16px;padding-top:10px;border-top:1px solid #e2e8f0;font-size:10.5px;color:#64748b;text-align:center;">${hrEsc(lh.footer)}</div>` : ''}</div>`;
 }
 function hrRenderLetters(){
+  if(typeof AI !== 'undefined' && AI.mode === 'smart' && state.user && (state.user.role === 'admin' || hrCanEdit())){ aiRenderLetters(); return; }
+  hrRenderLettersStd();
+  if(typeof aiSwitchHtml === 'function' && hrCanEdit()){ const b = $('hrBody'); if(b) b.insertAdjacentHTML('afterbegin', aiSwitchHtml()); }
+}
+function hrRenderLettersStd(){
   const S = state.hrSettings, L = hrUI.letter, people = hrAllPeople().sort((a, b) => (a.name || '').localeCompare(b.name || ''));
   if(!L.tpl || !(S.letters || []).some(t => t.id === L.tpl)) L.tpl = (S.letters[0] || {}).id || '';
   if(!L.date) L.date = hrStr(new Date());
@@ -14815,6 +14891,711 @@ async function pcAdmPreview(kind){
 }
 
 $('admin-purchase') && document.querySelector('.auth-tab[data-admintab="purchase"]').addEventListener('click', () => pcRenderAdmin());
+
+/* ============================================================
+   BULK ADD EMPLOYEES (Admin > Users > small "Excel" icon)
+   Excel file -> choose which column is what (or one value for everybody) -> WAITING LIST -> confirm one by one.
+   Nothing is written to the users list until a row is confirmed. The waiting list is ONE small document ("bulkStaging").
+   ============================================================ */
+const BK_ROLES = [['employee', 'Employee (Profile & Leave only)'], ['operator', 'Operator'], ['supervisor', 'Supervisor'], ['executive', 'Executive Management']];
+const BK_FIELDS = [
+  { k: 'id', t: 'Employee ID', kind: 'id' },
+  { k: 'name', t: 'Full name', kind: 'text' },
+  { k: 'joining', t: 'Joining date', kind: 'date' },
+  { k: 'dept', t: 'Department', kind: 'dept' },
+  { k: 'position', t: 'Position', kind: 'pos' },
+  { k: 'empType', t: 'Employment type', kind: 'sel', opts: [['', '—'], ['Sponsor', 'Sponsor'], ['Non-Sponsor', 'Non-Sponsor']] },
+  { k: 'salary', t: 'Basic salary', kind: 'num' },
+  { k: 'country', t: 'Home country', kind: 'country' },
+  { k: 'phone', t: 'Phone number', kind: 'text' },
+  { k: 'role', t: 'Account type', kind: 'sel', opts: BK_ROLES, def: 'employee' },
+  { k: 'shift', t: 'Shift', kind: 'sel', opts: [['', '—'], ['Day', 'Day'], ['Night', 'Night']] },
+  { k: 'vac', t: 'Vacation eligibility', kind: 'sel', opts: [['', '—'], ['1', '1 year'], ['2', '2 years']] }
+];
+const bk = { open: false, view: 'import', aoa: [], head: true, fileName: '', map: null, prefix: '', auto: true, staged: null, loadedAt: 0, busy: false, sel: {}, edit: '', q: '', saveT: 0, msg: '' };
+const bkEsc = (t) => String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+const bkLetter = (i) => { let s = ''; i++; while(i > 0){ const m = (i - 1) % 26; s = String.fromCharCode(65 + m) + s; i = Math.floor((i - 1) / 26); } return s; };
+function bkNewMap(){ const m = {}; BK_FIELDS.forEach(f => { m[f.k] = { col: -1, fixed: f.def || '' }; }); return m; }
+bk.map = bkNewMap();
+
+/* ---------- reading the file ---------- */
+function bkParseDate(v){
+  if(v === null || v === undefined) return '';
+  if(v instanceof Date && !isNaN(v)) return v.getFullYear() + '-' + pad(v.getMonth() + 1) + '-' + pad(v.getDate());
+  let s = String(v).trim(); if(!s) return '';
+  let m = /^(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})/.exec(s); if(m) return bkYmd(+m[1], +m[2], +m[3]);
+  m = /^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{2,4})$/.exec(s); if(m){ let y = +m[3]; if(y < 100) y += 2000; return bkYmd(y, +m[2], +m[1]); }   // day first (as in Saudi Arabia)
+  if(/^\d{5}(\.\d+)?$/.test(s)){ const d = new Date(Math.round((parseFloat(s) - 25569) * 86400000)); return bkYmd(d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate()); }
+  const mon = { jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6, jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12 };
+  m = /^(\d{1,2})[\s\-.,]*([A-Za-z]{3,9})[\s\-.,]*(\d{2,4})$/.exec(s); if(m && mon[m[2].slice(0, 3).toLowerCase()]){ let y = +m[3]; if(y < 100) y += 2000; return bkYmd(y, mon[m[2].slice(0, 3).toLowerCase()], +m[1]); }
+  m = /^([A-Za-z]{3,9})[\s\-.,]*(\d{1,2})[\s\-.,]+(\d{4})$/.exec(s); if(m && mon[m[1].slice(0, 3).toLowerCase()]) return bkYmd(+m[3], mon[m[1].slice(0, 3).toLowerCase()], +m[2]);
+  return '';
+}
+function bkYmd(y, mo, d){ if(!(y >= 1950 && y <= 2100 && mo >= 1 && mo <= 12 && d >= 1 && d <= 31)) return ''; const t = new Date(y, mo - 1, d); if(t.getMonth() !== mo - 1) return ''; return y + '-' + pad(mo) + '-' + pad(d); }
+function bkNum(v){ const s = String(v == null ? '' : v).replace(/[,\s]/g, '').replace(/[^\d.]/g, ''); return s && !isNaN(parseFloat(s)) ? String(parseFloat(s)) : ''; }
+function bkType(v){ const s = String(v || '').toLowerCase().replace(/[^a-z]/g, ''); if(!s) return ''; if(s.startsWith('non') || s === 'ns' || s === 'nonsponsor') return 'Non-Sponsor'; if(s.startsWith('spon') || s === 's') return 'Sponsor'; return ''; }
+function bkPick(list, v){ const s = String(v || '').trim(); if(!s) return ''; const f = (list || []).find(x => String(x).toLowerCase() === s.toLowerCase()); return f || s; }
+
+async function bkReadFile(file){
+  bk.msg = ''; bk.fileName = file.name;
+  const buf = await file.arrayBuffer();
+  if(!window.XLSX) throw new Error('NOXLSX');
+  const wb = XLSX.read(buf, { type: 'array', cellDates: true });
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  bk.aoa = XLSX.utils.sheet_to_json(ws, { header: 1, raw: false, dateNF: 'yyyy-mm-dd', defval: '', blankrows: false });
+  bkAfterRead();
+}
+function bkReadPaste(text){
+  bk.fileName = 'pasted rows';
+  bk.aoa = String(text || '').split(/\r?\n/).filter(l => l.trim()).map(l => l.split('\t'));
+  bkAfterRead();
+}
+function bkAfterRead(){
+  bk.aoa = bk.aoa.map(r => r.map(c => (c instanceof Date ? bkParseDate(c) : String(c == null ? '' : c).trim()))).filter(r => r.some(c => c !== ''));
+  const w = bk.aoa.reduce((a, r) => Math.max(a, r.length), 0);
+  bk.aoa = bk.aoa.map(r => { while(r.length < w) r.push(''); return r; });
+  // a heading row has no dates / plain numbers in it
+  const r0 = bk.aoa[0] || []; bk.head = !r0.some(c => bkParseDate(c) || /^\d+(\.\d+)?$/.test(c));
+  bk.map = bkNewMap(); bkGuessColumns();
+}
+// a first guess from the heading words (the person can change anything)
+function bkGuessColumns(){
+  if(!bk.head || !bk.aoa.length) return;
+  const keys = { id: /(^|\b)(id|emp(loyee)?\s*(id|no|number)|iqama|code|no\.?)$/i, name: /name/i, joining: /join|hire|doj|start/i, dept: /dep/i, position: /posit|job|desig|title|trade/i, empType: /sponsor|type/i, salary: /salary|basic|wage|pay/i, country: /countr|nation/i, phone: /phone|mobile|tel|contact/i, shift: /shift/i };
+  bk.aoa[0].forEach((h, i) => { Object.keys(keys).forEach(k => { if(bk.map[k].col < 0 && keys[k].test(h) && !Object.values(bk.map).some(m => m.col === i)) bk.map[k].col = i; }); });
+}
+
+/* ---------- from rows to waiting-list people ---------- */
+function bkNextIds(existing){
+  // highest number already used for this prefix (letters + digits, or digits only)
+  const pre = bk.prefix.trim(); let max = 0;
+  const re = new RegExp('^' + pre.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(\\d+)$', 'i');
+  existing.forEach(id => { const m = re.exec(String(id)); if(m) max = Math.max(max, parseInt(m[1], 10)); });
+  return { pre, n: max };
+}
+function bkBuild(){
+  const dataRows = bk.aoa.slice(bk.head ? 1 : 0), M = bk.map, out = [];
+  const users = state.users || [], existing = users.map(u => u.loginId).concat((bk.staged || []).map(p => p.id));
+  const ids = bkNextIds(existing); let next = ids.n;
+  const depts = state.departments || [], poss = state.positions || [];
+  dataRows.forEach((r, i) => {
+    const cell = (k) => { const m = M[k]; if(!m) return ''; const v = m.col >= 0 ? String(r[m.col] == null ? '' : r[m.col]).trim() : ''; return v !== '' ? v : String(m.fixed || '').trim(); };
+    const p = { sid: 'b' + Date.now().toString(36) + i + Math.random().toString(36).slice(2, 5), id: cell('id'), name: cell('name').replace(/\s+/g, ' '), joining: bkParseDate(cell('joining')), dept: bkPick(depts, cell('dept')), position: bkPick(poss, cell('position')), empType: bkType(cell('empType')), salary: bkNum(cell('salary')), country: cell('country'), phone: cell('phone'), role: cell('role') || 'employee', shift: cell('shift'), vac: cell('vac'), joiningRaw: cell('joining'), row: i + (bk.head ? 2 : 1) };
+    if(!p.id && bk.auto){ next++; p.id = ids.pre + next; p.autoId = true; }
+    else if(p.id) { const m = new RegExp('^' + ids.pre.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(\\d+)$', 'i').exec(p.id); if(m) next = Math.max(next, parseInt(m[1], 10)); }
+    if(!p.name && !p.id) return;
+    out.push(p);
+  });
+  return out;
+}
+function bkIssues(p, all){
+  const out = [], users = state.users || [];
+  if(!p.name) out.push('No name'); if(!p.id) out.push('No ID');
+  if(p.id && users.some(u => u.loginId === p.id)) out.push('ID already used by ' + (users.find(u => u.loginId === p.id).name || 'someone'));
+  if(p.id && all.filter(x => x.id === p.id).length > 1) out.push('ID repeated in this list');
+  if(/[\/\s#?.]/.test(p.id || '')) out.push('ID has spaces or symbols');
+  if(p.joining === '' && p.joiningRaw) out.push('Joining date not understood');
+  if(p.dept && (state.departments || []).length && !(state.departments || []).includes(p.dept)) out.push('Department "' + p.dept + '" is not in your list');
+  if(p.position && (state.positions || []).length && !(state.positions || []).includes(p.position)) out.push('Position "' + p.position + '" is not in your list');
+  return out;
+}
+
+/* ---------- saving the waiting list (one small document) ---------- */
+async function bkLoadStaged(force){
+  if(bk.staged && !force) return;
+  const d = await window.__db.getConfigObject('bulkStaging', { items: [] });
+  bk.staged = Array.isArray(d.items) ? d.items : []; bk.loadedAt = Date.now();
+}
+function bkSaveSoon(now){
+  clearTimeout(bk.saveT);
+  const run = async () => { try{ await window.__db.saveConfigObject('bulkStaging', { items: bk.staged }); }catch(err){ console.error(err); toast('Could not save the waiting list — keep this page open and try again'); } };
+  if(now) return run(); bk.saveT = setTimeout(run, 1500);
+}
+
+/* ---------- screens ---------- */
+function bkOpen(){
+  if(!state.user || state.user.role !== 'admin'){ toast('Only Admin can do this'); return; }
+  if(!requireDb()) return;
+  let ov = $('bkOverlay');
+  if(!ov){ ov = document.createElement('div'); ov.id = 'bkOverlay'; ov.className = 'bkOv'; document.body.appendChild(ov); }
+  bk.open = true; ov.style.display = 'block'; document.body.style.overflow = 'hidden';
+  ov.innerHTML = '<div class="bkWrap"><div class="hrEmpty">Loading…</div></div>';
+  (async () => {
+    try{ if(!(state.users && state.users.length)) state.users = await window.__db.listUsersOnce(); await bkLoadStaged(); }catch(err){ console.error(err); toast('Could not load — check your connection'); }
+    if(bk.staged && bk.staged.length && !bk.aoa.length) bk.view = 'list';
+    bkRender();
+  })();
+}
+function bkClose(){ bk.open = false; clearTimeout(bk.saveT); if(bk.staged) bkSaveSoon(true); const ov = $('bkOverlay'); if(ov) ov.style.display = 'none'; document.body.style.overflow = ''; try{ if(state.authIndex) renderUsersList(); }catch(e){} }
+function bkRender(){
+  const ov = $('bkOverlay'); if(!ov || !bk.open) return;
+  const n = (bk.staged || []).length;
+  ov.innerHTML = `<div class="bkWrap"><div class="bkHead"><div><div class="bkTitle">Add employees from Excel</div><div class="hrNote">Nothing is added until you confirm each person in the waiting list.</div></div><button class="pillBtn" data-bk="close">Close</button></div>
+    <div class="hrTabs"><button class="${bk.view === 'import' ? 'active' : ''}" data-bk="view" data-v="import">1 · Choose file</button><button class="${bk.view === 'list' ? 'active' : ''}" data-bk="view" data-v="list">2 · Waiting list${n ? `<span class="hrCnt">${n}</span>` : ''}</button></div>
+    <div id="bkBody">${bk.view === 'import' ? bkImportHtml() : bkListHtml()}</div></div>`;
+}
+function bkColSelect(k, F){
+  const w = bk.aoa.reduce((a, r) => Math.max(a, r.length), 0), m = bk.map[k];
+  let o = `<option value="-1">— not in my file —</option>`;
+  for(let c = 0; c < w; c++){ const h = bk.head ? (bk.aoa[0][c] || '') : (bk.aoa[0] || [])[c] || ''; o += `<option value="${c}" ${m.col === c ? 'selected' : ''}>Column ${c + 1} (${bkLetter(c)}) · ${bkEsc(String(h).slice(0, 22))}</option>`; }
+  return `<select data-bk="col" data-k="${k}">${o}</select>`;
+}
+function bkFixed(f){
+  const m = bk.map[f.k], v = bkEsc(m.fixed);
+  if(f.kind === 'sel') return `<select data-bk="fixed" data-k="${f.k}">${f.opts.map(o => `<option value="${bkEsc(o[0])}" ${m.fixed === o[0] ? 'selected' : ''}>${bkEsc(o[1])}</option>`).join('')}</select>`;
+  if(f.kind === 'dept') return `<select data-bk="fixed" data-k="${f.k}"><option value="">—</option>${(state.departments || []).map(d => `<option ${m.fixed === d ? 'selected' : ''}>${bkEsc(d)}</option>`).join('')}</select>`;
+  if(f.kind === 'pos') return `<select data-bk="fixed" data-k="${f.k}"><option value="">—</option>${(state.positions || []).map(d => `<option ${m.fixed === d ? 'selected' : ''}>${bkEsc(d)}</option>`).join('')}</select>`;
+  if(f.kind === 'date') return `<input type="date" data-bk="fixed" data-k="${f.k}" value="${v}">`;
+  if(f.kind === 'country') return `<input type="text" list="countryNameList" data-bk="fixed" data-k="${f.k}" value="${v}" placeholder="write if not in file">`;
+  if(f.kind === 'id') return `<span class="hrNote">If a row has no ID, create one automatically →</span>`;
+  return `<input type="text" ${f.kind === 'num' ? 'inputmode="decimal"' : ''} data-bk="fixed" data-k="${f.k}" value="${v}" placeholder="write if not in file">`;
+}
+function bkImportHtml(){
+  const has = bk.aoa.length > 0;
+  let h = `<div class="card bkCard"><div class="bkStep">Your Excel file</div><div class="bkFile"><label class="pillBtn bkPick">${bkSvg('up', 15)} Choose Excel file<input type="file" id="bkFile" accept=".xlsx,.xls,.csv" style="display:none"></label><span class="hrNote">${bk.fileName ? bkEsc(bk.fileName) + ' · ' + bk.aoa.length + ' rows' : 'Excel (.xlsx) or CSV'}</span></div>
+    <details class="bkPaste"><summary>or paste the rows from Excel</summary><textarea id="bkPaste" rows="4" placeholder="Select the cells in Excel, copy, and paste here"></textarea><button class="pillBtn" data-bk="paste">Use these rows</button></details>${bk.msg ? `<div class="hrNote" style="color:var(--danger);margin-top:8px">${bkEsc(bk.msg)}</div>` : ''}</div>`;
+  if(!has) return h;
+  const w = bk.aoa.reduce((a, r) => Math.max(a, r.length), 0), show = bk.aoa.slice(0, 4);
+  h += `<div class="card bkCard"><div class="bkStep">What is in the file <label class="bkChk"><input type="checkbox" data-bk="head" ${bk.head ? 'checked' : ''}> first row is the heading</label></div>
+    <div class="bkPrev"><table><thead><tr>${Array.from({ length: w }, (_, c) => `<th>${c + 1}<small>${bkLetter(c)}</small></th>`).join('')}</tr></thead><tbody>${show.map((r, i) => `<tr class="${bk.head && i === 0 ? 'hd' : ''}">${r.map(c => `<td>${bkEsc(String(c).slice(0, 26))}</td>`).join('')}</tr>`).join('')}</tbody></table></div></div>
+    <div class="card bkCard"><div class="bkStep">Tell me what each column is</div><div class="hrNote" style="margin-bottom:10px">Pick the column from the file. If the information is not in the file, or the same for everybody, write it in the second box.</div>
+    <div class="bkMap">${BK_FIELDS.map(f => `<div class="bkRow"><b>${f.t}${f.k === 'id' || f.k === 'name' ? ' *' : ''}</b>${bkColSelect(f.k, f)}<div class="bkFx">${bkFixed(f)}${f.k === 'id' ? `<span class="bkAuto"><input type="text" data-bk="prefix" value="${bkEsc(bk.prefix)}" placeholder="letters e.g. N" maxlength="4"><label class="bkChk"><input type="checkbox" data-bk="auto" ${bk.auto ? 'checked' : ''}> create ID automatically</label></span>` : ''}</div></div>`).join('')}</div>
+    <div style="margin-top:14px"><button class="btn btn-primary" data-bk="stage">Add to the waiting list</button></div></div>`;
+  return h;
+}
+function bkSvg(n, s){ const P = { up: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>', check: '<polyline points="20 6 9 17 4 12"/>', trash: '<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>', edit: '<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/>', alert: '<path d="M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>' }; s = s || 16; return `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${P[n] || ''}</svg>`; }
+
+function bkListHtml(){
+  const L = bk.staged || [];
+  if(!L.length) return '<div class="card bkCard"><div class="hrEmpty">The waiting list is empty.<br><span class="hrNote">Choose an Excel file in step 1.</span></div></div>';
+  const q = bk.q.trim().toLowerCase(), rows = L.filter(p => !q || [p.id, p.name, p.dept, p.position].join(' ').toLowerCase().includes(q));
+  const okAll = L.filter(p => !bkIssues(p, L).length).length, selN = Object.keys(bk.sel).filter(k => bk.sel[k] && L.some(p => p.sid === k)).length;
+  let h = `<div class="card bkCard"><div class="bkTool"><div class="hrSearch"><input type="text" data-bk="q" placeholder="Search in the waiting list…" value="${bkEsc(bk.q)}"></div>
+    <button class="pillBtn" data-bk="selall">Select all</button>${selN ? `<button class="pillBtn ok" data-bk="confsel">${bkSvg('check', 14)} Confirm ${selN}</button><button class="pillBtn danger" data-bk="delsel">${bkSvg('trash', 14)} Delete ${selN}</button>` : ''}
+    ${okAll ? `<button class="pillBtn" data-bk="confall">Confirm all ${okAll} that look right</button>` : ''}</div>
+    <div class="bkList">${rows.map(p => bk.edit === p.sid ? bkEditHtml(p) : bkRowHtml(p, L)).join('') || '<div class="hrEmpty">No match.</div>'}</div></div>`;
+  return h;
+}
+function bkRowHtml(p, L){
+  const is = bkIssues(p, L), role = (BK_ROLES.find(r => r[0] === p.role) || [0, p.role])[1];
+  return `<div class="bkItem${is.length ? ' bad' : ''}"><label class="bkSel"><input type="checkbox" data-bk="sel" data-s="${p.sid}" ${bk.sel[p.sid] ? 'checked' : ''}></label>
+    <div class="bkMain"><div class="bkNm"><b>${bkEsc(p.name || '—')}</b><span class="bkId">${bkEsc(p.id || '—')}${p.autoId ? ' <small>(new)</small>' : ''}</span></div>
+      <div class="bkSub">${[p.dept, p.position, p.empType, p.joining ? 'joined ' + fmtDate(p.joining) : '', p.salary ? 'salary ' + p.salary : '', p.country, role].filter(Boolean).map(bkEsc).join(' · ')}</div>
+      ${is.length ? `<div class="bkWarn">${bkSvg('alert', 12)} ${is.map(bkEsc).join(' · ')}</div>` : ''}</div>
+    <div class="bkAct"><button class="pillBtn ok" data-bk="confirm" data-s="${p.sid}" ${is.some(x => /No name|No ID|already used|repeated|symbols/.test(x)) ? 'disabled' : ''}>${bkSvg('check', 14)} Confirm</button><button class="iconBtn" data-bk="edit" data-s="${p.sid}" title="Edit" aria-label="Edit">${bkSvg('edit', 15)}</button><button class="iconBtn" data-bk="del" data-s="${p.sid}" title="Delete" aria-label="Delete">${bkSvg('trash', 15)}</button></div></div>`;
+}
+function bkEditHtml(p){
+  const inp = (k, l, type) => `<div class="field"><label>${l}</label><input type="${type || 'text'}" data-bk="ef" data-k="${k}" value="${bkEsc(p[k])}"></div>`;
+  const sel = (k, l, opts) => `<div class="field"><label>${l}</label><select data-bk="ef" data-k="${k}">${opts.map(o => `<option value="${bkEsc(o[0])}" ${p[k] === o[0] ? 'selected' : ''}>${bkEsc(o[1])}</option>`).join('')}</select></div>`;
+  const dl = (arr, cur) => [['', '—']].concat(arr.map(x => [x, x])).concat(cur && !arr.includes(cur) ? [[cur, cur]] : []);
+  return `<div class="bkItem edit"><div class="hrForm bkEdit">${inp('id', 'Employee ID')}${inp('name', 'Full name')}${sel('dept', 'Department', dl(state.departments || [], p.dept))}${sel('position', 'Position', dl(state.positions || [], p.position))}
+    ${sel('empType', 'Employment type', [['', '—'], ['Sponsor', 'Sponsor'], ['Non-Sponsor', 'Non-Sponsor']])}${inp('joining', 'Joining date', 'date')}${inp('salary', 'Basic salary')}<div class="field"><label>Home country</label><input type="text" list="countryNameList" data-bk="ef" data-k="country" value="${bkEsc(p.country)}"></div>
+    ${inp('phone', 'Phone')}${sel('role', 'Account type', BK_ROLES)}${sel('shift', 'Shift', [['', '—'], ['Day', 'Day'], ['Night', 'Night']])}${sel('vac', 'Vacation eligibility', [['', '—'], ['1', '1 year'], ['2', '2 years']])}</div>
+    <div class="bkAct" style="margin-top:8px"><button class="btn btn-primary btn-sm" data-bk="editok" data-s="${p.sid}">Save</button><button class="btn btn-ghost btn-sm" data-bk="editno">Cancel</button></div></div>`;
+}
+
+/* ---------- actions ---------- */
+function bkUserFrom(p){
+  const profile = {};
+  if(p.position) profile.position = p.position; if(p.empType) profile.employmentType = p.empType; if(p.joining) profile.joiningDate = p.joining;
+  if(p.country) profile.homeCountry = p.country; if(p.phone){ profile.phone = p.phone; profile.phoneNumber = p.phone; } if(p.shift) profile.shiftPref = p.shift; if(p.vac) profile.vacationEligibility = p.vac;
+  if(p.salary) profile.salary = { basicSalary: p.salary };
+  const role = p.role || 'employee';
+  return { loginId: p.id, name: p.name, department: p.dept || '', role, assignedMachines: [], pages: defaultPagesForRole(role), profile, createdAt: Date.now(), addedBy: 'bulk:' + (state.user ? state.user.loginId : '') };
+}
+async function bkConfirmOne(p, silent){
+  const L = bk.staged || [];
+  if(bkIssues(p, L).some(x => /No name|No ID|already used|repeated|symbols/.test(x))) return false;
+  // never overwrite somebody: look the ID up right now
+  const ex = await window.__db.getUser(p.id);
+  if(ex){ toast(p.id + ' already exists — change the ID'); return false; }
+  await window.__db.createUser(bkUserFrom(p));
+  await window.__db.saveAuthIndex(p.id, { tempPassword: '123456', authEmailVersion: 0 });
+  if(!state.users) state.users = []; state.users.push(bkUserFrom(p)); if(!state.authIndex) state.authIndex = null; else state.authIndex[p.id] = { tempPassword: '123456', authEmailVersion: 0 };
+  bk.staged = bk.staged.filter(x => x.sid !== p.sid); delete bk.sel[p.sid];
+  return true;
+}
+async function bkClick(e){
+  const el = e.target.closest('[data-bk]'); if(!el || !bk.open) return;
+  const a = el.dataset.bk, s = el.dataset.s;
+  const L = bk.staged || [], P = s ? L.find(x => x.sid === s) : null;
+  switch(a){
+    case 'close': bkClose(); break;
+    case 'view': bk.view = el.dataset.v; bkRender(); break;
+    case 'paste': { const t = $('bkPaste').value; if(!t.trim()) break; bkReadPaste(t); bkRender(); break; }
+    case 'stage': {
+      if(bk.map.name.col < 0 && !String(bk.map.name.fixed).trim()){ toast('Choose the column that has the names'); break; }
+      if(bk.map.id.col < 0 && !bk.auto){ toast('Choose the ID column, or tick "create ID automatically"'); break; }
+      const add = bkBuild(); if(!add.length){ toast('No people found in the file'); break; }
+      bk.staged = (bk.staged || []).concat(add); bk.aoa = []; bk.fileName = ''; bk.view = 'list'; bkSaveSoon(true); toast(add.length + ' people added to the waiting list'); bkRender(); break; }
+    case 'confirm': if(P && !bk.busy){ bk.busy = true; el.disabled = true; try{ if(await bkConfirmOne(P)){ toast(P.name + ' added — password 123456'); bkSaveSoon(); } }catch(err){ console.error(err); toast('Could not add — check your connection'); } bk.busy = false; bkRender(); } break;
+    case 'confall': case 'confsel': {
+      if(bk.busy) break; const list = (a === 'confall' ? L : L.filter(p => bk.sel[p.sid])).filter(p => !bkIssues(p, L).length);
+      if(!list.length){ toast('Nothing to confirm'); break; }
+      if(!confirm('Create ' + list.length + ' employee accounts now?')) break;
+      bk.busy = true; let ok = 0;
+      for(const p of list){ try{ if(await bkConfirmOne(p, true)) ok++; }catch(err){ console.error(err); toast('Stopped — check your connection'); break; } }
+      bk.busy = false; bkSaveSoon(true); toast(ok + ' employees added'); bkRender(); break; }
+    case 'del': if(P && confirm('Delete ' + (P.name || P.id) + ' from the waiting list?')){ bk.staged = L.filter(x => x.sid !== s); delete bk.sel[s]; bkSaveSoon(); bkRender(); } break;
+    case 'delsel': { const n = L.filter(p => bk.sel[p.sid]); if(n.length && confirm('Delete ' + n.length + ' people from the waiting list?')){ bk.staged = L.filter(p => !bk.sel[p.sid]); bk.sel = {}; bkSaveSoon(); bkRender(); } break; }
+    case 'selall': { const all = L.every(p => bk.sel[p.sid]); L.forEach(p => { bk.sel[p.sid] = !all; }); bkRender(); break; }
+    case 'edit': bk.edit = s; bkRender(); break;
+    case 'editno': bk.edit = ''; bkRender(); break;
+    case 'editok': { const card = el.closest('.bkItem'); if(P && card){ card.querySelectorAll('[data-bk="ef"]').forEach(x => { P[x.dataset.k] = x.value.trim(); }); P.autoId = false; P.joiningRaw = ''; bk.edit = ''; bkSaveSoon(); bkRender(); } break; }
+  }
+}
+async function bkChange(e){
+  const el = e.target; if(!bk.open || !el.dataset || !(el.dataset.bk || el.id === 'bkFile')) return;
+  const a = el.dataset.bk;
+  if(el.id === 'bkFile'){ const f = el.files && el.files[0]; if(!f) return; try{ await bkReadFile(f); }catch(err){ console.error(err); bk.msg = err.message === 'NOXLSX' ? 'The Excel reader did not load. Check the internet connection or paste the rows instead.' : 'Could not read this file. Save it as .xlsx and try again.'; bk.aoa = []; } bkRender(); return; }
+  switch(a){
+    case 'col': bk.map[el.dataset.k].col = parseInt(el.value, 10); break;
+    case 'fixed': bk.map[el.dataset.k].fixed = el.value; break;
+    case 'head': bk.head = el.checked; bk.map = bkNewMap(); bkGuessColumns(); bkRender(); break;
+    case 'auto': bk.auto = el.checked; break;
+    case 'prefix': bk.prefix = el.value.trim(); break;
+    case 'sel': bk.sel[el.dataset.s] = el.checked; bkRender(); break;
+  }
+}
+function bkInput(e){ const el = e.target; if(el.dataset && el.dataset.bk === 'q' && bk.open){ bk.q = el.value; const pos = el.selectionStart; $('bkBody').innerHTML = bkListHtml(); const n = document.querySelector('[data-bk="q"]'); if(n){ n.focus(); try{ n.setSelectionRange(pos, pos); }catch(x){} } } else if(el.dataset && el.dataset.bk === 'fixed' && bk.open) bk.map[el.dataset.k].fixed = el.value; else if(el.dataset && el.dataset.bk === 'prefix' && bk.open) bk.prefix = el.value.trim(); }
+document.addEventListener('click', bkClick); document.addEventListener('change', bkChange); document.addEventListener('input', bkInput);
+
+/* ============================================================
+   AI LETTERS - settings, connection and the letter types
+   Two small documents in "config": aiLetters (instructions, letter types, signatures) and aiConn (address, key, model).
+   Both are read only when somebody opens the AI tab or writes a letter - never on a normal page load.
+   ============================================================ */
+const AI_MASTER = `You write the BODY TEXT of official letters for Riyadh Velvet Factory (RVF), a carpet and upholstery factory in Riyadh, Saudi Arabia. The HR / Personnel department uses these letters for warnings, leave requests, certificates, approvals and notices.
+
+IMPORTANT: The application adds the letterhead, date, "To", subject line, "Dear ...", "Sincerely", signatures and acknowledgement lines by itself. Never write them. Write only the paragraphs that go between the greeting and the sign-off.
+
+Style:
+- Formal, short, polite business English, as written by a factory HR department in Saudi Arabia.
+- Simple words. 2 to 4 short paragraphs. No headings. No bullet points unless the example for this letter type uses them (then start each bullet line with "- ").
+- Speak exactly as the example does: warnings speak to the employee ("you"); leave requests are written by the employee in the first person ("I"); certificates and approval requests speak about the employee in the third person.
+- Use ONLY the facts given. Never invent dates, amounts, names, reasons, medical details or promises. If a fact is missing, leave it out.
+- Dates like "17 August 2026". Money like "100 SAR".
+- Keep the structure, tone and length of the example for the same letter type. Change only the details.
+
+Company rules (mention only when the facts or the letter type call for it):
+- Absence without prior permission: 4 days' salary is deducted. A leave request can ask that only the days really missed (1 day deduction for 1 day of leave) are deducted instead.
+- A warning may come with a salary deduction in SAR.
+
+Reply with JSON only, nothing else: {"subject": "a short subject line, or empty", "body": "the paragraphs, separated by a blank line"}`;
+
+function aiDefaultTypes(){
+  const REC = [{ label: 'Recommended By' }];
+  return [
+    { id: 'leave_paid', name: 'Leave request - paid, no deduction', end: 'request', to: 'ceo', emp: true, dates: true, subject: 'Application for Leave Approval ({from} - {to})', salutation: 'Dear Sir,', groups: REC,
+      instruction: 'Written by the employee in the first person to the CEO. Ask that the period be approved as paid leave with no salary deduction. Mention a medical certificate only if the facts say one is attached.',
+      example: "I am writing to formally request approval for sick leave for a period of five days, from August 16, 2026, to August 20, 2026, as I was unable to attend work due to severe body pain.\n\nDuring this time, I was advised by my doctor to take complete rest to ensure a full recovery. I have attached the medical certificate and relevant medical documents for your reference and verification.\n\nSince this absence was due to genuine health issues, I kindly request that this period be granted as paid sick leave and that no salary deductions be applied.\n\nThank you for your understanding and support. Please let me know if any further information is required." },
+    { id: 'leave_1day', name: 'Leave request - deduct only the days taken', end: 'request', to: 'ceo', emp: true, dates: true, subject: 'Leave Approval Request ({from} - {to})', salutation: 'Dear Sir,', groups: REC,
+      instruction: 'Written by the employee in the first person to the CEO. Ask that the leave be processed as regular leave and that the deduction is calculated strictly for the actual days of absence (1 day deduction for 1 day of leave) instead of the standard absence-policy deduction of 4 days.',
+      example: "I am writing to formally request approval for sick leave for one day, on 17 September 2026, as I was unable to attend work due to sickness (chest pain/cough).\n\nAs this absence was due to a genuine medical condition, I kindly request that this leave be processed as regular medical leave, and that the salary or leave deduction be calculated strictly for the actual 1 day of absence (1 day deduction per 1 day of leave), rather than applying the standard absence policy deduction rate.\n\nThank you for your understanding and consideration. Please let me know if any further details are needed." },
+    { id: 'warn_ded', name: 'Warning + salary deduction', end: 'ack', to: 'employee', emp: true, amount: true, subject: 'Formal Warning and Salary Deduction Letter.', salutation: 'Dear {name},', ack: true, save: true, groups: [{ label: 'Action Taken By' }],
+      instruction: 'Addressed to the employee ("you"). Say calmly what went wrong, using only the facts given. State that Management has issued a deduction of the given amount in SAR from the salary. Advise the employee to follow the procedures. If the facts say it is a repeat, mention which warning it is.',
+      example: "This letter serves as a formal written notice regarding an issue identified in your recent stock management duties.\n\nMaintaining accurate inventory records is vital to keeping our store operations running smoothly. Mistakes in stock handling led to discrepancies that impact our daily workflow.\n\nPlease note that Management has issued a deduction of 50 SAR from your salary regarding this matter. We ask that you pay closer attention to detail and follow all standard procedures moving forward to ensure high standards in our inventory tracking." },
+    { id: 'warn', name: 'Warning letter (no deduction)', end: 'ack', to: 'employee', emp: true, subject: 'Formal Warning Letter.', salutation: 'Dear {name},', ack: true, save: true, groups: [{ label: 'Action Taken By' }],
+      instruction: 'Addressed to the employee ("you"). Say calmly what went wrong, using only the facts given, then instruct the employee to follow the rules to avoid further disciplinary action, up to and including termination if it repeats.',
+      example: "This letter serves as a formal written warning regarding your failure to follow explicit operational procedures.\n\nDue to a shortage of yarn, clear instructions were issued to enlarge the small bobbins to ensure production continuity. You did not follow these instructions, which led to a preventable disruption.\n\nYou are instructed to strictly adhere to all work instructions to avoid further disciplinary action, up to and including termination of employment." },
+    { id: 'exp_cert', name: 'Experience certificate', end: 'ceo', to: 'none', emp: true, dates: true, pronoun: true, title: 'EXPERIENCE CERTIFICATE', subject: '', salutation: 'TO WHOM IT MAY CONCERN,', signoff: 'Sincerely,',
+      instruction: 'Third person. First paragraph: certify that the employee was employed with Riyadh Velvet Factory in the given position and department from the start date to the end date. Then one sentence saying he showed professionalism, dedication and technical competence, followed by "Their primary responsibilities included:" and 3 to 4 bullet lines (start each with "- ") describing realistic duties for that position. Finish with a paragraph saying he was a valuable member of the team, performed all duties to satisfaction, and wishing him all the best.',
+      example: "This is to certify that Mr. Abdul Hakim Lone was employed with Riyadh Velvet Factory as an Accountant from 14 January 2024 to 17 September 2026.\n\nDuring his tenure with us, Mr. Abdul Hakim Lone demonstrated a high level of professionalism, dedication, and financial competence. His primary responsibilities included:\n- Maintaining daily accounting records, general ledgers, and preparing financial vouchers.\n- Assisting in accounts payable and receivable management, including invoice verification and vendor reconciliations.\n- Supporting payroll processing, monitoring expense reports, and assisting senior management with routine financial reporting and compliance.\n\nMr. Abdul Hakim Lone was a valuable member of our team and performed all duties to our complete satisfaction. We wish him all the best in his future endeavors." },
+    { id: 'sal_cert', name: 'Salary certificate', end: 'ceo', to: 'none', emp: true, title: 'SALARY CERTIFICATE', subject: '', salutation: 'TO WHOM IT MAY CONCERN,', signoff: 'Sincerely,',
+      std: "This is to certify that {name}, {nationality}, Iqama No. {iqamaNo}, is employed by {company} as {position} since {joiningDate}, with a basic monthly salary of SAR {salary}.\n\nThis certificate is issued at his request without any responsibility on the company.",
+      instruction: 'Third person. Certify the employment, position, joining date and the basic monthly salary given. Add that the certificate is issued at the employee request without any responsibility on the company.', example: '' },
+    { id: 'new_emp', name: 'Approval request - new employees (table)', end: 'verified', to: 'ceo', emp: false, table: true, tableCols: ['name', 'id', 'dept', 'joining'], subject: 'APPROVAL REQUEST FOR NEW EMPLOYEES', salutation: '', groups: [{ label: 'Verified By' }],
+      std: 'The HR Department requests approval to finalize the employment of the following candidates. The listed employees confirm their acceptance of employment and agreement to follow company policies and management instructions.',
+      instruction: 'The HR Department asks the CEO to approve the employment of the listed new employees. One short paragraph. Do not repeat the names.', example: '' },
+    { id: 'increment', name: 'Salary increment approval (memo)', end: 'none', to: 'text', toText: 'Finance & Payroll Department', from: 'ceo', title: 'MEMORANDUM', emp: false, amount: true, dates: true, table: true, tableCols: ['id', 'name', 'dept'], subject: 'Approval of Salary Increments', salutation: '',
+      std: 'This memorandum serves as formal authorization for a monthly salary increment of {amount} SAR for each of the {count} employees listed below, effective {from}.\n\nPlease ensure all necessary adjustments are made to the payroll system and that any retroactive payments owing from the effective date are processed accordingly.',
+      instruction: 'A memo from the CEO to the Finance & Payroll Department authorising a salary increment for the listed employees. Two short paragraphs. Do not repeat the names.', example: '' },
+    { id: 'notice', name: 'Notice to all employees', end: 'notice', to: 'text', toText: 'ALL EMPLOYEES & WORKERS', title: 'ATTENTION:', emp: false, subject: '', salutation: '', closing: 'FOR INFORMATION AND GUIDANCE OF ALL CONCERN.', sign: 'THE MANAGEMENT',
+      instruction: 'A notice from the Management to all workers. State clearly what is required, from which date, and the consequence of not following it, only if the facts give one. Short, firm and polite. Give a short subject.',
+      example: "It has been observed that some workers are not wearing proper shoes and shirts while on duty. Effective from Sunday, 6th of September, all workers must wear proper shoes and shirts at all times while on company premises.\n\nIf anyone fails to follow this rule, strict disciplinary action and financial penalties will be enforced.\n\nYOUR FULL COOPERATION IS NEEDED." },
+    { id: 'designation', name: 'Request - change of designation / salary', end: 'request', to: 'ceo', emp: true, subject: 'Designation & Salary Adjustment', salutation: 'Respected Sir,', groups: REC, noSincerely: true,
+      instruction: 'Written by the HR / Personnel department to the CEO. Explain the change of work or designation and ask for approval to update the job designation and adjust the salary scale, with the effective date from the facts.',
+      example: "Mohammad Ajmal, ID# 1347 was reassigned from weaving and has been working full-time as a Tying Man since last month. We request management approval to officially update his job designation and adjust his salary scale to match the Tying Man grade, effective retroactively from September 2026." },
+    { id: 'other', name: 'Other letter (AI writes it)', end: 'ceo', to: 'text', toText: '', emp: false, subject: '', salutation: 'Dear Sir,', signoff: 'Sincerely,',
+      instruction: 'A general formal letter. Follow the facts given. Keep it short and polite.', example: '' }
+  ];
+}
+function aiDefaults(){ return { master: AI_MASTER, approver: { id: '', name: 'MR. ABDULLAH AL KHARASHI', title: 'C.E.O' }, signers: [], types: aiDefaultTypes() }; }
+const AI = { cfg: null, conn: null, loaded: false, mode: 'std' };
+async function aiLoad(force){
+  if(AI.cfg && !force) return AI.cfg;
+  const d = await window.__db.getConfigObject('aiLetters', {});
+  const D = aiDefaults();
+  AI.cfg = { master: d.master || D.master, approver: Object.assign({}, D.approver, d.approver || {}), signers: Array.isArray(d.signers) ? d.signers : [], types: Array.isArray(d.types) && d.types.length ? d.types : D.types };
+  AI.loaded = true; return AI.cfg;
+}
+async function aiSave(){
+  if(!AI.loaded) throw new Error('NOTLOADED');
+  if(JSON.stringify(AI.cfg).length > 800000) throw new Error('TOO_BIG');
+  await window.__db.saveConfigObject('aiLetters', AI.cfg);
+}
+async function aiLoadConn(force){
+  if(AI.conn && !force) return AI.conn;
+  const d = await window.__db.getConfigObject('aiConn', {});
+  AI.conn = { baseUrl: d.baseUrl || 'https://api.groq.com/openai/v1', key: d.key || '', model: d.model || 'llama-3.3-70b-versatile' };
+  return AI.conn;
+}
+async function aiSaveConn(){ await window.__db.saveConfigObject('aiConn', AI.conn); }
+// one call to the AI service (works with Groq, OpenAI and any other "OpenAI-compatible" address)
+async function aiAsk(system, user){
+  const c = await aiLoadConn();
+  if(!c.baseUrl || !c.model) throw new Error('NOT_SET');
+  if(!c.key && /api\.(groq|openai)\.com/.test(c.baseUrl)) throw new Error('NO_KEY');
+  const headers = { 'Content-Type': 'application/json' }; if(c.key) headers.Authorization = 'Bearer ' + c.key;
+  const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 45000);
+  let res;
+  try{
+    res = await fetch(c.baseUrl.replace(/\/+$/, '') + '/chat/completions', { method: 'POST', headers, signal: ctl.signal,
+      body: JSON.stringify({ model: c.model, temperature: 0.3, max_tokens: 1000, messages: [{ role: 'system', content: system }, { role: 'user', content: user }] }) });
+  }catch(err){ clearTimeout(t); throw new Error(err.name === 'AbortError' ? 'TIMEOUT' : 'NETWORK'); }
+  clearTimeout(t);
+  let j = null; try{ j = await res.json(); }catch(e){}
+  if(!res.ok){ const m = (j && j.error && (j.error.message || j.error)) || ''; const er = new Error(res.status === 401 || res.status === 403 ? 'KEY' : res.status === 429 ? 'LIMIT' : 'HTTP'); er.detail = String(m).slice(0, 200); throw er; }
+  const txt = j && j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content;
+  if(!txt) throw new Error('EMPTY');
+  return String(txt);
+}
+function aiErrText(err){
+  return ({ NOT_SET: 'The AI connection is not set up yet. Admin > AI & Letters > Connection.', NO_KEY: 'No AI key has been saved yet. Admin > AI & Letters > Connection.', TIMEOUT: 'The AI took too long. Try again.', NETWORK: 'Could not reach the AI service. Check the internet, or the address in Admin > AI & Letters (some services block direct use from a web page - then use a proxy address).', KEY: 'The AI service refused the key. Check the key in Admin > AI & Letters.', LIMIT: 'Too many requests for now. Wait a minute and try again.', EMPTY: 'The AI sent an empty answer. Try again.' })[err.message] || ('The AI could not answer' + (err.detail ? ': ' + err.detail : '') + '.');
+}
+function aiParseAnswer(txt){
+  let t = String(txt).trim().replace(/^```(?:json)?/i, '').replace(/```$/, '').trim();
+  const a = t.indexOf('{'), b = t.lastIndexOf('}');
+  if(a >= 0 && b > a){ try{ const j = JSON.parse(t.slice(a, b + 1)); if(j && typeof j.body === 'string') return { subject: String(j.subject || '').trim(), body: j.body.trim() }; }catch(e){} }
+  const m = /^\s*subject\s*:\s*(.*)\n+([\s\S]*)$/i.exec(t); if(m) return { subject: m[1].trim(), body: m[2].trim() };
+  return { subject: '', body: t };
+}
+
+/* ============================================================
+   LETTERS TAB > "Write with AI": one fixed letterhead (text lines only), the letter body written by AI (or a standard text),
+   signatures from the ready-made list, PDF, and optionally saved in the person's Violations.
+   ============================================================ */
+const aiU = { typeId: '', emp: '', date: '', from: '', to: '', amount: '', toText: '', pron: 'his', facts: '', subject: '', body: '', mode: 'std', table: [], picks: {}, empSign: false, busy: false, tm: '', tt: '' };
+const aiEsc = (t) => String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+const AI_MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+function aiLong(ymd){ const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(ymd || ''); return m ? (+m[3]) + ' ' + AI_MONTHS[+m[2] - 1] + ' ' + m[1] : ''; }
+function aiToday(){ const d = new Date(); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+function aiType(){ return ((AI.cfg && AI.cfg.types) || []).find(t => t.id === aiU.typeId) || null; }
+function aiPicksLoad(){ try{ return JSON.parse(localStorage.getItem('rvf_ai_picks') || '{}') || {}; }catch(e){ return {}; } }
+function aiPicksSave(){ try{ localStorage.setItem('rvf_ai_picks', JSON.stringify(aiU.picks)); }catch(e){} }
+const aiCols = { name: 'Name', id: 'Id', dept: 'Department', joining: 'Joining Date', position: 'Position', salary: 'Salary' };
+
+function aiVars(){
+  const T = aiType() || {}, u = hrFind(aiU.emp), base = u ? hrVars(u) : { company: (state.hrSettings && state.hrSettings.company) || 'Riyadh Velvet Factory', name: '', id: '', position: '', department: '', nationality: '', iqamaNo: '', joiningDate: '', salary: '' };
+  const f = aiU.from, t = aiU.to; let days = '';
+  if(f && t){ const d = Math.round((new Date(t + 'T12:00:00') - new Date(f + 'T12:00:00')) / 864e5) + 1; if(d > 0) days = String(d); }
+  const ym = (f || aiU.date || aiToday()).slice(0, 7), mo = /^(\d{4})-(\d{2})/.exec(ym);
+  return Object.assign({}, base, { company: String(base.company || '').replace(/\b\w/g, c => c.toUpperCase()), from: aiLong(f), to: aiLong(t), date: aiLong(aiU.date || aiToday()), days, amount: aiU.amount || '', count: String(aiU.table.length || ''), month: mo ? AI_MONTHS[+mo[2] - 1] + ' ' + mo[1] : '', reason: aiU.facts || '', joiningDate: u && u.profile && u.profile.joiningDate ? aiLong(u.profile.joiningDate) : '' });
+}
+function aiBodyText(){
+  const T = aiType(); if(!T) return '';
+  if(aiU.mode === 'std' && T.std) return hrFill(T.std, aiVars());
+  return aiU.body;
+}
+function aiModel(){
+  const T = aiType(); if(!T) return null;
+  const C = AI.cfg, u = hrFind(aiU.emp), V = aiVars(), ceo = C.approver;
+  const up = (s) => String(s || '').toUpperCase();
+  const empName = u ? u.name : '', empLine = u ? up(u.name) + ', ID# ' + u.loginId : '';
+  const posDept = u ? [u.profile && u.profile.position, u.department].filter(Boolean).join(' - ') : '';
+  let to = [];
+  if(T.to === 'employee') to = u ? [empLine, posDept].filter(Boolean) : [];
+  else if(T.to === 'ceo') to = [up(ceo.name) + ', ' + String(ceo.title || '').replace(/\./g, '')];
+  else if(T.to === 'text') to = [aiU.toText || T.toText || ''];
+  const groups = (T.groups || []).map(g => ({ label: g.label, people: (aiU.picks[g.label] || []).map(id => C.signers.find(s => s.id === id)).filter(Boolean) }));
+  const rows = aiU.table.map(id => hrFind(id)).filter(Boolean).map((x, i) => (T.tableCols || ['name', 'id']).map(k => k === 'name' ? x.name : k === 'id' ? x.loginId : k === 'dept' ? x.department || '' : k === 'joining' ? (x.profile && x.profile.joiningDate ? aiLong(x.profile.joiningDate) : '') : k === 'position' ? (x.profile && x.profile.position) || '' : k === 'salary' ? (x.profile && x.profile.salary && x.profile.salary.basicSalary) || '' : ''));
+  const bodyV = hrFill(aiBodyText(), V);
+  return { T, V, date: aiLong(aiU.date || aiToday()), title: T.title || '', to, from: T.from === 'ceo' ? up(ceo.name) + ', CEO' : '', subject: hrFill(aiU.subject || T.subject || '', V), salutation: hrFill(T.salutation || '', V), body: bodyV,
+    end: T.end, empName, empId: u ? u.loginId : '', empDept: u ? u.department || '' : '', empPos: u && u.profile ? u.profile.position || '' : '', empSign: aiU.empSign, groups, ceo, signoff: T.signoff || 'Sincerely,', closing: T.closing || '', sign: T.sign || '',
+    table: (T.table && rows.length) ? { heads: ['Sl.'].concat((T.tableCols || ['name', 'id']).map(k => aiCols[k] || k)), rows } : null };
+}
+function aiBodyHtml(text){
+  const out = []; let i = 0; const ps = String(text || '').split(/\n{2,}/);
+  ps.forEach(p => { const lines = p.split('\n'); let buf = [];
+    const flush = () => { if(buf.length){ out.push(`<div style="margin:0 0 10px;">${buf.map(aiEsc).join('<br>')}</div>`); buf = []; } };
+    lines.forEach(l => { if(/^\s*[-•]\s+/.test(l)){ flush(); out.push(`<div style="display:flex;gap:8px;margin:3px 0 3px 16px;"><span>•</span><span style="flex:1;">${aiEsc(l.replace(/^\s*[-•]\s+/, ''))}</span></div>`); } else if(l.trim()) buf.push(l.trim()); });
+    flush(); });
+  return out.join('');
+}
+function aiSignHtml(g){
+  if(!g.people.length) return '';
+  return `<div style="margin-top:26px;"><div style="font-size:12.5px;font-weight:700;margin-bottom:34px;">${aiEsc(g.label)}${g.label.slice(-1) === ':' ? '' : ':'}</div><div style="display:flex;gap:46px;flex-wrap:wrap;">${g.people.map(p => `<div style="font-size:12.5px;line-height:1.45;"><div style="font-weight:700;">${aiEsc(String(p.name).toUpperCase())}</div><div style="color:#475569;">${aiEsc(p.title || '')}</div></div>`).join('')}</div></div>`;
+}
+function aiLetterHtml(m){
+  const S = state.hrSettings || hrDefaults(), lh = S.letterhead || {}, col = /^#[0-9a-fA-F]{6}$/.test(lh.color || '') ? lh.color : '#4f46e5';
+  const meta = (k, v, bold) => v ? `<div style="display:flex;gap:10px;margin-top:7px;font-size:13px;"><div style="width:78px;font-weight:700;flex:none;">${k}</div><div style="flex:1;${bold ? 'font-weight:700;' : ''}">${v}</div></div>` : '';
+  const head = `<div style="text-align:center;padding-bottom:12px;border-bottom:2px solid ${col};">${lh.logo ? `<img src="${lh.logo}" alt="" style="max-height:54px;max-width:170px;object-fit:contain;margin-bottom:4px;">` : ''}<div style="font-family:'Oswald',sans-serif;font-size:22px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;line-height:1.25;">${aiEsc(lh.company || S.company)}</div>${lh.line1 ? `<div style="font-size:11.5px;color:#475569;margin-top:2px;">${aiEsc(lh.line1)}</div>` : ''}${lh.line2 ? `<div style="font-size:11.5px;color:#475569;">${aiEsc(lh.line2)}</div>` : ''}</div>`;
+  let b = '';
+  if(m.title && m.end !== 'ceo') b += `<div style="margin-top:20px;font-weight:700;font-size:15px;">${aiEsc(m.title)}</div>`;
+  if(m.title && m.end === 'ceo') b += `<div style="margin-top:6px;font-size:13px;">Date: ${aiEsc(m.date)}</div><div style="text-align:center;font-family:'Oswald',sans-serif;font-size:19px;font-weight:700;letter-spacing:.05em;margin:22px 0 4px;">${aiEsc(m.title)}</div>`;
+  else b += meta('DATE:', aiEsc(m.date));
+  if(m.end === 'ceo' && !m.title) b = b.replace('DATE:', 'DATE:');
+  if(m.to.length && m.end !== 'ceo' || (m.end === 'ceo' && m.to.length && m.to[0])) b += meta('TO:', m.to.map(aiEsc).join('<br>'), true);
+  b += meta('FROM:', aiEsc(m.from), true);
+  if(m.subject && m.end !== 'ceo') b += meta('SUBJECT:', aiEsc(m.subject), true);
+  if(m.salutation) b += `<div style="margin-top:16px;font-size:13.5px;${m.end === 'ceo' ? 'font-weight:700;' : ''}">${aiEsc(m.salutation)}</div>`;
+  b += `<div style="margin-top:${m.salutation ? 10 : 18}px;font-size:13.5px;line-height:1.7;">${aiBodyHtml(m.body)}</div>`;
+  if(m.table) b += `<table style="width:100%;border-collapse:collapse;margin:8px 0 6px;font-size:12px;"><thead><tr>${m.table.heads.map(h => `<th style="border:1px solid #94a3b8;padding:5px 6px;text-align:left;background:#f1f5f9;">${aiEsc(h)}</th>`).join('')}</tr></thead><tbody>${m.table.rows.map((r, i) => `<tr><td style="border:1px solid #cbd5e1;padding:5px 6px;">${i + 1}</td>${r.map(c => `<td style="border:1px solid #cbd5e1;padding:5px 6px;">${aiEsc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+  if(m.closing) b += `<div style="margin-top:6px;font-size:13px;font-weight:700;">${aiEsc(m.closing)}</div>`;
+  const ack = `<div style="margin-top:28px;font-size:12.5px;line-height:1.5;"><div style="font-weight:700;margin-bottom:30px;">READ AND UNDERSTOOD</div><div style="font-weight:700;">${aiEsc(String(m.empName).toUpperCase())}, ID# ${aiEsc(m.empId)}</div><div style="color:#475569;">${aiEsc(m.empPos || m.empDept)}</div></div>`;
+  if(m.end === 'ack'){ if(m.empSign) b += ack; b += m.groups.map(aiSignHtml).join(''); }
+  else if(m.end === 'request'){
+    if(!m.T.noSincerely) b += `<div style="margin-top:18px;font-size:13.5px;">Sincerely,</div><div style="margin-top:${m.empSign ? 34 : 8}px;font-size:13px;font-weight:700;">${aiEsc(String(m.empName).toUpperCase())}${m.empId ? ', ID# ' + aiEsc(m.empId) : ''}</div><div style="font-size:12.5px;color:#475569;">Department: ${aiEsc(m.empDept)}</div>`;
+    else b += `<div style="margin-top:18px;font-size:13px;">${aiEsc('Personnel Department')}</div>`;
+    b += m.groups.map(aiSignHtml).join('');
+  } else if(m.end === 'ceo') b += `<div style="margin-top:20px;font-size:13.5px;">${aiEsc(m.signoff)}</div><div style="margin-top:38px;font-size:13px;font-weight:700;">${aiEsc(String(m.ceo.name).toUpperCase())}</div><div style="font-size:12.5px;">${aiEsc(m.ceo.title)}</div><div style="font-size:12.5px;">${aiEsc((state.hrSettings.letterhead.company || state.hrSettings.company))}</div>`;
+  else if(m.end === 'verified') b += m.groups.map(aiSignHtml).join('');
+  else if(m.end === 'notice') b += `<div style="margin-top:26px;font-size:13px;font-weight:700;">${aiEsc(m.sign || 'THE MANAGEMENT')}</div>`;
+  if(m.empSign && (m.end === 'verified' || m.end === 'notice' || m.end === 'none')) b += ack;
+  if(m.end === 'none') b += m.groups.map(aiSignHtml).join('');
+  const foot = lh.footer ? `<div style="margin-top:auto;padding-top:10px;border-top:1px solid #e2e8f0;font-size:10.5px;color:#64748b;text-align:center;">${aiEsc(lh.footer)}</div>` : '';
+  return `<div style="width:760px;min-height:1040px;box-sizing:border-box;padding:44px 54px 30px;background:#fff;color:#0f172a;font-family:'Inter',sans-serif;display:flex;flex-direction:column;">${head}<div style="flex:1;">${b}</div>${foot}</div>`;
+}
+function aiPlain(m){
+  const L = []; if(m.title) L.push(m.title); L.push('DATE: ' + m.date); if(m.to.length) L.push('TO: ' + m.to.join(', ')); if(m.from) L.push('FROM: ' + m.from); if(m.subject) L.push('SUBJECT: ' + m.subject); L.push('');
+  if(m.salutation) L.push(m.salutation, ''); L.push(m.body); return L.join('\n');
+}
+
+/* ---------- the form ---------- */
+function aiSetType(id){
+  const T = ((AI.cfg && AI.cfg.types) || []).find(t => t.id === id); if(!T) return;
+  aiU.typeId = id; aiU.subject = ''; aiU.body = ''; aiU.mode = T.std ? 'std' : 'ai'; aiU.table = []; aiU.facts = ''; aiU.amount = '';
+  aiU.empSign = !!(T.ack || T.end === 'request'); aiU.toText = T.toText || ''; aiU.from = ''; aiU.to = '';
+  aiU.picks = Object.assign({}, aiPicksLoad(), {});
+}
+function aiRenderLetters(){
+  const b = $('hrBody'); if(!b) return;
+  b.innerHTML = aiSwitchHtml() + '<div class="hrEmpty">Loading…</div>';
+  aiLoad().then(() => {
+    if(!aiU.date) aiU.date = aiToday();
+    if(!aiType()) aiSetType(AI.cfg.types[0].id);
+    aiDraw();
+  }).catch(err => { console.error(err); b.innerHTML = aiSwitchHtml() + '<div class="hrEmpty">Could not load. Check your connection and open this tab again.</div>'; });
+}
+function aiSwitchHtml(){ return `<div class="aiSeg"><button class="${AI.mode === 'std' ? 'on' : ''}" data-ai="mode" data-v="std">Standard letters</button><button class="${AI.mode === 'smart' ? 'on' : ''}" data-ai="mode" data-v="smart">${aiIc('spark', 14)} Write with AI</button></div>`; }
+function aiIc(n, s){ const P = { spark: '<path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.9 2.1L22 18l-2.1.9L19 21l-.9-2.1L16 18l2.1-.9z"/>', down: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>', copy: '<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>', save: '<path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>', x: '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>', plus: '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>' }; s = s || 16; return `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${P[n] || ''}</svg>`; }
+function aiDraw(){
+  const b = $('hrBody'); if(!b || AI.mode !== 'smart') return;
+  const C = AI.cfg, T = aiType(), people = hrAllPeople().sort((a, c) => (a.name || '').localeCompare(c.name || '')), u = hrFind(aiU.emp);
+  const fld = (l, inner, wide) => `<div class="field${wide ? ' wide' : ''}"><label>${l}</label>${inner}</div>`;
+  const hasStd = !!T.std;
+  let f = fld('Letter', `<select data-ai="type">${C.types.map(t => `<option value="${aiEsc(t.id)}" ${t.id === aiU.typeId ? 'selected' : ''}>${aiEsc(t.name)}</option>`).join('')}</select>`) + fld('Letter date', `<input type="date" data-ai="f" data-f="date" value="${aiEsc(aiU.date)}">`);
+  if(T.emp) f += fld('Employee (type a name or ID)', `<input type="text" list="aiEmpList" data-ai="emp" value="${u ? aiEsc(hrEmpLabel(u)) : ''}" placeholder="Start typing..."><datalist id="aiEmpList">${people.map(x => `<option value="${aiEsc(hrEmpLabel(x))}"></option>`).join('')}</datalist>`, true);
+  if(T.to === 'text') f += fld('To', `<input type="text" data-ai="f" data-f="toText" value="${aiEsc(aiU.toText)}" placeholder="e.g. Finance & Payroll Department">`, true);
+  if(T.dates) f += fld(T.end === 'ceo' ? 'Joined on' : 'From', `<input type="date" data-ai="f" data-f="from" value="${aiEsc(aiU.from)}">`) + fld(T.end === 'ceo' ? 'Last day' : 'To', `<input type="date" data-ai="f" data-f="to" value="${aiEsc(aiU.to)}">`);
+  if(T.amount) f += fld('Amount (SAR)', `<input type="text" inputmode="decimal" data-ai="f" data-f="amount" value="${aiEsc(aiU.amount)}">`);
+  if(T.pronoun) f += fld('He / she', `<select data-ai="f" data-f="pron"><option value="his" ${aiU.pron === 'his' ? 'selected' : ''}>He (his)</option><option value="her" ${aiU.pron === 'her' ? 'selected' : ''}>She (her)</option><option value="their" ${aiU.pron === 'their' ? 'selected' : ''}>Neutral (their)</option></select>`);
+  if(T.table){
+    const picked = aiU.table.map(id => hrFind(id)).filter(Boolean);
+    f += `<div class="field wide"><label>Employees in the table (${picked.length})</label><div class="aiChips">${picked.map(x => `<span class="aiChip">${aiEsc(x.name)} <small>${aiEsc(x.loginId)}</small><button data-ai="tdel" data-id="${aiEsc(x.loginId)}" aria-label="Remove">&times;</button></span>`).join('') || '<span class="hrNote">Nobody added yet</span>'}</div>
+      <div class="aiAddRow"><input type="text" list="aiEmpList2" data-ai="tadd" placeholder="Add a person: type a name or ID"><datalist id="aiEmpList2">${people.map(x => `<option value="${aiEsc(hrEmpLabel(x))}"></option>`).join('')}</datalist>
+      <span class="hrNote">or everyone who joined in</span><input type="month" data-ai="tm" value="${aiEsc(aiU.tm)}"><select data-ai="tt"><option value="">any type</option><option value="Sponsor" ${aiU.tt === 'Sponsor' ? 'selected' : ''}>Sponsor</option><option value="Non-Sponsor" ${aiU.tt === 'Non-Sponsor' ? 'selected' : ''}>Non-Sponsor</option></select><button class="pillBtn" data-ai="tmonth">${aiIc('plus', 13)} Add them</button></div></div>`;
+  }
+  f += fld('Subject (leave empty to let the standard or the AI choose)', `<input type="text" data-ai="f" data-f="subject" value="${aiEsc(aiU.subject)}" placeholder="${aiEsc(hrFill(T.subject || '', aiVars()))}">`, true);
+  f += fld('What should the letter say? (the reason or details - short notes are enough)', `<textarea rows="3" data-ai="f" data-f="facts" placeholder="e.g. Did not follow the instruction to check the stock list on 12 Sept; second time this month.">${aiEsc(aiU.facts)}</textarea>`, true);
+  const groups = (T.groups || []).map(g => { const sg = C.signers; return `<div class="field wide"><label>${aiEsc(g.label)}</label><div class="aiChips">${sg.length ? sg.map(s => `<button class="aiPick ${(aiU.picks[g.label] || []).includes(s.id) ? 'on' : ''}" data-ai="pick" data-g="${aiEsc(g.label)}" data-id="${aiEsc(s.id)}">${aiEsc(s.name)}<small>${aiEsc(s.title || '')}</small></button>`).join('') : '<span class="hrNote">No names yet - Admin &rarr; AI &amp; Letters &rarr; Signatures</span>'}</div></div>`; }).join('');
+  b.innerHTML = aiSwitchHtml() + `<div class="hrForm">${f}</div>
+    <div class="aiGen"><button class="btn btn-primary btn-sm" data-ai="gen" ${aiU.busy ? 'disabled' : ''}>${aiIc('spark', 14)} ${aiU.busy ? 'Writing…' : 'Write with AI'}</button>${hasStd ? `<button class="btn btn-ghost btn-sm" data-ai="std">Use the standard text</button>` : ''}<span class="hrNote" id="aiMsg"></span></div>
+    <div class="hrForm"><div class="field wide"><label>Letter text (you can change it)</label><textarea rows="9" data-ai="body" id="aiBody">${aiEsc(aiBodyText())}</textarea></div>${groups}
+    ${T.emp ? `<label class="aiChk"><input type="checkbox" data-ai="esign" ${aiU.empSign ? 'checked' : ''}> Add the employee's signature space ("read and understood")</label>` : ''}</div>
+    <div class="aiGen"><button class="btn btn-primary btn-sm" data-ai="pdf">${aiIc('down', 14)} Download PDF</button><button class="btn btn-ghost btn-sm" data-ai="copy">${aiIc('copy', 14)} Copy text</button>${T.save && u ? `<button class="btn btn-ghost btn-sm" data-ai="viol">${aiIc('save', 14)} Save in ${aiEsc((u.name || '').split(/\s+/)[0])}'s violations</button>` : ''}</div>
+    <div class="hrLetter" id="aiLetterBox"><div id="aiLetterInner" style="transform-origin:top left;"></div></div>
+    <div class="hrNote" style="margin:8px 0 12px;">The letterhead (company name and address lines) comes from HR Assistant &rarr; Settings &rarr; Letterhead. Instructions, letter types and signatures are in Admin &rarr; AI &amp; Letters.</div>`;
+  aiPreview();
+}
+function aiPreview(){
+  const inner = $('aiLetterInner'), box = $('aiLetterBox'); if(!inner) return;
+  const m = aiModel(); if(!m){ inner.innerHTML = ''; return; }
+  inner.innerHTML = aiLetterHtml(m);
+  const k = Math.min(1, (box.clientWidth - 2) / 760);
+  inner.style.transform = 'scale(' + k + ')'; box.style.height = Math.round(inner.firstElementChild.offsetHeight * k + 2) + 'px';
+}
+async function aiGenerate(){
+  const T = aiType(), u = hrFind(aiU.emp); if(!T || aiU.busy) return;
+  if(T.emp && !u){ toast('Choose the employee first'); return; }
+  if(!aiU.facts.trim() && !T.std && T.id !== 'exp_cert'){ toast('Write a few words about what the letter should say'); return; }
+  aiU.busy = true; aiDraw();
+  try{
+    const V = aiVars(), P = u && u.profile || {};
+    const sys = AI.cfg.master + '\n\nLETTER TYPE: ' + T.name + '\nINSTRUCTION FOR THIS TYPE: ' + (T.instruction || '') + (T.example ? '\n\nEXAMPLE of this type (copy its structure, tone and length; change only the details):\n"""\n' + T.example + '\n"""' : '');
+    const facts = { letter_type: T.name, employee_name: V.name || undefined, position: V.position || undefined, department: V.department || undefined, joining_date: T.dates && T.end === 'ceo' ? (aiU.from ? aiLong(aiU.from) : V.joiningDate) || undefined : undefined,
+      from_date: T.end === 'ceo' ? undefined : V.from || undefined, to_date: V.to || undefined, days: T.end === 'ceo' ? undefined : V.days || undefined, last_day: T.end === 'ceo' ? V.to || undefined : undefined, deduction_amount_SAR: V.amount || undefined, pronoun: T.pronoun ? aiU.pron : undefined, details_from_hr: aiU.facts.trim() || undefined, other_employees_count: T.table ? aiU.table.length : undefined, letter_date: V.date };
+    const raw = await aiAsk(sys, 'Facts for this letter (use only these):\n' + JSON.stringify(facts, null, 1) + '\n\nReturn the JSON now.');
+    const r = aiParseAnswer(raw);
+    aiU.body = r.body; aiU.mode = 'ai'; if(!aiU.subject.trim() && r.subject && !T.subject) aiU.subject = r.subject; else if(!aiU.subject.trim() && r.subject && /^(|other)$/.test('')) aiU.subject = r.subject;
+    if(!aiU.subject.trim() && r.subject && !(T.subject || '').trim()) aiU.subject = r.subject;
+    aiU.busy = false; aiDraw(); const mm = $('aiMsg'); if(mm) mm.textContent = 'Written. Read it and change anything you like.';
+  }catch(err){ console.error(err); aiU.busy = false; aiDraw(); const mm = $('aiMsg'); if(mm){ mm.textContent = aiErrText(err); mm.style.color = 'var(--danger)'; } toast('The AI could not write the letter'); }
+}
+async function aiPdf(){
+  const m = aiModel(); if(!m){ return; }
+  if(m.T.emp && !m.empId){ toast('Choose the employee first'); return; }
+  if(!m.body.trim()){ toast('The letter has no text yet'); return; }
+  toast('Making the PDF…');
+  await rvfMakePdf([aiLetterHtml(m)], (m.T.id + '-' + (m.empId || 'letter') + '-' + rvfDateStamp()).replace(/[^\w\-]+/g, '-').toLowerCase() + '.pdf');
+}
+async function aiSaveViolation(){
+  const m = aiModel(), u = hrFind(aiU.emp); if(!m || !u || aiU.busy) return;
+  if(!m.body.trim()){ toast('The letter has no text yet'); return; }
+  if(!confirm('Save this letter in ' + u.name + "'s Violations?")) return;
+  aiU.busy = true;
+  try{
+    const amt = parseFloat(aiU.amount) || 0;
+    await window.__db.saveViolation({ employeeId: u.loginId, date: aiU.date || aiToday(), reason: m.subject || m.T.name, deduction: { yes: amt > 0, amount: amt > 0 ? String(amt) + ' SAR' : '' }, attachments: [], letter: { type: m.T.id, name: m.T.name, subject: m.subject, body: m.body, date: m.date }, createdAt: Date.now(), createdBy: state.user.loginId });
+    toast('Saved in the violations of ' + u.name);
+  }catch(err){ console.error(err); toast('Could not save — check your connection'); }
+  aiU.busy = false;
+}
+function aiOnClick(e){
+  const el = e.target.closest('[data-ai]'); if(!el) return; const a = el.dataset.ai;
+  switch(a){
+    case 'mode': AI.mode = el.dataset.v; hrRenderBody(); break;
+    case 'gen': aiGenerate(); break;
+    case 'std': aiU.mode = 'std'; aiDraw(); break;
+    case 'pdf': aiPdf(); break;
+    case 'copy': { const m = aiModel(); if(m && m.body.trim()) hrCopy(aiPlain(m), 'Letter text copied'); else toast('The letter has no text yet'); break; }
+    case 'viol': aiSaveViolation(); break;
+    case 'pick': { const g = el.dataset.g, id = el.dataset.id, l = aiU.picks[g] = (aiU.picks[g] || []).slice(); const i = l.indexOf(id); if(i >= 0) l.splice(i, 1); else l.push(id); aiPicksSave(); aiDraw(); break; }
+    case 'tdel': aiU.table = aiU.table.filter(x => x !== el.dataset.id); aiDraw(); break;
+    case 'tmonth': { if(!aiU.tm){ toast('Choose the month'); break; } const add = hrAllPeople().filter(x => ((x.profile && x.profile.joiningDate) || '').slice(0, 7) === aiU.tm && (!aiU.tt || (x.profile && x.profile.employmentType) === aiU.tt) && !aiU.table.includes(x.loginId)).sort((p, q) => ((p.profile.joiningDate || '') > (q.profile.joiningDate || '') ? 1 : -1)); if(!add.length) toast('Nobody joined in that month'); else aiU.table = aiU.table.concat(add.map(x => x.loginId)); aiDraw(); break; }
+  }
+}
+function aiOnInput(e){
+  const el = e.target, a = el.dataset && el.dataset.ai; if(!a || AI.mode !== 'smart') return;
+  if(a === 'f'){ aiU[el.dataset.f] = el.value; if(el.dataset.f === 'facts' || el.dataset.f === 'subject' || el.dataset.f === 'date' || el.dataset.f === 'from' || el.dataset.f === 'to' || el.dataset.f === 'amount' || el.dataset.f === 'toText') { if(aiU.mode === 'std'){ const ta = $('aiBody'); if(ta) ta.value = aiBodyText(); } } aiPreview(); }
+  else if(a === 'body'){ aiU.body = el.value; aiU.mode = 'edit'; aiPreview(); }
+}
+function aiOnChange(e){
+  const el = e.target, a = el.dataset && el.dataset.ai; if(!a || AI.mode !== 'smart') return;
+  switch(a){
+    case 'type': aiSetType(el.value); aiDraw(); break;
+    case 'emp': { const id = hrEmpFromLabel(el.value); aiU.emp = id; const u = hrFind(id); if(u && u.profile){ if(aiType() && aiType().end === 'ceo' && aiType().dates){ if(!aiU.from) aiU.from = u.profile.joiningDate || ''; if(!aiU.to) aiU.to = u.profile.endDate || aiToday(); } } aiDraw(); break; }
+    case 'f': if(el.dataset.f === 'pron'){ aiU.pron = el.value; aiPreview(); } break;
+    case 'esign': aiU.empSign = el.checked; aiPreview(); break;
+    case 'tadd': { const id = hrEmpFromLabel(el.value); if(id && !aiU.table.includes(id)) aiU.table.push(id); aiDraw(); break; }
+    case 'tm': aiU.tm = el.value; break;
+    case 'tt': aiU.tt = el.value; break;
+  }
+}
+document.addEventListener('click', aiOnClick); document.addEventListener('input', aiOnInput); document.addEventListener('change', aiOnChange);
+
+/* ============================================================
+   ADMIN > "AI & Letters": connection, master instruction, letter types, signatures. Loaded only when the tab is opened.
+   ============================================================ */
+const aiA = { sel: '', msg: '', conn: false, cfg: false };
+const aiAEsc = (t) => String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+const AI_PRESETS = { groq: ['https://api.groq.com/openai/v1', 'llama-3.3-70b-versatile'], openai: ['https://api.openai.com/v1', 'gpt-4o-mini'], custom: ['', ''] };
+const AI_WORKER = `export default {
+  async fetch(req, env) {
+    const cors = { 'Access-Control-Allow-Origin': 'https://app.rvf.sa', 'Access-Control-Allow-Headers': 'Content-Type', 'Access-Control-Allow-Methods': 'POST, OPTIONS' };
+    if (req.method === 'OPTIONS') return new Response(null, { headers: cors });
+    const r = await fetch('https://api.groq.com/openai/v1/chat/completions', { method: 'POST', body: await req.text(),
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + env.GROQ_KEY } });
+    return new Response(r.body, { status: r.status, headers: { ...cors, 'Content-Type': 'application/json' } });
+  }
+}`;
+async function aiRenderAdmin(){
+  const p = $('admin-ai'); if(!p) return;
+  if(!state.user || state.user.role !== 'admin'){ p.innerHTML = '<div class="hrEmpty">Admin only.</div>'; return; }
+  p.innerHTML = '<div class="hrEmpty">Loading…</div>';
+  try{ await aiLoad(); await aiLoadConn(); }catch(err){ console.error(err); p.innerHTML = '<div class="hrEmpty">Could not load. Check your connection and open this tab again.</div>'; return; }
+  aiAdminDraw();
+}
+function aiAdminDraw(){
+  const p = $('admin-ai'); if(!p || !AI.cfg) return;
+  const C = AI.cfg, K = AI.conn, T = C.types.find(t => t.id === aiA.sel) || C.types[0]; aiA.sel = T.id;
+  const users = (state.users || []).filter(u => u.role !== 'pending').sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+  const preset = /groq\.com/.test(K.baseUrl) ? 'groq' : /openai\.com/.test(K.baseUrl) ? 'openai' : 'custom';
+  const uopt = (sel) => '<option value="">Choose from the user list…</option>' + users.map(u => `<option value="${aiAEsc(u.loginId)}" ${u.loginId === sel ? 'selected' : ''}>${aiAEsc(u.name)} (${aiAEsc(u.loginId)})</option>`).join('');
+  const fld = (l, inner, wide) => `<div class="field${wide ? ' wide' : ''}"><label>${l}</label>${inner}</div>`;
+  const inp = (k, v, ph) => `<input type="text" data-aia="tf" data-k="${k}" value="${aiAEsc(v || '')}" ${ph ? `placeholder="${aiAEsc(ph)}"` : ''}>`;
+  const chk = (k, l) => `<label class="aiChk"><input type="checkbox" data-aia="tc" data-k="${k}" ${T[k] ? 'checked' : ''}> ${l}</label>`;
+  p.innerHTML = `<div class="card aiAdm">
+    <div class="aiH">1 &middot; AI connection</div>
+    <div class="hrForm">${fld('Service', `<select data-aia="preset"><option value="groq" ${preset === 'groq' ? 'selected' : ''}>Groq</option><option value="openai" ${preset === 'openai' ? 'selected' : ''}>OpenAI</option><option value="custom" ${preset === 'custom' ? 'selected' : ''}>Other / my own proxy</option></select>`)}
+      ${fld('Model', `<input type="text" data-aia="cf" data-k="model" value="${aiAEsc(K.model)}">`)}
+      ${fld('Address (base URL)', `<input type="text" data-aia="cf" data-k="baseUrl" value="${aiAEsc(K.baseUrl)}">`, true)}
+      ${fld('API key', `<input type="password" autocomplete="off" data-aia="cf" data-k="key" value="${aiAEsc(K.key)}" placeholder="paste the key here">`, true)}</div>
+    <div class="aiRow"><button class="pillBtn ok" data-aia="saveconn">Save connection</button><button class="pillBtn" data-aia="test">Test</button><span class="hrNote" id="aiAMsg1">${aiAEsc(aiA.msg)}</span></div>
+    <details class="aiHelp"><summary>Important: key safety and the browser block</summary>
+      <p class="hrNote">The key is saved in the app database, so any signed-in user could technically read it. Use a key made only for this, with a low limit, and change it if you ever doubt it.</p>
+      <p class="hrNote">Some services (Groq may be one) do not allow calls straight from a web page. If Test says it could not reach the service, put a tiny free proxy in between (Cloudflare Workers): keep the key as a secret named GROQ_KEY there, paste the code below, then put the Worker address in "Address" and leave the key here empty.</p>
+      <pre class="aiCode">${aiAEsc(AI_WORKER)}</pre></details>
+
+    <div class="aiH">2 &middot; Main instruction for the AI</div>
+    <div class="hrNote">This is the teacher's note the AI reads for every letter. The app adds the letterhead, date, names and signatures itself, so the AI writes only the middle paragraphs.</div>
+    <textarea rows="10" data-aia="master" class="aiMaster">${aiAEsc(C.master)}</textarea>
+    <div class="aiRow"><button class="pillBtn" data-aia="master-reset">Restore the original</button></div>
+
+    <div class="aiH">3 &middot; Signatures</div>
+    <div class="hrForm">${fld('The approver (CEO) - always the same', `<select data-aia="appr">${uopt(C.approver.id)}</select>`)}
+      ${fld('Shown as', `<div class="aiShown">${aiAEsc(C.approver.name)}<small>${aiAEsc(C.approver.title)}</small></div>`)}</div>
+    <div class="hrNote" style="margin:4px 0 6px;">People who can be picked as "Recommended by", "Action taken by" and so on (name, ID and designation only):</div>
+    <div class="aiChips">${C.signers.map(s => `<span class="aiChip">${aiAEsc(s.name)} <small>${aiAEsc(s.title || '')}${s.id ? ' &middot; ' + aiAEsc(s.id) : ''}</small><button data-aia="sdel" data-id="${aiAEsc(s.id)}" aria-label="Remove">&times;</button></span>`).join('') || '<span class="hrNote">Nobody added yet</span>'}</div>
+    <div class="aiRow"><select data-aia="sadd" style="flex:1;min-width:0;">${uopt('')}</select></div>
+
+    <div class="aiH">4 &middot; Letter types</div>
+    <div class="aiRow"><select data-aia="tsel" style="flex:1;min-width:0;">${C.types.map(t => `<option value="${aiAEsc(t.id)}" ${t.id === T.id ? 'selected' : ''}>${aiAEsc(t.name)}</option>`).join('')}</select><button class="pillBtn" data-aia="tnew">New type</button></div>
+    <div class="hrForm" style="margin-top:10px;">
+      ${fld('Name', inp('name', T.name))}
+      ${fld('Letter ends with', `<select data-aia="tf" data-k="end">${[['request', 'Request from the employee (Sincerely, name)'], ['ack', 'Notice with "read and understood"'], ['ceo', 'Letter to the CEO (memo)'], ['verified', 'Verified-by names only'], ['notice', 'General notice'], ['none', 'Nothing']].map(o => `<option value="${o[0]}" ${T.end === o[0] ? 'selected' : ''}>${o[1]}</option>`).join('')}</select>`)}
+      ${fld('Addressed to', `<select data-aia="tf" data-k="to">${[['employee', 'The employee'], ['ceo', 'The CEO'], ['text', 'A name I type'], ['none', 'Nobody']].map(o => `<option value="${o[0]}" ${T.to === o[0] ? 'selected' : ''}>${o[1]}</option>`).join('')}</select>`)}
+      ${fld('Title line (optional)', inp('title', T.title))}
+      ${fld('Subject', inp('subject', T.subject, 'can use {name} {from} {to} {days} {amount}'))}
+      ${fld('Greeting', inp('salutation', T.salutation, 'e.g. Dear Sir,'))}
+      <div class="field wide aiFlags">${chk('emp', 'Needs an employee')}${chk('dates', 'Has dates')}${chk('amount', 'Has an amount')}${chk('pronoun', 'He / she')}${chk('table', 'Has a table of employees')}${chk('save', 'Can be saved in violations')}</div>
+      ${fld('Instruction for the AI (what this letter is and how it should read)', `<textarea rows="3" data-aia="tf" data-k="instruction">${aiAEsc(T.instruction || '')}</textarea>`, true)}
+      ${fld('Example (paste an old letter text - the AI copies its style)', `<textarea rows="5" data-aia="tf" data-k="example">${aiAEsc(T.example || '')}</textarea>`, true)}
+      ${fld('Standard text (optional - used without AI. Placeholders: {name} {id} {position} {department} {from} {to} {days} {amount} {date} {reason})', `<textarea rows="4" data-aia="tf" data-k="std">${aiAEsc(T.std || '')}</textarea>`, true)}
+    </div>
+    <div class="aiRow"><button class="pillBtn ok" data-aia="saveall">Save letters settings</button><button class="pillBtn danger" data-aia="tdel">Delete this type</button><button class="pillBtn" data-aia="types-reset">Restore all original types</button><span class="hrNote" id="aiAMsg2"></span></div>
+  </div>`;
+}
+function aiAMsg(id, t, bad){ const e = $(id); if(e){ e.textContent = t; e.style.color = bad ? 'var(--danger)' : ''; } }
+async function aiSaveCfg(){
+  try{ await aiSave(); aiAMsg('aiAMsg2', 'Saved.'); toast('Saved'); }
+  catch(err){ console.error(err); aiAMsg('aiAMsg2', 'Could not save. Check your connection.', true); toast('Could not save'); }
+}
+function aiAOnClick(e){
+  const el = e.target.closest('[data-aia]'); if(!el || !AI.cfg) return; const a = el.dataset.aia, C = AI.cfg;
+  if(a === 'saveconn'){ aiSaveConn().then(() => { aiA.msg = 'Saved.'; aiAMsg('aiAMsg1', 'Saved.'); toast('Saved'); }).catch(() => aiAMsg('aiAMsg1', 'Could not save.', true)); }
+  else if(a === 'test'){
+    aiAMsg('aiAMsg1', 'Testing…');
+    aiAsk('Reply with only the word OK.', 'Test').then(r => aiAMsg('aiAMsg1', 'Working. The AI answered: ' + String(r).trim().slice(0, 40))).catch(err => aiAMsg('aiAMsg1', aiErrText(err), true));
+  }
+  else if(a === 'master-reset'){ if(confirm('Restore the original main instruction?')){ C.master = AI_MASTER; aiAdminDraw(); aiSaveCfg(); } }
+  else if(a === 'sdel'){ C.signers = C.signers.filter(s => s.id !== el.dataset.id); aiAdminDraw(); aiSaveCfg(); }
+  else if(a === 'tnew'){ const id = 't' + Date.now().toString(36); C.types.push({ id, name: 'New letter', end: 'ceo', to: 'text', toText: '', emp: false, subject: '', salutation: 'Dear Sir,', signoff: 'Sincerely,', instruction: '', example: '' }); aiA.sel = id; aiAdminDraw(); }
+  else if(a === 'tdel'){ if(C.types.length < 2){ toast('Keep at least one type'); return; } if(confirm('Delete this letter type?')){ C.types = C.types.filter(t => t.id !== aiA.sel); aiA.sel = ''; aiAdminDraw(); aiSaveCfg(); } }
+  else if(a === 'types-reset'){ if(confirm('Replace ALL letter types with the original ones? Your own changes to types will be lost.')){ C.types = aiDefaultTypes(); aiA.sel = ''; aiAdminDraw(); aiSaveCfg(); } }
+  else if(a === 'saveall') aiSaveCfg();
+}
+function aiAOnChange(e){
+  const el = e.target, a = el.dataset && el.dataset.aia; if(!a || !AI.cfg) return; const C = AI.cfg, T = C.types.find(t => t.id === aiA.sel);
+  if(a === 'preset'){ const P = AI_PRESETS[el.value]; if(P && P[0]){ AI.conn.baseUrl = P[0]; AI.conn.model = P[1]; } else AI.conn.baseUrl = ''; aiAdminDraw(); }
+  else if(a === 'appr'){ const u = (state.users || []).find(x => x.loginId === el.value); if(u){ C.approver = { id: u.loginId, name: String(u.name || '').toUpperCase(), title: (u.profile && u.profile.position) || C.approver.title || 'C.E.O' }; aiAdminDraw(); aiSaveCfg(); } }
+  else if(a === 'sadd'){ const u = (state.users || []).find(x => x.loginId === el.value); if(u && !C.signers.some(s => s.id === u.loginId)){ C.signers.push({ id: u.loginId, name: u.name, title: (u.profile && u.profile.position) || '' }); aiAdminDraw(); aiSaveCfg(); } }
+  else if(a === 'tsel'){ aiA.sel = el.value; aiAdminDraw(); }
+  else if(a === 'tc' && T){ T[el.dataset.k] = el.checked; }
+  else if(a === 'tf' && T && el.tagName === 'SELECT'){ T[el.dataset.k] = el.value; if(el.dataset.k === 'end') T.groups = T.groups || []; }
+}
+function aiAOnInput(e){
+  const el = e.target, a = el.dataset && el.dataset.aia; if(!a || !AI.cfg) return;
+  if(a === 'cf') AI.conn[el.dataset.k] = el.value.trim();
+  else if(a === 'master') AI.cfg.master = el.value;
+  else if(a === 'tf' && el.tagName !== 'SELECT'){ const T = AI.cfg.types.find(t => t.id === aiA.sel); if(T) T[el.dataset.k] = el.value; }
+}
+document.addEventListener('click', aiAOnClick); document.addEventListener('change', aiAOnChange); document.addEventListener('input', aiAOnInput);
+
+(function(){
+  const b=$('bkOpenBtn'); if(b) b.addEventListener('click', () => bkOpen());
+  const t=document.querySelector('.auth-tab[data-admintab="ai"]'); if(t) t.addEventListener('click', () => aiRenderAdmin());
+})();
 
 /* ---------- init ---------- */
 init();
