@@ -2413,6 +2413,12 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
 .chTbl{ border-collapse:collapse; font-size:12px; margin:6px 0; display:block; overflow-x:auto; } .chTbl th,.chTbl td{ border:1px solid var(--line-strong); padding:4px 8px; text-align:left; } .chTbl th{ background:var(--panel-2,#f1f5f9); }
 .chImg{ display:block; max-width:100%; border-radius:10px; margin-top:8px; }
 .chIn{ display:flex; gap:8px; align-items:flex-end; margin-top:10px; } .chIn textarea{ flex:1; min-width:0; font-size:13.5px; } .chAttach{ cursor:pointer; }
+.aiGapGrid{ display:grid; grid-template-columns:1fr 1fr; gap:6px 14px; margin-top:6px; }
+.aiGap{ display:flex; justify-content:space-between; align-items:center; gap:8px; background:var(--panel-2,#f8fafc); border-radius:10px; padding:5px 8px 5px 10px; font-size:11.5px; color:var(--text); }
+.aiStep{ display:inline-flex; align-items:center; gap:3px; flex:none; }
+.aiStep button{ width:26px; height:26px; border-radius:50%; border:1px solid var(--line-strong); background:#fff; color:var(--amber); font-size:15px; font-weight:700; cursor:pointer; line-height:1; padding:0; }
+.aiStep input{ width:52px; height:28px; padding:0 4px; text-align:center; font-size:12px; border-radius:8px; }
+@media (max-width:640px){ .aiGapGrid{ grid-template-columns:1fr; } }
 
 </style>
 </head>
@@ -2654,7 +2660,6 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
         <div class="auth-tab" data-admintab="purchase">Purchase</div>
         <div class="auth-tab" data-admintab="letterhead">Letterhead</div>
         <div class="auth-tab" data-admintab="ai">AI &amp; Letters</div>
-        <div class="auth-tab" data-admintab="aichat">AI Chat</div>
       </div>
 
       <div class="auth-pane active" id="admin-users">
@@ -2957,8 +2962,6 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
       <div class="auth-pane" id="admin-letterhead"></div>
 
       <div class="auth-pane" id="admin-ai"></div>
-
-      <div class="auth-pane" id="admin-aichat"></div>
 
       <div class="auth-pane" id="admin-config">
         <h2 style="margin-top:0;">Departments</h2>
@@ -3566,6 +3569,13 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
     </section>
 
     <!-- PURCHASE -->
+    <section class="screen" id="screen-aichat">
+      <div class="eyebrow">AI</div>
+      <h1>AI Assistant</h1>
+      <p class="sub" style="margin-bottom:18px;">Ask anything, attach files or pictures, and make slides, documents, spreadsheets or pictures.</p>
+      <div id="aichatMount"></div>
+    </section>
+
     <section class="screen" id="screen-purchase">
       <div class="eyebrow">Purchase</div>
       <h1>Purchase Orders</h1>
@@ -4224,7 +4234,8 @@ const PAGE_DEFS = {
   ceo:        { label: 'Dashboard' },
   employees:  { label: 'Employees' },
   accounts:   { label: 'Accounts' },
-  purchase:   { label: 'Purchase' }
+  purchase:   { label: 'Purchase' },
+  aichat:     { label: 'AI' }
 };
 function defaultPagesForRole(role){
   if(role === 'admin') return ['admin','approvals','select','report','profile','leave','employees'];
@@ -4241,7 +4252,8 @@ function userPages(u){
 function renderNav(){
   const nav = $('navbar');
   nav.innerHTML = '';
-  const pages = userPages(state.user);
+  const pages = userPages(state.user).slice();
+  if(state.user.role === 'admin' && !pages.includes('aichat')) pages.push('aichat');
   pages.forEach(key => {
     const def = PAGE_DEFS[key];
     if(!def) return;
@@ -4286,6 +4298,7 @@ function goTo(key){
   else if(key === 'employees'){ showScreen('screen-employees'); loadEmployeesPage(); }
   else if(key==='accounts'){ showScreen('screen-accounts'); loadAccountsPage(); }
   else if(key === 'purchase'){ showScreen('screen-purchase'); loadPurchasePage(); }
+  else if(key === 'aichat'){ showScreen('screen-aichat'); chRender(); }
 }
 
 $('logoutBtn').addEventListener('click', () => {
@@ -15397,7 +15410,8 @@ function aiParseAnswer(txt){
    LETTERS TAB > "Write with AI": one fixed letterhead (text lines only), the letter body written by AI (or a standard text),
    signatures from the ready-made list, PDF, and optionally saved in the person's Violations.
    ============================================================ */
-const aiU = { typeId: '', emp: '', date: '', from: '', to: '', amount: '', toText: '', pron: 'his', facts: '', subject: '', body: '', mode: 'std', table: [], picks: {}, empSign: false, busy: false, tm: '', tt: '', appr: true, sp: { date: 'm', meta: 'm', greet: 'm' }, edit: '' };
+const aiU = { typeId: '', emp: '', date: '', from: '', to: '', amount: '', toText: '', pron: 'his', facts: '', subject: '', body: '', mode: 'std', table: [], picks: {}, empSign: false, busy: false, tm: '', tt: '', appr: true, g: {}, apos: 'left', edit: '' };
+{ const sv = (function(){ try{ return JSON.parse(localStorage.getItem('rvf_ai_gaps') || '{}') || {}; }catch(e){ return {}; } })(); if(sv.g) aiU.g = sv.g; if(sv.apos) aiU.apos = sv.apos; }
 const aiEsc = (t) => String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const AI_MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 function aiLong(ymd){ const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(ymd || ''); return m ? (+m[3]) + ' ' + AI_MONTHS[+m[2] - 1] + ' ' + m[1] : ''; }
@@ -15446,40 +15460,57 @@ function aiBodyHtml(text){
   });
   flush(); return out.join('');
 }
+const AI_GAPS = [
+  ['gDate', 'Letterhead  →  Date', 22], ['gTo', 'Date  →  To', 14], ['gSub', 'To  →  Subject', 7], ['gGreet', 'Subject  →  Dear...', 18], ['gBody', 'Dear...  →  Letter text', 10],
+  ['gSinc', 'Letter text  →  Sincerely', 18], ['gName', 'Sincerely  →  Name (space to sign)', 34], ['gRec', 'Before Recommended / Action by', 26], ['gRecSign', 'Recommended by  →  Name (space to sign)', 34],
+  ['gAck', 'Before "Read and understood"', 28], ['gAckSign', '"Read and understood"  →  Name', 30], ['gAppr', 'Before Approved by', 26], ['gApprSign', 'Approved by  →  Name (space to sign)', 34] ];
+function aiGapLoad(){ try{ return JSON.parse(localStorage.getItem('rvf_ai_gaps') || '{}') || {}; }catch(e){ return {}; } }
+function aiGapSave(){ try{ localStorage.setItem('rvf_ai_gaps', JSON.stringify({ g: aiU.g, apos: aiU.apos })); }catch(e){} }
+function aiG(k){ const d = AI_GAPS.find(x => x[0] === k); if(k === 'gDate' && aiU.g[k] == null){ return lhFull((state.hrSettings || {}).letterhead).gap; } const v = aiU.g[k]; return v != null && isFinite(+v) ? +v : (d ? d[2] : 0); }
 function aiSignHtml(g){
   if(!g.people.length) return '';
-  return `<div style="margin-top:26px;"><div style="font-size:12.5px;font-weight:700;margin-bottom:34px;">${aiEsc(g.label)}${g.label.slice(-1) === ':' ? '' : ':'}</div><div style="display:flex;gap:46px;flex-wrap:wrap;">${g.people.map(p => `<div style="font-size:12.5px;line-height:1.45;"><div style="font-weight:700;">${aiEsc(String(p.name).toUpperCase())}</div><div style="color:#475569;">${aiEsc(p.title || '')}</div></div>`).join('')}</div></div>`;
+  return `<div style="margin-top:${aiG('gRec')}px;"><div style="font-size:12.5px;font-weight:700;margin-bottom:${aiG('gRecSign')}px;">${aiEsc(g.label)}${g.label.slice(-1) === ':' ? '' : ':'}</div><div style="display:flex;gap:46px;flex-wrap:wrap;">${g.people.map(p => `<div style="font-size:12.5px;line-height:1.45;"><div style="font-weight:700;">${aiEsc(String(p.name).toUpperCase())}</div><div style="color:#475569;">${aiEsc(p.title || '')}</div></div>`).join('')}</div></div>`;
 }
-const AI_SP = { s: 3, m: 8, l: 18, x: 30 }, AI_SPG = { s: 4, m: 12, l: 22, x: 36 }, AI_SPD = { s: 8, m: 'gap', l: 34, x: 46 };
+function aiApprBlock(m){
+  return `<div style="font-size:12.5px;line-height:1.45;"><div style="font-weight:700;margin-bottom:${aiG('gApprSign')}px;">Approved By:</div><div style="font-weight:700;">${aiEsc(String(m.ceo.name).toUpperCase())}</div><div style="color:#475569;">${aiEsc(m.ceo.title || '')}</div></div>`;
+}
 function aiApprHtml(m){
   if(!m.appr || m.end === 'ceo' || !m.ceo || !m.ceo.name) return '';
-  return `<div style="margin-top:26px;"><div style="font-size:12.5px;font-weight:700;margin-bottom:34px;">Approved By:</div><div style="font-size:12.5px;line-height:1.45;"><div style="font-weight:700;">${aiEsc(String(m.ceo.name).toUpperCase())}</div><div style="color:#475569;">${aiEsc(m.ceo.title || '')}</div></div></div>`;
+  const pos = aiU.apos || 'left', mt = aiG('gAppr');
+  return `<div style="margin-top:${mt}px;${pos === 'right' ? 'display:flex;justify-content:flex-end;' : pos === 'center' ? 'display:flex;justify-content:center;' : ''}">${aiApprBlock(m)}</div>`;
 }
 function aiLetterHtml(m){
-  const S = state.hrSettings || hrDefaults(), lh = lhFull(S.letterhead), sp = aiU.sp || {};
-  const mt = AI_SP[sp.meta] != null ? AI_SP[sp.meta] : 8, gr = AI_SPG[sp.greet] != null ? AI_SPG[sp.greet] : 12, dg = sp.date === 'm' || !sp.date ? lh.gap : AI_SPD[sp.date];
-  const meta = (k, v) => v ? `<div style="display:flex;gap:10px;margin-top:${mt}px;font-size:13px;"><div style="width:78px;font-weight:700;flex:none;">${k}</div><div style="flex:1;font-weight:700;">${v}</div></div>` : '';
+  const S = state.hrSettings || hrDefaults(), lh = lhFull(S.letterhead);
+  const meta = (k, v, first) => v ? `<div style="display:flex;gap:10px;margin-top:${first ? 0 : aiG('gSub')}px;font-size:13px;"><div style="width:78px;font-weight:700;flex:none;">${k}</div><div style="flex:1;font-weight:700;">${v}</div></div>` : '';
   const head = lhHeaderHtml(S.letterhead, lh.company || S.company);
-  let b = `<div style="margin-top:${dg}px;font-size:12.5px;color:#475569;">Date: ${aiEsc(fmtDate(aiU.date || aiToday()))}</div>`;
+  let b = `<div style="margin-top:${aiG('gDate')}px;font-size:12.5px;color:#475569;">Date: ${aiEsc(fmtDate(aiU.date || aiToday()))}</div>`;
   if(m.title) b += `<div style="text-align:center;font-family:'Oswald',sans-serif;font-size:19px;font-weight:700;letter-spacing:.05em;margin:${m.end === 'ceo' ? 24 : 16}px 0 4px;">${aiEsc(m.title)}</div>`;
-  const metaHtml = (m.end === 'ceo' ? '' : meta('TO:', m.to.map(aiEsc).join('<br>'))) + meta('FROM:', aiEsc(m.from)) + (m.end === 'ceo' ? '' : meta('SUBJECT:', aiEsc(m.subject)));
-  b += metaHtml ? `<div style="margin-top:${Math.max(6, mt)}px;">${metaHtml}</div>` : '';
-  if(m.salutation) b += `<div style="margin-top:${gr + 6}px;font-size:${lh.bodySize}px;">${aiEsc(m.salutation)}</div>`;
-  b += `<div style="margin-top:${m.salutation ? 10 : 18}px;font-size:${lh.bodySize}px;line-height:${lh.lineH - 0.1};">${aiBodyHtml(m.body)}</div>`;
+  let first = true; const rows = [];
+  if(m.end !== 'ceo' && m.to.length){ rows.push(meta('TO:', m.to.map(aiEsc).join('<br>'), first)); first = false; }
+  if(m.from){ rows.push(meta('FROM:', aiEsc(m.from), first)); first = false; }
+  if(m.end !== 'ceo' && m.subject){ rows.push(meta('SUBJECT:', aiEsc(m.subject), first)); first = false; }
+  if(rows.length) b += `<div style="margin-top:${aiG('gTo')}px;">${rows.join('')}</div>`;
+  if(m.salutation) b += `<div style="margin-top:${aiG('gGreet')}px;font-size:${lh.bodySize}px;">${aiEsc(m.salutation)}</div>`;
+  b += `<div style="margin-top:${m.salutation ? aiG('gBody') : aiG('gGreet')}px;font-size:${lh.bodySize}px;line-height:${lh.lineH - 0.1};">${aiBodyHtml(m.body)}</div>`;
   if(m.table) b += `<table style="width:100%;border-collapse:collapse;margin:8px 0 6px;font-size:12px;"><thead><tr>${m.table.heads.map(h => `<th style="border:1px solid #94a3b8;padding:5px 6px;text-align:left;background:#f1f5f9;">${aiEsc(h)}</th>`).join('')}</tr></thead><tbody>${m.table.rows.map((r, i) => `<tr><td style="border:1px solid #cbd5e1;padding:5px 6px;">${i + 1}</td>${r.map(c => `<td style="border:1px solid #cbd5e1;padding:5px 6px;">${aiEsc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
   if(m.closing) b += `<div style="margin-top:6px;font-size:13px;font-weight:700;">${aiEsc(m.closing)}</div>`;
-  const ack = `<div style="margin-top:28px;font-size:12.5px;line-height:1.5;"><div style="font-weight:700;margin-bottom:30px;">READ AND UNDERSTOOD</div><div style="font-weight:700;">${aiEsc(String(m.empName).toUpperCase())}, ID# ${aiEsc(m.empId)}</div><div style="color:#475569;">${aiEsc(m.empPos || m.empDept)}</div></div>`;
+  const ack = `<div style="margin-top:${aiG('gAck')}px;font-size:12.5px;line-height:1.5;"><div style="font-weight:700;margin-bottom:${aiG('gAckSign')}px;">READ AND UNDERSTOOD</div><div style="font-weight:700;">${aiEsc(String(m.empName).toUpperCase())}, ID# ${aiEsc(m.empId)}</div><div style="color:#475569;">${aiEsc(m.empPos || m.empDept)}</div></div>`;
+  let apprDone = false;
   if(m.end === 'ack'){ if(m.empSign) b += ack; b += m.groups.map(aiSignHtml).join(''); }
   else if(m.end === 'request'){
-    if(!m.T.noSincerely) b += `<div style="margin-top:18px;font-size:13.5px;">Sincerely,</div>` + (m.empSign ? `<div style="margin-top:34px;font-size:13px;font-weight:700;">${aiEsc(String(m.empName).toUpperCase())}${m.empId ? ', ID# ' + aiEsc(m.empId) : ''}</div><div style="font-size:12.5px;color:#475569;">Department: ${aiEsc(m.empDept)}</div>` : '');
-    else b += `<div style="margin-top:18px;font-size:13px;">${aiEsc('Personnel Department')}</div>`;
+    const emp = m.empSign ? `<div style="font-size:13px;"><div style="font-weight:700;margin-top:${aiG('gName')}px;">${aiEsc(String(m.empName).toUpperCase())}${m.empId ? ', ID# ' + aiEsc(m.empId) : ''}</div><div style="font-size:12.5px;color:#475569;">Department: ${aiEsc(m.empDept)}</div></div>` : '';
+    if(!m.T.noSincerely){
+      b += `<div style="margin-top:${aiG('gSinc')}px;font-size:13.5px;">Sincerely,</div>`;
+      if(aiU.apos === 'beside' && m.appr && m.ceo && m.ceo.name){ b += `<div style="display:flex;justify-content:space-between;gap:30px;align-items:flex-start;">${emp || '<div></div>'}<div style="margin-top:${aiG('gName')}px;">${aiApprBlock(m).replace('Approved By:</div>', 'Approved By:</div>')}</div></div>`; apprDone = true; }
+      else b += emp;
+    } else b += `<div style="margin-top:${aiG('gSinc')}px;font-size:13px;">Personnel Department</div>`;
     b += m.groups.map(aiSignHtml).join('');
-  } else if(m.end === 'ceo') b += `<div style="margin-top:20px;font-size:13.5px;">${aiEsc(m.signoff)}</div><div style="margin-top:38px;font-size:13px;font-weight:700;">${aiEsc(String(m.ceo.name).toUpperCase())}</div><div style="font-size:12.5px;">${aiEsc(m.ceo.title)}</div><div style="font-size:12.5px;">${aiEsc(lh.company || S.company)}</div>`;
+  } else if(m.end === 'ceo') b += `<div style="margin-top:${aiG('gSinc')}px;font-size:13.5px;">${aiEsc(m.signoff)}</div><div style="margin-top:${aiG('gName')}px;font-size:13px;font-weight:700;">${aiEsc(String(m.ceo.name).toUpperCase())}</div><div style="font-size:12.5px;">${aiEsc(m.ceo.title)}</div><div style="font-size:12.5px;">${aiEsc(lh.company || S.company)}</div>`;
   else if(m.end === 'verified') b += m.groups.map(aiSignHtml).join('');
-  else if(m.end === 'notice') b += `<div style="margin-top:26px;font-size:13px;font-weight:700;">${aiEsc(m.sign || 'THE MANAGEMENT')}</div>`;
+  else if(m.end === 'notice') b += `<div style="margin-top:${aiG('gSinc')}px;font-size:13px;font-weight:700;">${aiEsc(m.sign || 'THE MANAGEMENT')}</div>`;
   if(m.empSign && (m.end === 'verified' || m.end === 'notice' || m.end === 'none')) b += ack;
   if(m.end === 'none') b += m.groups.map(aiSignHtml).join('');
-  b += aiApprHtml(m);
+  if(!apprDone) b += aiApprHtml(m);
   const foot = lh.footer ? `<div style="margin-top:auto;padding-top:10px;border-top:1px solid #e2e8f0;font-size:10.5px;color:#64748b;text-align:center;">${aiEsc(lh.footer)}</div>` : '';
   return `<div style="width:760px;min-height:1040px;box-sizing:border-box;padding:44px 54px 30px;background:#fff;color:#0f172a;font-family:'Inter',sans-serif;display:flex;flex-direction:column;">${head}<div style="flex:1;">${b}</div>${foot}</div>`;
 }
@@ -15532,7 +15563,10 @@ function aiDraw(){
     </div><div class="hrForm" style="margin-top:-2px;"><div class="field wide"><label>Ask the AI to change the text (shorter, more formal, add a sentence, change the subject...)</label><div class="aiAddRow"><input type="text" data-ai="edit" value="${aiEsc(aiU.edit)}" placeholder="e.g. make it more formal and add that the medical paper is attached"><button class="pillBtn" data-ai="editgo" ${aiU.busy ? 'disabled' : ''}>${aiIc('spark', 13)} Change</button></div></div>
     ${T.emp ? `<label class="aiChk"><input type="checkbox" data-ai="esign" ${aiU.empSign ? 'checked' : ''}> Add the employee's signature and name at the bottom (if unticked, his name, ID and position are written inside the letter text instead)</label>` : ''}
     ${T.end !== 'ceo' ? `<label class="aiChk"><input type="checkbox" data-ai="appr" ${aiU.appr ? 'checked' : ''}> Add the approver's signature: ${aiEsc(C.approver.name)} (${aiEsc(C.approver.title)})</label>` : ''}
-    <details class="aiHelp field wide"><summary>Spacing</summary><div class="aiRow">${[['date', 'Space after the date'], ['meta', 'Space between To / From / Subject'], ['greet', 'Space before the text']].map(x => `<span class="hrNote">${x[1]}</span><select data-ai="sp" data-k="${x[0]}">${[['s', 'Small'], ['m', 'Normal'], ['l', 'Large'], ['x', 'Extra large']].map(o => `<option value="${o[0]}" ${(aiU.sp[x[0]] || 'm') === o[0] ? 'selected' : ''}>${o[1]}</option>`).join('')}</select>`).join('')}</div><div class="hrNote">Need an extra empty line inside the text? Just press Enter twice or more in the letter text above.</div></details></div>
+    <div class="field wide aiGaps"><label>Spacing - set the empty space (in pixels) wherever you need it. It updates the letter at once and is remembered.</label>
+      <div class="aiGapGrid">${AI_GAPS.map(g => `<div class="aiGap"><span>${g[1]}</span><div class="aiStep"><button data-ai="gapstep" data-k="${g[0]}" data-d="-4" aria-label="Less">&minus;</button><input type="number" inputmode="numeric" min="0" max="300" step="2" data-ai="gap" data-k="${g[0]}" value="${aiG(g[0])}"><button data-ai="gapstep" data-k="${g[0]}" data-d="4" aria-label="More">+</button></div></div>`).join('')}</div>
+      <div class="aiRow" style="margin-top:8px;"><span class="hrNote">Approver's signature position</span><select data-ai="apos"><option value="left" ${aiU.apos === 'left' ? 'selected' : ''}>Left, under the letter</option><option value="center" ${aiU.apos === 'center' ? 'selected' : ''}>Centre</option><option value="right" ${aiU.apos === 'right' ? 'selected' : ''}>Right side</option><option value="beside" ${aiU.apos === 'beside' ? 'selected' : ''}>Beside the employee's name (same line)</option></select><button class="pillBtn" data-ai="gapreset">Standard spacing</button></div>
+      <div class="hrNote">You can also press Enter in the letter text above to add empty lines inside the text.</div></div></div>
     <div class="aiGen"><button class="btn btn-primary btn-sm" data-ai="pdf">${aiIc('down', 14)} Download PDF</button><button class="btn btn-ghost btn-sm" data-ai="copy">${aiIc('copy', 14)} Copy text</button>${T.save && u ? `<button class="btn btn-ghost btn-sm" data-ai="viol">${aiIc('save', 14)} Save in ${aiEsc((u.name || '').split(/\s+/)[0])}'s violations</button>` : ''}</div>
     <div class="hrLetter" id="aiLetterBox"><div id="aiLetterInner" style="transform-origin:top left;"></div></div>
     <div class="hrNote" style="margin:8px 0 12px;">The letterhead (company name and address lines) comes from Admin &rarr; Letterhead (logo, size, spacing, fonts). Instructions, letter types and signatures are in Admin &rarr; AI &amp; Letters.</div>`;
@@ -15601,6 +15635,8 @@ function aiOnClick(e){
     case 'std': aiU.mode = 'std'; aiDraw(); break;
     case 'pdf': aiPdf(); break;
     case 'editgo': aiEditText(); break;
+    case 'gapstep': { const k = el.dataset.k, v = Math.max(0, Math.min(300, aiG(k) + (+el.dataset.d))); aiU.g[k] = v; aiGapSave(); const i = document.querySelector('input[data-ai="gap"][data-k="' + k + '"]'); if(i) i.value = v; aiPreview(); break; }
+    case 'gapreset': aiU.g = {}; aiU.apos = 'left'; aiGapSave(); aiDraw(); break;
     case 'copy': { const m = aiModel(); if(m && m.body.trim()) hrCopy(aiPlain(m), 'Letter text copied'); else toast('The letter has no text yet'); break; }
     case 'viol': aiSaveViolation(); break;
     case 'pick': { const g = el.dataset.g, id = el.dataset.id, l = aiU.picks[g] = (aiU.picks[g] || []).slice(); const i = l.indexOf(id); if(i >= 0) l.splice(i, 1); else l.push(id); aiPicksSave(); aiDraw(); break; }
@@ -15612,6 +15648,7 @@ function aiOnInput(e){
   const el = e.target, a = el.dataset && el.dataset.ai; if(!a || AI.mode !== 'smart') return;
   if(a === 'f'){ aiU[el.dataset.f] = el.value; if(el.dataset.f === 'facts' || el.dataset.f === 'subject' || el.dataset.f === 'date' || el.dataset.f === 'from' || el.dataset.f === 'to' || el.dataset.f === 'amount' || el.dataset.f === 'toText') { if(aiU.mode === 'std'){ const ta = $('aiBody'); if(ta) ta.value = aiBodyText(); } } aiPreview(); }
   else if(a === 'edit'){ aiU.edit = el.value; }
+  else if(a === 'gap'){ const v = parseFloat(el.value); if(isFinite(v)){ aiU.g[el.dataset.k] = Math.max(0, Math.min(300, v)); aiGapSave(); aiPreview(); } }
   else if(a === 'body'){ aiU.body = el.value; aiU.mode = 'edit'; aiPreview(); }
 }
 function aiOnChange(e){
@@ -15622,7 +15659,7 @@ function aiOnChange(e){
     case 'f': if(el.dataset.f === 'pron'){ aiU.pron = el.value; aiPreview(); } break;
     case 'esign': aiU.empSign = el.checked; aiPreview(); break;
     case 'appr': aiU.appr = el.checked; aiPreview(); break;
-    case 'sp': aiU.sp[el.dataset.k] = el.value; aiPreview(); break;
+    case 'apos': aiU.apos = el.value; aiGapSave(); aiPreview(); break;
     case 'tadd': { const id = hrEmpFromLabel(el.value); if(id && !aiU.table.includes(id)) aiU.table.push(id); aiDraw(); break; }
     case 'tm': aiU.tm = el.value; break;
     case 'tt': aiU.tt = el.value; break;
@@ -15667,7 +15704,7 @@ function aiAdminDraw(){
       ${fld('Model', `<input type="text" data-aia="cf" data-k="model" value="${aiAEsc(K.model)}">`)}
       ${fld('Address (base URL)', `<input type="text" data-aia="cf" data-k="baseUrl" value="${aiAEsc(K.baseUrl)}">`, true)}
       ${fld('API key', `<input type="password" autocomplete="off" data-aia="cf" data-k="key" value="${aiAEsc(K.key)}" placeholder="paste the key here">`, true)}</div>
-    <div class="aiH" style="margin-top:14px;">Free AI chat and images (Admin &rarr; AI Chat)</div>
+    <div class="aiH" style="margin-top:14px;">Free AI chat and images (the AI page)</div>
     <div class="hrForm">${fld('Chat model (empty = same as above)', `<input type="text" data-aia="cf" data-k="chatModel" value="${aiAEsc(K.chatModel)}" placeholder="${aiAEsc(K.model)}">`)}
       ${fld('Model for pictures you upload (vision)', `<input type="text" data-aia="cf" data-k="visionModel" value="${aiAEsc(K.visionModel)}">`)}
       ${fld('Picture-making service address (OpenAI-compatible, optional)', `<input type="text" data-aia="cf" data-k="imgBaseUrl" value="${aiAEsc(K.imgBaseUrl)}" placeholder="https://api.openai.com/v1">`, true)}
@@ -15747,7 +15784,7 @@ function aiAOnInput(e){
 document.addEventListener('click', aiAOnClick); document.addEventListener('change', aiAOnChange); document.addEventListener('input', aiAOnInput);
 
 /* ============================================================
-   ADMIN > AI Chat: a free AI assistant. Chat, upload files and pictures, make slides / Word / PDF / Excel / pictures.
+   AI PAGE (assigned to each person like every other page): a free AI assistant. Chat, upload files and pictures, make slides / Word / PDF / Excel / pictures.
    Nothing here touches the database except reading the connection (config/aiConn) once. Chats are kept on this device only.
    ============================================================ */
 const ch = { convs: [], cur: '', mode: 'chat', files: [], busy: false, loaded: false };
@@ -15881,8 +15918,8 @@ async function chDo(kind, idx){
 }
 /* ----- screen ----- */
 async function chRender(){
-  const p = $('admin-aichat'); if(!p) return;
-  if(!state.user || state.user.role !== 'admin'){ p.innerHTML = '<div class="hrEmpty">Admin only.</div>'; return; }
+  const p = $('aichatMount'); if(!p) return;
+  if(!state.user || !(state.user.role === 'admin' || userPages(state.user).includes('aichat'))){ p.innerHTML = '<div class="hrEmpty">You do not have access to this page.</div>'; return; }
   if(!ch.loaded){ ch.convs = chStoreLoad(); ch.cur = ch.convs[0] ? ch.convs[0].id : ''; ch.loaded = true; }
   p.innerHTML = '<div class="hrEmpty">Loading…</div>';
   try{ await aiLoadConn(); }catch(err){ console.error(err); p.innerHTML = '<div class="hrEmpty">Could not load. Check your connection and open this tab again.</div>'; return; }
@@ -15926,7 +15963,6 @@ document.addEventListener('keydown', (e) => { if(e.target && e.target.id === 'ch
 (function(){
   const b=$('bkOpenBtn'); if(b) b.addEventListener('click', () => bkOpen());
   const lt=document.querySelector('.auth-tab[data-admintab="letterhead"]'); if(lt) lt.addEventListener('click', () => lhRenderAdmin());
-  const ct=document.querySelector('.auth-tab[data-admintab="aichat"]'); if(ct) ct.addEventListener('click', () => chRender());
   const t=document.querySelector('.auth-tab[data-admintab="ai"]'); if(t) t.addEventListener('click', () => aiRenderAdmin());
 })();
 
