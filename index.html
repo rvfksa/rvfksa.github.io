@@ -2419,6 +2419,12 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
 .aiStep button{ width:26px; height:26px; border-radius:50%; border:1px solid var(--line-strong); background:#fff; color:var(--amber); font-size:15px; font-weight:700; cursor:pointer; line-height:1; padding:0; }
 .aiStep input{ width:52px; height:28px; padding:0 4px; text-align:center; font-size:12px; border-radius:8px; }
 @media (max-width:640px){ .aiGapGrid{ grid-template-columns:1fr; } }
+.aiSpBtn{ position:relative; } .aiDot{ position:absolute; top:-2px; right:-2px; width:8px; height:8px; border-radius:50%; background:var(--amber); border:1.5px solid #fff; }
+.aiSpPanel{ margin:0 0 12px; padding:12px; }
+.aiSvBar{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin:0 0 12px; }
+.aiSvBox{ padding:12px; margin-bottom:12px; }
+.aiSvRow{ display:flex; gap:8px; align-items:center; background:var(--panel-2,#f8fafc); border-radius:12px; padding:8px 10px; margin-bottom:6px; }
+.aiSvRow.on{ box-shadow:inset 3px 0 0 var(--amber); } .aiSvMain{ flex:1; min-width:0; font-size:12.5px; } .aiSvMain small{ display:block; color:var(--muted); font-size:11px; }
 
 </style>
 </head>
@@ -15375,7 +15381,7 @@ async function aiLoad(force){
   if(AI.cfg && !force) return AI.cfg;
   const d = await window.__db.getConfigObject('aiLetters', {});
   const D = aiDefaults();
-  AI.cfg = { master: d.master || D.master, approver: Object.assign({}, D.approver, d.approver || {}), signers: Array.isArray(d.signers) ? d.signers : [], types: Array.isArray(d.types) && d.types.length ? d.types : D.types };
+  AI.cfg = { master: d.master || D.master, approver: Object.assign({}, D.approver, d.approver || {}), signers: Array.isArray(d.signers) ? d.signers : [], layout: (d.layout && typeof d.layout === 'object') ? d.layout : {}, types: Array.isArray(d.types) && d.types.length ? d.types : D.types };
   AI.loaded = true; return AI.cfg;
 }
 async function aiSave(){
@@ -15424,8 +15430,7 @@ function aiParseAnswer(txt){
    LETTERS TAB > "Write with AI": one fixed letterhead (text lines only), the letter body written by AI (or a standard text),
    signatures from the ready-made list, PDF, and optionally saved in the person's Violations.
    ============================================================ */
-const aiU = { typeId: '', emp: '', date: '', from: '', to: '', amount: '', toText: '', pron: 'his', facts: '', subject: '', body: '', mode: 'std', table: [], picks: {}, empSign: false, busy: false, tm: '', tt: '', appr: true, g: {}, apos: 'left', edit: '', just: null };
-{ const sv = (function(){ try{ return JSON.parse(localStorage.getItem('rvf_ai_gaps') || '{}') || {}; }catch(e){ return {}; } })(); if(sv.g) aiU.g = sv.g; if(sv.apos) aiU.apos = sv.apos; }
+const aiU = { typeId: '', emp: '', date: '', from: '', to: '', amount: '', toText: '', pron: 'his', facts: '', subject: '', body: '', mode: 'std', table: [], picks: {}, empSign: false, busy: false, tm: '', tt: '', appr: true, g: {}, apos: 'left', edit: '', just: null, savedId: '', showSp: false, layoutInit: false, showSaved: false, svq: '' };
 const aiEsc = (t) => String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const AI_MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 function aiLong(ymd){ const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(ymd || ''); return m ? (+m[3]) + ' ' + AI_MONTHS[+m[2] - 1] + ' ' + m[1] : ''; }
@@ -15478,8 +15483,8 @@ const AI_GAPS = [
   ['gDate', 'Letterhead  →  Date', 22], ['gTo', 'Date  →  To', 14], ['gSub', 'To  →  Subject', 7], ['gGreet', 'Subject  →  Dear...', 18], ['gBody', 'Dear...  →  Letter text', 10],
   ['gSinc', 'Letter text  →  Sincerely', 18], ['gName', 'Sincerely  →  Name (space to sign)', 34], ['gRec', 'Before Recommended / Action by', 26], ['gRecSign', 'Recommended by  →  Name (space to sign)', 34],
   ['gAck', 'Before "Read and understood"', 28], ['gAckSign', '"Read and understood"  →  Name', 30], ['gAppr', 'Before Approved by', 26], ['gApprSign', 'Approved by  →  Name (space to sign)', 34] ];
-function aiGapLoad(){ try{ return JSON.parse(localStorage.getItem('rvf_ai_gaps') || '{}') || {}; }catch(e){ return {}; } }
-function aiGapSave(){ try{ localStorage.setItem('rvf_ai_gaps', JSON.stringify({ g: aiU.g, apos: aiU.apos })); }catch(e){} }
+function aiLayoutDirty(){ const L = (AI.cfg && AI.cfg.layout) || {}; return JSON.stringify([aiU.g, aiU.apos]) !== JSON.stringify([L.g || {}, L.apos || 'left']); }
+function aiGapSave(){ const d = aiLayoutDirty(), b = $('aiSpSave'), r = $('aiSpBack'), dot = $('aiSpDot'); if(b) b.style.display = d ? '' : 'none'; if(r) r.style.display = d ? '' : 'none'; if(dot) dot.style.display = d ? '' : 'none'; }
 function aiG(k){ const d = AI_GAPS.find(x => x[0] === k); if(k === 'gDate' && aiU.g[k] == null){ return lhFull((state.hrSettings || {}).letterhead).gap; } const v = aiU.g[k]; return v != null && isFinite(+v) ? +v : (d ? d[2] : 0); }
 function aiSignHtml(g){
   if(!g.people.length) return '';
@@ -15545,6 +15550,7 @@ function aiRenderLetters(){
   b.innerHTML = aiSwitchHtml() + '<div class="hrEmpty">Loading…</div>';
   aiLoad().then(() => {
     if(!aiU.date) aiU.date = aiToday();
+    if(!aiU.layoutInit){ aiU.g = Object.assign({}, AI.cfg.layout.g || {}); aiU.apos = AI.cfg.layout.apos || 'left'; aiU.layoutInit = true; }
     if(!aiType()) aiSetType(AI.cfg.types[0].id);
     aiDraw();
   }).catch(err => { console.error(err); b.innerHTML = aiSwitchHtml() + '<div class="hrEmpty">Could not load. Check your connection and open this tab again.</div>'; });
@@ -15571,18 +15577,20 @@ function aiDraw(){
   f += fld('Subject (leave empty to let the standard or the AI choose)', `<input type="text" data-ai="f" data-f="subject" value="${aiEsc(aiU.subject)}" placeholder="${aiEsc(hrFill(T.subject || '', aiVars()))}">`, true);
   f += fld('What should the letter say? (the reason or details - short notes are enough)', `<textarea rows="3" data-ai="f" data-f="facts" placeholder="e.g. Did not follow the instruction to check the stock list on 12 Sept; second time this month.">${aiEsc(aiU.facts)}</textarea>`, true);
   const groups = (T.groups || []).map(g => { const sg = C.signers; return `<div class="field wide"><label>${aiEsc(g.label)}</label><div class="aiChips">${sg.length ? sg.map(s => `<button class="aiPick ${(aiU.picks[g.label] || []).includes(s.id) ? 'on' : ''}" data-ai="pick" data-g="${aiEsc(g.label)}" data-id="${aiEsc(s.id)}">${aiEsc(s.name)}<small>${aiEsc(s.title || '')}</small></button>`).join('') : '<span class="hrNote">No names yet - Admin &rarr; AI &amp; Letters &rarr; Signatures</span>'}</div></div>`; }).join('');
-  b.innerHTML = aiSwitchHtml() + `<div class="hrForm">${f}</div>
+  b.innerHTML = aiSwitchHtml() + aiSavedHtml() + `<div class="hrForm">${f}</div>
     <div class="aiGen"><button class="btn btn-primary btn-sm" data-ai="gen" ${aiU.busy ? 'disabled' : ''}>${aiIc('spark', 14)} ${aiU.busy ? 'Writing…' : 'Write with AI'}</button>${hasStd ? `<button class="btn btn-ghost btn-sm" data-ai="std">Use the standard text</button>` : ''}<span class="hrNote" id="aiMsg"></span></div>
     <div class="hrForm"><div class="field wide"><label>Letter text (you can change it)</label><textarea rows="9" data-ai="body" id="aiBody">${aiEsc(aiBodyText())}</textarea></div>${groups}
     </div><div class="hrForm" style="margin-top:-2px;"><div class="field wide"><label>Ask the AI to change the text (shorter, more formal, add a sentence, change the subject...)</label><div class="aiAddRow"><input type="text" data-ai="edit" value="${aiEsc(aiU.edit)}" placeholder="e.g. make it more formal and add that the medical paper is attached"><button class="pillBtn" data-ai="editgo" ${aiU.busy ? 'disabled' : ''}>${aiIc('spark', 13)} Change</button></div></div>
     ${T.emp ? `<label class="aiChk"><input type="checkbox" data-ai="esign" ${aiU.empSign ? 'checked' : ''}> Add the employee's signature and name at the bottom (if unticked, his name, ID and position are written inside the letter text instead)</label>` : ''}
     <label class="aiChk"><input type="checkbox" data-ai="just" ${(aiU.just == null ? lhPage((state.hrSettings || {}).letterhead).justify : aiU.just) ? 'checked' : ''}> Justify the paragraph text (straight edge on both sides)</label>
     ${T.end !== 'ceo' ? `<label class="aiChk"><input type="checkbox" data-ai="appr" ${aiU.appr ? 'checked' : ''}> Add the approver's signature: ${aiEsc(C.approver.name)} (${aiEsc(C.approver.title)})</label>` : ''}
-    <div class="field wide aiGaps"><label>Spacing - set the empty space (in pixels) wherever you need it. It updates the letter at once and is remembered.</label>
+    </div>
+    <div class="aiGen"><button class="btn btn-primary btn-sm" data-ai="pdf">${aiIc('down', 14)} Download PDF</button><button class="btn btn-ghost btn-sm" data-ai="copy">${aiIc('copy', 14)} Copy text</button><button class="btn btn-ghost btn-sm" data-ai="savel">${aiIc('save', 14)} ${aiU.savedId ? 'Update saved letter' : 'Save for later'}</button>${aiU.savedId ? `<button class="pillBtn" data-ai="savenew">Save as new copy</button>` : ''}${T.save && u ? `<button class="btn btn-ghost btn-sm" data-ai="viol">${aiIc('save', 14)} Save in ${aiEsc((u.name || '').split(/\s+/)[0])}'s violations</button>` : ''}
+      <button class="mini-icon-btn aiSpBtn" data-ai="sptoggle" title="Spacing and signature position" aria-label="Spacing and signature position" style="margin-left:auto;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg><i class="aiDot" id="aiSpDot" style="display:${aiLayoutDirty() ? '' : 'none'}"></i></button></div>
+    ${aiU.showSp ? `<div class="card aiSpPanel"><div class="hrNote" style="margin-bottom:6px;">Empty space between the parts of the letter (in pixels). The letter changes at once. Your saved spacing is used every time you open this page.</div>
       <div class="aiGapGrid">${AI_GAPS.map(g => `<div class="aiGap"><span>${g[1]}</span><div class="aiStep"><button data-ai="gapstep" data-k="${g[0]}" data-d="-4" aria-label="Less">&minus;</button><input type="number" inputmode="numeric" min="0" max="300" step="2" data-ai="gap" data-k="${g[0]}" value="${aiG(g[0])}"><button data-ai="gapstep" data-k="${g[0]}" data-d="4" aria-label="More">+</button></div></div>`).join('')}</div>
-      <div class="aiRow" style="margin-top:8px;"><span class="hrNote">Approver's signature position</span><select data-ai="apos"><option value="left" ${aiU.apos === 'left' ? 'selected' : ''}>Left, under the letter</option><option value="center" ${aiU.apos === 'center' ? 'selected' : ''}>Centre</option><option value="right" ${aiU.apos === 'right' ? 'selected' : ''}>Right side</option><option value="beside" ${aiU.apos === 'beside' ? 'selected' : ''}>Beside the employee's name (same line)</option></select><button class="pillBtn" data-ai="gapreset">Standard spacing</button></div>
-      <div class="hrNote">You can also press Enter in the letter text above to add empty lines inside the text.</div></div></div>
-    <div class="aiGen"><button class="btn btn-primary btn-sm" data-ai="pdf">${aiIc('down', 14)} Download PDF</button><button class="btn btn-ghost btn-sm" data-ai="copy">${aiIc('copy', 14)} Copy text</button>${T.save && u ? `<button class="btn btn-ghost btn-sm" data-ai="viol">${aiIc('save', 14)} Save in ${aiEsc((u.name || '').split(/\s+/)[0])}'s violations</button>` : ''}</div>
+      <div class="aiRow" style="margin-top:8px;"><span class="hrNote">Approver's signature position</span><select data-ai="apos"><option value="left" ${aiU.apos === 'left' ? 'selected' : ''}>Left, under the letter</option><option value="center" ${aiU.apos === 'center' ? 'selected' : ''}>Centre</option><option value="right" ${aiU.apos === 'right' ? 'selected' : ''}>Right side</option><option value="beside" ${aiU.apos === 'beside' ? 'selected' : ''}>Beside the employee's name (same line)</option></select></div>
+      <div class="aiRow"><button class="pillBtn ok" id="aiSpSave" data-ai="splsave" style="display:${aiLayoutDirty() ? '' : 'none'}">Save as my standard spacing</button><button class="pillBtn" id="aiSpBack" data-ai="splback" style="display:${aiLayoutDirty() ? '' : 'none'}">Back to saved</button><button class="pillBtn" data-ai="gapreset">Factory spacing</button></div></div>` : ''}
     <div class="hrLetter" id="aiLetterBox"><div id="aiLetterInner" style="transform-origin:top left;"></div></div>
     <div class="hrNote" style="margin:8px 0 12px;">The letterhead, paper size, margins and justify setting come from Admin &rarr; Letterhead. Instructions, letter types and signatures are in Admin &rarr; AI &amp; Letters.</div>`;
   aiPreview();
@@ -15611,6 +15619,53 @@ async function aiGenerate(){
     aiU.busy = false; aiDraw(); const mm = $('aiMsg'); if(mm) mm.textContent = 'Written. Read it and change anything you like.';
   }catch(err){ console.error(err); aiU.busy = false; aiDraw(); const mm = $('aiMsg'); if(mm){ mm.textContent = aiErrText(err); mm.style.color = 'var(--danger)'; } toast('The AI could not write the letter'); }
 }
+/* ---------- saved letters (one small document in "config"; read only when the list is opened) ---------- */
+async function aiSavedLoad(){ const d = await window.__db.getConfigObject('aiSaved', { items: [] }); AI.saved = Array.isArray(d.items) ? d.items : []; return AI.saved; }
+function aiSavedRows(){
+  const q = (aiU.svq || '').trim().toLowerCase(), L = (AI.saved || []).filter(r => !q || (r.name || '').toLowerCase().includes(q)).sort((a, b) => (b.at || 0) - (a.at || 0));
+  if(!L.length) return '<div class="hrNote" style="padding:8px 2px;">' + (AI.saved && AI.saved.length ? 'No match.' : 'No saved letters yet. After writing a letter, press "Save for later".') + '</div>';
+  return L.map(r => `<div class="aiSvRow ${r.id === aiU.savedId ? 'on' : ''}"><div class="aiSvMain"><b>${aiEsc(r.name || 'Letter')}</b><small>Saved ${aiEsc(fmtDate(new Date(r.at || Date.now()).toISOString().slice(0, 10)))}${r.byName ? ' by ' + aiEsc(r.byName) : ''}</small></div><button class="pillBtn ok" data-ai="svopen" data-id="${aiEsc(r.id)}">Open</button><button class="iconBtn" data-ai="svdel" data-id="${aiEsc(r.id)}" title="Delete" aria-label="Delete">${aiIc('x', 14)}</button></div>`).join('');
+}
+function aiSavedHtml(){
+  const n = AI.saved ? AI.saved.length : null;
+  return `<div class="aiSvBar"><button class="pillBtn" data-ai="svtoggle">${aiIc('save', 13)} Saved letters${n != null ? ' (' + n + ')' : ''}</button>${aiU.savedId ? '<span class="hrNote">Editing a saved letter</span><button class="pillBtn" data-ai="svnew">Start a new letter</button>' : ''}</div>`
+    + (aiU.showSaved ? `<div class="card aiSvBox">${AI.saved ? `<input type="text" data-ai="svq" placeholder="Search saved letters…" value="${aiEsc(aiU.svq)}" style="width:100%;margin-bottom:8px;"><div id="aiSvList">${aiSavedRows()}</div>` : '<div class="hrNote">Loading…</div>'}</div>` : '');
+}
+async function aiSaveLetter(asNew){
+  const m = aiModel(), T = aiType(); if(!m || !T || aiU.busy) return;
+  if(!m.body.trim()){ toast('The letter has no text yet'); return; }
+  if(T.emp && !aiU.emp){ toast('Choose the employee first'); return; }
+  const u = hrFind(aiU.emp), id = (!asNew && aiU.savedId) ? aiU.savedId : 'L' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+  const rec = { id, name: [T.name, u ? u.name : (aiU.toText || ''), aiLong(aiU.date)].filter(Boolean).join(' - '), at: Date.now(), by: state.user.loginId, byName: state.user.name || '',
+    typeId: T.id, emp: aiU.emp, date: aiU.date, from: aiU.from, to: aiU.to, amount: aiU.amount, toText: aiU.toText, pron: aiU.pron, facts: aiU.facts, subject: aiU.subject, body: aiBodyText(), table: aiU.table.slice(), picks: aiU.picks, empSign: aiU.empSign, appr: aiU.appr, just: aiU.just, g: Object.assign({}, aiU.g), apos: aiU.apos };
+  aiU.busy = true;
+  try{
+    const list = await aiSavedLoad(), i = list.findIndex(x => x.id === id);
+    if(i >= 0) list[i] = rec; else list.push(rec);
+    if(JSON.stringify(list).length > 900000){ toast('Too many saved letters - delete some old ones first'); aiU.busy = false; return; }
+    await window.__db.saveConfigObject('aiSaved', { items: list }); AI.saved = list; aiU.savedId = id;
+    toast(i >= 0 ? 'Saved letter updated' : 'Letter saved - find it under "Saved letters"');
+  }catch(err){ console.error(err); toast('Could not save - check your connection'); }
+  aiU.busy = false; aiDraw();
+}
+function aiOpenSaved(id){
+  const r = (AI.saved || []).find(x => x.id === id); if(!r) return;
+  if(!((AI.cfg.types || []).some(t => t.id === r.typeId))){ toast('The letter type of this letter was deleted'); return; }
+  aiSetType(r.typeId);
+  Object.assign(aiU, { emp: r.emp || '', date: r.date || aiToday(), from: r.from || '', to: r.to || '', amount: r.amount || '', toText: r.toText || '', pron: r.pron || 'his', facts: r.facts || '', subject: r.subject || '', body: r.body || '', mode: 'edit', table: (r.table || []).slice(), picks: r.picks || {}, empSign: !!r.empSign, appr: r.appr !== false, just: r.just == null ? null : r.just, g: Object.assign({}, r.g || {}), apos: r.apos || 'left', savedId: r.id, showSaved: false });
+  aiDraw(); toast('Letter opened - change anything and press "Update saved letter"');
+}
+async function aiDeleteSaved(id){
+  const r = (AI.saved || []).find(x => x.id === id); if(!r || !confirm('Delete this saved letter?\n' + r.name)) return;
+  try{
+    const list = (await aiSavedLoad()).filter(x => x.id !== id); await window.__db.saveConfigObject('aiSaved', { items: list }); AI.saved = list; if(aiU.savedId === id) aiU.savedId = ''; toast('Deleted');
+  }catch(err){ console.error(err); toast('Could not delete - check your connection'); }
+  aiDraw();
+}
+async function aiSaveLayout(){
+  try{ AI.cfg.layout = { g: Object.assign({}, aiU.g), apos: aiU.apos }; await aiSave(); toast('Your spacing is saved'); aiGapSave(); }
+  catch(err){ console.error(err); toast('Could not save - check your connection'); }
+}
 async function aiEditText(){
   const T = aiType(); if(!T || aiU.busy) return; const ins = aiU.edit.trim(); const cur = aiBodyText();
   if(!ins){ toast('Write what you want changed'); return; }
@@ -15629,6 +15684,7 @@ async function aiPdf(){
   if(!m.body.trim()){ toast('The letter has no text yet'); return; }
   toast('Making the PDF…');
   await rvfMakePdf([aiLetterHtml(m)], (m.T.id + '-' + (m.empId || 'letter') + '-' + rvfDateStamp()).replace(/[^\w\-]+/g, '-').toLowerCase() + '.pdf', { format: lhPage((state.hrSettings || {}).letterhead).fmt, m: 0 });
+  if(!aiU.savedId) toast('PDF ready. Press "Save for later" to keep this letter and edit it again.');
 }
 async function aiSaveViolation(){
   const m = aiModel(), u = hrFind(aiU.emp); if(!m || !u || aiU.busy) return;
@@ -15651,7 +15707,16 @@ function aiOnClick(e){
     case 'pdf': aiPdf(); break;
     case 'editgo': aiEditText(); break;
     case 'gapstep': { const k = el.dataset.k, v = Math.max(0, Math.min(300, aiG(k) + (+el.dataset.d))); aiU.g[k] = v; aiGapSave(); const i = document.querySelector('input[data-ai="gap"][data-k="' + k + '"]'); if(i) i.value = v; aiPreview(); break; }
-    case 'gapreset': aiU.g = {}; aiU.apos = 'left'; aiGapSave(); aiDraw(); break;
+    case 'gapreset': aiU.g = {}; aiU.apos = 'left'; aiDraw(); break;
+    case 'sptoggle': aiU.showSp = !aiU.showSp; aiDraw(); break;
+    case 'splsave': aiSaveLayout(); break;
+    case 'splback': { const L = AI.cfg.layout || {}; aiU.g = Object.assign({}, L.g || {}); aiU.apos = L.apos || 'left'; aiDraw(); break; }
+    case 'savel': aiSaveLetter(false); break;
+    case 'savenew': aiSaveLetter(true); break;
+    case 'svtoggle': aiU.showSaved = !aiU.showSaved; if(aiU.showSaved && !AI.saved) aiSavedLoad().then(aiDraw).catch(() => { toast('Could not load the saved letters'); }); aiDraw(); break;
+    case 'svopen': aiOpenSaved(el.dataset.id); break;
+    case 'svdel': aiDeleteSaved(el.dataset.id); break;
+    case 'svnew': aiU.savedId = ''; aiU.facts = ''; aiU.subject = ''; aiU.body = ''; aiU.table = []; aiU.mode = (aiType() && aiType().std) ? 'std' : 'ai'; aiDraw(); break;
     case 'copy': { const m = aiModel(); if(m && m.body.trim()) hrCopy(aiPlain(m), 'Letter text copied'); else toast('The letter has no text yet'); break; }
     case 'viol': aiSaveViolation(); break;
     case 'pick': { const g = el.dataset.g, id = el.dataset.id, l = aiU.picks[g] = (aiU.picks[g] || []).slice(); const i = l.indexOf(id); if(i >= 0) l.splice(i, 1); else l.push(id); aiPicksSave(); aiDraw(); break; }
@@ -15663,6 +15728,7 @@ function aiOnInput(e){
   const el = e.target, a = el.dataset && el.dataset.ai; if(!a || AI.mode !== 'smart') return;
   if(a === 'f'){ aiU[el.dataset.f] = el.value; if(el.dataset.f === 'facts' || el.dataset.f === 'subject' || el.dataset.f === 'date' || el.dataset.f === 'from' || el.dataset.f === 'to' || el.dataset.f === 'amount' || el.dataset.f === 'toText') { if(aiU.mode === 'std'){ const ta = $('aiBody'); if(ta) ta.value = aiBodyText(); } } aiPreview(); }
   else if(a === 'edit'){ aiU.edit = el.value; }
+  else if(a === 'svq'){ aiU.svq = el.value; const bx = $('aiSvList'); if(bx) bx.innerHTML = aiSavedRows(); }
   else if(a === 'gap'){ const v = parseFloat(el.value); if(isFinite(v)){ aiU.g[el.dataset.k] = Math.max(0, Math.min(300, v)); aiGapSave(); aiPreview(); } }
   else if(a === 'body'){ aiU.body = el.value; aiU.mode = 'edit'; aiPreview(); }
 }
