@@ -1124,6 +1124,16 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
       vacationsCache.invalidate();
       return ref.id;
     },
+    async saveVacationsBatch(records) {
+      if (!dbReady) throw new Error('NOT_CONFIGURED');
+      for (let i = 0; i < records.length; i += 400) {
+        const batch = writeBatch(db);
+        records.slice(i, i + 400).forEach(r => batch.set(doc(collection(db, "vacations")), r));
+        await batch.commit();
+      }
+      vacationsCache.invalidate();
+      return records.length;
+    },
     async updateVacation(id, updates) {
       if (!dbReady) throw new Error('NOT_CONFIGURED');
       await updateDoc(doc(db, "vacations", id), updates);
@@ -2425,6 +2435,10 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
 .aiSvBox{ padding:12px; margin-bottom:12px; }
 .aiSvRow{ display:flex; gap:8px; align-items:center; background:var(--panel-2,#f8fafc); border-radius:12px; padding:8px 10px; margin-bottom:6px; }
 .aiSvRow.on{ box-shadow:inset 3px 0 0 var(--amber); } .aiSvMain{ flex:1; min-width:0; font-size:12.5px; } .aiSvMain small{ display:block; color:var(--muted); font-size:11px; }
+/* v22: bulk update */
+.bkTag{ font-size:10.5px; font-weight:700; padding:2px 9px; border-radius:999px; background:var(--panel-2,#f1f5f9); color:var(--muted); letter-spacing:.02em; }
+.bkTag.new{ background:#e7f6ec; color:#15803d; } .bkTag.upd{ background:var(--amber-soft,#eef2ff); color:var(--amber,#4f46e5); }
+.bkMore{ margin-top:12px; } .bkMore summary{ font-size:12px; font-weight:600; color:var(--amber); cursor:pointer; }
 
 </style>
 </head>
@@ -10451,7 +10465,7 @@ function renderGeneralTab(){
   const years = calcTotalYears(p.joiningDate);
   const totalYearsTxt = years !== null ? years.toFixed(1) + ' yrs' : '—';
   const eligibility = p.vacationEligibility ? parseFloat(p.vacationEligibility) : null;
-  const takenCount = profileCache.vacations.length;
+  const takenCount = profileCache.vacations.reduce((a, v) => a + (+v.count > 1 ? +v.count : 1), 0);   // a record can stand for 2-3 vacations taken together
   const remaining = (years !== null && eligibility) ? Math.max(0, Math.floor(years / eligibility) - takenCount) : null;
 
   if(!state.profileEditMode){
@@ -10463,6 +10477,7 @@ function renderGeneralTab(){
         ${fieldRow('Home Country Airport', p.homeCountryAirport)}
         ${fieldRow('Position', p.position)}
         ${fieldRow('Employment Type', p.employmentType)}
+        ${fieldRow('Sponsor Company', p.sponsorCompany)}
         ${fieldRow('Shift', profileShiftText(u))}
         ${fieldRow('Joining Date', fmtDate(p.joiningDate))}
         ${fieldRow('Total Time with Us', totalYearsTxt)}
@@ -10482,6 +10497,7 @@ function renderGeneralTab(){
       <div class="field"><label>Home Country Airport</label><input type="text" id="pf-homeCountryAirport" value="${p.homeCountryAirport||''}"></div>
       <div class="field"><label>Position</label><select id="pf-position"><option value="">— Select —</option>${state.positions.map(x=>`<option ${p.position===x?'selected':''}>${x}</option>`).join('')}</select></div>
       <div class="field"><label>Employment Type</label><select id="pf-employmentType"><option value="">— Select —</option><option ${p.employmentType==='Sponsor'?'selected':''}>Sponsor</option><option ${p.employmentType==='Non-Sponsor'?'selected':''}>Non-Sponsor</option></select></div>
+      <div class="field"><label>Sponsor Company</label><input type="text" id="pf-sponsorCompany" placeholder="e.g. RVF or SSTM" value="${p.sponsorCompany||''}"></div>
       ${isShiftAssignedRole(u)
         ? `<div class="field"><label>Shift <span style="text-transform:none;color:var(--muted);">(set in Admin &rarr; Users, next to Assigned Machines)</span></label><input type="text" value="${profileShiftText(u)}" disabled></div>`
         : `<div class="field"><label>Shift</label><select id="pf-shiftPref"><option value="">— Select —</option><option ${p.shiftPref==='Day'?'selected':''}>Day</option><option ${p.shiftPref==='Night'?'selected':''}>Night</option></select></div>`}
@@ -10505,6 +10521,7 @@ async function saveGeneralTab(){
     homeCountryAirport: $('pf-homeCountryAirport').value.trim(),
     position: $('pf-position').value,
     employmentType: $('pf-employmentType').value,
+    sponsorCompany: $('pf-sponsorCompany').value.trim(),
     joiningDate: $('pf-joiningDate').value,
     endDate: $('pf-endDate').value,
     vacationEligibility: $('pf-vacationEligibility').value
@@ -11077,9 +11094,11 @@ function renderVacationTab(){
         <button class="mini-icon-btn danger delVacBtn" data-id="${v._id}" title="Delete">${MINI_TRASH_ICON}</button>
       </div>` : ''}
       ${fieldRow('Dates', (v.from ? fmtDate(v.from) : '—') + ' \u2192 ' + (v.to ? fmtDate(v.to) : '—'))}
+      ${+v.count > 1 ? fieldRow('Counts as', v.count + ' vacations taken together') : ''}
       ${fieldRow('Total Days', v.totalDays)}
       ${fieldRow('For Year', v.forYear)}
       ${fieldRow('Vacation Money', v.moneyStatus)}
+      ${v.note ? fieldRow('Note', v.note) : ''}
       ${fieldRow('Home Country Contact', v.homeCountryContact)}
       ${canSeeTicket && v.ticket ? `
         <div class="sub" style="margin-top:8px; font-weight:600; color:var(--text); text-transform:none;">Ticket Details</div>
@@ -15049,9 +15068,11 @@ document.addEventListener('click', async (e) => {
 });
 
 /* ============================================================
-   BULK ADD EMPLOYEES (Admin > Users > small "Excel" icon)
-   Excel file -> choose which column is what (or one value for everybody) -> WAITING LIST -> confirm one by one.
-   Nothing is written to the users list until a row is confirmed. The waiting list is ONE small document ("bulkStaging").
+   BULK ADD / UPDATE EMPLOYEES (Admin > Users > small "Excel" icon)
+   Excel file (one or more sheets) -> choose which column is what -> WAITING LIST -> confirm one by one.
+   - New people are created. People already in the app are UPDATED (only empty details are filled, unless the box is ticked).
+   - A second sheet can bring the vacations already taken (one app vacation record per row).
+   Nothing is written until a row is confirmed. The waiting list is ONE small document ("bulkStaging").
    ============================================================ */
 const BK_ROLES = [['employee', 'Employee (Profile & Leave only)'], ['operator', 'Operator'], ['supervisor', 'Supervisor'], ['executive', 'Executive Management']];
 const BK_FIELDS = [
@@ -15061,18 +15082,45 @@ const BK_FIELDS = [
   { k: 'dept', t: 'Department', kind: 'dept' },
   { k: 'position', t: 'Position', kind: 'pos' },
   { k: 'empType', t: 'Employment type', kind: 'sel', opts: [['', '—'], ['Sponsor', 'Sponsor'], ['Non-Sponsor', 'Non-Sponsor']] },
+  { k: 'sponsorCo', t: 'Sponsor company (RVF / SSTM …)', kind: 'text', more: 1 },
   { k: 'salary', t: 'Basic salary', kind: 'num' },
   { k: 'country', t: 'Home country', kind: 'country' },
   { k: 'phone', t: 'Phone number', kind: 'text' },
   { k: 'role', t: 'Account type', kind: 'sel', opts: BK_ROLES, def: 'employee' },
   { k: 'shift', t: 'Shift', kind: 'sel', opts: [['', '—'], ['Day', 'Day'], ['Night', 'Night']] },
-  { k: 'vac', t: 'Vacation eligibility', kind: 'sel', opts: [['', '—'], ['1', '1 year'], ['2', '2 years']] }
+  { k: 'vac', t: 'Vacation eligibility', kind: 'sel', opts: [['', '—'], ['1', '1 year'], ['2', '2 years']] },
+  { k: 'passportNo', t: 'Passport number', kind: 'text', more: 1 },
+  { k: 'passportIssue', t: 'Passport issue date', kind: 'date', more: 1 },
+  { k: 'passportExpiry', t: 'Passport expiry date', kind: 'date', more: 1 },
+  { k: 'dob', t: 'Date of birth', kind: 'date', more: 1 },
+  { k: 'iqamaNo', t: 'Iqama number', kind: 'text', more: 1 },
+  { k: 'iqamaExpiry', t: 'Iqama expiry date', kind: 'date', more: 1 },
+  { k: 'airport', t: 'Home country airport', kind: 'text', more: 1 },
+  { k: 'endDate', t: 'End date (if exited)', kind: 'date', more: 1 },
+  { k: 'extraMoney', t: 'Extra money', kind: 'num', more: 1 },
+  { k: 'insExpiry', t: 'Medical insurance expiry', kind: 'date', more: 1 },
+  { k: 'contractEnd', t: 'Contract end date', kind: 'date', more: 1 },
+  { k: 'hrNote', t: 'HR note (only HR sees it)', kind: 'text', more: 1 }
 ];
-const bk = { open: false, view: 'import', aoa: [], head: true, fileName: '', map: null, prefix: '', auto: true, staged: null, loadedAt: 0, busy: false, sel: {}, edit: '', q: '', saveT: 0, msg: '' };
+const BK_DATES = { joining: 'Joining date', passportIssue: 'Passport issue date', passportExpiry: 'Passport expiry date', dob: 'Date of birth', iqamaExpiry: 'Iqama expiry date', endDate: 'End date', insExpiry: 'Insurance expiry', contractEnd: 'Contract end date' };
+const BK_VFIELDS = [
+  { k: 'id', t: 'Employee ID', kind: 'id' },
+  { k: 'from', t: 'Date taken (vacation start)', kind: 'date' },
+  { k: 'to', t: 'Back-to-work / end date', kind: 'date' },
+  { k: 'count', t: 'How many vacations it counts for', kind: 'text', def: '1' },
+  { k: 'forYear', t: 'For year(s)', kind: 'text' },
+  { k: 'days', t: 'Total days', kind: 'text' },
+  { k: 'money', t: 'Vacation money', kind: 'sel', opts: [['Paid', 'Paid'], ['Unpaid', 'Unpaid']], def: 'Paid' },
+  { k: 'note', t: 'Note', kind: 'text' }
+];
+const BK_BLOCK = /No name|No ID|repeated|symbols|not found/;
+const bk = { open: false, view: 'import', sheets: [], esheet: 0, vsheet: -1, aoa: [], head: true, vaoa: [], vhead: true, fileName: '', map: null, vmap: null, prefix: '', auto: true, staged: null, loadedAt: 0, busy: false, sel: {}, edit: '', q: '', saveT: 0, msg: '', overwrite: false, vk: null, apprOn: true, apprId: '1' };
+// the person who becomes the approver of everybody whose approvers are still empty (the CEO)
+function bkAppr(){ if(!bk.apprOn) return null; const id = String(bk.apprId || '').trim().replace(/^id[-\s]*/i, ''); if(!id) return null; const u = (state.users || []).find(x => String(x.loginId) === id || String(x.loginId).toLowerCase() === String(bk.apprId).trim().toLowerCase()); return u ? { loginId: u.loginId, name: u.name } : null; }
 const bkEsc = (t) => String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const bkLetter = (i) => { let s = ''; i++; while(i > 0){ const m = (i - 1) % 26; s = String.fromCharCode(65 + m) + s; i = Math.floor((i - 1) / 26); } return s; };
-function bkNewMap(){ const m = {}; BK_FIELDS.forEach(f => { m[f.k] = { col: -1, fixed: f.def || '' }; }); return m; }
-bk.map = bkNewMap();
+function bkNewMap(fields){ const m = {}; (fields || BK_FIELDS).forEach(f => { m[f.k] = { col: -1, fixed: f.def || '' }; }); return m; }
+bk.map = bkNewMap(BK_FIELDS); bk.vmap = bkNewMap(BK_VFIELDS);
 
 /* ---------- reading the file ---------- */
 function bkParseDate(v){
@@ -15087,38 +15135,79 @@ function bkParseDate(v){
   m = /^([A-Za-z]{3,9})[\s\-.,]*(\d{1,2})[\s\-.,]+(\d{4})$/.exec(s); if(m && mon[m[1].slice(0, 3).toLowerCase()]) return bkYmd(+m[3], mon[m[1].slice(0, 3).toLowerCase()], +m[2]);
   return '';
 }
-function bkYmd(y, mo, d){ if(!(y >= 1950 && y <= 2100 && mo >= 1 && mo <= 12 && d >= 1 && d <= 31)) return ''; const t = new Date(y, mo - 1, d); if(t.getMonth() !== mo - 1) return ''; return y + '-' + pad(mo) + '-' + pad(d); }
+function bkYmd(y, mo, d){ if(!(y >= 1900 && y <= 2100 && mo >= 1 && mo <= 12 && d >= 1 && d <= 31)) return ''; const t = new Date(y, mo - 1, d); if(t.getMonth() !== mo - 1) return ''; return y + '-' + pad(mo) + '-' + pad(d); }
 function bkNum(v){ const s = String(v == null ? '' : v).replace(/[,\s]/g, '').replace(/[^\d.]/g, ''); return s && !isNaN(parseFloat(s)) ? String(parseFloat(s)) : ''; }
 function bkType(v){ const s = String(v || '').toLowerCase().replace(/[^a-z]/g, ''); if(!s) return ''; if(s.startsWith('non') || s === 'ns' || s === 'nonsponsor') return 'Non-Sponsor'; if(s.startsWith('spon') || s === 's') return 'Sponsor'; return ''; }
 function bkPick(list, v){ const s = String(v || '').trim(); if(!s) return ''; const f = (list || []).find(x => String(x).toLowerCase() === s.toLowerCase()); return f || s; }
+// "Filipino" -> "Philippines" (the app keeps country names); a country name that is already right stays as it is
+const BK_NAT = { filipino: 'Philippines', filipina: 'Philippines', yemeni: 'Yemen', bangladeshi: 'Bangladesh', indian: 'India', egyptian: 'Egypt', saudi: 'Saudi Arabia', pakistani: 'Pakistan', nepali: 'Nepal', nepalese: 'Nepal', moroccan: 'Morocco', sudanese: 'Sudan', syrian: 'Syria', jordanian: 'Jordan', lebanese: 'Lebanon', indonesian: 'Indonesia', srilankan: 'Sri Lanka', ethiopian: 'Ethiopia', kenyan: 'Kenya', ugandan: 'Uganda', afghan: 'Afghanistan', turkish: 'Turkey', iraqi: 'Iraq', palestinian: 'Palestine', tunisian: 'Tunisia', eritrean: 'Eritrea' };
+function bkCountry(v){
+  const s = String(v || '').trim(); if(!s) return '';
+  try{ const f = (typeof COUNTRIES !== 'undefined' ? COUNTRIES : []).find(c => c[0].toLowerCase() === s.toLowerCase()); if(f) return f[0]; }catch(e){}
+  return BK_NAT[s.toLowerCase().replace(/[^a-z]/g, '')] || s;
+}
+function bkNameClash(a, b){
+  const t = (s) => String(s || '').toLowerCase().replace(/[^a-z؀-ۿ ]/g, ' ').split(/\s+/).filter(w => w.length > 2);
+  const A = t(a), B = t(b); if(!A.length || !B.length) return false;
+  return !A.some(w => B.some(x => x === w || x.slice(0, 4) === w.slice(0, 4)));
+}
+// "+966 571790623", "0571790623" or "571790623" -> country code + number, the way the profile keeps them
+function bkPhone(raw){
+  const r = String(raw || '').trim(); if(!r) return null;
+  const dg = r.replace(/\D/g, '');
+  if(/^(\+|00)/.test(r)){
+    const d = dg.replace(/^00/, '');
+    for(let n = 4; n >= 1; n--){ const c = '+' + d.slice(0, n); if((typeof COUNTRIES !== 'undefined' ? COUNTRIES : []).some(x => x[1] === c) && d.length > n + 5) return { code: c, number: d.slice(n), full: c + ' ' + d.slice(n) }; }
+  } else if(/^0?5\d{8}$/.test(dg)){ const n = dg.slice(-9); return { code: '+966', number: n, full: '+966 ' + n }; }
+  return { code: '', number: r, full: r };
+}
+function bkExisting(p){ return (state.users || []).find(u => u.loginId === p.id) || null; }
 
+function bkClean(aoa){
+  let a = aoa.map(r => r.map(c => (c instanceof Date ? bkParseDate(c) : String(c == null ? '' : c).trim()))).filter(r => r.some(c => c !== ''));
+  const w = a.reduce((m, r) => Math.max(m, r.length), 0);
+  return a.map(r => { while(r.length < w) r.push(''); return r; });
+}
 async function bkReadFile(file){
   bk.msg = ''; bk.fileName = file.name;
   const buf = await file.arrayBuffer();
   if(!window.XLSX) throw new Error('NOXLSX');
   const wb = XLSX.read(buf, { type: 'array', cellDates: true });
-  const ws = wb.Sheets[wb.SheetNames[0]];
-  bk.aoa = XLSX.utils.sheet_to_json(ws, { header: 1, raw: false, dateNF: 'yyyy-mm-dd', defval: '', blankrows: false });
-  bkAfterRead();
+  bk.sheets = wb.SheetNames.map(n => ({ name: n, aoa: bkClean(XLSX.utils.sheet_to_json(wb.Sheets[n], { header: 1, raw: false, dateNF: 'yyyy-mm-dd', defval: '', blankrows: false })) })).filter(s => s.aoa.length);
+  if(!bk.sheets.length) throw new Error('EMPTY');
+  // which sheet is which (the person can change it)
+  const skip = /read\s*me|please check|^notes?$|instruction/i;
+  const cand = bk.sheets.map((s, i) => i).filter(i => !skip.test(bk.sheets[i].name));
+  const vi = cand.find(i => /vac|holiday/i.test(bk.sheets[i].name) && cand.length > 1);
+  const ei = cand.find(i => i !== vi && /emp|staff|people|detail|worker/i.test(bk.sheets[i].name));
+  bk.vsheet = vi == null ? -1 : vi;
+  bk.esheet = ei != null ? ei : (cand.find(i => i !== bk.vsheet) != null ? cand.find(i => i !== bk.vsheet) : (bk.vsheet >= 0 ? -1 : 0));
+  bkApplySheets();
 }
 function bkReadPaste(text){
   bk.fileName = 'pasted rows';
-  bk.aoa = String(text || '').split(/\r?\n/).filter(l => l.trim()).map(l => l.split('\t'));
-  bkAfterRead();
+  bk.sheets = [{ name: 'pasted rows', aoa: bkClean(String(text || '').split(/\r?\n/).filter(l => l.trim()).map(l => l.split('\t'))) }];
+  bk.esheet = 0; bk.vsheet = -1; bkApplySheets();
 }
-function bkAfterRead(){
-  bk.aoa = bk.aoa.map(r => r.map(c => (c instanceof Date ? bkParseDate(c) : String(c == null ? '' : c).trim()))).filter(r => r.some(c => c !== ''));
-  const w = bk.aoa.reduce((a, r) => Math.max(a, r.length), 0);
-  bk.aoa = bk.aoa.map(r => { while(r.length < w) r.push(''); return r; });
-  // a heading row has no dates / plain numbers in it
-  const r0 = bk.aoa[0] || []; bk.head = !r0.some(c => bkParseDate(c) || /^\d+(\.\d+)?$/.test(c));
-  bk.map = bkNewMap(); bkGuessColumns();
+function bkApplySheets(){
+  const E = bk.sheets[bk.esheet], V = bk.sheets[bk.vsheet];
+  bk.aoa = E ? E.aoa : []; bk.vaoa = V ? V.aoa : [];
+  const isHead = (r) => !(r || []).some(c => bkParseDate(c) || /^\d+(\.\d+)?$/.test(c));   // a heading row has no dates / plain numbers in it
+  bk.head = isHead(bk.aoa[0]); bk.vhead = isHead(bk.vaoa[0]);
+  bk.map = bkNewMap(BK_FIELDS); bk.vmap = bkNewMap(BK_VFIELDS); bkGuessColumns(); bkGuessV();
 }
-// a first guess from the heading words (the person can change anything)
+// a first guess from the heading words (the person can change anything). The more specific words come first.
+function bkGuess(aoa, map, keys){
+  aoa[0].forEach((h, i) => { Object.keys(keys).forEach(k => { if(map[k].col < 0 && keys[k].test(h) && !Object.values(map).some(m => m.col === i)) map[k].col = i; }); });
+}
 function bkGuessColumns(){
   if(!bk.head || !bk.aoa.length) return;
-  const keys = { id: /(^|\b)(id|emp(loyee)?\s*(id|no|number)|iqama|code|no\.?)$/i, name: /name/i, joining: /join|hire|doj|start/i, dept: /dep/i, position: /posit|job|desig|title|trade/i, empType: /sponsor|type/i, salary: /salary|basic|wage|pay/i, country: /countr|nation/i, phone: /phone|mobile|tel|contact/i, shift: /shift/i };
-  bk.aoa[0].forEach((h, i) => { Object.keys(keys).forEach(k => { if(bk.map[k].col < 0 && keys[k].test(h) && !Object.values(bk.map).some(m => m.col === i)) bk.map[k].col = i; }); });
+  bkGuess(bk.aoa, bk.map, { passportExpiry: /passport.*(expir|valid|end)/i, passportIssue: /passport.*issue/i, passportNo: /passport|ppt/i, iqamaExpiry: /(iqama|residen).*(expir|valid|end)/i, iqamaNo: /iqama|residen/i, dob: /birth|dob|d\.o\.b/i, airport: /airport/i, endDate: /end\s*date|exit|last\s*day|terminat/i, insExpiry: /insur/i, contractEnd: /contract/i, extraMoney: /extra/i, hrNote: /note|remark|comment/i, vac: /eligib/i, sponsorCo: /sponsor.*(comp|name)|^company|sponsor\s*co/i,
+    id: /(^|\b)(id|emp(loyee)?\s*(id|no|number)|code|no\.?)$/i, name: /name/i, joining: /join|hire|doj|start/i, dept: /dep/i, position: /posit|job|desig|title|trade/i, empType: /sponsor|type/i, salary: /salary|basic|wage|pay/i, country: /countr|nation/i, phone: /phone|mobile|tel|contact/i, shift: /shift/i });
+}
+function bkGuessV(){
+  if(!bk.vhead || !bk.vaoa.length) return;
+  bkGuess(bk.vaoa, bk.vmap, { note: /note|remark|original|text/i, count: /count|how many|number of/i, forYear: /year/i, days: /days?$/i, money: /money|paid|status/i, to: /\bto\b|return|back|end/i, from: /date|taken|start|from|depart/i, id: /(^|\b)(id|emp(loyee)?\s*(id|no|number)|code)$/i });
 }
 
 /* ---------- from rows to waiting-list people ---------- */
@@ -15136,7 +15225,9 @@ function bkBuild(){
   const depts = state.departments || [], poss = state.positions || [];
   dataRows.forEach((r, i) => {
     const cell = (k) => { const m = M[k]; if(!m) return ''; const v = m.col >= 0 ? String(r[m.col] == null ? '' : r[m.col]).trim() : ''; return v !== '' ? v : String(m.fixed || '').trim(); };
-    const p = { sid: 'b' + Date.now().toString(36) + i + Math.random().toString(36).slice(2, 5), id: cell('id'), name: cell('name').replace(/\s+/g, ' '), joining: bkParseDate(cell('joining')), dept: bkPick(depts, cell('dept')), position: bkPick(poss, cell('position')), empType: bkType(cell('empType')), salary: bkNum(cell('salary')), country: cell('country'), phone: cell('phone'), role: cell('role') || 'employee', shift: cell('shift'), vac: cell('vac'), joiningRaw: cell('joining'), row: i + (bk.head ? 2 : 1) };
+    const p = { sid: 'b' + Date.now().toString(36) + i + Math.random().toString(36).slice(2, 5), id: cell('id').replace(/\.0+$/, ''), name: cell('name').replace(/\s+/g, ' '), dept: bkPick(depts, cell('dept')), position: bkPick(poss, cell('position')), empType: bkType(cell('empType')), salary: bkNum(cell('salary')), country: bkCountry(cell('country')), phone: cell('phone'), role: cell('role') || 'employee', shift: cell('shift'), vac: bkNum(cell('vac')), row: i + (bk.head ? 2 : 1),
+      sponsorCo: cell('sponsorCo'), passportNo: cell('passportNo'), iqamaNo: cell('iqamaNo'), airport: cell('airport'), extraMoney: bkNum(cell('extraMoney')), hrNote: cell('hrNote'), bad: [] };
+    Object.keys(BK_DATES).forEach(k => { const raw = cell(k); p[k] = bkParseDate(raw); if(raw && !p[k]) p.bad.push(BK_DATES[k]); });
     if(!p.id && bk.auto){ next++; p.id = ids.pre + next; p.autoId = true; }
     else if(p.id) { const m = new RegExp('^' + ids.pre.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(\\d+)$', 'i').exec(p.id); if(m) next = Math.max(next, parseInt(m[1], 10)); }
     if(!p.name && !p.id) return;
@@ -15144,15 +15235,53 @@ function bkBuild(){
   });
   return out;
 }
+function bkBuildVacs(){
+  const rows = bk.vaoa.slice(bk.vhead ? 1 : 0), M = bk.vmap, out = [];
+  rows.forEach((r) => {
+    const cell = (k) => { const m = M[k]; if(!m) return ''; const v = m.col >= 0 ? String(r[m.col] == null ? '' : r[m.col]).trim() : ''; return v !== '' ? v : String(m.fixed || '').trim(); };
+    const id = cell('id').replace(/\.0+$/, ''); if(!id) return;
+    const rawFrom = cell('from'), from = bkParseDate(rawFrom);
+    let count = parseInt(cell('count'), 10); if(!(count >= 1)) count = 1; if(count > 12) count = 12;
+    out.push({ id, from, to: bkParseDate(cell('to')), count, forYear: cell('forYear'), days: cell('days'), money: /unpaid|pend|not/i.test(cell('money')) ? 'Unpaid' : 'Paid', note: [cell('note'), rawFrom && !from ? 'Date written in the file: ' + rawFrom : ''].filter(Boolean).join(' - ') });
+  });
+  return out;
+}
+// put the vacation rows under the right person (new list, an earlier waiting list, or a person who is already in the app)
+function bkAttachVacs(list){
+  const rows = bkBuildVacs(), users = state.users || [], res = { rows: rows.length, people: 0, stubs: 0, skipped: 0 };
+  const byId = {}; (bk.staged || []).concat(list).forEach(p => { byId[p.id] = p; });
+  const touched = {};
+  rows.forEach((v, i) => {
+    let p = byId[v.id];
+    if(!p){
+      const u = users.find(x => x.loginId === v.id);
+      if(!u){ res.skipped++; return; }
+      p = { sid: 'b' + Date.now().toString(36) + 'v' + i + Math.random().toString(36).slice(2, 5), id: u.loginId, name: u.name || '', vacOnly: true, role: 'employee', bad: [] }; list.push(p); byId[v.id] = p; res.stubs++;
+    }
+    (p.vacs = p.vacs || []).push({ from: v.from, to: v.to, count: v.count, forYear: v.forYear, days: v.days, money: v.money, note: v.note });
+    touched[p.sid] = 1;
+  });
+  res.people = Object.keys(touched).length;
+  return res;
+}
+function bkVacN(p){ return (p.vacs || []).reduce((a, v) => a + (+v.count || 1), 0); }
+function bkMissing(){
+  const L = bk.staged || [], D = state.departments || [], Q = state.positions || [], d = [], q = [];
+  const has = (arr, v) => arr.some(x => String(x).toLowerCase() === String(v).toLowerCase());
+  L.forEach(x => { if(D.length && x.dept && !has(D, x.dept) && !has(d, x.dept)) d.push(x.dept); if(Q.length && x.position && !has(Q, x.position) && !has(q, x.position)) q.push(x.position); });
+  return { d, q };
+}
 function bkIssues(p, all){
-  const out = [], users = state.users || [];
+  const out = [], users = state.users || [], ex = bkExisting(p);
   if(!p.name) out.push('No name'); if(!p.id) out.push('No ID');
-  if(p.id && users.some(u => u.loginId === p.id)) out.push('ID already used by ' + (users.find(u => u.loginId === p.id).name || 'someone'));
+  if(p.vacOnly && !ex) out.push('Person not found in the app');
+  if(ex && !p.vacOnly && p.name && bkNameClash(p.name, ex.name)) out.push('In the app this ID is "' + (ex.name || '') + '" - check that it is the same person');
   if(p.id && all.filter(x => x.id === p.id).length > 1) out.push('ID repeated in this list');
   if(/[\/\s#?.]/.test(p.id || '')) out.push('ID has spaces or symbols');
   if(p.joining === '' && p.joiningRaw) out.push('Joining date not understood');
-  if(p.dept && (state.departments || []).length && !(state.departments || []).includes(p.dept)) out.push('Department "' + p.dept + '" is not in your list');
-  if(p.position && (state.positions || []).length && !(state.positions || []).includes(p.position)) out.push('Position "' + p.position + '" is not in your list');
+  (p.bad || []).forEach(l => out.push(l + ' not understood'));
+  if(p.dept && (state.departments || []).length && !(state.departments || []).includes(p.dept) && !(ex && !bk.overwrite && ex.department)) out.push('Department "' + p.dept + '" is not in your list');
+  if(p.position && (state.positions || []).length && !(state.positions || []).includes(p.position) && !(ex && !bk.overwrite && ex.profile && ex.profile.position)) out.push('Position "' + p.position + '" is not in your list');
   return out;
 }
 
@@ -15174,49 +15303,69 @@ function bkOpen(){
   if(!requireDb()) return;
   let ov = $('bkOverlay');
   if(!ov){ ov = document.createElement('div'); ov.id = 'bkOverlay'; ov.className = 'bkOv'; document.body.appendChild(ov); }
-  bk.open = true; ov.style.display = 'block'; document.body.style.overflow = 'hidden';
+  bk.open = true; bk.vk = null; ov.style.display = 'block'; document.body.style.overflow = 'hidden';
   ov.innerHTML = '<div class="bkWrap"><div class="hrEmpty">Loading…</div></div>';
   (async () => {
     try{ if(!(state.users && state.users.length)) state.users = await window.__db.listUsersOnce(); await bkLoadStaged(); }catch(err){ console.error(err); toast('Could not load — check your connection'); }
-    if(bk.staged && bk.staged.length && !bk.aoa.length) bk.view = 'list';
+    if(bk.staged && bk.staged.length && !bk.aoa.length && !bk.vaoa.length) bk.view = 'list';
     bkRender();
   })();
 }
-function bkClose(){ bk.open = false; clearTimeout(bk.saveT); if(bk.staged) bkSaveSoon(true); const ov = $('bkOverlay'); if(ov) ov.style.display = 'none'; document.body.style.overflow = ''; try{ if(state.authIndex) renderUsersList(); }catch(e){} }
+function bkClose(){ bk.open = false; bk.vk = null; clearTimeout(bk.saveT); if(bk.staged) bkSaveSoon(true); const ov = $('bkOverlay'); if(ov) ov.style.display = 'none'; document.body.style.overflow = ''; try{ if(state.authIndex) renderUsersList(); }catch(e){} }
 function bkRender(){
   const ov = $('bkOverlay'); if(!ov || !bk.open) return;
   const n = (bk.staged || []).length;
-  ov.innerHTML = `<div class="bkWrap"><div class="bkHead"><div><div class="bkTitle">Add employees from Excel</div><div class="hrNote">Nothing is added until you confirm each person in the waiting list.</div></div><button class="pillBtn" data-bk="close">Close</button></div>
+  ov.innerHTML = `<div class="bkWrap"><div class="bkHead"><div><div class="bkTitle">Add or update employees from Excel</div><div class="hrNote">Nothing is saved until you confirm each person in the waiting list.</div></div><button class="pillBtn" data-bk="close">Close</button></div>
     <div class="hrTabs"><button class="${bk.view === 'import' ? 'active' : ''}" data-bk="view" data-v="import">1 · Choose file</button><button class="${bk.view === 'list' ? 'active' : ''}" data-bk="view" data-v="list">2 · Waiting list${n ? `<span class="hrCnt">${n}</span>` : ''}</button></div>
     <div id="bkBody">${bk.view === 'import' ? bkImportHtml() : bkListHtml()}</div></div>`;
 }
-function bkColSelect(k, F){
-  const w = bk.aoa.reduce((a, r) => Math.max(a, r.length), 0), m = bk.map[k];
+function bkColSelect(k, aoa, head, map, sc){
+  const w = aoa.reduce((a, r) => Math.max(a, r.length), 0), m = map[k];
   let o = `<option value="-1">— not in my file —</option>`;
-  for(let c = 0; c < w; c++){ const h = bk.head ? (bk.aoa[0][c] || '') : (bk.aoa[0] || [])[c] || ''; o += `<option value="${c}" ${m.col === c ? 'selected' : ''}>Column ${c + 1} (${bkLetter(c)}) · ${bkEsc(String(h).slice(0, 22))}</option>`; }
-  return `<select data-bk="col" data-k="${k}">${o}</select>`;
+  for(let c = 0; c < w; c++){ const h = head ? (aoa[0][c] || '') : (aoa[0] || [])[c] || ''; o += `<option value="${c}" ${m.col === c ? 'selected' : ''}>Column ${c + 1} (${bkLetter(c)}) · ${bkEsc(String(h).slice(0, 22))}</option>`; }
+  return `<select data-bk="col" data-k="${k}" data-sc="${sc}">${o}</select>`;
 }
-function bkFixed(f){
-  const m = bk.map[f.k], v = bkEsc(m.fixed);
-  if(f.kind === 'sel') return `<select data-bk="fixed" data-k="${f.k}">${f.opts.map(o => `<option value="${bkEsc(o[0])}" ${m.fixed === o[0] ? 'selected' : ''}>${bkEsc(o[1])}</option>`).join('')}</select>`;
-  if(f.kind === 'dept') return `<select data-bk="fixed" data-k="${f.k}"><option value="">—</option>${(state.departments || []).map(d => `<option ${m.fixed === d ? 'selected' : ''}>${bkEsc(d)}</option>`).join('')}</select>`;
-  if(f.kind === 'pos') return `<select data-bk="fixed" data-k="${f.k}"><option value="">—</option>${(state.positions || []).map(d => `<option ${m.fixed === d ? 'selected' : ''}>${bkEsc(d)}</option>`).join('')}</select>`;
-  if(f.kind === 'date') return `<input type="date" data-bk="fixed" data-k="${f.k}" value="${v}">`;
-  if(f.kind === 'country') return `<input type="text" list="countryNameList" data-bk="fixed" data-k="${f.k}" value="${v}" placeholder="write if not in file">`;
-  if(f.kind === 'id') return `<span class="hrNote">If a row has no ID, create one automatically →</span>`;
-  return `<input type="text" ${f.kind === 'num' ? 'inputmode="decimal"' : ''} data-bk="fixed" data-k="${f.k}" value="${v}" placeholder="write if not in file">`;
+function bkFixed(f, map, sc){
+  const m = map[f.k], v = bkEsc(m.fixed), at = `data-bk="fixed" data-k="${f.k}" data-sc="${sc}"`;
+  if(f.kind === 'sel') return `<select ${at}>${f.opts.map(o => `<option value="${bkEsc(o[0])}" ${m.fixed === o[0] ? 'selected' : ''}>${bkEsc(o[1])}</option>`).join('')}</select>`;
+  if(f.kind === 'dept') return `<select ${at}><option value="">—</option>${(state.departments || []).map(d => `<option ${m.fixed === d ? 'selected' : ''}>${bkEsc(d)}</option>`).join('')}</select>`;
+  if(f.kind === 'pos') return `<select ${at}><option value="">—</option>${(state.positions || []).map(d => `<option ${m.fixed === d ? 'selected' : ''}>${bkEsc(d)}</option>`).join('')}</select>`;
+  if(f.kind === 'date') return `<input type="date" ${at} value="${v}">`;
+  if(f.kind === 'country') return `<input type="text" list="countryNameList" ${at} value="${v}" placeholder="write if not in file">`;
+  if(f.kind === 'id') return sc === 'e' ? `<span class="hrNote">If a row has no ID, create one automatically →</span>` : '';
+  return `<input type="text" ${f.kind === 'num' ? 'inputmode="decimal"' : ''} ${at} value="${v}" placeholder="write if not in file">`;
+}
+function bkPrevHtml(aoa, head){
+  const w = aoa.reduce((a, r) => Math.max(a, r.length), 0), show = aoa.slice(0, 4);
+  return `<div class="bkPrev"><table><thead><tr>${Array.from({ length: w }, (_, c) => `<th>${c + 1}<small>${bkLetter(c)}</small></th>`).join('')}</tr></thead><tbody>${show.map((r, i) => `<tr class="${head && i === 0 ? 'hd' : ''}">${r.map(c => `<td>${bkEsc(String(c).slice(0, 26))}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+}
+function bkMapRow(f, aoa, head, map, sc){
+  return `<div class="bkRow"><b>${f.t}${(sc === 'e' && (f.k === 'id' || f.k === 'name')) || (sc === 'v' && f.k === 'id') ? ' *' : ''}</b>${bkColSelect(f.k, aoa, head, map, sc)}<div class="bkFx">${bkFixed(f, map, sc)}${sc === 'e' && f.k === 'id' ? `<span class="bkAuto"><input type="text" data-bk="prefix" value="${bkEsc(bk.prefix)}" placeholder="letters e.g. N" maxlength="4"><label class="bkChk"><input type="checkbox" data-bk="auto" ${bk.auto ? 'checked' : ''}> create ID automatically</label></span>` : ''}</div></div>`;
 }
 function bkImportHtml(){
-  const has = bk.aoa.length > 0;
-  let h = `<div class="card bkCard"><div class="bkStep">Your Excel file</div><div class="bkFile"><label class="pillBtn bkPick">${bkSvg('up', 15)} Choose Excel file<input type="file" id="bkFile" accept=".xlsx,.xls,.csv" style="display:none"></label><span class="hrNote">${bk.fileName ? bkEsc(bk.fileName) + ' · ' + bk.aoa.length + ' rows' : 'Excel (.xlsx) or CSV'}</span></div>
+  const has = bk.aoa.length > 0 || bk.vaoa.length > 0;
+  let h = `<div class="card bkCard"><div class="bkStep">Your Excel file</div><div class="bkFile"><label class="pillBtn bkPick">${bkSvg('up', 15)} Choose Excel file<input type="file" id="bkFile" accept=".xlsx,.xls,.csv" style="display:none"></label><span class="hrNote">${bk.fileName ? bkEsc(bk.fileName) + ' · ' + bk.sheets.length + (bk.sheets.length === 1 ? ' sheet' : ' sheets') : 'Excel (.xlsx) or CSV'}</span></div>
     <details class="bkPaste"><summary>or paste the rows from Excel</summary><textarea id="bkPaste" rows="4" placeholder="Select the cells in Excel, copy, and paste here"></textarea><button class="pillBtn" data-bk="paste">Use these rows</button></details>${bk.msg ? `<div class="hrNote" style="color:var(--danger);margin-top:8px">${bkEsc(bk.msg)}</div>` : ''}</div>`;
-  if(!has) return h;
-  const w = bk.aoa.reduce((a, r) => Math.max(a, r.length), 0), show = bk.aoa.slice(0, 4);
-  h += `<div class="card bkCard"><div class="bkStep">What is in the file <label class="bkChk"><input type="checkbox" data-bk="head" ${bk.head ? 'checked' : ''}> first row is the heading</label></div>
-    <div class="bkPrev"><table><thead><tr>${Array.from({ length: w }, (_, c) => `<th>${c + 1}<small>${bkLetter(c)}</small></th>`).join('')}</tr></thead><tbody>${show.map((r, i) => `<tr class="${bk.head && i === 0 ? 'hd' : ''}">${r.map(c => `<td>${bkEsc(String(c).slice(0, 26))}</td>`).join('')}</tr>`).join('')}</tbody></table></div></div>
-    <div class="card bkCard"><div class="bkStep">Tell me what each column is</div><div class="hrNote" style="margin-bottom:10px">Pick the column from the file. If the information is not in the file, or the same for everybody, write it in the second box.</div>
-    <div class="bkMap">${BK_FIELDS.map(f => `<div class="bkRow"><b>${f.t}${f.k === 'id' || f.k === 'name' ? ' *' : ''}</b>${bkColSelect(f.k, f)}<div class="bkFx">${bkFixed(f)}${f.k === 'id' ? `<span class="bkAuto"><input type="text" data-bk="prefix" value="${bkEsc(bk.prefix)}" placeholder="letters e.g. N" maxlength="4"><label class="bkChk"><input type="checkbox" data-bk="auto" ${bk.auto ? 'checked' : ''}> create ID automatically</label></span>` : ''}</div></div>`).join('')}</div>
-    <div style="margin-top:14px"><button class="btn btn-primary" data-bk="stage">Add to the waiting list</button></div></div>`;
+  if(!has && !bk.sheets.length) return h;
+  if(bk.sheets.length > 1){
+    const opts = (cur, none) => `<option value="-1">${none}</option>` + bk.sheets.map((s, i) => `<option value="${i}" ${cur === i ? 'selected' : ''}>${bkEsc(s.name)} (${s.aoa.length} rows)</option>`).join('');
+    h += `<div class="card bkCard"><div class="bkStep">Which sheet is what</div><div class="bkMap">
+      <div class="bkRow"><b>Employee details</b><select data-bk="esheet">${opts(bk.esheet, '— none —')}</select><span class="hrNote">people, passport, joining date …</span></div>
+      <div class="bkRow"><b>Vacations taken</b><select data-bk="vsheet">${opts(bk.vsheet, '— none —')}</select><span class="hrNote">one row for each vacation taken</span></div></div></div>`;
+  }
+  if(bk.aoa.length){
+    const more = BK_FIELDS.filter(f => f.more), moreN = more.filter(f => bk.map[f.k].col >= 0).length;
+    h += `<div class="card bkCard"><div class="bkStep">Employee details — what is in the file <label class="bkChk"><input type="checkbox" data-bk="head" ${bk.head ? 'checked' : ''}> first row is the heading</label></div>${bkPrevHtml(bk.aoa, bk.head)}</div>
+    <div class="card bkCard"><div class="bkStep">Tell me what each column is</div><div class="hrNote" style="margin-bottom:10px">Pick the column from the file. If the information is not in the file, or the same for everybody, write it in the second box. People who are already in the app are updated, not duplicated.</div>
+    <div class="bkMap">${BK_FIELDS.filter(f => !f.more).map(f => bkMapRow(f, bk.aoa, bk.head, bk.map, 'e')).join('')}</div>
+    <details class="bkMore" ${moreN ? 'open' : ''}><summary>More details: passport, iqama, birth date, insurance, contract … ${moreN ? '(' + moreN + ' found in your file)' : ''}</summary><div class="bkMap" style="margin-top:8px">${more.map(f => bkMapRow(f, bk.aoa, bk.head, bk.map, 'e')).join('')}</div></details></div>`;
+  }
+  if(bk.vaoa.length){
+    h += `<div class="card bkCard"><div class="bkStep">Vacations taken — what is in the file <label class="bkChk"><input type="checkbox" data-bk="vhead" ${bk.vhead ? 'checked' : ''}> first row is the heading</label></div>${bkPrevHtml(bk.vaoa, bk.vhead)}</div>
+    <div class="card bkCard"><div class="bkStep">Vacations — tell me what each column is</div><div class="hrNote" style="margin-bottom:10px">Each row becomes one vacation record in the person's profile (Vacation tab). Vacations already saved with the same date are not added twice.</div>
+    <div class="bkMap">${BK_VFIELDS.map(f => bkMapRow(f, bk.vaoa, bk.vhead, bk.vmap, 'v')).join('')}</div></div>`;
+  }
+  if(has) h += `<div style="margin-top:4px"><button class="btn btn-primary" data-bk="stage">Add to the waiting list</button></div>`;
   return h;
 }
 function bkSvg(n, s){ const P = { up: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>', check: '<polyline points="20 6 9 17 4 12"/>', trash: '<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>', edit: '<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/>', alert: '<path d="M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>' }; s = s || 16; return `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${P[n] || ''}</svg>`; }
@@ -15226,19 +15375,25 @@ function bkListHtml(){
   if(!L.length) return '<div class="card bkCard"><div class="hrEmpty">The waiting list is empty.<br><span class="hrNote">Choose an Excel file in step 1.</span></div></div>';
   const q = bk.q.trim().toLowerCase(), rows = L.filter(p => !q || [p.id, p.name, p.dept, p.position].join(' ').toLowerCase().includes(q));
   const okAll = L.filter(p => !bkIssues(p, L).length).length, selN = Object.keys(bk.sel).filter(k => bk.sel[k] && L.some(p => p.sid === k)).length;
-  let h = `<div class="card bkCard"><div class="bkTool"><div class="hrSearch"><input type="text" data-bk="q" placeholder="Search in the waiting list…" value="${bkEsc(bk.q)}"></div>
+  const nUpd = L.filter(p => bkExisting(p)).length, vN = L.reduce((a, p) => a + (p.vacs || []).length, 0);
+  let h = `<div class="card bkCard"><div class="hrNote" style="margin-bottom:8px">${L.length} in the list: ${L.length - nUpd} new, ${nUpd} already in the app (will be updated)${vN ? ', ' + vN + ' vacation records' : ''}.</div>
+    <div class="bkTool"><div class="hrSearch"><input type="text" data-bk="q" placeholder="Search in the waiting list…" value="${bkEsc(bk.q)}"></div>
     <button class="pillBtn" data-bk="selall">Select all</button>${selN ? `<button class="pillBtn ok" data-bk="confsel">${bkSvg('check', 14)} Confirm ${selN}</button><button class="pillBtn danger" data-bk="delsel">${bkSvg('trash', 14)} Delete ${selN}</button>` : ''}
-    ${okAll ? `<button class="pillBtn" data-bk="confall">Confirm all ${okAll} that look right</button>` : ''}</div>
+    ${okAll ? `<button class="pillBtn" data-bk="confall">Confirm all ${okAll} that look right</button>` : ''}${(() => { const m = bkMissing(), n = m.d.length + m.q.length; return n ? `<button class="pillBtn" data-bk="addlists">Add the ${n} missing department / position names to my lists</button>` : ''; })()}</div>
+    ${(() => { const a = bkAppr(); return `<div class="bkChk" style="margin-bottom:10px;flex-wrap:wrap"><label><input type="checkbox" data-bk="apprOn" ${bk.apprOn ? 'checked' : ''}> Make this person the approver where no approver is set yet:</label> <input type="text" data-bk="apprId" value="${bkEsc(bk.apprId)}" style="width:80px" placeholder="ID"> ${bk.apprOn ? (a ? '<b>' + bkEsc(a.name) + '</b> (ID ' + bkEsc(a.loginId) + ')' : '<span style="color:#b91c1c">no user with this ID — nobody will be added</span>') : ''}<div class="hint" style="width:100%">Approvers, supervisors and machine approvers that are already set are never changed.</div></div>`; })()}
+    ${nUpd ? `<label class="bkChk" style="margin-bottom:10px"><input type="checkbox" data-bk="overwrite" ${bk.overwrite ? 'checked' : ''}> Replace details that are already in the app (leave it off to fill only the empty ones)</label>` : ''}
     <div class="bkList">${rows.map(p => bk.edit === p.sid ? bkEditHtml(p) : bkRowHtml(p, L)).join('') || '<div class="hrEmpty">No match.</div>'}</div></div>`;
   return h;
 }
 function bkRowHtml(p, L){
-  const is = bkIssues(p, L), role = (BK_ROLES.find(r => r[0] === p.role) || [0, p.role])[1];
+  const is = bkIssues(p, L), ex = bkExisting(p), role = (BK_ROLES.find(r => r[0] === p.role) || [0, p.role])[1], vn = (p.vacs || []).length;
+  const tag = p.vacOnly ? '<span class="bkTag upd">vacations only</span>' : ex ? '<span class="bkTag upd">already in the app · update</span>' : '<span class="bkTag new">new</span>';
+  const sub = [p.dept, p.position, p.empType, p.joining ? 'joined ' + fmtDate(p.joining) : '', p.salary ? 'salary ' + p.salary : '', p.country, p.sponsorCo ? 'sponsor ' + p.sponsorCo : '', p.iqamaNo ? 'iqama ' + p.iqamaNo : '', p.passportNo ? 'passport ' + p.passportNo : '', p.passportExpiry ? 'exp. ' + fmtDate(p.passportExpiry) : '', vn ? vn + ' vacation record' + (vn === 1 ? '' : 's') : '', ex || p.vacOnly ? '' : role].filter(Boolean).map(bkEsc).join(' · ');
   return `<div class="bkItem${is.length ? ' bad' : ''}"><label class="bkSel"><input type="checkbox" data-bk="sel" data-s="${p.sid}" ${bk.sel[p.sid] ? 'checked' : ''}></label>
-    <div class="bkMain"><div class="bkNm"><b>${bkEsc(p.name || '—')}</b><span class="bkId">${bkEsc(p.id || '—')}${p.autoId ? ' <small>(new)</small>' : ''}</span></div>
-      <div class="bkSub">${[p.dept, p.position, p.empType, p.joining ? 'joined ' + fmtDate(p.joining) : '', p.salary ? 'salary ' + p.salary : '', p.country, role].filter(Boolean).map(bkEsc).join(' · ')}</div>
+    <div class="bkMain"><div class="bkNm"><b>${bkEsc(p.name || '—')}</b><span class="bkId">${bkEsc(p.id || '—')}${p.autoId ? ' <small>(new)</small>' : ''}</span>${tag}</div>
+      <div class="bkSub">${sub}</div>
       ${is.length ? `<div class="bkWarn">${bkSvg('alert', 12)} ${is.map(bkEsc).join(' · ')}</div>` : ''}</div>
-    <div class="bkAct"><button class="pillBtn ok" data-bk="confirm" data-s="${p.sid}" ${is.some(x => /No name|No ID|already used|repeated|symbols/.test(x)) ? 'disabled' : ''}>${bkSvg('check', 14)} Confirm</button><button class="iconBtn" data-bk="edit" data-s="${p.sid}" title="Edit" aria-label="Edit">${bkSvg('edit', 15)}</button><button class="iconBtn" data-bk="del" data-s="${p.sid}" title="Delete" aria-label="Delete">${bkSvg('trash', 15)}</button></div></div>`;
+    <div class="bkAct"><button class="pillBtn ok" data-bk="confirm" data-s="${p.sid}" ${is.some(x => BK_BLOCK.test(x)) ? 'disabled' : ''}>${bkSvg('check', 14)} ${ex ? 'Update' : 'Confirm'}</button>${p.vacOnly ? '' : `<button class="iconBtn" data-bk="edit" data-s="${p.sid}" title="Edit" aria-label="Edit">${bkSvg('edit', 15)}</button>`}<button class="iconBtn" data-bk="del" data-s="${p.sid}" title="Delete" aria-label="Delete">${bkSvg('trash', 15)}</button></div></div>`;
 }
 function bkEditHtml(p){
   const inp = (k, l, type) => `<div class="field"><label>${l}</label><input type="${type || 'text'}" data-bk="ef" data-k="${k}" value="${bkEsc(p[k])}"></div>`;
@@ -15246,7 +15401,10 @@ function bkEditHtml(p){
   const dl = (arr, cur) => [['', '—']].concat(arr.map(x => [x, x])).concat(cur && !arr.includes(cur) ? [[cur, cur]] : []);
   return `<div class="bkItem edit"><div class="hrForm bkEdit">${inp('id', 'Employee ID')}${inp('name', 'Full name')}${sel('dept', 'Department', dl(state.departments || [], p.dept))}${sel('position', 'Position', dl(state.positions || [], p.position))}
     ${sel('empType', 'Employment type', [['', '—'], ['Sponsor', 'Sponsor'], ['Non-Sponsor', 'Non-Sponsor']])}${inp('joining', 'Joining date', 'date')}${inp('salary', 'Basic salary')}<div class="field"><label>Home country</label><input type="text" list="countryNameList" data-bk="ef" data-k="country" value="${bkEsc(p.country)}"></div>
-    ${inp('phone', 'Phone')}${sel('role', 'Account type', BK_ROLES)}${sel('shift', 'Shift', [['', '—'], ['Day', 'Day'], ['Night', 'Night']])}${sel('vac', 'Vacation eligibility', [['', '—'], ['1', '1 year'], ['2', '2 years']])}</div>
+    ${inp('phone', 'Phone')}${sel('role', 'Account type', BK_ROLES)}${sel('shift', 'Shift', [['', '—'], ['Day', 'Day'], ['Night', 'Night']])}${sel('vac', 'Vacation eligibility', [['', '—'], ['1', '1 year'], ['2', '2 years']])}
+    ${inp('passportNo', 'Passport number')}${inp('passportIssue', 'Passport issue date', 'date')}${inp('passportExpiry', 'Passport expiry date', 'date')}${inp('dob', 'Date of birth', 'date')}
+    ${inp('iqamaNo', 'Iqama number')}${inp('iqamaExpiry', 'Iqama expiry date', 'date')}${inp('airport', 'Home country airport')}${inp('endDate', 'End date (if exited)', 'date')}
+    ${inp('sponsorCo', 'Sponsor company')}${inp('extraMoney', 'Extra money')}${inp('insExpiry', 'Medical insurance expiry', 'date')}${inp('contractEnd', 'Contract end date', 'date')}${inp('hrNote', 'HR note')}</div>
     <div class="bkAct" style="margin-top:8px"><button class="btn btn-primary btn-sm" data-bk="editok" data-s="${p.sid}">Save</button><button class="btn btn-ghost btn-sm" data-bk="editno">Cancel</button></div></div>`;
 }
 
@@ -15254,22 +15412,74 @@ function bkEditHtml(p){
 function bkUserFrom(p){
   const profile = {};
   if(p.position) profile.position = p.position; if(p.empType) profile.employmentType = p.empType; if(p.joining) profile.joiningDate = p.joining;
-  if(p.country) profile.homeCountry = p.country; if(p.phone){ profile.phone = p.phone; profile.phoneNumber = p.phone; } if(p.shift) profile.shiftPref = p.shift; if(p.vac) profile.vacationEligibility = p.vac;
-  if(p.salary) profile.salary = { basicSalary: p.salary };
+  if(p.country) profile.homeCountry = p.country; if(p.phone){ const ph = bkPhone(p.phone); profile.phone = ph.full; profile.phoneNumber = ph.number; if(ph.code) profile.phoneCode = ph.code; } if(p.sponsorCo) profile.sponsorCompany = p.sponsorCo; if(p.shift) profile.shiftPref = p.shift; if(p.vac) profile.vacationEligibility = String(p.vac);
+  if(p.airport) profile.homeCountryAirport = p.airport; if(p.endDate) profile.endDate = p.endDate;
+  if(p.salary || p.extraMoney){ profile.salary = {}; if(p.salary) profile.salary.basicSalary = p.salary; if(p.extraMoney) profile.salary.extraMoney = p.extraMoney; }
+  const pp = {}; if(p.passportNo) pp.passportNo = p.passportNo; if(p.passportIssue) pp.issueDate = p.passportIssue; if(p.passportExpiry) pp.expiryDate = p.passportExpiry; if(p.dob) pp.dob = p.dob; if(Object.keys(pp).length) profile.passport = pp;
+  const iq = {}; if(p.iqamaNo) iq.no = p.iqamaNo; if(p.iqamaExpiry) iq.expiry = p.iqamaExpiry; if(Object.keys(iq).length) profile.iqama = iq;
+  const hr = {}; if(p.insExpiry) hr.insuranceExpiry = p.insExpiry; if(p.contractEnd) hr.contractEnd = p.contractEnd; if(p.hrNote) hr.note = p.hrNote; if(Object.keys(hr).length) profile.hr = hr;
+  const ap = bkAppr(); if(ap && ap.loginId !== p.id) profile.approvers = [ap];
   const role = p.role || 'employee';
   return { loginId: p.id, name: p.name, department: p.dept || '', role, assignedMachines: [], pages: defaultPagesForRole(role), profile, createdAt: Date.now(), addedBy: 'bulk:' + (state.user ? state.user.loginId : '') };
 }
+// for somebody who is already in the app: only the details that are empty there (or everything, if "replace" is ticked)
+function bkPlan(p, ex){
+  const prof = (ex && ex.profile) || {}, ow = bk.overwrite, upd = {};
+  const cur = (path) => path.split('.').reduce((a, k) => (a && a[k] != null ? a[k] : undefined), prof);
+  const put = (path, val) => { if(val === '' || val == null) return; const c = cur(path); if(!ow && c !== undefined && c !== '') return; upd['profile.' + path] = val; };
+  put('position', p.position); put('employmentType', p.empType); put('joiningDate', p.joining); put('homeCountry', p.country); put('homeCountryAirport', p.airport);
+  put('shiftPref', p.shift); put('vacationEligibility', p.vac ? String(p.vac) : ''); put('endDate', p.endDate);
+  if(p.phone){ const ph = bkPhone(p.phone); put('phone', ph.full); put('phoneNumber', ph.number); if(ph.code) put('phoneCode', ph.code); }
+  put('sponsorCompany', p.sponsorCo);
+  put('salary.basicSalary', p.salary); put('salary.extraMoney', p.extraMoney);
+  put('passport.passportNo', p.passportNo); put('passport.issueDate', p.passportIssue); put('passport.expiryDate', p.passportExpiry); put('passport.dob', p.dob);
+  put('iqama.no', p.iqamaNo); put('iqama.expiry', p.iqamaExpiry);
+  put('hr.insuranceExpiry', p.insExpiry); put('hr.contractEnd', p.contractEnd); put('hr.note', p.hrNote);
+  if(p.dept && (ow || !ex.department)) upd.department = p.dept;
+  const ap = bkAppr();   // only when nobody is set yet — existing approvers are never changed
+  if(ap && ap.loginId !== ex.loginId && !(Array.isArray(prof.approvers) && prof.approvers.length)) upd['profile.approvers'] = [ap];
+  return upd;
+}
+function bkPatchLocal(id, upd){
+  const u = (state.users || []).find(x => x.loginId === id); if(!u) return;
+  Object.keys(upd).forEach(k => { if(k === 'department') u.department = upd[k]; else if(k.indexOf('profile.') === 0) u.profile = profileSetIn(u.profile || {}, k.slice(8), upd[k]); });
+}
+async function bkKnownVacs(){
+  if(bk.vk) return bk.vk;
+  const all = await window.__db.listVacations(), m = {};   // one read of the vacations list, kept for the whole session of this window
+  (all || []).forEach(v => { (m[v.employeeId] = m[v.employeeId] || []).push(v); });
+  bk.vk = m; return m;
+}
+async function bkSaveVacs(p){
+  const known = await bkKnownVacs(), have = known[p.id] || [], recs = [];
+  (p.vacs || []).forEach(v => {
+    const dup = have.some(x => v.from ? x.from === v.from : (!x.from && String(x.forYear || '') === String(v.forYear || '') && String(x.note || '') === String(v.note || '')));
+    if(dup) return;
+    const r = { employeeId: p.id, from: v.from || '', to: v.to || '', totalDays: v.days || '', forYear: v.forYear || '', moneyStatus: v.money === 'Unpaid' ? 'Unpaid' : 'Paid', homeCountryContact: '', ticket: null, count: +v.count > 1 ? +v.count : 1, imported: true, createdAt: Date.now(), createdBy: 'bulk:' + (state.user ? state.user.loginId : '') };
+    if(v.note) r.note = v.note;
+    recs.push(r);
+  });
+  if(!recs.length) return 0;
+  await window.__db.saveVacationsBatch(recs);
+  known[p.id] = have.concat(recs);
+  return recs.length;
+}
 async function bkConfirmOne(p, silent){
   const L = bk.staged || [];
-  if(bkIssues(p, L).some(x => /No name|No ID|already used|repeated|symbols/.test(x))) return false;
-  // never overwrite somebody: look the ID up right now
-  const ex = await window.__db.getUser(p.id);
-  if(ex){ toast(p.id + ' already exists — change the ID'); return false; }
-  await window.__db.createUser(bkUserFrom(p));
-  await window.__db.saveAuthIndex(p.id, { tempPassword: '123456', authEmailVersion: 0 });
-  if(!state.users) state.users = []; state.users.push(bkUserFrom(p)); if(!state.authIndex) state.authIndex = null; else state.authIndex[p.id] = { tempPassword: '123456', authEmailVersion: 0 };
+  if(bkIssues(p, L).some(x => BK_BLOCK.test(x))) return false;
+  const ex = await window.__db.getUser(p.id);   // the live record, so nobody is ever overwritten by mistake
+  if(ex){
+    const upd = p.vacOnly ? {} : bkPlan(p, ex);
+    if(Object.keys(upd).length){ await window.__db.updateUser(p.id, upd); bkPatchLocal(p.id, upd); }
+  } else {
+    if(p.vacOnly){ toast(p.id + ' was not found in the app'); return false; }
+    await window.__db.createUser(bkUserFrom(p));
+    await window.__db.saveAuthIndex(p.id, { tempPassword: '123456', authEmailVersion: 0 });
+    if(!state.users) state.users = []; state.users.push(bkUserFrom(p)); if(state.authIndex) state.authIndex[p.id] = { tempPassword: '123456', authEmailVersion: 0 };
+  }
+  if(p.vacs && p.vacs.length) await bkSaveVacs(p);
   bk.staged = bk.staged.filter(x => x.sid !== p.sid); delete bk.sel[p.sid];
-  return true;
+  return ex ? 'updated' : 'created';
 }
 async function bkClick(e){
   const el = e.target.closest('[data-bk]'); if(!el || !bk.open) return;
@@ -15280,40 +15490,66 @@ async function bkClick(e){
     case 'view': bk.view = el.dataset.v; bkRender(); break;
     case 'paste': { const t = $('bkPaste').value; if(!t.trim()) break; bkReadPaste(t); bkRender(); break; }
     case 'stage': {
-      if(bk.map.name.col < 0 && !String(bk.map.name.fixed).trim()){ toast('Choose the column that has the names'); break; }
-      if(bk.map.id.col < 0 && !bk.auto){ toast('Choose the ID column, or tick "create ID automatically"'); break; }
-      const add = bkBuild(); if(!add.length){ toast('No people found in the file'); break; }
-      bk.staged = (bk.staged || []).concat(add); bk.aoa = []; bk.fileName = ''; bk.view = 'list'; bkSaveSoon(true); toast(add.length + ' people added to the waiting list'); bkRender(); break; }
-    case 'confirm': if(P && !bk.busy){ bk.busy = true; el.disabled = true; try{ if(await bkConfirmOne(P)){ toast(P.name + ' added — password 123456'); bkSaveSoon(); } }catch(err){ console.error(err); toast('Could not add — check your connection'); } bk.busy = false; bkRender(); } break;
+      if(!bk.aoa.length && !bk.vaoa.length){ toast('Choose the file first'); break; }
+      if(bk.aoa.length){
+        if(bk.map.name.col < 0 && !String(bk.map.name.fixed).trim()){ toast('Choose the column that has the names'); break; }
+        if(bk.map.id.col < 0 && !bk.auto){ toast('Choose the ID column, or tick "create ID automatically"'); break; }
+      }
+      if(bk.vaoa.length && bk.vmap.id.col < 0){ toast('Vacations: choose the column that has the Employee ID'); break; }
+      const add = bk.aoa.length ? bkBuild() : [];
+      if(bk.aoa.length && !add.length){ toast('No people found in the file'); break; }
+      const vr = bk.vaoa.length ? bkAttachVacs(add) : null;
+      if(!add.length){ toast('Nothing to add'); break; }
+      bk.staged = (bk.staged || []).concat(add); bk.aoa = []; bk.vaoa = []; bk.sheets = []; bk.fileName = ''; bk.view = 'list'; bkSaveSoon(true);
+      toast(add.length + ' people added to the waiting list' + (vr ? ' · ' + vr.rows + ' vacation rows' + (vr.skipped ? ' (' + vr.skipped + ' skipped: ID not found anywhere)' : '') : '')); bkRender(); break; }
+    case 'confirm': if(P && !bk.busy){ bk.busy = true; el.disabled = true; try{ const r = await bkConfirmOne(P); if(r){ toast(P.name + (r === 'created' ? ' added — password 123456' : ' updated')); bkSaveSoon(); } }catch(err){ console.error(err); toast('Could not save — check your connection'); } bk.busy = false; bkRender(); } break;
     case 'confall': case 'confsel': {
       if(bk.busy) break; const list = (a === 'confall' ? L : L.filter(p => bk.sel[p.sid])).filter(p => !bkIssues(p, L).length);
       if(!list.length){ toast('Nothing to confirm'); break; }
-      if(!confirm('Create ' + list.length + ' employee accounts now?')) break;
-      bk.busy = true; let ok = 0;
-      for(const p of list){ try{ if(await bkConfirmOne(p, true)) ok++; }catch(err){ console.error(err); toast('Stopped — check your connection'); break; } }
-      bk.busy = false; bkSaveSoon(true); toast(ok + ' employees added'); bkRender(); break; }
+      const nu = list.filter(p => bkExisting(p)).length, nv = list.reduce((x, p) => x + (p.vacs || []).length, 0);
+      if(!confirm((list.length - nu) + ' new employee accounts will be created and ' + nu + ' existing employees updated' + (nv ? ', with ' + nv + ' vacation records' : '') + '.\n\nContinue?')) break;
+      bk.busy = true; let ok = 0, k = 0;
+      for(const p of list){ k++; try{ toast('Saving ' + k + ' of ' + list.length + '…'); if(await bkConfirmOne(p, true)) ok++; }catch(err){ console.error(err); toast('Stopped — check your connection'); break; } }
+      bk.busy = false; bkSaveSoon(true); toast(ok + ' employees saved'); bkRender(); break; }
+    case 'addlists': {
+      const m = bkMissing(); if(!m.d.length && !m.q.length) break;
+      if(!confirm('Add these to your lists?\n\nDepartments: ' + (m.d.join(', ') || '—') + '\nPositions: ' + (m.q.join(', ') || '—'))) break;
+      try{
+        if(m.d.length){ const l = (state.departments || []).concat(m.d); await window.__db.saveConfigList('departments', l); state.departments = l; }
+        if(m.q.length){ const l = (state.positions || []).concat(m.q); await window.__db.saveConfigList('positions', l); state.positions = l; }
+        try{ renderConfigChips('deptChips', state.departments, 'departments'); renderConfigChips('positionChips', state.positions, 'positions'); }catch(x){}   // refresh the Admin lists without reading them again
+        toast('Your lists are updated');
+      }catch(err){ console.error(err); toast('Could not save — check your connection'); }
+      bkRender(); break; }
     case 'del': if(P && confirm('Delete ' + (P.name || P.id) + ' from the waiting list?')){ bk.staged = L.filter(x => x.sid !== s); delete bk.sel[s]; bkSaveSoon(); bkRender(); } break;
     case 'delsel': { const n = L.filter(p => bk.sel[p.sid]); if(n.length && confirm('Delete ' + n.length + ' people from the waiting list?')){ bk.staged = L.filter(p => !bk.sel[p.sid]); bk.sel = {}; bkSaveSoon(); bkRender(); } break; }
     case 'selall': { const all = L.every(p => bk.sel[p.sid]); L.forEach(p => { bk.sel[p.sid] = !all; }); bkRender(); break; }
     case 'edit': bk.edit = s; bkRender(); break;
     case 'editno': bk.edit = ''; bkRender(); break;
-    case 'editok': { const card = el.closest('.bkItem'); if(P && card){ card.querySelectorAll('[data-bk="ef"]').forEach(x => { P[x.dataset.k] = x.value.trim(); }); P.autoId = false; P.joiningRaw = ''; bk.edit = ''; bkSaveSoon(); bkRender(); } break; }
+    case 'editok': { const card = el.closest('.bkItem'); if(P && card){ card.querySelectorAll('[data-bk="ef"]').forEach(x => { P[x.dataset.k] = x.value.trim(); }); P.autoId = false; P.joiningRaw = ''; P.bad = []; bk.edit = ''; bkSaveSoon(); bkRender(); } break; }
   }
 }
 async function bkChange(e){
   const el = e.target; if(!bk.open || !el.dataset || !(el.dataset.bk || el.id === 'bkFile')) return;
   const a = el.dataset.bk;
-  if(el.id === 'bkFile'){ const f = el.files && el.files[0]; if(!f) return; try{ await bkReadFile(f); }catch(err){ console.error(err); bk.msg = err.message === 'NOXLSX' ? 'The Excel reader did not load. Check the internet connection or paste the rows instead.' : 'Could not read this file. Save it as .xlsx and try again.'; bk.aoa = []; } bkRender(); return; }
+  if(el.id === 'bkFile'){ const f = el.files && el.files[0]; if(!f) return; try{ await bkReadFile(f); }catch(err){ console.error(err); bk.msg = err.message === 'NOXLSX' ? 'The Excel reader did not load. Check the internet connection or paste the rows instead.' : 'Could not read this file. Save it as .xlsx and try again.'; bk.aoa = []; bk.vaoa = []; bk.sheets = []; } bkRender(); return; }
+  const mp = () => (el.dataset.sc === 'v' ? bk.vmap : bk.map);
   switch(a){
-    case 'col': bk.map[el.dataset.k].col = parseInt(el.value, 10); break;
-    case 'fixed': bk.map[el.dataset.k].fixed = el.value; break;
-    case 'head': bk.head = el.checked; bk.map = bkNewMap(); bkGuessColumns(); bkRender(); break;
+    case 'col': mp()[el.dataset.k].col = parseInt(el.value, 10); break;
+    case 'fixed': mp()[el.dataset.k].fixed = el.value; break;
+    case 'head': bk.head = el.checked; bk.map = bkNewMap(BK_FIELDS); bkGuessColumns(); bkRender(); break;
+    case 'vhead': bk.vhead = el.checked; bk.vmap = bkNewMap(BK_VFIELDS); bkGuessV(); bkRender(); break;
+    case 'esheet': bk.esheet = parseInt(el.value, 10); bkApplySheets(); bkRender(); break;
+    case 'vsheet': bk.vsheet = parseInt(el.value, 10); bkApplySheets(); bkRender(); break;
+    case 'overwrite': bk.overwrite = el.checked; bkRender(); break;
+    case 'apprOn': bk.apprOn = el.checked; bkRender(); break;
+    case 'apprId': bk.apprId = el.value.trim(); bkRender(); break;
     case 'auto': bk.auto = el.checked; break;
     case 'prefix': bk.prefix = el.value.trim(); break;
     case 'sel': bk.sel[el.dataset.s] = el.checked; bkRender(); break;
   }
 }
-function bkInput(e){ const el = e.target; if(el.dataset && el.dataset.bk === 'q' && bk.open){ bk.q = el.value; const pos = el.selectionStart; $('bkBody').innerHTML = bkListHtml(); const n = document.querySelector('[data-bk="q"]'); if(n){ n.focus(); try{ n.setSelectionRange(pos, pos); }catch(x){} } } else if(el.dataset && el.dataset.bk === 'fixed' && bk.open) bk.map[el.dataset.k].fixed = el.value; else if(el.dataset && el.dataset.bk === 'prefix' && bk.open) bk.prefix = el.value.trim(); }
+function bkInput(e){ const el = e.target; if(el.dataset && el.dataset.bk === 'q' && bk.open){ bk.q = el.value; const pos = el.selectionStart; $('bkBody').innerHTML = bkListHtml(); const n = document.querySelector('[data-bk="q"]'); if(n){ n.focus(); try{ n.setSelectionRange(pos, pos); }catch(x){} } } else if(el.dataset && el.dataset.bk === 'fixed' && bk.open) (el.dataset.sc === 'v' ? bk.vmap : bk.map)[el.dataset.k].fixed = el.value; else if(el.dataset && el.dataset.bk === 'prefix' && bk.open) bk.prefix = el.value.trim(); }
 document.addEventListener('click', bkClick); document.addEventListener('change', bkChange); document.addEventListener('input', bkInput);
 
 /* ============================================================
