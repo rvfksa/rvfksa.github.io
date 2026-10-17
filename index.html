@@ -2440,6 +2440,48 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
 .bkTag.new{ background:#e7f6ec; color:#15803d; } .bkTag.upd{ background:var(--amber-soft,#eef2ff); color:var(--amber,#4f46e5); }
 .bkMore{ margin-top:12px; } .bkMore summary{ font-size:12px; font-weight:600; color:var(--amber); cursor:pointer; }
 
+/* ===== Purchase: Products & Suppliers ===== */
+.ppBar{ display:flex; flex-wrap:wrap; align-items:center; gap:8px 10px; margin-top:12px; }
+.ppBar .hrSearch{ flex:1 1 220px; min-width:180px; }
+.ppBar select{ height:40px; border-radius:999px; border:1px solid var(--line); background:var(--panel-2); color:var(--text); padding:0 14px; font:inherit; font-size:13px; }
+.ppMsg{ margin-top:10px; }
+.ppCount{ font-size:12px; color:var(--muted); padding:4px 4px 10px; }
+.ppItem{ border-top:1px solid var(--line); }
+.ppItem:first-of-type{ border-top:0; }
+.ppHead{ display:flex; align-items:center; gap:12px; padding:11px 4px; cursor:pointer; }
+.ppCode{ flex:0 0 78px; font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--muted); }
+.ppName{ flex:1; min-width:0; font-weight:600; font-size:14px; color:var(--text); }
+.ppName small{ display:block; font-weight:400; font-size:12px; color:var(--muted); margin-top:2px; word-break:break-word; }
+.ppTag{ flex:0 0 auto; font-size:11px; color:var(--muted); background:var(--panel-2); border-radius:999px; padding:3px 10px; }
+.ppCam{ flex:0 0 18px; color:var(--muted); display:inline-flex; }
+.ppItem.open .ppHead{ background:transparent; }
+.ppBody{ padding:4px 4px 16px; }
+.ppGrid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:10px 18px; font-size:13px; margin-bottom:12px; }
+.ppGrid label{ display:block; font-size:10px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--muted); margin-bottom:2px; }
+.ppPhotos{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:10px; }
+.ppPhotos .pcThumb{ position:relative; }
+.ppChg{ position:absolute; left:4px; bottom:4px; width:24px; height:24px; border-radius:50%; background:rgba(255,255,255,.92); color:var(--text); display:flex; align-items:center; justify-content:center; cursor:pointer; box-shadow:0 1px 4px rgba(0,0,0,.2); }
+.ppRow{ display:flex; flex-wrap:wrap; gap:10px; margin-top:10px; }
+.ppPanel{ margin-top:14px; }
+.ppPanel .hrForm{ display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:12px; }
+.ppAct{ display:flex; gap:6px; flex:0 0 auto; }
+.ppItem.off .ppName{ opacity:.5; text-decoration:line-through; }
+.ppItem.off .ppAct{ opacity:1; }
+.pcBtnMain.sm, .pcBtnSoft.sm{ height:34px; padding:0 14px; font-size:12px; }
+@media (max-width:640px){ .ppCode{ flex-basis:62px; } .ppTag{ display:none; } .ppHead{ flex-wrap:wrap; } }
+.ppBar select{ width:auto; flex:0 1 170px; }
+.ppBar .hrSearch{ flex:1 1 240px; }
+.ppPhotos .pcThumb{ width:110px; height:110px; }
+.ppPhotos .pcThumb img{ width:100%; height:100%; object-fit:cover; border-radius:12px; }
+/* the item-name suggestion list must never be cut off by the table box */
+.pcFT{ overflow:visible !important; }
+.pcFTH{ border-radius:14px 14px 0 0; }
+.pcFR .c-name, .pcFR .pcWho, .pcFR{ overflow:visible !important; }
+.pcFR .c-name{ white-space:normal; }
+.pcSug{ z-index:60; }
+.pcFR .pcSug{ min-width:300px; right:auto; }
+.ppItem.off .ppName{ text-decoration:none; opacity:.55; } .ppItem.off .ppTag::after{ content:' · disabled'; }
+
 </style>
 </head>
 <body>
@@ -13983,7 +14025,7 @@ function pcTabOf(o){
   if(pcIsOpen(o)) return 'new';
   return 'done';
 }
-const PC_TABS = [['todo', 'To do'], ['new', 'New'], ['ordered', 'Ordered'], ['done', 'Completed']];
+const PC_TABS = [['todo', 'To do'], ['new', 'New'], ['ordered', 'Ordered'], ['done', 'Completed'], ['prod', 'Products'], ['sup', 'Suppliers']];
 function pcFilterActive(){ const f = pc.ui.f; return !!(f.dept || f.prio || f.by || f.from || f.to); }
 function pcApplyFilters(list){
   const f = pc.ui.f, q = (pc.ui.q || '').trim().toLowerCase();
@@ -13997,7 +14039,7 @@ function pcApplyFilters(list){
     return true;
   });
 }
-function pcListHtml(){
+function pcListHtml0(){
   const R = pcRoles(), U = pc.ui, mine = pcScope(pc.open || []), tasks = pcTasks();
   const cnt = { todo: tasks.length, new: 0, ordered: 0 };
   mine.forEach(o => { const t = pcTabOf(o); if(cnt[t] != null) cnt[t]++; });
@@ -14220,7 +14262,7 @@ function pcCatByName(name){
   const q = pcLc(name); if(!q || !pc.catalog) return [];
   return Object.values(pc.catalog.items).filter(c => pcLc(c.n) === q).sort((a, b) => (b.last || 0) - (a.last || 0));
 }
-function pcCatalogMatches(q, empty){
+function pcCatalogMatches0(q, empty){
   q = pcLc(q); if(!pc.catalog) return [];
   const all = Object.values(pc.catalog.items);
   if(!q) return empty ? all.sort((a, b) => (b.uses || 0) - (a.uses || 0) || (b.last || 0) - (a.last || 0)).slice(0, 6) : [];
@@ -14228,7 +14270,7 @@ function pcCatalogMatches(q, empty){
   return all.map(c => [sc(c), c]).filter(x => x[0] < 9).sort((a, b) => a[0] - b[0] || (b[1].uses || 0) - (a[1].uses || 0) || (b[1].last || 0) - (a[1].last || 0)).slice(0, 8).map(x => x[1]);
 }
 // fill an item row from a remembered product (everything except the quantity)
-function pcFillFromCat(it, c){
+function pcFillFromCat0(it, c){
   it.n = c.n; it.d = c.d || ''; it.b = c.b || ''; it.u = c.u || it.u; it.p = c.p || ''; it.link = c.link || ''; it.phys = !!c.phys; it.note = c.note || '';
   it.lp = c.lp || 0; it.ld = c.ld || 0; it.lc = c.lc || ''; it.lpm = false; it.more = !!(it.b || it.link || it.phys);
 }
@@ -14236,11 +14278,12 @@ function pcFillFromCat(it, c){
 async function pcItemSuggest(el, i){
   const F = pc.ui.form; if(!F || !F.items[i]) return;
   if(!pc.catalog){ try{ await pcLoadCatalog(); }catch(e){ return; } }
+  if(!pp.loaded){ try{ await pcpLoad(); }catch(e){} }
   if(!pc.ui.form || !F.items[i] || el.value !== (F.items[i].n || '')) return;
   const it = F.items[i], ex = pcCatByName(el.value);
   // a name that is remembered with ONE description: show its last price at once
   if(ex.length === 1 && ex[0].lp && !it.lpm && !(it.d || '').trim()){ it.lp = ex[0].lp; it.ld = ex[0].ld || 0; it.lc = ex[0].lc || 'SAR'; const a1 = $('pcLp' + i), a2 = $('pcLd' + i); if(a1) a1.value = it.lp; if(a2) a2.value = it.ld ? pcDateStr(it.ld) : ''; }
-  pcShowSug($('pcItSug' + i), pcCatalogMatches(el.value, true).map(c => ({ label: c.n, sub: [c.d, c.b, c.u, c.lp ? 'last ' + (c.lc && c.lc !== 'SAR' ? c.lc + ' ' : '') + pcMoney(c.lp) : ''].filter(Boolean).join(' \u00B7 '), c })), 'sugitem', i);
+  pcShowSug($('pcItSug' + i), pcCatalogMatches(el.value, true).map(c => ({ label: c.n, sub: [c.cd, c.d, c.b, c.u, c.lp ? 'last ' + (c.lc && c.lc !== 'SAR' ? c.lc + ' ' : '') + pcMoney(c.lp) : ''].filter(Boolean).join(' \u00B7 '), c })), 'sugitem', i);
 }
 // show the values of a row that was filled from memory (without redrawing, so the cursor stays)
 function pcSyncRow(i){
@@ -14259,7 +14302,7 @@ async function pcSaveForm(){
   const F = pc.ui.form;
   if(pc.ui.busy) return;
   const cat = (pc.catalog && pc.catalog.items) || {};
-  const items = F.items.filter(i => i.n.trim()).map(i => ({ lp: Number(i.lp) > 0 ? Number(i.lp) : 0, ld: Number(i.lp) > 0 ? (i.ld || Date.now()) : 0, lc: Number(i.lp) > 0 ? (i.lpm ? (F.cur || 'SAR') : (i.lc || 'SAR')) : '', lpm: !!i.lpm, n: i.n.trim(), d: (i.d || '').trim(), b: (i.b || '').trim(), q: Number(i.q), u: i.u, p: Number(i.p) > 0 ? Number(i.p) : 0, phys: !!i.phys, link: pcSafeUrl(i.link), photos: i.photos.slice(0, 3), note: (i.note || '').trim() }));
+  const items = F.items.filter(i => i.n.trim()).map(i => ({ lp: Number(i.lp) > 0 ? Number(i.lp) : 0, ld: Number(i.lp) > 0 ? (i.ld || Date.now()) : 0, lc: Number(i.lp) > 0 ? (i.lpm ? (F.cur || 'SAR') : (i.lc || 'SAR')) : '', lpm: !!i.lpm, cd: i.cd || '', n: i.n.trim(), d: (i.d || '').trim(), b: (i.b || '').trim(), q: Number(i.q), u: i.u, p: Number(i.p) > 0 ? Number(i.p) : 0, phys: !!i.phys, link: pcSafeUrl(i.link), photos: i.photos.slice(0, 3), note: (i.note || '').trim() }));
   const forCatalog = items.map(i => Object.assign({}, i)); items.forEach(i => { delete i.lpm; });
   if(!F.dept) return toast('Choose the department');
   if(!F.reqBy.name.trim()) return toast('Write who requested it');
@@ -14295,7 +14338,7 @@ async function pcSaveForm(){
   }finally{ pc.ui.busy = false; }
   pcRender(); pcBadge();
 }
-async function pcSaveCatalog(items, edit){
+async function pcSaveCatalog0(items, edit){
   const cat = await pcLoadCatalog(), now = Date.now();
   items.forEach(i => {
     const k = pcCatKey(cat.items, i.n, i.d), old = cat.items[k];
@@ -16289,6 +16332,422 @@ document.addEventListener('change', async (e) => {
   }
 });
 document.addEventListener('keydown', (e) => { if(e.target && e.target.id === 'chInput' && e.key === 'Enter' && (e.ctrlKey || e.metaKey)){ e.preventDefault(); chSend(); } });
+
+/* ============================================================
+   PURCHASE: PRODUCTS & SUPPLIERS
+   Products live in a few big "list" documents (up to 2500 products each) in the same "config" collection the rest of Purchase uses,
+   so the whole product list is read ONCE per session, only when somebody opens Products or types an item name.
+   Photos are kept apart (one small document per product) and are read only when that product is opened.
+   Suppliers are one small document. Nothing is read or written by merely opening other pages.
+   ============================================================ */
+const PP_MAX = 2500;                       // products per list document (keeps each document far below the 1 MB limit)
+const PP_GROUPS = ['Spare part', 'Packing material', 'General'];
+const pp = { forUser: null, loaded: false, loading: false, shards: [], items: [], sups: null, supLoading: false,
+  q: '', g: '', ph: '', limit: 40, openId: '', photos: {}, edit: null, add: null, imp: null, busy: false, msg: '',
+  sq: '', st: '', showOff: false, sedit: null, supLimit: 40 };
+const ppRoles = () => { const R = pcRoles(); return { edit: !!(R.admin || R.req || R.proc) }; };
+const ppSafe = (s) => String(s).replace(/[^A-Za-z0-9_-]/g, '_');
+const ppLc = (s) => String(s || '').toLowerCase().trim();
+const ppKey = (p) => p.c ? 'c:' + ppLc(p.c) : 'n:' + ppLc(p.n) + '|' + ppLc(p.d);
+function ppReset(){ pp.loaded = false; pp.loading = false; pp.shards = []; pp.items = []; pp.sups = null; pp.openId = ''; pp.photos = {}; pp.edit = null; pp.add = null; pp.imp = null; pp.sedit = null; }
+function ppCheckUser(){ if(pp.forUser !== pcMe()){ ppReset(); pp.forUser = pcMe(); } }
+
+// ---------- load / save ----------
+async function pcpLoad(force){
+  ppCheckUser();
+  if(pp.loaded && !force) return pp.items;
+  if(pp.loading) return pp.loadP;
+  pp.loading = true;
+  pp.loadP = (async () => {
+    const first = await window.__db.getConfigObject('prodList_0', { items: [], n: 1 });
+    const shards = [first.items || []], n = Math.max(1, first.n || 1);
+    if(n > 1){ const rest = await Promise.all(Array.from({ length: n - 1 }, (_, k) => window.__db.getConfigObject('prodList_' + (k + 1), { items: [] }))); rest.forEach(r => shards.push(r.items || [])); }
+    pp.shards = shards; pp.items = [].concat.apply([], shards); pp.loaded = true; return pp.items;
+  })();
+  try{ return await pp.loadP; } finally { pp.loading = false; }
+}
+async function ppSaveShard(k){ await window.__db.saveConfigObject('prodList_' + k, { items: pp.shards[k], n: pp.shards.length }); }
+// put new products into the last list document (and open another one when it is full); returns the shards touched
+function ppAppend(list){
+  const touched = new Set();
+  list.forEach(p => {
+    let k = pp.shards.length - 1; if(k < 0){ pp.shards.push([]); k = 0; }
+    if(pp.shards[k].length >= PP_MAX){ pp.shards.push([]); k++; touched.add(0); }
+    pp.shards[k].push(p); pp.items.push(p); touched.add(k);
+  });
+  return touched;
+}
+function ppNextNum(){ let m = 0; pp.items.forEach(p => { const x = /^N(\d+)$/.exec(p.i || ''); if(x && +x[1] > m) m = +x[1]; }); return m + 1; }
+function ppNextId(){ return 'N' + ppNextNum(); }
+function ppFindShard(p){ for(let k = 0; k < pp.shards.length; k++) if(pp.shards[k].indexOf(p) >= 0) return k; return -1; }
+
+// photos of one product
+async function ppLoadPhotos(p){
+  if(pp.photos[p.i]) return pp.photos[p.i];
+  if(!p.h){ pp.photos[p.i] = []; return []; }
+  const d = await window.__db.getConfigObject('prodPh_' + ppSafe(p.i), { p: [] });
+  pp.photos[p.i] = d.p || []; return pp.photos[p.i];
+}
+async function ppSavePhotos(p, arr){
+  await window.__db.saveConfigObject('prodPh_' + ppSafe(p.i), { p: arr });
+  pp.photos[p.i] = arr;
+  const had = !!p.h; p.h = arr.length;
+  if(!!p.h !== had){ const k = ppFindShard(p); if(k >= 0) await ppSaveShard(k); }
+}
+
+// suppliers
+async function pcpLoadSups(){
+  if(pp.sups) return pp.sups;
+  if(pp.supLoading) return pp.supP;
+  pp.supLoading = true;
+  pp.supP = (async () => { const d = await window.__db.getConfigObject('purchaseSuppliers', { list: [] }); pp.sups = d.list || []; return pp.sups; })();
+  try{ return await pp.supP; } finally { pp.supLoading = false; }
+}
+async function ppSaveSups(){ await window.__db.saveConfigObject('purchaseSuppliers', { list: pp.sups }); }
+
+// ---------- matching (used by the order form too) ----------
+function pcpMatches(q, max){
+  q = ppLc(q); if(!q || !pp.loaded) return [];
+  const words = q.split(/\s+/).filter(Boolean), out = [];
+  for(const p of pp.items){
+    const n = ppLc(p.n), c = ppLc(p.c), d = ppLc(p.d);
+    let s = 9;
+    if(c === q || n === q) s = 0; else if(c.startsWith(q) || n.startsWith(q)) s = 1;
+    else if(n.split(/[\s\-\/,()]+/).some(w => w.startsWith(q))) s = 2;
+    else if(n.includes(q) || c.includes(q)) s = 3;
+    else if(words.length > 1 && words.every(w => n.includes(w) || c.includes(w) || d.includes(w))) s = 4;
+    else if(d.includes(q)) s = 5;
+    if(s < 9){ out.push([s, p]); }
+  }
+  out.sort((a, b) => a[0] - b[0] || a[1].n.length - b[1].n.length);
+  return out.slice(0, max || 8).map(x => x[1]);
+}
+const ppAsCat = (p) => ({ n: p.n, d: p.d || '', b: p.b || '', u: p.u || '', link: p.l || '', cd: p.c || '', p: '', phys: false, note: '', lp: 0, ld: 0, lc: '', fromList: true, uses: 0, last: 0 });
+
+// a new product typed in an order is added to the list by itself (one write)
+async function pcpAddFromOrder(items){
+  if(!pp.loaded) return;
+  const have = new Set(pp.items.map(ppKey)), byName = new Set(pp.items.map(p => ppLc(p.n)));
+  let nid = ppNextNum(); const add = [];
+  (items || []).forEach(i => {
+    const p = { i: '', c: '', n: String(i.n || '').trim(), d: String(i.d || '').trim(), u: i.u || '', b: i.b || '', l: i.link || '', g: 'General', h: 0 };
+    if(!p.n || have.has(ppKey(p)) || (!p.d && byName.has(ppLc(p.n)))) return;
+    p.i = 'N' + (nid++); have.add(ppKey(p)); add.push(p);
+  });
+  if(!add.length) return;
+  const t = ppAppend(add);
+  for(const k of t) await ppSaveShard(k);
+}
+
+// ---------- import ----------
+function ppXlsx(file){
+  return new Promise((res, rej) => {
+    if(!window.XLSX) return rej(new Error('NOXLSX'));
+    const r = new FileReader(); r.onload = () => { try{ res(XLSX.read(r.result, { type: 'array', cellDates: true })); }catch(e){ rej(e); } }; r.onerror = () => rej(new Error('READ')); r.readAsArrayBuffer(file);
+  });
+}
+function ppFromSheets(wb){
+  const prods = [], sups = [];
+  wb.SheetNames.forEach(nm => {
+    const rows = XLSX.utils.sheet_to_json(wb.Sheets[nm], { header: 1, raw: false, defval: '', blankrows: false });
+    let hi = rows.findIndex(r => r.filter(x => String(x).trim()).length >= 2); if(hi < 0) return;
+    const H = rows[hi].map(x => ppLc(x)), col = (re) => H.findIndex(h => re.test(h));
+    const cCode = col(/\bcode\b|part no|item no|^pm code/), cName = col(/^description$|item name|product name|^name$|^item$|packing dimension/), cDesc = col(/detail|remarks?|specification|size|dimension/), cUnit = col(/^unit/), cBrand = col(/brand|manufactur/), cLink = col(/link|url/);
+    const sCo = col(/company name|supplier name|^supplier$|^company$/), sAdd = col(/address/), sPh = col(/mobile|phone|tel/), sMail = col(/e-?mail/);
+    if(sCo >= 0 && (sAdd >= 0 || sPh >= 0 || sMail >= 0)){
+      rows.slice(hi + 1).forEach(r => { const n = String(r[sCo] || '').replace(/\s+/g, ' ').trim(); if(n) sups.push({ n, t: 'international', a: sAdd >= 0 ? String(r[sAdd] || '').trim() : '', p: sPh >= 0 ? String(r[sPh] || '').trim() : '', e: sMail >= 0 ? String(r[sMail] || '').trim() : '' }); });
+    } else if(cName >= 0){
+      rows.slice(hi + 1).forEach(r => { const n = String(r[cName] || '').replace(/\s+/g, ' ').trim(); if(!n) return;
+        prods.push({ c: cCode >= 0 ? String(r[cCode] || '').trim() : '', n, d: cDesc >= 0 && cDesc !== cName ? String(r[cDesc] || '').replace(/\s+/g, ' ').trim() : '', u: cUnit >= 0 ? String(r[cUnit] || '').trim() : '', b: cBrand >= 0 ? String(r[cBrand] || '').trim() : '', l: cLink >= 0 ? String(r[cLink] || '').trim() : '', g: 'General' }); });
+    }
+  });
+  return { products: prods, suppliers: sups };
+}
+async function ppReadImport(file){
+  let data;
+  if(/\.json$/i.test(file.name)) data = JSON.parse(await file.text());
+  else data = ppFromSheets(await ppXlsx(file));
+  await ppPrepare(data, file.name);
+}
+async function ppPrepare(data, name){
+  await pcpLoad(); await pcpLoadSups();
+  const file = { name };
+  const have = new Map(pp.items.map(p => [ppKey(p), p])), supHave = new Set(pp.sups.map(s => ppLc(s.n)));
+  const np = [], dup = [], seen = new Set();
+  (data.products || []).forEach(p => { const k = ppKey(p); if(seen.has(k)) return; seen.add(k); (have.has(k) ? dup : np).push(p); });
+  const photoFix = dup.filter(p => p._ph && p._ph.length && !(have.get(ppKey(p)).h));
+  const ns = (data.suppliers || []).filter(s => s.n && !supHave.has(ppLc(s.n)));
+  pp.imp = { name: file.name, np, dup: dup.length, photoFix, ns, photos: np.filter(p => p._ph && p._ph.length).length + photoFix.length, step: '' };
+}
+async function ppRunImport(){
+  const I = pp.imp; if(!I || pp.busy) return; pp.busy = true;
+  try{
+    let nid = ppNextNum();
+    const withPh = [];
+    I.np.forEach(p => { const row = { i: p.c || '', c: p.c || '', n: p.n, d: p.d || '', u: p.u || '', b: p.b || '', l: p.l || '', g: p.g || 'General', h: p._ph && p._ph.length ? p._ph.length : 0 }; if(p.s) row.s = p.s;
+      if(!row.i){ row.i = 'N' + (nid++); }
+      row._src = p; withPh.push(row); });
+    // photos first (so a half-finished import never shows a camera that has no photo), then the lists
+    const jobs = []; withPh.forEach(r => { if(r._src._ph && r._src._ph.length) jobs.push([r.i, r._src._ph.slice(0, 3)]); });
+    I.photoFix.forEach(p => { const e = pp.items.find(x => ppKey(x) === ppKey(p)); if(e) jobs.push([e.i, p._ph.slice(0, 3), e]); });
+    let done = 0; const total = jobs.length;
+    const worker = async () => { while(jobs.length){ const j = jobs.shift(); await window.__db.saveConfigObject('prodPh_' + ppSafe(j[0]), { p: j[1] }); if(j[2]) j[2].h = j[1].length; done++; if(done % 20 === 0 || done === total){ pp.msg = 'Saving photos ' + done + ' / ' + total + '…'; pcRender(); } } };
+    await Promise.all([worker(), worker(), worker(), worker(), worker()]);
+    withPh.forEach(r => { delete r._src; });
+    const touched = ppAppend(withPh);
+    if(I.photoFix.length){ pp.shards.forEach((s, k) => touched.add(k)); }
+    pp.msg = 'Saving the list…'; pcRender();
+    for(const k of touched) await ppSaveShard(k);
+    if(I.ns.length){ I.ns.forEach(s => pp.sups.push({ id: 'S' + (Date.now() % 1e9) + Math.floor(Math.random() * 1e3), n: s.n, t: s.t || 'international', a: s.a || '', p: s.p || '', e: s.e || '', off: false })); await ppSaveSups(); }
+    pp.msg = 'Done: ' + withPh.length + ' products and ' + I.ns.length + ' suppliers added.'; pp.imp = null;
+  }catch(err){ console.error(err); pp.msg = 'The import stopped (' + (err && err.message || 'error') + '). Nothing was changed that you cannot repeat — run it again; products already saved are skipped.'; await pcpLoad(true).catch(() => {}); }
+  finally{ pp.busy = false; }
+  pcRender();
+}
+
+// First time only: when the product list is still empty and the prepared file RVF_Products_Import.json sits next to index.html,
+// the products, photos and suppliers are loaded by themselves (nothing to press, nothing is read again afterwards).
+async function ppAutoSetup(){
+  if(pp.autoTried) return; pp.autoTried = true;
+  try{
+    const r = await fetch('RVF_Products_Import.json', { cache: 'no-store' }); if(!r.ok) return;
+    const data = await r.json(); if(!data || !Array.isArray(data.products) || !data.products.length) return;
+    pp.msg = 'Setting up your product list for the first time\u2026'; pcRender();
+    await ppPrepare(data, 'RVF_Products_Import.json'); await ppRunImport();
+  }catch(err){ console.error(err); pp.msg = ''; pcRender(); }
+}
+
+// ---------- screens ----------
+const ppTabsHtml = () => '<div class="hrTabs">' + PC_TABS.map(t => `<button class="${pc.ui.tab === t[0] ? 'active' : ''}" data-pc="tab" data-v="${t[0]}">${t[1]}</button>`).join('') + '</div>';
+function pcpPage(){
+  ppCheckUser();
+  const tab = pc.ui.tab;
+  const head = '<div class="pcTop"><span class="grow"></span></div><div class="card pcCtrl">' + ppTabsHtml();
+  if(tab === 'prod'){
+    if(!pp.loaded){ if(!pp.loading) pcpLoad().then(() => pcRender()).catch(() => { pp.msg = 'Could not load the products — check your connection.'; pcRender(); }); return head + '</div><div class="card pcListCard"><div class="hrEmpty">Loading products…</div></div>'; }
+    if(!pp.items.length && !pp.autoTried && ppRoles().edit) ppAutoSetup();
+    return head + ppProdTop() + '</div>' + ppProdList();
+  }
+  if(!pp.sups){ if(!pp.supLoading) pcpLoadSups().then(() => pcRender()).catch(() => { pp.msg = 'Could not load the suppliers — check your connection.'; pcRender(); }); return head + '</div><div class="card pcListCard"><div class="hrEmpty">Loading suppliers…</div></div>'; }
+  return head + ppSupTop() + '</div>' + ppSupList();
+}
+function ppFiltered(){
+  const q = ppLc(pp.q); const words = q.split(/\s+/).filter(Boolean);
+  return pp.items.filter(p => {
+    if(pp.g && p.g !== pp.g) return false;
+    if(pp.ph === 'with' && !p.h) return false; if(pp.ph === 'without' && p.h) return false;
+    if(words.length){ const hay = ppLc([p.c, p.n, p.d, p.b].join(' ')); if(!words.every(w => hay.includes(w))) return false; }
+    return true;
+  });
+}
+function ppProdTop(){
+  const R = ppRoles(), groups = Array.from(new Set(PP_GROUPS.concat(pp.items.map(p => p.g).filter(Boolean))));
+  return `<div class="ppBar"><div class="hrSearch"><input type="text" data-pp="q" placeholder="Search by code, name or detail…" value="${pcEsc(pp.q)}"></div>
+    <select data-pp="g"><option value="">All groups</option>${groups.map(g => `<option ${pp.g === g ? 'selected' : ''}>${pcEsc(g)}</option>`).join('')}</select>
+    <select data-pp="ph"><option value="">Photos: any</option><option value="with" ${pp.ph === 'with' ? 'selected' : ''}>With photo</option><option value="without" ${pp.ph === 'without' ? 'selected' : ''}>No photo yet</option></select>
+    ${R.edit ? `<label class="pcBtnSoft sm ppImp" title="Choose many photos at once \u2014 each file is named with the product code, e.g. SP031.jpg">${pcSvg('cam', 14)}Photos by code<input type="file" accept="image/*" multiple data-pp="bulkph" style="display:none"></label><button class="pcBtnMain sm" data-pp="addopen">${pcSvg('plus', 14)}Add product</button><label class="pcBtnSoft sm ppImp" title="Add many products and suppliers from Excel or the prepared file">${pcSvg('down', 14)}Import<input type="file" accept=".xlsx,.xls,.json" data-pp="impfile" style="display:none"></label>` : ''}</div>
+    ${pp.msg ? `<div class="hrNote ppMsg">${pcEsc(pp.msg)}</div>` : ''}`;
+}
+function ppImportHtml(){
+  const I = pp.imp; if(!I) return '';
+  return `<div class="card ppPanel"><div class="pcSection" style="margin-top:0">Import: ${pcEsc(I.name)}</div>
+    <div class="hrNote">${I.np.length} new products (${I.photos} with photos) · ${I.dup} already in the list (kept as they are${I.photoFix.length ? ', ' + I.photoFix.length + ' of them get their missing photo' : ''}) · ${I.ns.length} new suppliers.</div>
+    <div class="ppRow"><button class="pcBtnMain" data-pp="impgo" ${pp.busy ? 'disabled' : ''}>${pcSvg('check', 16)}${pp.busy ? 'Saving…' : 'Add them to the app'}</button><button class="pcBtnSoft" data-pp="impno" ${pp.busy ? 'disabled' : ''}>Cancel</button></div>
+    ${pp.busy && pp.msg ? `<div class="hrNote">${pcEsc(pp.msg)}</div>` : ''}</div>`;
+}
+function ppFormHtml(f, isNew){
+  const groups = Array.from(new Set(PP_GROUPS.concat(pp.items.map(p => p.g).filter(Boolean))));
+  const lockName = !isNew && f.i && (f.c || true);
+  return `<div class="card ppPanel"><div class="pcSection" style="margin-top:0">${isNew ? 'New product' : 'Edit product'}</div><div class="hrForm">
+    <div class="field"><label>Code ${isNew ? '(optional — can be added later)' : ''}</label><input type="text" data-pp="f" data-k="c" value="${pcEsc(f.c)}" ${!isNew && f._hadCode ? 'disabled' : ''} placeholder="e.g. SP001"></div>
+    <div class="field"><label>Group</label><select data-pp="f" data-k="g">${groups.map(g => `<option ${f.g === g ? 'selected' : ''}>${pcEsc(g)}</option>`).join('')}</select></div>
+    <div class="field" style="grid-column:1/-1"><label>Product name</label><input type="text" data-pp="f" data-k="n" value="${pcEsc(f.n)}" ${lockName ? 'disabled' : ''}></div>
+    <div class="field" style="grid-column:1/-1"><label>Description / size (optional)</label><input type="text" data-pp="f" data-k="d" value="${pcEsc(f.d)}"></div>
+    <div class="field"><label>Unit</label><select data-pp="f" data-k="u"><option value="">—</option>${(pc.settings && pc.settings.units || PC_DEF.units).map(u => `<option ${f.u === u ? 'selected' : ''}>${pcEsc(u)}</option>`).join('')}</select></div>
+    <div class="field"><label>Brand / manufacturer</label><input type="text" data-pp="f" data-k="b" value="${pcEsc(f.b)}"></div>
+    <div class="field" style="grid-column:1/-1"><label>Link (optional)</label><input type="text" data-pp="f" data-k="l" value="${pcEsc(f.l)}" placeholder="https://…"></div></div>
+    <div class="ppRow"><button class="pcBtnMain" data-pp="${isNew ? 'addsave' : 'editsave'}" ${pp.busy ? 'disabled' : ''}>${pcSvg('check', 16)}Save</button><button class="pcBtnSoft" data-pp="${isNew ? 'addno' : 'editno'}">Cancel</button></div></div>`;
+}
+function ppProdList(){
+  let h = ppImportHtml();
+  if(pp.add) h += ppFormHtml(pp.add, true);
+  const list = ppFiltered(), R = ppRoles(), show = list.slice(0, pp.limit);
+  h += `<div class="card pcListCard"><div class="ppCount">${list.length} of ${pp.items.length} products</div>`;
+  if(!pp.items.length) h += '<div class="hrEmpty">No products yet.<br><span class="hrNote">Use Import to add your list, or Add product.</span></div>';
+  else if(!list.length) h += '<div class="hrEmpty">Nothing matches.</div>';
+  show.forEach(p => {
+    const open = pp.openId === p.i;
+    h += `<div class="ppItem${open ? ' open' : ''}"><div class="ppHead" data-pp="open" data-i="${pcEsc(p.i)}"><span class="ppCode">${pcEsc(p.c || '—')}</span><span class="ppName">${pcEsc(p.n)}${p.d ? `<small>${pcEsc(p.d)}</small>` : ''}</span><span class="ppTag">${pcEsc(p.g || '')}</span>${p.h ? `<span class="ppCam" title="Has photo">${pcSvg('cam', 14)}</span>` : '<span class="ppCam"></span>'}</div>`;
+    if(open){
+      if(pp.edit && pp.edit.i === p.i) h += ppFormHtml(pp.edit, false);
+      else {
+        const ph = pp.photos[p.i];
+        h += `<div class="ppBody"><div class="ppGrid"><div><label>Code</label>${pcEsc(p.c || '—')}</div><div><label>Group</label>${pcEsc(p.g || '')}</div><div><label>Unit</label>${pcEsc(p.u || '—')}</div><div><label>Brand / manufacturer</label>${pcEsc(p.b || '—')}</div>${p.s ? `<div><label>Supplier</label>${pcEsc(p.s)}</div>` : ''}<div style="grid-column:1/-1"><label>Link</label>${p.l && pcSafeUrl(p.l) ? `<a href="${pcEsc(pcSafeUrl(p.l))}" target="_blank" rel="noopener">${pcEsc(p.l)}</a>` : '—'}</div></div>
+          <div class="ppPhotos">${ph ? ph.map((s, k) => `<div class="pcThumb"><img src="${s}" alt=""><button data-pp="phdel" data-i="${pcEsc(p.i)}" data-k="${k}" aria-label="Remove photo">×</button>${R.edit ? `<label class="ppChg" title="Change photo">${pcSvg('edit', 12)}<input type="file" accept="image/*" data-pp="phchg" data-i="${pcEsc(p.i)}" data-k="${k}" style="display:none"></label>` : ''}</div>`).join('') : '<span class="hrNote">Loading photos…</span>'}
+            ${R.edit && ph && ph.length < 3 ? `<label class="pcBtnSoft">${pcSvg('cam', 14)}Add photos<input type="file" accept="image/*" multiple data-pp="phadd" data-i="${pcEsc(p.i)}" style="display:none"></label><span class="hrNote">Up to 3 photos \u2014 you can choose several at once.</span>` : ''}</div>
+          ${R.edit ? `<div class="ppRow"><button class="pcBtnSoft" data-pp="editopen" data-i="${pcEsc(p.i)}">${pcSvg('edit', 14)}Edit details</button></div>` : ''}</div>`;
+      }
+    }
+    h += '</div>';
+  });
+  if(list.length > show.length) h += `<div class="ppRow"><button class="pcBtnSoft" data-pp="more">Show more (${list.length - show.length} left)</button></div>`;
+  return h + '</div>';
+}
+// suppliers
+const PP_STYPE = [['local', 'Local'], ['international', 'International'], ['packing', 'Packing material']];
+function ppSupTop(){
+  const R = ppRoles();
+  return `<div class="ppBar"><div class="hrSearch"><input type="text" data-pp="sq" placeholder="Search suppliers…" value="${pcEsc(pp.sq)}"></div>
+    <select data-pp="st"><option value="">All types</option>${PP_STYPE.map(t => `<option value="${t[0]}" ${pp.st === t[0] ? 'selected' : ''}>${t[1]}</option>`).join('')}</select>
+    <label class="pcChk"><input type="checkbox" data-pp="soff" ${pp.showOff ? 'checked' : ''}> Show disabled</label>
+    ${R.edit ? `<button class="pcBtnMain sm" data-pp="sadd">${pcSvg('plus', 14)}Add supplier</button>` : ''}</div>${pp.msg ? `<div class="hrNote ppMsg">${pcEsc(pp.msg)}</div>` : ''}`;
+}
+function ppSupForm(s, isNew){
+  return `<div class="card ppPanel"><div class="pcSection" style="margin-top:0">${isNew ? 'New supplier' : 'Edit supplier'}</div><div class="hrForm">
+    <div class="field" style="grid-column:1/-1"><label>Supplier name</label><input type="text" data-pp="sf" data-k="n" value="${pcEsc(s.n)}"></div>
+    <div class="field"><label>Type</label><select data-pp="sf" data-k="t">${PP_STYPE.map(t => `<option value="${t[0]}" ${s.t === t[0] ? 'selected' : ''}>${t[1]}</option>`).join('')}</select></div>
+    <div class="field"><label>Phone / mobile</label><input type="text" data-pp="sf" data-k="p" value="${pcEsc(s.p)}"></div>
+    <div class="field" style="grid-column:1/-1"><label>Address</label><input type="text" data-pp="sf" data-k="a" value="${pcEsc(s.a)}"></div>
+    <div class="field" style="grid-column:1/-1"><label>Email</label><input type="text" data-pp="sf" data-k="e" value="${pcEsc(s.e)}"></div></div>
+    <div class="ppRow"><button class="pcBtnMain" data-pp="ssave" ${pp.busy ? 'disabled' : ''}>${pcSvg('check', 16)}Save</button><button class="pcBtnSoft" data-pp="sno">Cancel</button></div></div>`;
+}
+function ppSupList(){
+  let h = '';
+  if(pp.sedit && pp.sedit.isNew) h += ppSupForm(pp.sedit, true);
+  const q = ppLc(pp.sq), R = ppRoles();
+  const list = pp.sups.filter(s => (pp.showOff || !s.off) && (!pp.st || s.t === pp.st) && (!q || ppLc([s.n, s.a, s.p, s.e].join(' ')).includes(q)));
+  h += `<div class="card pcListCard"><div class="ppCount">${list.length} of ${pp.sups.length} suppliers</div>`;
+  if(!pp.sups.length) h += '<div class="hrEmpty">No suppliers yet.<br><span class="hrNote">Use Add supplier, or import them from the Products tab.</span></div>';
+  list.slice(0, pp.supLimit).forEach(s => {
+    if(pp.sedit && !pp.sedit.isNew && pp.sedit.id === s.id){ h += ppSupForm(pp.sedit, false); return; }
+    const t = (PP_STYPE.find(x => x[0] === s.t) || [0, s.t])[1];
+    h += `<div class="ppItem${s.off ? ' off' : ''}"><div class="ppHead" style="cursor:default"><span class="ppName">${pcEsc(s.n)}<small>${[s.p, s.e].filter(Boolean).map(pcEsc).join(' · ')}</small>${s.a ? `<small>${pcEsc(s.a)}</small>` : ''}</span><span class="ppTag">${pcEsc(t)}</span>
+      ${R.edit ? `<span class="ppAct"><button class="pcBtnSoft sm" data-pp="sedit" data-id="${pcEsc(s.id)}">${pcSvg('edit', 13)}Edit</button><button class="pcBtnSoft sm" data-pp="soffbtn" data-id="${pcEsc(s.id)}">${s.off ? 'Enable' : 'Disable'}</button></span>` : ''}</div></div>`;
+  });
+  if(list.length > pp.supLimit) h += `<div class="ppRow"><button class="pcBtnSoft" data-pp="smore">Show more</button></div>`;
+  return h + '</div>';
+}
+
+// many photos at once: a file named SP031.jpg (or SP031-2.jpg, SP031_3.jpg) goes to product SP031; up to 3 per product; one write per product + one per list document
+async function ppBulkPhotos(files){
+  const byCode = new Map(); pp.items.forEach(p => { if(p.c) byCode.set(ppLc(p.c), p); });
+  const groups = new Map(), unknown = []; 
+  files.forEach(f => { const base = f.name.replace(/\.[^.]+$/, '').trim(); const m = byCode.get(ppLc(base)) || byCode.get(ppLc(base.replace(/[\s_\-]*\(?\d+\)?$/, ''))); if(!m) unknown.push(f.name); else (groups.get(m) || groups.set(m, []).get(m)).push(f); });
+  if(!groups.size){ pp.msg = 'No file name matched a product code. Name each photo with the code, e.g. SP031.jpg'; return; }
+  pp.busy = true; let done = 0, added = 0; const touched = new Set(), total = groups.size;
+  try{
+    for(const [p, fl] of groups){
+      pp.msg = 'Saving photos ' + (++done) + ' / ' + total + '\u2026'; pcRender();
+      const arr = (await ppLoadPhotos(p)).slice(); let n = 0;
+      for(const f of fl){ if(arr.length >= 3) break; arr.push(await pcCompress(f, 640, 0.6)); n++; }
+      if(!n) continue;
+      await window.__db.saveConfigObject('prodPh_' + ppSafe(p.i), { p: arr }); pp.photos[p.i] = arr; added += n;
+      const had = !!p.h; p.h = arr.length; if(!had){ const k = ppFindShard(p); if(k >= 0) touched.add(k); }
+    }
+    for(const k of touched) await ppSaveShard(k);
+    pp.msg = added + ' photos added to ' + total + ' products.' + (unknown.length ? ' ' + unknown.length + ' files did not match any code (e.g. ' + unknown.slice(0, 3).join(', ') + ').' : '');
+  }catch(err){ console.error(err); pp.msg = 'Stopped part-way (' + (err && err.message || 'error') + '). Run it again \u2014 photos already saved stay.'; }
+  pp.busy = false;
+}
+
+// ---------- events ----------
+function ppRedraw(keepInput){
+  const y = window.scrollY, a = document.activeElement, id = keepInput && a && a.dataset && a.dataset.pp, pos = a && a.selectionStart;
+  pcRender();
+  if(id){ const n = document.querySelector('[data-pp="' + id + '"]'); if(n){ n.focus(); try{ n.setSelectionRange(pos, pos); }catch(x){} } }
+  window.scrollTo(0, y);
+}
+async function ppOnClick(e){
+  const el = e.target.closest && e.target.closest('[data-pp]'); if(!el || el.tagName === 'INPUT' || el.tagName === 'SELECT') return;
+  const a = el.dataset.pp, i = el.dataset.i;
+  const prod = () => pp.items.find(p => p.i === i);
+  switch(a){
+    case 'open': {
+      if(pp.openId === i){ pp.openId = ''; pp.edit = null; ppRedraw(); break; }
+      pp.openId = i; pp.edit = null; ppRedraw(); const p = prod(); if(p && !pp.photos[p.i]){ try{ await ppLoadPhotos(p); }catch(err){ pp.photos[p.i] = []; } ppRedraw(); } break; }
+    case 'more': pp.limit += 40; ppRedraw(); break;
+    case 'smore': pp.supLimit += 40; ppRedraw(); break;
+    case 'addopen': pp.add = { c: '', n: '', d: '', u: '', b: '', l: '', g: pp.g || 'General' }; ppRedraw(); break;
+    case 'addno': pp.add = null; ppRedraw(); break;
+    case 'addsave': {
+      const f = pp.add; f.n = f.n.trim(); f.c = f.c.trim(); if(!f.n) return toast('Write the product name');
+      if(f.c && pp.items.some(p => ppLc(p.c) === ppLc(f.c))) return toast('That code is already used');
+      if(pp.items.some(p => ppKey(p) === ppKey(f))) return toast('This product is already in the list');
+      pp.busy = true; try{ const row = { i: f.c || ppNextId(), c: f.c, n: f.n, d: f.d.trim(), u: f.u, b: f.b.trim(), l: pcSafeUrl(f.l), g: f.g || 'General', h: 0 };
+        const t = ppAppend([row]); for(const k of t) await ppSaveShard(k); pp.add = null; pp.openId = row.i; pp.photos[row.i] = []; toast('Product added'); }
+      catch(err){ console.error(err); toast('Could not save — please try again'); } pp.busy = false; ppRedraw(); break; }
+    case 'editopen': { const p = prod(); if(p) pp.edit = Object.assign({}, p, { _hadCode: !!p.c, d: p.d || '', u: p.u || '', b: p.b || '', l: p.l || '' }); ppRedraw(); break; }
+    case 'editno': pp.edit = null; ppRedraw(); break;
+    case 'editsave': {
+      const f = pp.edit, p = f && pp.items.find(x => x.i === f.i); if(!p || !f) break;
+      if(!p.c && f.c.trim() && pp.items.some(x => ppLc(x.c) === ppLc(f.c))) return toast('That code is already used');
+      pp.busy = true; try{ if(!p.c && f.c.trim()) p.c = f.c.trim(); p.g = f.g; p.d = f.d.trim(); p.u = f.u; p.b = f.b.trim(); p.l = pcSafeUrl(f.l);
+        const k = ppFindShard(p); await ppSaveShard(k); pp.edit = null; toast('Saved'); }
+      catch(err){ console.error(err); toast('Could not save — please try again'); } pp.busy = false; ppRedraw(); break; }
+    case 'phdel': { const p = prod(); if(!p) break; const arr = (pp.photos[p.i] || []).slice(); arr.splice(Number(el.dataset.k), 1);
+      try{ await ppSavePhotos(p, arr); }catch(err){ console.error(err); toast('Could not save — please try again'); } ppRedraw(); break; }
+    case 'impgo': ppRunImport(); break;
+    case 'impno': pp.imp = null; pp.msg = ''; ppRedraw(); break;
+    case 'sadd': pp.sedit = { isNew: true, id: '', n: '', t: 'local', a: '', p: '', e: '' }; ppRedraw(); break;
+    case 'sno': pp.sedit = null; ppRedraw(); break;
+    case 'sedit': { const s = pp.sups.find(x => x.id === el.dataset.id); if(s) pp.sedit = Object.assign({ isNew: false }, s); ppRedraw(); break; }
+    case 'ssave': {
+      const f = pp.sedit; if(!f.n.trim()) return toast('Write the supplier name');
+      if(pp.sups.some(s => ppLc(s.n) === ppLc(f.n) && s.id !== f.id)) return toast('A supplier with this name already exists');
+      pp.busy = true; try{
+        if(f.isNew) pp.sups.push({ id: 'S' + Date.now().toString(36) + Math.floor(Math.random() * 1e3), n: f.n.trim(), t: f.t, a: f.a.trim(), p: f.p.trim(), e: f.e.trim(), off: false });
+        else { const s = pp.sups.find(x => x.id === f.id); Object.assign(s, { n: f.n.trim(), t: f.t, a: f.a.trim(), p: f.p.trim(), e: f.e.trim() }); }
+        await ppSaveSups(); pp.sedit = null; toast('Saved'); }
+      catch(err){ console.error(err); toast('Could not save — please try again'); } pp.busy = false; ppRedraw(); break; }
+    case 'soffbtn': { const s = pp.sups.find(x => x.id === el.dataset.id); if(!s) break; s.off = !s.off; try{ await ppSaveSups(); toast(s.off ? 'Supplier disabled' : 'Supplier enabled'); }catch(err){ s.off = !s.off; toast('Could not save — please try again'); } ppRedraw(); break; }
+  }
+}
+function ppOnInput(e){
+  const el = e.target, a = el.dataset && el.dataset.pp; if(!a) return;
+  if(a === 'q'){ pp.q = el.value; pp.limit = 40; ppRedraw(true); }
+  else if(a === 'sq'){ pp.sq = el.value; pp.supLimit = 40; ppRedraw(true); }
+  else if(a === 'f'){ const f = pp.add || pp.edit; if(f) f[el.dataset.k] = el.value; }
+  else if(a === 'sf'){ if(pp.sedit) pp.sedit[el.dataset.k] = el.value; }
+}
+async function ppOnChange(e){
+  const el = e.target, a = el.dataset && el.dataset.pp; if(!a) return;
+  if(a === 'g'){ pp.g = el.value; pp.limit = 40; ppRedraw(); }
+  else if(a === 'ph'){ pp.ph = el.value; pp.limit = 40; ppRedraw(); }
+  else if(a === 'st'){ pp.st = el.value; ppRedraw(); }
+  else if(a === 'soff'){ pp.showOff = el.checked; ppRedraw(); }
+  else if(a === 'f'){ const f = pp.add || pp.edit; if(f) f[el.dataset.k] = el.value; }
+  else if(a === 'sf'){ if(pp.sedit) pp.sedit[el.dataset.k] = el.value; }
+  else if(a === 'impfile'){ const f = el.files && el.files[0]; el.value = ''; if(!f) return; pp.msg = 'Reading ' + f.name + '…'; ppRedraw();
+    try{ await ppReadImport(f); pp.msg = ''; }catch(err){ console.error(err); pp.imp = null; pp.msg = err.message === 'NOXLSX' ? 'The Excel reader did not load — check your internet and try again.' : 'I could not read that file.'; } ppRedraw(); }
+  else if(a === 'bulkph'){ const files = Array.from(el.files || []); el.value = ''; if(files.length) await ppBulkPhotos(files); ppRedraw(); }
+  else if(a === 'phadd' || a === 'phchg'){
+    const files = Array.from(el.files || []); el.value = ''; if(!files.length) return; const p = pp.items.find(x => x.i === el.dataset.i); if(!p) return;
+    try{ const arr = (await ppLoadPhotos(p)).slice();
+      if(a === 'phchg') arr[Number(el.dataset.k)] = await pcCompress(files[0], 640, 0.6);
+      else for(const f of files){ if(arr.length >= 3) break; arr.push(await pcCompress(f, 640, 0.6)); }
+      await ppSavePhotos(p, arr); }
+    catch(err){ console.error(err); toast('Could not save the photo'); } ppRedraw(); }
+}
+document.addEventListener('click', ppOnClick); document.addEventListener('input', ppOnInput); document.addEventListener('change', ppOnChange);
+
+// ---------- hooks into the order form ----------
+function pcListHtml(){ return (pc.ui.tab === 'prod' || pc.ui.tab === 'sup') ? pcpPage() : pcListHtml0(); }
+function pcCatalogMatches(q, empty){
+  const a = pcCatalogMatches0(q, empty);
+  if(!pp.loaded || !String(q || '').trim()) return a;
+  const seen = new Set(a.map(c => pcLc(c.n) + '|' + pcLc(c.d)));
+  const extra = pcpMatches(q, 8).map(ppAsCat).filter(c => !seen.has(pcLc(c.n) + '|' + pcLc(c.d)));
+  return a.slice(0, 5).concat(extra, a.slice(5)).slice(0, 8);
+}
+function pcFillFromCat(it, c){
+  pcFillFromCat0(it, c);
+  let cd = c.cd || '';
+  if(!cd && pp.loaded){ const p = pp.items.find(x => ppLc(x.n) === ppLc(c.n) && ppLc(x.d) === ppLc(c.d)); if(p) cd = p.c || ''; }
+  it.cd = cd;
+}
+async function pcSaveCatalog(items, edit){ const r = await pcSaveCatalog0(items, edit); try{ await pcpAddFromOrder(items); }catch(e){ console.error(e); } return r; }
+// the item-name suggestions close as soon as the cursor leaves the box (so they never sit on top of the buttons below)
+document.addEventListener('focusout', (e) => { const t = e.target; if(t && t.dataset && t.dataset.pc === 'iname'){ setTimeout(() => { const s = $('pcItSug' + t.dataset.i); if(s) s.style.display = 'none'; }, 220); } });
 
 (function(){
   const b=$('bkOpenBtn'); if(b) b.addEventListener('click', () => bkOpen());
