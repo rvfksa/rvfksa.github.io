@@ -11073,12 +11073,20 @@ function wireDocSave(kind, keys){
   });
 }
 
+function vacSummaryLine(){
+  const p = (profileCache.user && profileCache.user.profile) || {}, vs = profileCache.vacations || [];
+  const taken = vs.reduce((a, v) => a + (+v.count > 1 ? +v.count : 1), 0);
+  const yrs = calcTotalYears(p.joiningDate), el = p.vacationEligibility ? parseFloat(p.vacationEligibility) : null;
+  let t = 'Vacations taken: ' + taken;
+  if(yrs !== null && el){ const elig = Math.floor(yrs / el); t += ' \u00b7 Eligible so far: ' + elig + ' \u00b7 Remaining: ' + Math.max(0, elig - taken) + (taken > elig ? ' (taken ' + (taken - elig) + ' in advance)' : '') + ' \u00b7 every ' + (el === 1 ? 'year' : el + ' years'); }
+  return '<div class="vacSum" style="font-size:11px; color:var(--muted); opacity:.75; margin:0 2px 10px; letter-spacing:.2px;">' + t + '</div>';
+}
 function renderVacationTab(){
   const el = $('ptab-vacation');
   const isCeo = userPages(state.user).includes('ceo');
   const isSelf = profileCache.user.loginId === state.user.loginId;
   const canEdit = state.user.role === 'admin';
-  let html = '';
+  let html = vacSummaryLine();
   if(profileCache.vacations.length === 0){
     html += '<div class="empty-state">No vacations recorded yet.</div>';
   }
