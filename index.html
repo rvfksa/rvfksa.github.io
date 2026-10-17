@@ -2481,6 +2481,147 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
 .pcSug{ z-index:60; }
 .pcFR .pcSug{ min-width:300px; right:auto; }
 .ppItem.off .ppName{ text-decoration:none; opacity:.55; } .ppItem.off .ppTag::after{ content:' · disabled'; }
+/* ---- purchase v31: order types ---- */
+.poTypes button{ white-space:nowrap; }
+.poChips{ display:flex; flex-wrap:wrap; gap:6px; }
+.poPick{ border:1px solid var(--line); background:#fff; color:var(--muted); border-radius:999px; padding:6px 13px; font:inherit; font-size:12.5px; font-weight:600; cursor:pointer; }
+.poPick.on{ background:var(--accent,#4f46e5); border-color:var(--accent,#4f46e5); color:#fff; }
+.poChip{ display:inline-flex; align-items:center; gap:6px; background:var(--panel-2); border-radius:999px; padding:5px 6px 5px 12px; font-size:12.5px; color:var(--text); }
+.poChip button{ border:0; background:#fff; border-radius:50%; width:20px; height:20px; line-height:18px; cursor:pointer; color:var(--muted); }
+.poIx{ display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:8px; padding:2px 4px 12px 30px; }
+.poIx .field{ margin:0; }
+.poTag{ display:inline-block; margin-left:6px; background:var(--panel-2); color:var(--muted); border-radius:999px; padding:1px 8px; font-size:10.5px; font-weight:600; vertical-align:middle; }
+.poInfo{ display:flex; flex-wrap:wrap; gap:4px 16px; margin:0 0 10px; font-size:12.5px; }
+.poSegs{ display:flex; flex-direction:column; gap:4px; margin-bottom:10px; font-size:12.5px; }
+.poSeg b{ margin-right:8px; }
+.poSeg span{ color:var(--muted); }
+@media (max-width:640px){ .poIx{ padding-left:4px; } }
+.poIx .fl{ display:block !important; font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); font-weight:600; margin-bottom:3px; }
+.poApp{ display:grid; grid-template-columns:1fr 1fr; gap:14px 16px; border:1px solid var(--line); border-radius:16px; padding:16px; margin-bottom:16px; }
+.poApp .field{ margin:0; min-width:0; }
+.poApp > .field:nth-child(n+3){ grid-column:1/-1; }
+.poDd{ position:relative; }
+.poDdBtn{ width:100%; display:flex; align-items:center; justify-content:space-between; gap:10px; text-align:left; border:1px solid var(--line); background:var(--panel-2); border-radius:12px; padding:12px 14px; font:inherit; font-size:14px; color:var(--text); cursor:pointer; }
+.poDdBtn span{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.poDdBtn.open{ border-color:var(--accent,#4f46e5); }
+.poDdPanel{ position:absolute; z-index:30; left:0; right:0; top:calc(100% + 6px); background:#fff; border:1px solid var(--line); border-radius:14px; box-shadow:0 12px 32px rgba(15,23,42,.14); max-height:260px; overflow:auto; padding:6px; }
+.poDdRow{ display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:9px; font-size:14px; color:var(--text); cursor:pointer; }
+.poDdRow:hover{ background:var(--panel-2); }
+.poDdRow input{ width:16px; height:16px; accent-color:var(--accent,#4f46e5); }
+@media (max-width:640px){ .poApp{ grid-template-columns:1fr; padding:12px; } .poApp > .field:nth-child(n+3){ grid-column:auto; } }
+.poDdRow, .field .poDdRow{ text-transform:none !important; letter-spacing:0 !important; font-weight:500 !important; font-size:14px !important; color:var(--text) !important; margin:0 !important; }
+/* v33: calmer order form + receive sheet */
+.poSec{ display:flex; align-items:center; gap:6px; margin-top:14px !important; }
+.poApp{ gap:12px 14px; padding:14px; background:#fff; }
+.poApp .field label{ font-size:10px; }
+.poChips{ align-items:center; }
+.poAddBtn{ display:inline-flex; align-items:center; gap:4px; border:1px dashed var(--line); background:transparent; color:var(--muted); border-radius:999px; padding:5px 11px; font:inherit; font-size:12px; font-weight:600; cursor:pointer; }
+.poAddBtn:hover{ color:var(--accent,#4f46e5); border-color:var(--accent,#4f46e5); }
+.poAddRow{ display:flex; flex-wrap:wrap; align-items:center; gap:6px; margin-top:8px; }
+.poAddRow input, .poAddRow select{ flex:1; min-width:110px; padding:8px 10px; font-size:13px; }
+.poOr{ font-size:11px; color:var(--muted); }
+.poApprLine{ grid-column:1/-1; display:flex; align-items:center; gap:7px; font-size:12px; color:var(--muted); background:var(--panel-2); border-radius:999px; padding:7px 13px; width:fit-content; max-width:100%; }
+.poApprLine b{ color:var(--text); font-weight:600; }
+.poIx{ display:flex; flex-wrap:wrap; gap:6px; padding:0 4px 10px 30px; }
+.poIx input{ flex:1; min-width:100px; max-width:200px; padding:7px 10px; font-size:12.5px; border:1px solid var(--line); background:var(--panel-2); border-radius:10px; font-family:inherit; }
+.poRecTop{ display:flex; align-items:center; gap:10px; margin:2px 0 10px; }
+.poRecLbl{ display:inline-flex; align-items:center; gap:6px; font-size:12px; color:var(--muted); font-weight:600; }
+.poRecTop input{ padding:7px 10px; font-size:13px; width:auto; }
+.poDet{ margin-top:12px; border:1px solid var(--line); border-radius:12px; padding:0 12px; }
+.poDet summary{ display:flex; align-items:center; gap:8px; padding:11px 0; cursor:pointer; font-size:13px; font-weight:600; color:var(--text); list-style:none; }
+.poDet summary::-webkit-details-marker{ display:none; }
+.poDet summary svg:last-child{ margin-left:auto; transition:transform .15s; }
+.poDet[open] summary svg:last-child{ transform:rotate(180deg); }
+.poDetHint{ font-weight:500; font-size:11px; color:var(--muted); }
+.poGrid{ display:grid; grid-template-columns:1fr 1fr; gap:8px 10px; padding:2px 0 12px; }
+.poGrid .field{ margin:0; min-width:0; }
+.poGrid label{ font-size:10px; }
+.poGrid input{ padding:8px 10px; font-size:13px; }
+@media (max-width:640px){ .poGrid{ grid-template-columns:1fr; } .poIx{ padding-left:4px; } }
+/* ===== v34: calm, white, fewer rows (purchase only) ===== */
+#purchaseMount .pcDetail .pcFacts{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px 28px; border:0; margin:4px 0 14px; }
+#purchaseMount .pcDetail .pcFact{ background:none; border:0; border-radius:0; padding:0; margin:0; display:block; }
+#purchaseMount .pcDetail .pcFact .k{ display:block; font-size:10.5px; text-transform:none; letter-spacing:0; font-weight:400; color:#94a3b8; }
+#purchaseMount .pcDetail .pcFact .v{ display:block; font-size:13px; font-weight:500; color:var(--text-strong); margin-top:1px; }
+#purchaseMount .pcDetail .pcFacts.poInfo{ margin-top:-4px; }
+@media (max-width:640px){ #purchaseMount .pcDetail .pcFacts{ grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px 18px; } }
+#purchaseMount .pcForm .hrForm{ grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:12px 14px; margin-bottom:12px; }
+#purchaseMount .pcForm .field{ margin-bottom:0; }
+#purchaseMount .pcForm .field label, #pcSheet .field label{ font-size:10.5px; margin-bottom:4px; }
+#purchaseMount .pcForm input:not([type=checkbox]):not([type=radio]):not([type=file]), #purchaseMount .pcForm select, #purchaseMount .pcForm textarea,
+#pcSheet input:not([type=checkbox]):not([type=radio]):not([type=file]), #pcSheet select{
+  background:#fff; border:1px solid var(--line); border-radius:10px; padding:9px 12px; font-size:13.5px; box-shadow:0 1px 2px rgba(15,23,42,.05); }
+#purchaseMount .pcForm input:focus, #purchaseMount .pcForm select:focus, #purchaseMount .pcForm textarea:focus, #pcSheet input:focus, #pcSheet select:focus{ border-color:var(--accent,#4f46e5); outline:0; }
+#purchaseMount .pcForm .pcSeg{ background:#fff; border:1px solid var(--line); border-radius:10px; padding:2px; box-shadow:0 1px 2px rgba(15,23,42,.05); gap:2px; }
+#purchaseMount .pcForm .pcSeg button{ padding:7px 10px; font-size:12.5px; border-radius:8px; }
+#purchaseMount .pcForm .pcSeg button.on{ background:var(--accent,#4f46e5); color:#fff; box-shadow:none; }
+#purchaseMount .pcForm .pcSeg button.on.urgent{ background:var(--danger,#dc2626); color:#fff; }
+.poTypeTxt{ font-size:14px; font-weight:600; padding:8px 0; color:var(--text-strong); }
+#purchaseMount .poApp{ border:0; padding:0; background:none; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); }
+@media (min-width:760px){ #purchaseMount .poApp > .field:nth-child(2){ grid-column:span 2; } }
+#purchaseMount .poApp > .field:nth-child(n+3){ grid-column:1/-1; }
+.poChip{ background:#fff; border:1px solid var(--line); }
+.poChip button{ background:var(--panel-2); }
+.poApprLine{ background:none; padding:0; border-radius:0; }
+.poDdBtn{ background:#fff; box-shadow:0 1px 2px rgba(15,23,42,.05); border-radius:10px; padding:9px 12px; font-size:13.5px; }
+.poIx input{ background:#fff; box-shadow:0 1px 2px rgba(15,23,42,.05); }
+.poGrid{ grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); }
+#pcSheet .pcPriceRow input{ width:96px; }
+#purchaseMount .pcFT, #purchaseMount .pcIts{ border-radius:12px; }
+@media (min-width:760px){ #purchaseMount .pcForm .hrForm > .field:first-child{ grid-column:span 2; } }
+#purchaseMount .pcForm .poTypes button{ padding:7px 8px; font-size:12px; white-space:nowrap; }
+#purchaseMount .pcFRow input, #purchaseMount .pcFRow select{ padding:7px 8px; font-size:13px; }
+#purchaseMount .pcForm > .field{ margin-bottom:12px; }
+#purchaseMount .pcFRow input, #purchaseMount .pcFRow select{ padding:7px 6px; }
+/* v35: four fields in one line */
+#purchaseMount .pcForm .hrForm{ grid-template-columns:1fr; }
+@media (min-width:560px){ #purchaseMount .pcForm .hrForm{ grid-template-columns:repeat(2,minmax(0,1fr)); } #purchaseMount .pcForm .hrForm > .field:first-child{ grid-column:1/-1; } }
+@media (min-width:980px){ #purchaseMount .pcForm .hrForm{ grid-template-columns:repeat(4,minmax(0,1fr)); } #purchaseMount .pcForm .hrForm > .field:first-child{ grid-column:span 2; } }
+#purchaseMount .poApp{ display:flex; flex-direction:column; gap:12px; margin-bottom:12px; }
+#purchaseMount .poApp > .field:nth-child(n){ grid-column:auto; }
+.poSubj{ display:flex; gap:8px; align-items:stretch; }
+.poSubj input{ flex:1; min-width:0; }
+.poSubj .pcBtnSoft{ white-space:nowrap; }
+/* ===== v36: signers row, AI button, order detail look ===== */
+.poSignRow{ display:grid; grid-template-columns:1fr; gap:12px; }
+@media (min-width:760px){ .poSignRow:has(> .field + .field){ grid-template-columns:2fr 1fr; } }
+.poApprTxt{ display:flex; align-items:center; gap:8px; min-height:36px; font-size:13px; color:var(--muted); }
+.poApprTxt b{ color:var(--text-strong); font-weight:600; }
+.poSubj .pcBtnSoft{ background:var(--accent,#4f46e5); border-color:var(--accent,#4f46e5); color:#fff; box-shadow:0 2px 6px rgba(79,70,229,.28); padding:0 16px; }
+.poSubj .pcBtnSoft:hover{ background:#4338ca; border-color:#4338ca; color:#fff; }
+.poSubj .pcBtnSoft:disabled{ opacity:.7; }
+#purchaseMount .pcDetail .pcIts{ border:0; border-radius:14px; background:#fff; box-shadow:0 1px 3px rgba(15,23,42,.10), 0 0 0 1px rgba(15,23,42,.03); overflow:hidden; margin:6px 0 14px; }
+#purchaseMount .pcDetail .pcItsH{ background:#fff; border-bottom:1px solid var(--line); color:#94a3b8; font-size:10px; font-weight:600; }
+#purchaseMount .pcDetail .pcIt{ border-top:1px solid var(--line); background:#fff; }
+#purchaseMount .pcDetail .pcItsH + .pcIt{ border-top:0; }
+#purchaseMount .pcDetail .pcRecStrip{ background:#fff; border-top:1px dashed var(--line); padding:8px 14px 10px 38px; gap:8px 12px; }
+#purchaseMount .pcDetail .pcRecStrip .hrNote{ font-size:12px; color:var(--muted); }
+#purchaseMount .pcDetail .pcRecIn input{ width:68px; height:28px; padding:0 8px; border-radius:8px; border:1px solid var(--line); box-shadow:0 1px 2px rgba(15,23,42,.05); background:#fff; font-size:12.5px; }
+#purchaseMount .pcDetail .pcRecStrip .pcBtnSoft{ height:28px; padding:0 12px; font-size:12px; box-shadow:none; }
+#purchaseMount .pcDetail .pcRecStrip [data-pc="recitem"]{ background:#eef2ff; border-color:#c7d2fe; color:var(--accent,#4f46e5); }
+#purchaseMount .pcDetail .pcRecStrip [data-pc="itemnn"]{ border-color:transparent; background:transparent; color:var(--muted); }
+#purchaseMount .pcDetail .pcRecStrip [data-pc="itemnn"]:hover{ color:var(--danger,#dc2626); background:transparent; }
+#purchaseMount .pcDetail .pcItTotal{ background:#fff; border-top:1px solid var(--line); }
+#purchaseMount .pcDetail .pcBar{ border-top:0; padding-top:4px; margin-top:6px; }
+#purchaseMount .pcDetail .pcBar .pcBtnMain{ height:34px; padding:0 16px; font-size:12.5px; box-shadow:0 2px 6px rgba(79,70,229,.25); }
+#purchaseMount .pcDetail .pcBar .pcBtnSoft, #purchaseMount .pcDetail .pcMore > summary{ height:34px; font-size:12.5px; box-shadow:0 1px 2px rgba(15,23,42,.06); background:#fff; }
+
+/* v37: calmer order detail */
+#purchaseMount .poOI{ margin:2px 0 10px; }
+#purchaseMount .poOI > summary{ list-style:none; cursor:pointer; display:inline-flex; align-items:center; gap:6px; font-size:12px; color:var(--muted); padding:4px 10px; border-radius:999px; background:#fff; box-shadow:0 1px 2px rgba(15,23,42,.08); user-select:none; }
+#purchaseMount .poOI > summary::-webkit-details-marker{ display:none; }
+#purchaseMount .poOI > summary::after{ content:"▾"; font-size:10px; }
+#purchaseMount .poOI[open] > summary::after{ content:"▴"; }
+#purchaseMount .poOI .pcFacts{ margin:12px 0 4px; }
+#purchaseMount .pcDetail .pcItsH{ background:#f6f7fb; border-bottom:1px solid #eceef5; color:#94a3b8; }
+#purchaseMount .pcDetail .pcIt{ border-top:7px solid #f4f5fa; }
+#purchaseMount .pcDetail .pcItsH + .pcIt{ border-top:0; }
+#purchaseMount .pcDetail .pcIt .c-no{ display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:50%; background:#eef2ff; color:#4f46e5; font-weight:700; font-size:11.5px; }
+#purchaseMount .pcDetail .pcRecStrip{ background:#fafaff; border-top:1px solid #eef0f8; }
+#purchaseMount .pcDetail .pcIt .c-name{ font-weight:700; }
+#purchaseMount .pcOrder.open{ background:#fbfbff; box-shadow:inset 4px 0 0 #4f46e5, 0 4px 14px rgba(79,70,229,.10); position:relative; z-index:1; margin:6px 0; border-radius:12px; border-bottom:0; }
+#purchaseMount .pcOrder.open > .pcOrderHead .c-act .pcBtnMain{ background:#fff; color:#4f46e5; box-shadow:0 0 0 1px #c7d2fe; }
+#purchaseMount .pcOrder:not(.open) > .pcOrderHead:hover{ background:#f8f9fe; }
 
 </style>
 </head>
@@ -13957,7 +14098,7 @@ function pcScope(list){
   if(R.admin || R.proc || R.appr) return list;
   return list.filter(o => o.createdBy === pcMe());
 }
-function pcTasks(){
+function pcTasks0(){
   const R = pcRoles(), me = pcMe(), S = pc.settings || PC_DEF, out = [];
   (pc.open || []).forEach(o => {
     const urgent = o.priority === 'urgent', base = { docId: o.docId, urgent };
@@ -14087,7 +14228,7 @@ function pcOrdersHtml(mine){
   const shown = list.slice(0, U.limit);
   return [bar, card('<div class="pcListHead pcRowG"><span></span><span>Order</span><span>Department</span><span>Items</span><span>Requested for</span><span>Age</span><span class="r">Total</span><span></span><span class="r">Status</span></div>' + shown.map(pcOrderRow).join('') + (list.length > shown.length ? `<div style="text-align:center;padding:12px"><button class="pcBtnSoft" data-pc="more">Show more (${list.length - shown.length})</button></div>` : ''))];
 }
-function pcOrderRow(o){
+function pcOrderRow0(o){
   const U = pc.ui, open = U.openId === o.docId, sk = pcStatusKey(o), urgent = o.priority === 'urgent';
   const icCls = urgent ? 'ic-red' : ({ new: 'ic-blue', approval: 'ic-yellow', approved: 'ic-green', rejected: 'ic-red', ordered: 'ic-blue', partial: 'ic-purple', received: 'ic-green', cancelled: 'ic-grey' }[sk] || 'ic-grey');
   const when = pcIsOpen(o) ? pcDaysSince(o.createdAt) + ' d' : pcFmt(o.closedAt), tot = pcTotal(o), names = o.items.map(i => i.n).join(', ');
@@ -14103,15 +14244,15 @@ function pcOrderRow(o){
     ${open ? '<div class="pcDetail">' + pcDetailHtml(o) + '</div>' : ''}</div>`;
 }
 // the one big button that moves an order to its next step - shown right on the list row
-function pcCanOrder(o){ const R = pcRoles(); return R.proc && (o.status === 'new' || o.status === 'rejected' || o.status === 'approved'); }
+function pcCanOrder0(o){ const R = pcRoles(); return R.proc && (o.status === 'new' || o.status === 'rejected' || o.status === 'approved'); }
 function pcRowAct(o){
   if(pcCanOrder(o)) return `<button class="pcBtnMain xs pcRowBtn" data-pc="ordered" data-id="${pcEsc(o.docId)}">${pcSvg('cart', 13)}Ordered</button>`;
   if(o.status === 'ordered' && pcCanReceive(o)) return `<button class="pcBtnMain xs pcRowBtn" data-pc="recall" data-id="${pcEsc(o.docId)}">${pcSvg('check', 13)}Received</button>`;
   return '';
 }
-function pcCanEdit(o){ const R = pcRoles(); return (o.status === 'new' || o.status === 'rejected') && (R.admin || R.proc || o.createdBy === pcMe()); }
-function pcCanReceive(o){ const R = pcRoles(); return o.status === 'ordered' && (R.admin || R.proc || o.createdBy === pcMe()); }
-function pcCanActual(o){ const R = pcRoles(); return pcInfoMissing(o) && (R.admin || R.proc || o.createdBy === pcMe()); }
+function pcCanEdit0(o){ const R = pcRoles(); return (o.status === 'new' || o.status === 'rejected') && (R.admin || R.proc || o.createdBy === pcMe()); }
+function pcCanReceive0(o){ const R = pcRoles(); return o.status === 'ordered' && (R.admin || R.proc || o.createdBy === pcMe()); }
+function pcCanActual0(o){ const R = pcRoles(); return pcInfoMissing(o) && (R.admin || R.proc || o.createdBy === pcMe()); }
 function pcRemarks(it, docId, i){
   const tags = [];
   if(it.phys) tags.push(`<span class="pcTag${!it.link && !(it.photos || []).length ? ' warn' : ''}" title="${pcEsc(pcSampleText(it).t)}">${!it.link && !(it.photos || []).length ? 'Physical sample only' : 'Physical sample'}</span>`);
@@ -14151,7 +14292,7 @@ function pcStepsHtml(o){
   return '<div class="pcSteps">' + PC_STEPS.map((s, i) => `<span class="pcStep${i < idx || o.status === 'received' ? ' done' : ''}${i === idx && o.status !== 'received' ? (o.status === 'rejected' ? ' bad' : ' now') : ''}">${i === 0 && o.status === 'rejected' ? 'Rejected' : i === 0 && o.status === 'approval' ? 'Waiting for approval' : s[1]}</span>`).join('<i></i>') + '</div>';
 }
 function pcMenu(label, icon, inner){ return inner ? `<details class="pcMore"><summary class="pcBtnSoft">${pcSvg(icon, 14)}${label}</summary><div class="pcMoreList">${inner}</div></details>` : ''; }
-function pcDetailHtml(o){
+function pcDetailHtml0(o){
   const R = pcRoles(), me = pcMe(), mine = o.createdBy === me || R.admin, paper = !!(o.proc && o.proc.paper);
   const b = (act, label, ic, cls) => `<button class="pcBtnSoft ${cls || ''}" data-pc="${act}" data-id="${pcEsc(o.docId)}">${pcSvg(ic, 14)}${label}</button>`;
   const main = (act, label, ic) => `<button class="pcBtnMain sm" data-pc="${act}" data-id="${pcEsc(o.docId)}">${pcSvg(ic, 15)}${label}</button>`;
@@ -14193,12 +14334,12 @@ function pcDetailHtml(o){
 
 /* ---------- create / edit form ---------- */
 function pcBlankItem(){ return { lp: 0, ld: 0, lc: '', n: '', d: '', b: '', q: 1, u: ((pc.settings || PC_DEF).units[0] || 'pcs'), p: '', phys: false, link: '', photos: [], note: '', more: false }; }
-function pcNewForm(){ return { docId: '', back: false, backDate: '', backOrdered: false, cur: 'SAR', priority: 'regular', dept: '', reqBy: { id: '', name: '' }, note: '', items: [pcBlankItem()], recPhotos: [] }; }
-function pcFormFromOrder(o, asCopy){
+function pcNewForm0(){ return { docId: '', back: false, backDate: '', backOrdered: false, cur: 'SAR', priority: 'regular', dept: '', reqBy: { id: '', name: '' }, note: '', items: [pcBlankItem()], recPhotos: [] }; }
+function pcFormFromOrder0(o, asCopy){
   return { docId: asCopy ? '' : o.docId, cur: o.cur || 'SAR', priority: o.priority, dept: o.dept, reqBy: Object.assign({}, o.reqBy), note: o.note || '', recPhotos: asCopy ? [] : (o.recPhotos || []).slice(),
     items: o.items.map(i => ({ lp: i.lp || 0, ld: i.ld || 0, lc: i.lc || '', n: i.n, d: i.d || '', b: i.b || '', q: i.q, u: i.u, p: i.p || '', phys: !!i.phys, link: i.link || '', photos: (i.photos || []).slice(), note: i.note || '', more: !!(i.b || i.p || i.note || i.phys || i.link || (i.photos || []).length) })) };
 }
-function pcFormHtml(){
+function pcFormHtml0(){
   const F = pc.ui.form, S = pc.settings, depts = pcDepts();
   return `<button class="pcBack" data-pc="back">${pcSvg('back', 15)}Back</button><div class="card pcForm"><h2 style="margin-top:0">${F.docId ? 'Edit order' : 'New order'}</h2>
     <div class="hrForm"><div class="field"><label>Priority</label><div class="pcSeg"><button data-pc="prio" data-v="regular" class="${F.priority === 'regular' ? 'on' : ''}">Regular</button><button data-pc="prio" data-v="urgent" class="urgent ${F.priority === 'urgent' ? 'on' : ''}">${pcSvg('flame', 15)}Urgent</button></div></div>
@@ -14215,7 +14356,7 @@ function pcFormHtml(){
     <div class="pcTop" style="margin:6px 0 0"><button class="pcBtnMain" data-pc="save" ${pc.ui.busy ? 'disabled' : ''}>${pcSvg('check', 16)}${F.docId ? 'Save changes' : 'Create order'}</button><button class="pcBtnSoft" data-pc="back">Cancel</button>${F.docId ? '' : `<span class="grow"></span><button class="pcLinkBtn" data-pc="backtoggle">${F.back ? 'Not an old order' : 'Entering an old order?'}</button>`}</div></div>`;
 }
 function pcLastCell(it){ return it.lp ? `<b>${(it.lc && it.lc !== 'SAR' ? it.lc + ' ' : '') + pcMoney(it.lp)}</b>${it.ld ? `<small>${fmtDate(pcDateStr(it.ld))}</small>` : ''}` : '<span class="pcNone">\u2013</span>'; }
-function pcItemHtml(it, i, units){
+function pcItemHtml0(it, i, units){
   const us = units.includes(it.u) ? units : units.concat([it.u]), sm = pcSampleText(it), n = pc.ui.form.items.length;
   const L = (t) => `<span class="fl">${t}</span>`;
   return `<div class="pcFR${it.more ? ' open' : ''}" data-idx="${i}"><div class="pcFRow">
@@ -14286,7 +14427,7 @@ async function pcItemSuggest(el, i){
   pcShowSug($('pcItSug' + i), pcCatalogMatches(el.value, true).map(c => ({ label: c.n, sub: [c.cd, c.d, c.b, c.u, c.lp ? 'last ' + (c.lc && c.lc !== 'SAR' ? c.lc + ' ' : '') + pcMoney(c.lp) : ''].filter(Boolean).join(' \u00B7 '), c })), 'sugitem', i);
 }
 // show the values of a row that was filled from memory (without redrawing, so the cursor stays)
-function pcSyncRow(i){
+function pcSyncRow0(i){
   const F = pc.ui.form, it = F && F.items[i], row = document.querySelector('.pcFR[data-idx="' + i + '"]'); if(!it || !row) return;
   const set = (sel, v) => { const e = row.querySelector(sel); if(e) e.value = v; };
   set('[data-pc="idesc"]', it.d || ''); set('[data-pc="iunit"]', it.u || ''); set('[data-pc="iprice"]', it.p || ''); set('[data-pc="inote"]', it.note || '');
@@ -14302,20 +14443,22 @@ async function pcSaveForm(){
   const F = pc.ui.form;
   if(pc.ui.busy) return;
   const cat = (pc.catalog && pc.catalog.items) || {};
-  const items = F.items.filter(i => i.n.trim()).map(i => ({ lp: Number(i.lp) > 0 ? Number(i.lp) : 0, ld: Number(i.lp) > 0 ? (i.ld || Date.now()) : 0, lc: Number(i.lp) > 0 ? (i.lpm ? (F.cur || 'SAR') : (i.lc || 'SAR')) : '', lpm: !!i.lpm, cd: i.cd || '', n: i.n.trim(), d: (i.d || '').trim(), b: (i.b || '').trim(), q: Number(i.q), u: i.u, p: Number(i.p) > 0 ? Number(i.p) : 0, phys: !!i.phys, link: pcSafeUrl(i.link), photos: i.photos.slice(0, 3), note: (i.note || '').trim() }));
+  const items = F.items.filter(i => i.n.trim()).map(i => ({ lp: Number(i.lp) > 0 ? Number(i.lp) : 0, ld: Number(i.lp) > 0 ? (i.ld || Date.now()) : 0, lc: Number(i.lp) > 0 ? (i.lpm ? (F.cur || 'SAR') : (i.lc || 'SAR')) : '', lpm: !!i.lpm, cd: i.cd || '', ino: i.ino || '', sq: i.sq || '', dd: i.dd || '', n: i.n.trim(), d: (i.d || '').trim(), b: (i.b || '').trim(), q: Number(i.q), u: i.u, p: Number(i.p) > 0 ? Number(i.p) : 0, phys: !!i.phys, link: pcSafeUrl(i.link), photos: i.photos.slice(0, 3), note: (i.note || '').trim() }));
   const forCatalog = items.map(i => Object.assign({}, i)); items.forEach(i => { delete i.lpm; });
   if(!F.dept) return toast('Choose the department');
   if(!F.reqBy.name.trim()) return toast('Write who requested it');
   if(!items.length) return toast('Add at least one item');
   if(items.some(i => !(i.q > 0))) return toast('Every item needs a quantity');
+  { const bad = pcOrdCheck(F); if(bad) return toast(bad); }
   pc.ui.busy = true;
   try{
     let o;
     if(F.docId){
       o = await pcMutate(F.docId, (fresh) => {
-        if(fresh.status !== 'new' && fresh.status !== 'rejected') throw new Error('LOCKED');
+        if(!pcOrdEditable(fresh)) throw new Error('LOCKED');
         fresh.priority = F.priority; fresh.cur = F.cur || 'SAR'; fresh.dept = F.dept; fresh.reqBy = { id: F.reqBy.id || '', name: F.reqBy.name.trim() }; fresh.note = F.note.trim();
         fresh.items = items.map(n => Object.assign({ rec: 0 }, n)); fresh.recPhotos = F.recPhotos.slice();
+        pcOrdApply(fresh, F, false); if(poFlow2(fresh) && fresh.status === 'rejected'){ fresh.status = 'approval'; fresh.rejectReason = ''; }
         pcLog(fresh, 'Edited the order');
       });
       await pcSaveCatalog(forCatalog, true).catch((e) => { console.error(e); });
@@ -14326,6 +14469,7 @@ async function pcSaveForm(){
         priority: F.priority, cur: F.cur || 'SAR', dept: F.dept, reqBy: { id: F.reqBy.id || '', name: F.reqBy.name.trim() }, note: F.note.trim(),
         items: items.map(i => Object.assign({ rec: 0 }, i)), recPhotos: F.recPhotos.slice(), proc: {}, log: [] };
       pcLog(o, 'Created the order' + (F.priority === 'urgent' ? ' (URGENT)' : '') + ' and sent it to procurement');
+      pcOrdApply(o, F, true);
       if(now < real - 86400000){ o.log[0].a = 'Entered an older order, dated ' + fmtDate(pcDateStr(now)) + (F.priority === 'urgent' ? ' (URGENT)' : ''); o.log[0].t = now; }
       if(F.back && F.backOrdered){ o.status = 'ordered'; o.orderedAt = now; o.approvedAt = now; o.signed = true; o.signedAt = now; pcLog(o, 'Already ordered'); o.log[o.log.length - 1].t = now; }
       await pcPersist(o);
@@ -14362,12 +14506,12 @@ async function pcSavePrices(o){
 }
 function pcDoneHtml(){
   const o = pcFind(pc.ui.doneId); if(!o) return '<div class="hrEmpty">Saved.</div>';
-  const next = pc.ui.isEdit ? 'Your changes are saved.' : 'It is now with the procurement officer.';
+  const next = pc.ui.isEdit ? 'Your changes are saved.' : pcOrdNext(o);
   return `<div class="card"><div class="pcDone"><div class="ic ic-green">${pcSvg('check', 26)}</div><h2 style="margin:0 0 4px">${pcEsc(o.id)} ${pc.ui.isEdit ? 'updated' : 'created'}</h2>
     <p class="sub" style="margin:0 0 16px">${next}</p></div>
     <div class="pcFacts">${[['Department', o.dept], ['Requested by', o.reqBy.name], ['Priority', o.priority === 'urgent' ? 'URGENT' : 'Regular']].map(f => `<div class="pcFact"><span class="k">${f[0]}</span><span class="v">${pcEsc(f[1])}</span></div>`).join('')}</div>
     ${pcItemsTable(o, false)}
-    <div class="pcSection" style="margin-top:4px">Next</div><p class="hrNote" style="margin:0 0 12px">1. Download the requisition and get it signed. 2. Add a photo of the signed copy (now or later). 3. Procurement takes over.</p>
+    <div class="pcSection" style="margin-top:4px">Next</div><p class="hrNote" style="margin:0 0 12px">${pcOrdSteps(o)}</p>
     <div class="pcActs"><button class="pcBtnMain" data-pc="pdfreq" data-id="${pcEsc(o.docId)}">${pcSvg('down', 16)}Requisition PDF</button><button class="pcBtnSoft" data-pc="recphoto" data-id="${pcEsc(o.docId)}">${pcSvg('cam', 14)}Add signed copy photo</button>
     <button class="pcBtnSoft" data-pc="new">${pcSvg('plus', 14)}Create another</button><button class="pcBtnSoft" data-pc="back">Go to my orders</button></div></div>`;
 }
@@ -14479,7 +14623,7 @@ function pcActPaperOk(id){
   return pcRun(() => pcMutate(id, (o) => { pcNeed(o.status === 'approval'); o.status = 'approved'; o.approvedAt = Date.now(); o.approvedBy = pcMe(); o.approvedByName = who || 'Signed on paper'; pcLog(o, 'Approved \u2014 signed on paper' + (who ? ' by ' + who : '')); }), 'Marked as approved');
 }
 function pcActApprove(id){
-  return pcRun(() => pcMutate(id, (o) => { pcNeed(o.status === 'approval'); o.status = 'approved'; o.approvedAt = Date.now(); o.approvedBy = pcMe(); o.approvedByName = state.user.name || pcMe(); pcLog(o, 'Approved'); }), 'Approved');
+  return pcRun(() => pcMutate(id, (o) => { pcNeed(o.status === 'approval'); o.status = 'approved'; o.approvedAt = Date.now(); o.approvedBy = pcMe(); o.approvedByName = state.user.name || pcMe(); pcLog(o, 'Approved'); if(o.flow === 2){ const n2 = Date.now(); o.status = 'ordered'; o.orderedAt = n2; o.signed = true; o.signedAt = o.signedAt || n2; } }), 'Approved');
 }
 function pcActReject(id){
   const r = ($('pcmReason').value || '').trim();
@@ -14505,12 +14649,13 @@ function pcActRecItem(id, i){
   if(eq && !(q > 0)) return toast('Write how many were bought');
   return pcRun(async () => { const o2 = await pcMutate(id, (o) => { pcNeed(o.status === 'ordered'); const it = o.items[i]; pcNeed(!!it);
     it.rec = (it.rec || 0) + q; it.recAt = Date.now(); it.recAuto = false; if(price > 0) it.ap = price;
+    if(o.flow === 2) (o.segs = o.segs || []).push({ t: Date.now(), by: (state.user && state.user.name) || pcMe(), rows: [{ i, q, p: price }] });
     pcLog(o, 'Received ' + q + ' ' + (it.u || '') + ' of ' + it.n + (price > 0 ? ' at ' + pcCur(o) + ' ' + price : ''));
     if(!pcPendingItems(o).length){ o.status = 'received'; o.closedAt = Date.now(); pcLog(o, 'All items received \u2014 order complete'); } });
     if(o2 && price > 0) pcSavePrices(o2).catch(() => {}); }, 'Marked as received');
 }
 // "Received" and "Add real quantity & price" share one small sheet. Each item can also be marked "not needed".
-function pcOpenRecModal(o, mode, closeAll){
+function pcOpenRecModal0(o, mode, closeAll){
   pc.ui.modalId = o.docId;
   const cur = pcCur(o), all = mode === 'all';
   pcModalOpen(pcModalHead(all ? 'Received \u2014 ' + o.id : 'Real quantity and price \u2014 ' + o.id, all ? 'Write what was really bought and the price paid for one piece (' + cur + '). If something is not needed any more, tick "Not needed".' : 'Write what was really bought and the price paid for one piece (' + cur + '). The quantity can be more or less than ordered.') + `
@@ -14612,7 +14757,7 @@ function pcPdfBlocks(o, kind, T, L){
   return blocks;
 }
 // ---- real text PDF (small, sharp in print, selectable text) ----
-function pcPdfModel(o, kind, T, L){
+function pcPdfModel0(o, kind, T, L){
   const S = pc.settings || PC_DEF; T = T || S.tpl; const isPO = kind === 'po';
   const remarks = (it) => [it.phys ? ((it.link || (it.photos || []).length) ? 'Physical sample' : 'PHYSICAL SAMPLE ONLY - take it when buying') : '', it.link ? 'Link: ' + pcShortUrl(it.link) : '', (it.photos || []).length ? 'Photo(s) in the app' : '', it.note].filter(Boolean).join(' | ');
   const cur = pcCur(o), sd = (t) => { if(!t) return ''; const d = new Date(t); return d.getDate() + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getMonth()] + ' ' + String(d.getFullYear()).slice(2); };
@@ -14673,39 +14818,42 @@ async function pcTextPdf(m, filename){
   pdf.setFont('helvetica', 'bold'); pdf.setFontSize(15); pdf.setTextColor(15, 23, 42); txt(String(m.title).toUpperCase(), PW / 2, y, { align: 'center' }); y += 6;
   // info boxes (soft grey rounded boxes, same look as the app)
   const GREY = [244, 245, 250], LINE = [226, 229, 238];
-  m.info.forEach((row, ri) => { const cw = ri === 0 ? [30, 32, 40, 48, 32] : [44, 62, 38, 26], rh = 11.5, gap = 2, tot = cw.slice(0, row.length).reduce((p, q) => p + q, 0); let x = M;
-    row.forEach((c, i) => { const wd = cw[i] / tot * (CW - gap * (row.length - 1)); pdf.setFillColor(GREY[0], GREY[1], GREY[2]); pdf.roundedRect(x, y, wd, rh, 2.5, 2.5, 'F');
-      pdf.setFont('helvetica', 'normal'); pdf.setFontSize(6.5); pdf.setTextColor(100, 116, 139); txt(String(c[0]).toUpperCase(), x + 3, y + 4);
-      pdf.setFont('helvetica', 'normal'); pdf.setFontSize(9.5); pdf.setTextColor(15, 23, 42); txt(wrap(c[1] || '\u2014', wd - 6)[0], x + 3, y + 8.6); x += wd + gap; });
-    y += rh + gap; });
+  m.info.forEach((row, ri) => { const cw = m.eq ? row.map(() => 1) : ri === 0 ? (m.bar ? [56, 26, 34, 40, 26] : [30, 32, 40, 48, 32]) : [44, 62, 38, 26], rh = 11.5, gap = 2, tot = cw.slice(0, row.length).reduce((p, q) => p + q, 0); let x = M;
+    row.forEach((c, i) => { const wd = cw[i] / tot * (CW - gap * (row.length - 1)); pdf.setFont('helvetica', 'normal'); pdf.setFontSize(6.5); pdf.setTextColor(148, 163, 184); txt(String(c[0]).toUpperCase(), x, y + 4);
+      pdf.setFont('helvetica', 'normal'); pdf.setFontSize(9.5); pdf.setTextColor(15, 23, 42); txt(wrap(c[1] || '\u2014', wd - 4 - (m.bar && ri === 0 && i === 0 ? 27 : 0))[0], x, y + 8.6); if(m.bar && ri === 0 && i === 0) poBarcode(pdf, m.bar, x + wd - 29, y + 2.2, 24, 7); x += wd + gap; });
+    pdf.setDrawColor(LINE[0], LINE[1], LINE[2]); pdf.setLineWidth(0.2); pdf.line(M, y + rh, M + CW, y + rh); y += rh + gap + 1; });
   y += 3;
+  if(m.app) y = poDrawApp(pdf, m, M, CW, PW, y, txt, wrap);
   if(m.intro){ pdf.setFont('helvetica', 'normal'); pdf.setFontSize(9.5); pdf.setTextColor(51, 65, 85); const ls = wrap(m.intro, CW); pdf.text(ls, M, y + 3); y += ls.length * 4.2 + 3; }
   // table: rounded white card, grey heading row, light lines between rows, no vertical lines
   const LH = 3.7, PAD = 1.9, xs = []; { let x = M; const sum = m.w.reduce((p, q) => p + q, 0); m.w.forEach(wd => { const ww = wd * CW / sum; xs.push([x, ww]); x += ww; }); }
   let top = y;
-  const closeCard = () => { pdf.setDrawColor(LINE[0], LINE[1], LINE[2]); pdf.setLineWidth(0.25); pdf.roundedRect(M, top, CW, y - top, 3, 3, 'S'); };
-  const drawHead = () => { pdf.setFont('helvetica', 'bold'); pdf.setFontSize(7); const hl = m.head.map((t, i) => pdf.splitTextToSize(A(t.toUpperCase()), xs[i][1] - 4)), h = Math.max(...hl.map(l => l.length)) * 3 + 4;
-    top = y; pdf.setFillColor(GREY[0], GREY[1], GREY[2]); pdf.roundedRect(M, y, CW, h, 3, 3, 'F'); pdf.rect(M, y + 3, CW, h - 3, 'F'); pdf.setTextColor(100, 116, 139);
-    hl.forEach((ls, i) => { const [x, ww] = xs[i]; ls.forEach((ln, k) => { if(m.right.includes(i)) pdf.text(ln, x + ww - 2.5, y + 4.3 + k * 3, { align: 'right' }); else pdf.text(ln, x + 2.5, y + 4.3 + k * 3); }); }); y += h; };
+  const closeCard = () => { pdf.setDrawColor(LINE[0], LINE[1], LINE[2]); pdf.setLineWidth(0.25); pdf.line(M, y, M + CW, y); };
+  const vlines = (y0, y1) => { pdf.setDrawColor(203, 213, 225); pdf.setLineWidth(0.2); xs.forEach(c => pdf.line(c[0], y0, c[0], y1)); pdf.line(M + CW, y0, M + CW, y1); };
+  let HFS = 6.5; { pdf.setFont('helvetica', 'bold'); for(; HFS > 3.8; HFS -= 0.2){ pdf.setFontSize(HFS); if(m.head.every((t, i) => pdf.getTextWidth(A(t.toUpperCase())) <= xs[i][1] - 3.6)) break; } }
+  const drawHead = () => { const h = 7; top = y; pdf.setDrawColor(148, 163, 184); pdf.setLineWidth(0.3); pdf.line(M, y, M + CW, y); pdf.line(M, y + h, M + CW, y + h); vlines(y, y + h);
+    pdf.setFont('helvetica', 'bold'); pdf.setFontSize(HFS); pdf.setTextColor(100, 116, 139);
+    m.head.forEach((t, i) => { const [x, ww] = xs[i]; if(m.right.includes(i)) pdf.text(A(t.toUpperCase()), x + ww - 2, y + 4.5, { align: 'right' }); else pdf.text(A(t.toUpperCase()), x + 2, y + 4.5); }); y += h; };
   drawHead();
   m.rows.forEach(r => {
     pdf.setFont('helvetica', 'normal'); pdf.setFontSize(8.5);
-    const cells = r.map((t, i) => wrap(t, xs[i][1] - 5)), n = Math.max(...cells.map(c => c.length)), h = n * LH + 2 * PAD;
+    const cells = r.map((t, i) => wrap(t, xs[i][1] - (xs[i][1] > 18 ? 6.5 : 2.5))), n = Math.max(...cells.map(c => c.length)), h = n * LH + 2 * PAD;
     if(y + h > BOT){ closeCard(); pdf.addPage(); y = M; drawHead(); }
-    pdf.setDrawColor(LINE[0], LINE[1], LINE[2]); pdf.setLineWidth(0.2); pdf.line(M, y, M + CW, y);
+    pdf.setDrawColor(203, 213, 225); pdf.setLineWidth(0.2); pdf.line(M, y, M + CW, y);
     cells.forEach((c, i) => { const [x, ww] = xs[i];
       const warn = i === m.head.length - 1 && /PHYSICAL SAMPLE ONLY/.test(r[i]);
-      pdf.setFont('helvetica', i === 1 || (i === m.ti && m.kind === 'po') || warn ? 'bold' : 'normal'); pdf.setTextColor(warn ? 185 : 15, warn ? 28 : 23, warn ? 28 : 42);
-      if(i === 0 || (i === 7 && m.kind === 'po') || i === 2 || (i === m.head.length - 1 && !warn)) pdf.setTextColor(100, 116, 139);
+      pdf.setFont('helvetica', i === (m.bc != null ? m.bc : 1) || (i === m.ti && m.kind === 'po') || warn ? 'bold' : 'normal'); pdf.setTextColor(warn ? 185 : 15, warn ? 28 : 23, warn ? 28 : 42);
+      if(i === 0 || (i === 7 && m.kind === 'po') || (i === 2 && m.bc == null) || (i === m.head.length - 1 && !warn)) pdf.setTextColor(100, 116, 139);
       if(m.right.includes(i)) c.forEach((ln, k) => txt(ln, x + ww - 2.5, y + PAD + 2.8 + k * LH, { align: 'right' })); else c.forEach((ln, k) => txt(ln, x + 2.5, y + PAD + 2.8 + k * LH)); });
-    y += h; });
+    vlines(y, y + h); y += h; });
   if(m.total){ const h = 7.5; if(y + h > BOT){ closeCard(); pdf.addPage(); y = M; top = y; } pdf.setDrawColor(LINE[0], LINE[1], LINE[2]); pdf.line(M, y, M + CW, y); const t = xs[m.ti]; pdf.setFont('helvetica', 'normal'); pdf.setFontSize(8); pdf.setTextColor(100, 116, 139);
     txt('Total (' + m.cur + ')', xs[m.ti][0] - 2, y + 4.8, { align: 'right' }); pdf.setFont('helvetica', 'bold'); pdf.setFontSize(10); pdf.setTextColor(15, 23, 42); txt(pcMoney(m.total), t[0] + t[1] - 2.5, y + 4.9, { align: 'right' }); y += h; }
   closeCard();
   y += 8;
   // closing + signatures
-  const sg = m.signers.length ? m.signers : [{ name: '', title: 'Authorised signature' }];
-  let need = 36 + (m.closing ? wrap(m.closing, CW).length * 4.2 + 6 : 0); if(y + need > BOT){ pdf.addPage(); y = M; }
+  const sg = m.sig2 ? [] : (m.signers.length ? m.signers : [{ name: '', title: 'Authorised signature' }]);
+  if(m.sig2) y = poDrawSign(pdf, m, M, CW, BOT, y, txt, wrap);
+  let need = m.sig2 ? 0 : 36 + (m.closing ? wrap(m.closing, CW).length * 4.2 + 6 : 0); if(y + need > BOT){ pdf.addPage(); y = M; }
   if(m.closing){ pdf.setFont('helvetica', 'normal'); pdf.setFontSize(9.5); pdf.setTextColor(51, 65, 85); const ls = wrap(m.closing, CW); pdf.text(ls, M, y + 3); y += ls.length * 4.2 + 6; }
   const bw = Math.min(56, (CW - 28) / Math.max(1, sg.length)); let sx = M + CW - sg.length * bw - (sg.length - 1) * 6;
   pdf.setDrawColor(15, 23, 42); pdf.setLineWidth(0.3);
@@ -14724,9 +14872,9 @@ async function pcPdf(id, kind){
   const o = pcFind(id); if(!o) return;
   toast('Making the PDF…');
   const L = await pcLetterhead();
-  await pcOut(o, kind, null, L, (kind === 'po' ? 'PurchaseOrder_' : 'Requisition_') + o.id + '.pdf');
+  await pcOut(o, kind, null, L, (kind === 'rcv' ? 'Receiving_' : kind === 'po' ? 'PurchaseOrder_' : 'Requisition_') + o.id + '.pdf');
 }
-async function pcOut(o, kind, T, L, name){
+async function pcOut0(o, kind, T, L, name){
   const m = pcPdfModel(o, kind, T, L);
   if(PC_AR.test([L.company, L.line1, L.line2].join(' '))) m.hdrHtml = pcPdfBlocks(o, kind, T, L)[0];
   if(pcHasArabic(m)) return rvfMakePdf(pcPdfBlocks(o, kind, T, L), name, { format: L.page.fmt, m: Math.max(4, L.page.mL) }); // Arabic letters need the picture method
@@ -14905,7 +15053,7 @@ async function pcOnChange(e){
 /* ---------- Admin > Purchase (same "Add someone" pattern as Passport Access) ---------- */
 const PC_ROLE_DEF = [['requesters', 'Creates orders'], ['procurement', 'Procurement officer'], ['approvers', 'Approver']];
 let pcAdmUsers = [];
-async function pcRenderAdmin(){
+async function pcRenderAdmin0(){
   const root = $('admin-purchase'); if(!root) return;
   pcBindOnce();
   if(!requireDb()) return;
@@ -16748,6 +16896,356 @@ function pcFillFromCat(it, c){
 async function pcSaveCatalog(items, edit){ const r = await pcSaveCatalog0(items, edit); try{ await pcpAddFromOrder(items); }catch(e){ console.error(e); } return r; }
 // the item-name suggestions close as soon as the cursor leaves the box (so they never sit on top of the buttons below)
 document.addEventListener('focusout', (e) => { const t = e.target; if(t && t.dataset && t.dataset.pc === 'iname'){ setTimeout(() => { const s = $('pcItSug' + t.dataset.i); if(s) s.style.display = 'none'; }, 220); } });
+
+/* ===== Purchase v31: order types (Local / International / Packing), simple flow, deliveries in parts, receiving paper ===== */
+const PO_TYPES = [['local', 'Local'], ['international', 'International'], ['packing', 'Packing Material']];
+const PO_LABEL = { local: 'Local', international: 'International', packing: 'Packing Material' };
+const poType = (o) => (o && o.type) || 'local';
+const poFlow2 = (o) => !!(o && o.flow === 2);
+const poApprovalOn = () => !!(pc.settings && pc.settings.approvalOn);
+const poToday = () => pcDateStr(Date.now());
+function poPosition(){ const u = state.user || {}; return (u.profile && u.profile.position) || ''; }
+function poApprSnap(){
+  const a = (typeof AI !== 'undefined' && AI.cfg && AI.cfg.approver) || null;
+  if(a && a.name) return { name: a.name, title: a.title || '' };
+  const s = ((pc.settings || PC_DEF).tpl.poSigners || [])[0];
+  return s ? { name: s.name || '', title: s.title || '' } : { name: '', title: 'Approver' };
+}
+
+/* ---------- Code 128 barcode (drawn as black bars in the PDF) ---------- */
+const PO_C128 = ['212222', '222122', '222221', '121223', '121322', '131222', '122213', '122312', '132212', '221213', '221312', '231212', '112232', '122132', '122231', '113222', '123122', '123221', '223211', '221132', '221231', '213212', '223112', '312131', '311222', '321122', '321221', '312212', '322112', '322211', '212123', '212321', '232121', '111323', '131123', '131321', '112313', '132113', '132311', '211313', '231113', '231311', '112133', '112331', '132131', '113123', '113321', '133121', '313121', '211331', '231131', '213113', '213311', '213131', '311123', '311321', '331121', '312113', '312311', '332111', '314111', '221411', '431111', '111224', '111422', '121124', '121421', '141122', '141221', '112214', '112412', '122114', '122411', '142112', '142211', '241211', '221114', '413111', '241112', '134111', '111242', '121142', '121241', '114212', '124112', '124211', '411212', '421112', '421211', '212141', '214121', '412121', '111143', '111341', '131141', '114113', '114311', '411113', '411311', '113141', '114131', '311141', '411131', '211412', '211214', '211232', '2331112'];
+function poBarModules(text){
+  const s = String(text || '').replace(/[^\x20-\x7e]/g, '?'); const codes = [104]; let sum = 104;
+  for(let i = 0; i < s.length; i++){ const c = s.charCodeAt(i) - 32; codes.push(c); sum += c * (i + 1); }
+  codes.push(sum % 103); codes.push(106);
+  return codes.map(c => PO_C128[c]).join('');
+}
+function poBarcode(pdf, text, x, y, w, h){
+  const m = poBarModules(text), tot = m.split('').reduce((p, q) => p + Number(q), 0), mw = w / tot;
+  pdf.setFillColor(0, 0, 0); let cx = x;
+  for(let i = 0; i < m.length; i++){ const wd = Number(m[i]) * mw; if(i % 2 === 0) pdf.rect(cx, y, wd, h, 'F'); cx += wd; }
+}
+
+/* ---------- form state ---------- */
+function pcNewForm(){
+  const F = pcNewForm0(); F.type = 'local'; F.depts2 = ['Account', 'Purchase']; F.subject = ''; F.appl = ''; F.mach = ''; F.supId = ''; F.sup = ''; F.exp = '';
+  F.ordBy = [{ name: (state.user && state.user.name) || pcMe(), title: poPosition() }];
+  return F;
+}
+function pcFormFromOrder(o, asCopy){
+  const F = pcFormFromOrder0(o, asCopy);
+  F.type = poType(o); F.depts2 = (o.depts2 || ['Account', 'Purchase']).slice(); F.subject = o.sub || ''; F.appl = o.appl || ''; F.mach = o.mach || ''; F.supId = o.supId || ''; F.sup = (o.proc && o.proc.supplier) || ''; F.exp = o.expected || '';
+  F.ordBy = (o.ordBy || []).map(x => Object.assign({}, x));
+  F.items.forEach((it, k) => { const s = o.items[k] || {}; it.cd = s.cd || ''; it.ino = s.ino || ''; it.sq = s.sq || ''; it.dd = s.dd || ''; });
+  return F;
+}
+const poChip = (label, attrs, x) => `<span class="poChip"${attrs || ''}>${pcEsc(label)}${x ? `<button data-po="${x[0]}" data-i="${x[1]}" aria-label="Remove">×</button>` : ''}</span>`;
+function poFormExtra(F){
+  const t = F.type || 'local', S = pc.settings || PC_DEF, f = (k, v) => `data-po="f" data-k="${k}" value="${pcEsc(v)}"`;
+  if(t === 'local'){
+    return { inline: `<div class="field"><label>Supplier (optional)</label><input type="text" ${f('sup', F.sup)} placeholder="Name of the supplier"></div>
+      <div class="field"><label>Expected delivery (optional)</label><input type="date" ${f('exp', F.exp)}></div>`, rest: '' };
+  }
+  const depts = pcDepts(), sigs = (S.tpl.reqSigners || []).filter(x => x.name), ap = poApprSnap();
+  let inline = '', h = '<div class="poApp">';
+  if(t === 'international'){
+    const all = Array.from(new Set(['Account', 'Purchase'].concat(depts, F.depts2))), sel = F.depts2.join(', ');
+    inline += `<div class="field"><label>To (department)</label><div class="poDd"><button type="button" class="poDdBtn${F.ddOpen ? ' open' : ''}" data-po="ddtoggle"><span>${sel ? pcEsc(sel) : 'Choose department(s)'}</span>${pcSvg('chev', 14)}</button>
+      ${F.ddOpen ? `<div class="poDdPanel">${all.map(d => `<label class="poDdRow"><input type="checkbox" data-po="dept" data-v="${pcEsc(d)}" ${F.depts2.includes(d) ? 'checked' : ''}><span>${pcEsc(d)}</span></label>`).join('')}</div>` : ''}</div></div>`;
+  } else {
+    const sups = (pp.sups || []).filter(s => !s.off);
+    inline += `<div class="field"><label>Supplier (from your supplier list)</label>${pp.sups ? `<select data-po="supsel"><option value="">Select…</option>${sups.map(s => `<option value="${pcEsc(s.id)}" ${F.supId === s.id ? 'selected' : ''}>${pcEsc(s.n)}</option>`).join('')}${F.sup && !sups.some(s => s.id === F.supId) ? `<option value="" selected>${pcEsc(F.sup)}</option>` : ''}</select>` : '<div class="hrNote">Loading the supplier list…</div>'}</div>`;
+  }
+  inline += `<div class="field"><label>Department / machine</label><input type="text" ${f('mach', F.mach)} placeholder="e.g. Dornier machine 3"></div>`;
+  h += `<div class="field"><label>Subject</label><div class="poSubj"><input type="text" ${f('subject', F.subject)} placeholder="Request for purchase of …"><button type="button" class="pcBtnSoft" data-po="ai" title="Writes the subject and request from the items and the department / machine" ${pc.ui.poAi ? 'disabled' : ''}>${pcSvg('edit', 13)}${pc.ui.poAi ? 'Writing…' : 'AI write'}</button></div></div>
+    <div class="field"><label>Request (printed after “Dear Sir,”)</label><textarea rows="2" style="width:100%" data-po="f" data-k="appl" placeholder="We kindly request your approval to purchase the items below for …">${pcEsc(F.appl)}</textarea></div>`;
+  h += '<div class="poSignRow">';
+  if(t === 'international'){
+    h += `<div class="field"><label>Ordered by (signatures, up to 5)</label><div class="poChips">${F.ordBy.map((x, i) => poChip(x.name + (x.title ? ' \u00B7 ' + x.title : ''), '', ['ordrm', i])).join('')}${F.ordBy.length < 5 ? `<button type="button" class="poAddBtn" data-po="ordtoggle">${pcSvg('plus', 12)}Add</button>` : ''}</div>
+      ${F.ordOpen && F.ordBy.length < 5 ? `<div class="poAddRow">${sigs.length ? `<select id="poOrdSel">${sigs.map((x, i) => `<option value="${i}">${pcEsc(x.name)}${x.title ? ' \u2014 ' + pcEsc(x.title) : ''}</option>`).join('')}</select><button type="button" class="pcBtnSoft sm" data-po="ordadd">Add</button><span class="poOr">or</span>` : ''}<input type="text" id="poOrdTxt" placeholder="Name"><input type="text" id="poOrdTitle" placeholder="Designation"><button type="button" class="pcBtnSoft sm" data-po="ordtxt">Add</button></div>` : ''}</div>`;
+  }
+  h += `<div class="field"><label>Approver (signs separately)</label><div class="poApprTxt">${pcSvg('stamp', 14)}<span><b>${pcEsc(ap.name || '\u2014')}</b>${ap.title ? ' \u00B7 ' + pcEsc(ap.title) : ''}</span></div></div></div>`;
+  return { inline, rest: h + '</div>' };
+}
+function pcFormHtml(){
+  let h = pcFormHtml0(); const F = pc.ui.form; if(!F) return h;
+  const first = '<div class="hrForm"><div class="field"><label>Priority</label>';
+  const sel = F.docId ? `<div class="field"><label>Order type</label><div class="poTypeTxt">${PO_LABEL[F.type] || 'Local'}</div></div>` : `<div class="field"><label>Order type</label><div class="pcSeg poTypes">${PO_TYPES.map(t => `<button data-po="type" data-v="${t[0]}" class="${F.type === t[0] ? 'on' : ''}">${t[1]}</button>`).join('')}</div></div>`;
+  h = h.replace(first, '<div class="hrForm">' + sel + '<div class="field"><label>Priority</label>');
+  h = h.replace('Prices in (change only for international buying)', 'Prices in').replace('<label>Requested by department</label>', '<label>Department</label>').replace('Requested by person (search or type)', 'Requested by');
+  const mark = '<div class="pcSection" style="margin-top:6px">Items</div>';
+  const X = poFormExtra(F), wh = '<div class="pcSug" id="pcWhoSug" style="display:none"></div></div></div>';
+  if(h.includes(wh)) h = h.replace(wh, '<div class="pcSug" id="pcWhoSug" style="display:none"></div></div>' + X.inline + '</div>');
+  if(h.includes(mark)) h = h.replace(mark, X.rest + mark);
+  return h;
+}
+function pcItemHtml(it, i, units){
+  let h = pcItemHtml0(it, i, units); const t = (pc.ui.form && pc.ui.form.type) || 'local';
+  if(t === 'local') return h;
+  const x = (f, l, ty) => `<input type="${ty || 'text'}" data-po="ix" data-f="${f}" data-i="${i}" placeholder="${l}" title="${l}" value="${pcEsc(it[f] || '')}">`;
+  const ex = `<div class="poIx">${x('cd', 'Code')}${x('ino', 'Item no')}${x('sq', 'Stock qty')}${t === 'packing' ? x('dd', 'Delivery expecting date', 'date') : ''}</div>`;
+  const k = h.indexOf('<div class="pcItemMore');
+  if(k >= 0) return h.slice(0, k) + ex + h.slice(k);
+  const e = h.lastIndexOf('</div>'); return h.slice(0, e) + ex + h.slice(e);
+}
+function pcSyncRow(i){
+  pcSyncRow0(i); const F = pc.ui.form, it = F && F.items[i]; if(!it) return;
+  const e = document.querySelector('.pcFR[data-idx="' + i + '"] [data-po="ix"][data-f="cd"]'); if(e) e.value = it.cd || '';
+}
+function pcOrdCheck(F){
+  const t = F.type || 'local'; if(t === 'local') return '';
+  if(t === 'international' && !F.depts2.length) return 'Choose the department(s) for the application';
+  if(t === 'packing' && !F.supId && !F.sup.trim()) return 'Choose the supplier';
+  if(!F.subject.trim() || !F.appl.trim()) return 'Write the subject and the request (or tap Write with AI)';
+  if(t === 'international' && !F.ordBy.length) return 'Add at least one name under Ordered by';
+  return '';
+}
+// copy the extra form fields onto the order (create and edit)
+function pcOrdApply(o, F, isNew){
+  const t = F.type || 'local'; o.type = t;
+  o.proc = Object.assign({}, o.proc || {});
+  if(t === 'local'){ o.proc.supplier = (F.sup || '').trim(); o.expected = F.exp || ''; }
+  else {
+    o.sub = F.subject.trim(); o.appl = F.appl.trim(); o.mach = (F.mach || '').trim();
+    if(t === 'international'){ o.depts2 = F.depts2.slice(); o.ordBy = F.ordBy.slice(0, 5); }
+    else { const s = (pp.sups || []).find(x => x.id === F.supId); o.supId = F.supId || ''; o.proc.supplier = s ? s.n : (F.sup || '').trim(); o.supAddr = s ? s.a || '' : (o.supAddr || ''); }
+    o.appr = poApprSnap();
+  }
+  if(isNew && !F.back){
+    o.flow = 2; const now = Date.now(); o.needAppr = poApprovalOn();
+    if(o.needAppr){ o.status = 'approval'; o.proc.sentAt = now; o.proc.paper = false; o.proc.approverId = ''; o.log = []; pcLog(o, 'Created the order' + (F.priority === 'urgent' ? ' (URGENT)' : '') + ' and sent it for approval'); }
+    else { o.status = 'ordered'; o.orderedAt = now; o.approvedAt = now; o.approvedBy = pcMe(); o.approvedByName = ''; o.signed = true; o.signedAt = now; o.log = []; pcLog(o, 'Created the order' + (F.priority === 'urgent' ? ' (URGENT)' : '') + ' — waiting to be received'); }
+  }
+}
+const pcOrdEditable = (o) => o.status === 'new' || o.status === 'rejected' || (poFlow2(o) && (o.status === 'approval' || (o.status === 'ordered' && !o.needAppr && !(o.items || []).some(i => (i.rec || 0) > 0))));
+function pcOrdNext(o){
+  if(o.status === 'approval') return 'It is with the approver now. If it is rejected you will see it in your To do.';
+  if(poFlow2(o)) return 'The order is placed. When the goods arrive, open it and tap Received.';
+  return 'It is now with the procurement officer.';
+}
+function pcOrdSteps(o){
+  if(poFlow2(o)) return (o.status === 'approval' ? '1. The approver approves or rejects it. ' : '') + 'Print the paper and get it signed. Add a photo of the signed copy (now or later). When goods arrive, tap Received — you can receive in several parts.';
+  return '1. Download the requisition and get it signed. 2. Add a photo of the signed copy (now or later). 3. Procurement takes over.';
+}
+
+/* ---------- who can do what (new orders: the creator does everything, procurement only looks) ---------- */
+function pcCanOrder(o){ return !poFlow2(o) && pcCanOrder0(o); }
+function pcCanReceive(o){ if(!poFlow2(o)) return pcCanReceive0(o); const R = pcRoles(); return o.status === 'ordered' && (R.admin || o.createdBy === pcMe()); }
+function pcCanActual(o){ if(!poFlow2(o)) return pcCanActual0(o); const R = pcRoles(); return pcInfoMissing(o) && (R.admin || o.createdBy === pcMe()); }
+function pcCanEdit(o){ const R = pcRoles(); if(poFlow2(o)) return pcOrdEditable(o) && (R.admin || o.createdBy === pcMe()); return pcCanEdit0(o); }
+function pcTasks(){
+  const me = pcMe(), R = pcRoles();
+  return pcTasks0().filter(t => { const o = pcFind(t.docId); if(!o || !poFlow2(o)) return true; if(['send', 'revise', 'paper', 'order'].includes(t.kind)) return false; if(t.kind === 'actual') return R.admin || o.createdBy === me; return true; });
+}
+function pcOrderRow(o){
+  let h = pcOrderRow0(o); const t = poType(o);
+  if(t !== 'local') h = h.replace(`<b>${pcEsc(o.id)}</b>`, `<b>${pcEsc(o.id)}</b><span class="poTag">${t === 'international' ? 'Intl' : 'Packing'}</span>`);
+  return h;
+}
+
+/* ---------- order detail: type facts, deliveries, receiving paper ---------- */
+function poInfoHtml(o){
+  const t = poType(o), r = [];
+  if(t !== 'local'){ r.push(['Type', PO_LABEL[t]]); if(o.sub) r.push(['Subject', o.sub]); if(t === 'international') r.push(['To', (o.depts2 || []).join(' / ')]); if(t === 'international' && (o.ordBy || []).length) r.push(['Ordered by', o.ordBy.map(x => x.name).join(', ')]); if(o.appr && o.appr.name) r.push(['Approver', o.appr.name]); }
+  const c = o.comp || {};
+  [['sup', 'Supplier'], ['inv', 'Invoice no'], ['invd', 'Invoice date'], ['ref', 'Reference'], ['wb', 'Way bill'], ['cour', 'Courier'], ['fr', 'Freight'], ['vat', 'VAT / tax'], ['disc', 'Discount']].forEach(k => { if(c[k[0]]) r.push([k[1], c[k[0]]]); });
+  return r.length ? '<div class="pcFacts poInfo">' + r.map(x => `<span class="pcFact"><span class="k">${x[0]}:</span> <span class="v">${pcEsc(x[1])}</span></span>`).join('') + '</div>' : '';
+}
+function poDeliveries(o){
+  const sg = o.segs || []; if(!sg.length) return '';
+  return '<div class="pcSection" style="margin-top:10px">Deliveries received</div><div class="poSegs">' + sg.map((s, k) => `<div class="poSeg"><b>${k + 1}. ${fmtDate(pcDateStr(s.t))}</b><span>${s.rows.map(r => pcEsc((o.items[r.i] || {}).n || '') + ' × ' + r.q).join(' · ')}</span></div>`).join('') + '</div>';
+}
+function pcDetailHtml(o){
+  let h = pcDetailHtml0(o);
+  const info = poInfoHtml(o); if(info) h = h.replace('<div class="pcIts">', info + '<div class="pcIts">');
+  { const fx = []; h = h.replace(/<div class="pcFacts[^>]*>[\s\S]*?<\/div>/g, m => { fx.push(m); return ''; });
+    if(fx.length) h = h.replace('<div class="pcIts">', '<details class="poOI"><summary>Order info</summary>' + fx.join('') + '</details><div class="pcIts">'); }
+  const dl = poDeliveries(o); if(dl) h = h.replace('<div class="pcBar">', dl + '<div class="pcBar">');
+  if(o.status === 'ordered' || o.status === 'received' || (o.segs || []).length) h = h.replace('<div class="pcBarTools">', `<div class="pcBarTools"><button class="pcBtnSoft" data-po="rcvpdf" data-id="${pcEsc(o.docId)}">${pcSvg('file', 14)}Receiving paper</button>`);
+  return h;
+}
+
+/* ---------- receiving in parts ---------- */
+const PO_IN = [['sup', 'Supplier name'], ['adr', 'Supplier address'], ['con', 'Contact details'], ['inv', 'Invoice number'], ['invd', 'Invoice date', 'date'], ['ref', 'Reference no'], ['wb', 'Way bill no'], ['cour', 'Courier name'], ['pkg', 'Package details / size'], ['fr', 'Freight charges'], ['vat', 'VAT / tax'], ['disc', 'Discount received']];
+function pcOpenRecModal(o, mode, closeAll){
+  if(!poFlow2(o) || mode !== 'all') return pcOpenRecModal0(o, mode, closeAll);
+  pc.ui.modalId = o.docId;
+  const cur = pcCur(o), c = o.comp || {}, intl = poType(o) === 'international';
+  const rows = o.items.map((it, i) => {
+    if(it.nn) return `<div class="pcPriceRow"><div class="pcPriceName"><b style="text-decoration:line-through">${pcEsc(it.n)}</b><span class="hrNote">Not needed</span></div></div>`;
+    if(pcItemDone(it)) return `<div class="pcPriceRow"><div class="pcPriceName"><b>${pcEsc(it.n)}</b><span class="hrNote">Received ${it.rec || 0} of ${it.q} ${pcEsc(it.u || '')} — done</span></div></div>`;
+    const left = Math.max(0, it.q - (it.rec || 0));
+    return `<div class="pcPriceRow pcRecRow withNn"><div class="pcPriceName"><b>${pcEsc(it.n)}</b><span class="hrNote">Ordered ${it.q} ${pcEsc(it.u || '')} · received ${it.rec || 0} · left ${left}</span></div>
+      <input type="number" min="0" step="any" id="poQ_${i}" value="${closeAll ? '' : left}" placeholder="0" aria-label="Received now">
+      <input type="number" min="0" step="any" id="poP_${i}" value="${it.ap > 0 ? it.ap : ''}" placeholder="${it.p > 0 ? pcMoney(it.p) : '0.00'}" aria-label="Actual unit price">
+      <label class="pcNnBox" title="Not needed any more"><input type="checkbox" id="poN_${i}"><span>No</span></label></div>`;
+  }).join('');
+  const inp = (k, l, ty) => `<div class="field"><label>${l}</label><input type="${ty || 'text'}" id="poC_${k}" value="${pcEsc(c[k] || (k === 'sup' ? (o.proc && o.proc.supplier) || '' : k === 'rcv' ? (state.user && state.user.name) || '' : ''))}"></div>`;
+  const fields = (intl ? PO_IN : [PO_IN[0], PO_IN[3], PO_IN[4]]).concat([['rcv', 'Received by'], ['chk', 'Checked by']]);
+  pcModalOpen(pcModalHead('Received \u2014 ' + o.id, 'Write what arrived. Each part is saved with its date.') + `
+    <div class="poRecTop"><span class="poRecLbl">${pcSvg('clock', 14)}Date</span><input type="date" id="poDate" value="${poToday()}" max="${poToday()}"></div>
+    <div class="pcRecHead withNn"><span>Item</span><span>Now</span><span>Price (${cur})</span><span>Skip</span></div>${rows}
+    <details class="poDet"><summary>${pcSvg('list', 14)}${intl ? 'Shipment &amp; invoice details' : 'Delivery details'}<span class="poDetHint">optional</span>${pcSvg('chev', 13)}</summary><div class="poGrid">${fields.map(f => inp(f[0], f[1], f[2])).join('')}</div></details>
+    <div class="pcTop" style="margin-top:14px"><button class="pcBtnMain" data-po="rsave" data-mode="seg" data-id="${pcEsc(o.docId)}">${pcSvg('check', 15)}Save delivery</button><button class="pcBtnSoft ok" data-po="rsave" data-mode="done" data-id="${pcEsc(o.docId)}" title="Closes the order. Anything not received is closed as nothing more is coming.">${pcSvg('archive', 14)}Complete order</button></div>`);
+}
+function poActRec(id, mode){
+  const src = pcFind(id); if(!src) return;
+  const vals = src.items.map((it, i) => { const q = $('poQ_' + i), p = $('poP_' + i), n = $('poN_' + i); return { q: Number(q && q.value) || 0, p: Number(p && p.value) || 0, n: !!(n && n.checked) }; });
+  if(mode === 'seg' && !vals.some(v => v.q > 0 || v.n)) return toast('Write the quantity received');
+  const date = ($('poDate').value || poToday()), ts = Math.min(Date.now(), new Date(date + 'T12:00:00').getTime() || Date.now());
+  const comp = {}; ['sup', 'adr', 'con', 'inv', 'invd', 'ref', 'wb', 'cour', 'pkg', 'fr', 'vat', 'disc', 'rcv', 'chk'].forEach(k => { const e = $('poC_' + k); if(e) comp[k] = e.value.trim(); });
+  return pcRun(async () => { const o2 = await pcMutate(id, (o) => {
+    pcNeed(o.status === 'ordered'); const rows = [], by = (state.user && state.user.name) || pcMe();
+    o.items.forEach((it, i) => { const v = vals[i]; if(!v || it.nn || pcItemDone(it)) return;
+      if(v.n){ if((it.rec || 0) > 0) it.short = true; else it.nn = true; return; }
+      if(v.q > 0){ it.rec = (it.rec || 0) + v.q; it.recAt = ts; it.recAuto = false; if(v.p > 0) it.ap = v.p; rows.push({ i, q: v.q, p: v.p || 0 }); } });
+    if(rows.length){ (o.segs = o.segs || []).push({ t: ts, by, rows }); pcLog(o, 'Received ' + rows.map(r => r.q + ' ' + (o.items[r.i].u || '') + ' of ' + o.items[r.i].n).join(', ')); }
+    o.comp = Object.assign({}, o.comp || {}, Object.fromEntries(Object.entries(comp).filter(e => e[1] !== '' || !(o.comp || {})[e[0]])));
+    if(mode === 'done') o.items.forEach(pcShortClose);
+    if(!pcCompleteIf(o, mode === 'done' ? ' (marked complete)' : '') && !rows.length) pcLog(o, 'Updated the delivery details'); });
+    pcModalClose(); if(o2) pcSavePrices(o2).catch(() => {}); }, mode === 'done' ? 'Order marked complete' : 'Delivery saved');
+}
+
+/* ---------- AI: subject + request ---------- */
+async function poAiWrite(){
+  const F = pc.ui.form; if(!F || pc.ui.poAi) return;
+  const names = F.items.filter(i => i.n.trim()).map(i => i.n.trim() + ' x' + i.q);
+  if(!names.length) return toast('Add the items first');
+  pc.ui.poAi = true; pcKeepScroll(pcRender);
+  try{
+    const sys = 'You write short, polite, formal purchase requests for a factory. Reply ONLY with JSON like {"subject":"...","body":"..."}. "subject": under 14 words. "body": ONE sentence, under 40 words, asking for approval to purchase the listed items and naming the department or machine given. No greeting and no sign-off.';
+    const user = JSON.stringify({ order_type: PO_LABEL[F.type], departments: F.type === 'international' ? F.depts2 : undefined, supplier: F.type === 'packing' ? F.sup : undefined, department_or_machine: F.mach || undefined, items: names.slice(0, 15), priority: F.priority });
+    const r = aiParseAnswer(await aiAsk(sys, user));
+    if(r.subject) F.subject = r.subject; if(r.body) F.appl = r.body;
+  }catch(err){ console.error(err); toast(typeof aiErrText === 'function' ? aiErrText(err) : 'The AI could not write it'); }
+  pc.ui.poAi = false; pcKeepScroll(pcRender);
+}
+
+/* ---------- PDFs ---------- */
+function poSd(t){ return t ? fmtDate(pcDateStr(t)) : ''; }
+function pcPdfModel(o, kind, T, L){
+  const t = poType(o);
+  if(kind === 'rcv') return poRcvModel(o, L);
+  if(t === 'local'){ const m = pcPdfModel0(o, kind, T, L); m.bar = o.id; return m; }
+  const intl = t === 'international', S = pc.settings || PC_DEF;
+  const head = intl ? ['Serial', 'Code', 'Item No', 'Description', 'Unit', 'Stock Quantity', 'Order Quantity', 'Remarks'] : ['Serial', 'Code', 'Item No', 'Description', 'Unit', 'Stock Quantity', 'Order Quantity', 'Delivery Expecting Date', 'Remarks'];
+  const w = intl ? [8, 10, 10, 27, 6, 13, 13, 13] : [8, 9, 9, 21, 6, 11, 11, 14, 11];
+  const rem = (it) => [it.phys ? 'Physical sample' : '', it.link ? 'Link: ' + pcShortUrl(it.link) : '', it.note].filter(Boolean).join(' | ');
+  const rows = o.items.map((it, i) => { const d = [it.n, it.d, it.b].filter(Boolean).join(' - ');
+    const r = [String(i + 1), it.cd || '', it.ino || '', d, it.u || '', String(it.sq || ''), String(it.q)]; if(!intl) r.push(it.dd ? fmtDate(it.dd) : ''); r.push(rem(it)); return r; });
+  const to = intl ? ['The ' + ((o.depts2 || []).join(' / ') || 'Management') + ' Department'] : [(o.proc && o.proc.supplier) || '', o.supAddr || ''].filter(Boolean);
+  const ap = o.appr || poApprSnap();
+  return { kind: 'req', title: intl ? 'International Purchase Requisition' : 'Packing Material Purchase Order',
+    app: { date: poSd(o.createdAt), ref: o.id, to, subject: o.sub || '', body: o.appl || '', urgent: o.priority === 'urgent', dept: o.dept },
+    info: [], head, w, right: intl ? [5, 6] : [5, 6], rows, total: 0, ti: 99, bc: 3, cur: pcCur(o), L, closing: '', intro: '', signers: [],
+    sig2: { ordBy: intl ? (o.ordBy || []) : [], appr: ap } };
+}
+function poRcvModel(o, L){
+  const t = poType(o), intl = t === 'international', c = o.comp || {}, cur = pcCur(o);
+  const rows = []; let tot = 0, last = 0;
+  const segs = (o.segs || []).slice();
+  if(!segs.length) o.items.forEach((it, i) => { if((it.rec || 0) > 0) segs.push({ t: it.recAt || o.closedAt || o.createdAt, rows: [{ i, q: it.rec, p: it.ap || 0 }] }); });
+  segs.forEach(s => { last = Math.max(last, s.t || 0); s.rows.forEach(r => { const it = o.items[r.i] || {}, p = r.p > 0 ? r.p : (it.ap || 0), line = p * r.q; tot += line;
+    rows.push([String(rows.length + 1), it.cd || '', [it.n, it.d, it.b].filter(Boolean).join(' - '), it.u || '', String(it.q), poSd(s.t), String(r.q), p ? pcMoney(p) : '-', p ? pcMoney(line) : '-', (it.nn ? 'Not needed' : it.short ? 'Closed short' : '')]); }); });
+  o.items.forEach(it => { if(it.nn) rows.push([String(rows.length + 1), it.cd || '', [it.n, it.d].filter(Boolean).join(' - '), it.u || '', String(it.q), '-', '0', '-', '-', 'Not needed']); else if(!(it.rec > 0)) rows.push([String(rows.length + 1), it.cd || '', [it.n, it.d].filter(Boolean).join(' - '), it.u || '', String(it.q), '-', '0', '-', '-', 'Not received']); });
+  const info = [[['Order No.', o.id], ['Order date', poSd(o.createdAt)], ['Type', PO_LABEL[t]], ['Department', o.dept], ['Priority', o.priority === 'urgent' ? 'URGENT' : 'Regular']]];
+  const supN = c.sup || (o.proc && o.proc.supplier) || '';
+  if(intl){
+    info.push([['Supplier name', supN], ['Invoice number', c.inv], ['Invoice date', c.invd ? fmtDate(c.invd) : '']], [['Supplier address', c.adr], ['Contact details', c.con]], [['Reference no', c.ref], ['Way bill no', c.wb], ['Courier name', c.cour]],
+      [['Package details / size', c.pkg], ['Freight charges (' + cur + ')', c.fr], ['VAT / tax', c.vat]], [['Discount received', c.disc], ['Last receiving date', last ? poSd(last) : ''], ['Status', o.status === 'received' ? 'Complete' : 'Partly received']]);
+  } else info.push([['Supplier', supN], ['Invoice number', c.inv], ['Invoice date', c.invd ? fmtDate(c.invd) : ''], ['Status', o.status === 'received' ? 'Complete' : 'Partly received']]);
+  return { kind: 'rcv', title: 'Goods Receiving Report', info, eq: true, head: ['Serial', 'Code', 'Item', 'Unit', 'Ordered Qty', 'Receiving Date', 'Received Qty', 'Actual Unit Price', 'Total Price', 'Remarks'],
+    w: [7, 8, 17, 6, 10, 12, 10, 12, 10, 11], right: [4, 6, 7, 8], rows, total: tot, ti: 8, bc: 2, cur, L, intro: '', closing: '',
+    signers: [{ name: c.rcv || '', title: 'Received By' }, { name: c.chk || '', title: 'Checked By' }] };
+}
+async function pcOut(o, kind, T, L, name){
+  if(poType(o) === 'local' && kind !== 'rcv') return pcOut0(o, kind, T, L, name);
+  const m = pcPdfModel(o, kind, T, L);
+  if(PC_AR.test([L.company, L.line1, L.line2].join(' '))) m.hdrHtml = pcPdfBlocks(o, 'req', T, L)[0];
+  return pcTextPdf(m, name);
+}
+
+/* ---------- admin switch: approval on / off ---------- */
+async function pcRenderAdmin(){
+  await pcRenderAdmin0();
+  const root = $('admin-purchase'); if(!root || !pc.settings || !root.querySelector('.pcAdm')) return;
+  const ap = poApprSnap();
+  root.querySelector('.pcAdm').insertAdjacentHTML('afterbegin', `<div class="card" style="margin-bottom:16px"><div class="sub" style="margin-top:0;font-weight:600;color:var(--text);text-transform:none">Order approval</div>
+    <label class="pcChk" style="margin:8px 0"><input type="checkbox" data-po="admappr" ${pc.settings.approvalOn ? 'checked' : ''}> Orders need approval before they are placed</label>
+    <p class="hint" style="text-align:left;margin-left:0">OFF (default): the person who creates an order creates it and receives it — nothing in between. ON: after creating, the approver (<b>${pcEsc(ap.name || 'not set')}</b>, set in AI &amp; Letters) must approve or reject. Procurement can only view orders.</p></div>`);
+}
+
+/* ---------- events ---------- */
+document.addEventListener('click', async (e) => {
+  const F = pc.ui && pc.ui.form;
+  if(F && F.ddOpen && !(e.target.closest && e.target.closest('.poDd'))){ F.ddOpen = false; pcKeepScroll(pcRender); }
+  const el = e.target.closest && e.target.closest('[data-po]'); if(!el || el.tagName === 'INPUT' && el.type !== 'checkbox' && el.type !== 'button') return;
+  const a = el.dataset.po, i = el.dataset.i != null ? Number(el.dataset.i) : -1;
+  switch(a){
+    case 'type': if(!F || F.docId) break; F.type = el.dataset.v; if(F.type === 'packing' && !pp.sups){ pcpLoadSups().then(() => { if(pc.ui.form === F) pcKeepScroll(pcRender); }).catch(() => {}); } if(F.type !== 'local'){ try{ aiLoad().then(() => { if(pc.ui.form === F) pcKeepScroll(pcRender); }).catch(() => {}); }catch(x){} } pcKeepScroll(pcRender); break;
+    case 'ordtoggle': F.ordOpen = !F.ordOpen; pcKeepScroll(pcRender); break;
+    case 'ddtoggle': F.ddOpen = !F.ddOpen; pcKeepScroll(pcRender); break;
+    case 'dept': { const v = el.dataset.v, k = F.depts2.indexOf(v); if(k >= 0) F.depts2.splice(k, 1); else F.depts2.push(v); pcKeepScroll(pcRender); break; }
+    case 'ordrm': F.ordBy.splice(i, 1); pcKeepScroll(pcRender); break;
+    case 'ordadd': { const s = ((pc.settings || PC_DEF).tpl.reqSigners || []).filter(x => x.name)[Number($('poOrdSel').value)]; if(s && F.ordBy.length < 5 && !F.ordBy.some(x => x.name === s.name)) F.ordBy.push({ name: s.name, title: s.title || '' }); pcKeepScroll(pcRender); break; }
+    case 'ordtxt': { const n = ($('poOrdTxt').value || '').trim(); if(!n) return toast('Write the name'); if(F.ordBy.length < 5) F.ordBy.push({ name: n, title: ($('poOrdTitle').value || '').trim() }); pcKeepScroll(pcRender); break; }
+    case 'ai': poAiWrite(); break;
+    case 'rsave': poActRec(el.dataset.id, el.dataset.mode); break;
+    case 'rcvpdf': { const id = el.dataset.id; pcPdf(id, 'rcv'); break; }
+    case 'admappr': break;
+  }
+});
+document.addEventListener('input', (e) => {
+  const el = e.target; if(!el.dataset || !el.dataset.po) return; const F = pc.ui && pc.ui.form;
+  if(el.dataset.po === 'f' && F) F[el.dataset.k] = el.value;
+  else if(el.dataset.po === 'ix' && F && F.items[Number(el.dataset.i)]) F.items[Number(el.dataset.i)][el.dataset.f] = el.value;
+});
+document.addEventListener('change', async (e) => {
+  const el = e.target; if(!el.dataset || !el.dataset.po) return; const F = pc.ui && pc.ui.form;
+  if(el.dataset.po === 'supsel' && F){ const s = (pp.sups || []).find(x => x.id === el.value); F.supId = s ? s.id : ''; F.sup = s ? s.n : ''; }
+  else if(el.dataset.po === 'f' && F) F[el.dataset.k] = el.value;
+  else if(el.dataset.po === 'ix' && F && F.items[Number(el.dataset.i)]) F.items[Number(el.dataset.i)][el.dataset.f] = el.value;
+  else if(el.dataset.po === 'admappr'){
+    const on = el.checked; try{ await pcLoadSettings(false); pc.settings.approvalOn = on; await pcAdmSaveSettings(); toast(on ? 'Approval is ON' : 'Approval is OFF'); }catch(err){ console.error(err); el.checked = !on; pc.settings.approvalOn = !on; toast('Could not save'); }
+  }
+});
+
+/* ---------- PDF helpers used by pcTextPdf (application block and signature area) ---------- */
+function poDrawApp(pdf, m, M, CW, PW, y, txt, wrap){
+  const A = m.app; if(!A) return y;
+  const dark = () => pdf.setTextColor(15, 23, 42);
+  pdf.setFont('helvetica', 'normal'); pdf.setFontSize(10); dark();
+  txt('Date: ' + A.date, M, y + 4); txt('Reference: ' + A.ref, PW - M, y + 4, { align: 'right' }); y += 9;
+  pdf.setFontSize(8.5); pdf.setTextColor(100, 116, 139); txt([A.dept, A.by ? 'Requested by ' + A.by : ''].filter(Boolean).join('  |  '), M, y + 2);
+  if(A.urgent){ pdf.setFont('helvetica', 'bold'); pdf.setFontSize(10); pdf.setTextColor(185, 28, 28); txt('URGENT', PW - M, y + 2, { align: 'right' }); }
+  y += 9; dark();
+  pdf.setFont('helvetica', 'bold'); pdf.setFontSize(10.5); txt('To,', M, y + 4); y += 6;
+  A.to.forEach((l, k) => { pdf.setFont('helvetica', k === 0 ? 'bold' : 'normal'); pdf.setFontSize(10.5); wrap(l, CW).forEach(ln => { txt(ln, M, y + 4); y += 5; }); });
+  y += 6;
+  pdf.setFont('helvetica', 'bold'); pdf.setFontSize(10.5); wrap('Subject: ' + A.subject, CW).forEach(ln => { txt(ln, M, y + 4); y += 5.2; });
+  y += 6;
+  pdf.setFont('helvetica', 'normal'); pdf.setFontSize(10.5); txt('Dear Sir,', M, y + 4); y += 10;
+  wrap(A.body, CW).forEach(ln => { txt(ln, M, y + 4); y += 5.2; });
+  return y + 8;
+}
+function poDrawSign(pdf, m, M, CW, BOT, y, txt, wrap){
+  const S2 = m.sig2, ob = S2.ordBy || [], ap = S2.appr || {}, H = 28, per = 3, hasOb = ob.length > 0, wL = hasOb ? CW * 0.64 : 0, rowsOb = Math.max(1, Math.ceil(ob.length / per));
+  if(y + 6 + rowsOb * (H + 18) + 4 > BOT){ pdf.addPage(); y = M; }
+  y += 6;
+  const slot = (x, w, name, title, yy) => { pdf.setDrawColor(15, 23, 42); pdf.setLineWidth(0.3); pdf.line(x, yy + H, x + w, yy + H); const cx = x + w / 2;
+    pdf.setFont('helvetica', 'bold'); pdf.setFontSize(10); pdf.setTextColor(15, 23, 42); const nl = wrap(name || ' ', w).slice(0, 2); nl.forEach((ln, k) => txt(ln, cx, yy + H + 5 + k * 4.4, { align: 'center' })); const o2 = (nl.length - 1) * 4.4;
+    pdf.setFont('helvetica', 'normal'); pdf.setFontSize(8.5); pdf.setTextColor(71, 85, 105); txt(wrap(title || '', w)[0], cx, yy + H + 9 + o2, { align: 'center' });
+    pdf.setFontSize(7); pdf.setTextColor(148, 163, 184); txt('Signature / date', cx, yy + H + 12.5 + o2, { align: 'center' }); };
+  pdf.setFont('helvetica', 'bold'); pdf.setFontSize(8.5); pdf.setTextColor(100, 116, 139);
+  if(hasOb){
+    txt('ORDERED BY', M, y); let yy = y + 3; const gap = 6, w = (wL - gap * (per - 1)) / per;
+    for(let r = 0; r < rowsOb; r++){ ob.slice(r * per, r * per + per).forEach((x, k) => slot(M + k * (w + gap), w, x.name, x.title, yy)); yy += H + 18; }
+  }
+  const aw = hasOb ? CW - wL - 14 : Math.min(70, CW * 0.4), ax = M + CW - aw;
+  pdf.setFont('helvetica', 'bold'); pdf.setFontSize(8.5); pdf.setTextColor(100, 116, 139); txt('APPROVER', ax, y);
+  slot(ax, aw, ap.name, ap.title, y + 3);
+  return y + 3 + rowsOb * (H + 18);
+}
 
 (function(){
   const b=$('bkOpenBtn'); if(b) b.addEventListener('click', () => bkOpen());
