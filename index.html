@@ -15808,17 +15808,81 @@ function aiDefaultTypes(){
     { id: 'designation', name: 'Request - change of designation / salary', end: 'request', to: 'ceo', emp: true, subject: 'Designation & Salary Adjustment', salutation: 'Respected Sir,', groups: REC, noSincerely: true,
       instruction: 'Written by the HR / Personnel department to the CEO. Explain the change of work or designation and ask for approval to update the job designation and adjust the salary scale, with the effective date from the facts.',
       example: "Mohammad Ajmal, ID# 1347 was reassigned from weaving and has been working full-time as a Tying Man since last month. We request management approval to officially update his job designation and adjust his salary scale to match the Tying Man grade, effective retroactively from September 2026." },
+    { id: 'free', name: 'Free design (notice, announcement, poster - the AI designs the page)', end: 'free', to: 'none', emp: false, subject: '', salutation: '',
+      instruction: 'A free-design page such as a notice, announcement, congratulation, reminder or poster for the employees. YOU design the whole page: choose a suitable icon for the topic on your own, a title, a subject line, the layout, a highlighted box, bullet points, a closing and the signature lines. Make it look professional, clear, easy to read and well balanced. Short sentences, centred layout for announcements.', example: '' },
     { id: 'other', name: 'Other letter (AI writes it)', end: 'ceo', to: 'text', toText: '', emp: false, subject: '', salutation: 'Dear Sir,', signoff: 'Sincerely,',
       instruction: 'A general formal letter. Follow the facts given. Keep it short and polite.', example: '' }
   ];
 }
 function aiDefaults(){ return { master: AI_MASTER, approver: { id: '', name: 'MR. ABDULLAH AL KHARASHI', title: 'C.E.O' }, signers: [], types: aiDefaultTypes() }; }
+
+/* ---------- icon library: the AI may pick any of these by name for notices and announcements ---------- */
+const AI_ICON_P = {
+  award: '<circle cx="12" cy="9" r="6"/><path d="M8.5 14.5 7 22l5-3 5 3-1.5-7.5"/><path d="M9.5 9l2 2 3.5-3.5"/>',
+  check: '<circle cx="12" cy="12" r="10"/><path d="M8 12.5l3 3 5-6"/>',
+  bell: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
+  megaphone: '<path d="M3 11v2a1 1 0 0 0 1 1h2l8 4V6L6 10H4a1 1 0 0 0-1 1z"/><path d="M17.5 9a4 4 0 0 1 0 6"/><path d="M7 14l1 6h3l-1-5"/>',
+  calendar: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+  clock: '<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>',
+  users: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"/>',
+  user: '<circle cx="12" cy="7" r="4"/><path d="M4 21v-2a6 6 0 0 1 16 0v2"/>',
+  gift: '<rect x="3" y="8" width="18" height="4"/><path d="M12 8v13M19 12v9H5v-9"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5C11 3 12 8 12 8s1-5 4.5-5a2.5 2.5 0 0 1 0 5"/>',
+  sparkles: '<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 15l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7z"/>',
+  diya: '<path d="M12 2c2.2 2.6 3.2 4.2 3.2 6a3.2 3.2 0 0 1-6.4 0c0-1.8 1-3.4 3.2-6z"/><path d="M3 13h18a9 9 0 0 1-18 0z"/><path d="M8 22h8"/>',
+  truck: '<path d="M1 6h13v11H1z"/><path d="M14 10h4l4 4v3h-8z"/><circle cx="6" cy="19" r="2"/><circle cx="18" cy="19" r="2"/>',
+  forklift: '<rect x="3" y="7" width="9" height="8" rx="1"/><path d="M15 3v15M15 17h6"/><circle cx="6" cy="18" r="2"/><circle cx="12" cy="18" r="2"/>',
+  wrench: '<path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.4-.6-.6-2.4z"/>',
+  cog: '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/>',
+  shield: '<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/>',
+  warning: '<path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18h.01"/>',
+  info: '<circle cx="12" cy="12" r="10"/><path d="M12 11v6M12 7.5h.01"/>',
+  mail: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>',
+  phone: '<path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/>',
+  file: '<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h6"/>',
+  money: '<rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/><path d="M6 12h.01M18 12h.01"/>',
+  trend: '<path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/>',
+  home: '<path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/>',
+  factory: '<path d="M2 21V10l6 4v-4l6 4V4h5v17z"/><path d="M2 21h20"/>',
+  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  moon: '<path d="M21 13A9 9 0 1 1 11 3a7 7 0 0 0 10 10z"/>',
+  mosque: '<path d="M4 21v-9a8 8 0 0 1 16 0v9"/><path d="M2 21h20M12 4V2M10 21v-4a2 2 0 0 1 4 0v4"/>',
+  star: '<path d="M12 2l3 6.5 7 .9-5.1 4.8 1.3 7-6.2-3.4-6.2 3.4 1.3-7L2 9.4l7-.9z"/>',
+  heart: '<path d="M12 21s-8-5-8-11a4.5 4.5 0 0 1 8-2.5A4.5 4.5 0 0 1 20 10c0 6-8 11-8 11z"/>',
+  thumbsup: '<path d="M7 11v10H3V11z"/><path d="M7 11l4-8a2 2 0 0 1 2 2v4h6a2 2 0 0 1 2 2.3l-1.2 7a2 2 0 0 1-2 1.7H7"/>',
+  box: '<path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/>',
+  plane: '<path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4z"/>',
+  pin: '<path d="M12 21s7-6.5 7-12a7 7 0 0 0-14 0c0 5.5 7 12 7 12z"/><circle cx="12" cy="9" r="2.5"/>',
+  food: '<path d="M5 3v7a2 2 0 0 0 2 2v9M9 3v7a2 2 0 0 1-2 2M17 21V3c-3 1-4 4-4 8h4"/>',
+  coffee: '<path d="M4 8h13v6a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5z"/><path d="M17 10h2a2 2 0 0 1 0 4h-2M7 2v3M11 2v3"/>',
+  bulb: '<path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-4 10.5c.7.7 1 1.5 1 2.5h6c0-1 .3-1.8 1-2.5A6 6 0 0 0 12 3z"/>',
+  lock: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
+  flag: '<path d="M5 21V4"/><path d="M5 4h12l-2 4 2 4H5"/>',
+  trophy: '<path d="M8 21h8M12 17v4"/><path d="M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 6H4v2a3 3 0 0 0 3 3M17 6h3v2a3 3 0 0 1-3 3"/>',
+  book: '<path d="M4 4h6a3 3 0 0 1 2 1 3 3 0 0 1 2-1h6v15h-6a3 3 0 0 0-2 1 3 3 0 0 0-2-1H4z"/><path d="M12 5v15"/>',
+  stop: '<circle cx="12" cy="12" r="10"/><path d="M5 5l14 14"/>',
+  helmet: '<path d="M3 16h18v3H3z"/><path d="M5 16a7 7 0 0 1 14 0M12 5v4"/>',
+  fire: '<path d="M12 22c4 0 7-3 7-7 0-3-2-5-3-7-1 2-2 3-3 3 0-3-1-6-4-8 0 4-4 6-4 12 0 4 3 7 7 7z"/>',
+  water: '<path d="M12 3s6 7 6 11a6 6 0 0 1-12 0c0-4 6-11 6-11z"/>',
+  medical: '<path d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6z"/>',
+  shirt: '<path d="M8 3l-5 4 3 3 2-1v12h8V9l2 1 3-3-5-4a4 4 0 0 1-8 0z"/>',
+  shoe: '<path d="M2 16v-3l5-1 3 3h6a6 6 0 0 1 6 3v1H2z"/><path d="M2 20h20"/>'
+};
+const AI_ICON_ALIAS = { salary: 'money', bonus: 'money', pay: 'money', payroll: 'money', increment: 'trend', raise: 'trend', growth: 'trend', holiday: 'sun', vacation: 'plane', leave: 'plane', travel: 'plane', festival: 'diya', lamp: 'diya', dussehra: 'diya', diwali: 'diya', congratulations: 'award', congrats: 'award', celebrate: 'sparkles', party: 'sparkles', celebration: 'sparkles', announcement: 'megaphone', notice: 'megaphone', news: 'megaphone', equipment: 'forklift', machine: 'cog', machinery: 'cog', safety: 'shield', warning: 'warning', attention: 'warning', alert: 'warning', meeting: 'users', team: 'users', staff: 'users', time: 'clock', date: 'calendar', schedule: 'calendar', eid: 'moon', ramadan: 'moon', prayer: 'mosque', lunch: 'food', meal: 'food', dinner: 'food', tea: 'coffee', health: 'medical', doctor: 'medical', hospital: 'medical', delivery: 'truck', shipment: 'truck', cargo: 'box', parcel: 'box', package: 'box', office: 'home', building: 'factory', plant: 'factory', document: 'file', letter: 'mail', email: 'mail', call: 'phone', idea: 'bulb', rule: 'flag', policy: 'book', training: 'book', winner: 'trophy', prize: 'trophy', dress: 'shirt', uniform: 'shirt', shoes: 'shoe', ppe: 'helmet', prohibited: 'stop', location: 'pin', thanks: 'heart', like: 'thumbsup', good: 'thumbsup', tools: 'wrench', repair: 'wrench', maintenance: 'wrench', secure: 'lock', security: 'lock', approval: 'check', done: 'check', gift: 'gift', bell: 'bell', sun: 'sun' };
+function aiIconSvg(name, size, color){
+  const raw = String(name || '').trim(); if(!raw) return '';
+  const k = raw.toLowerCase().replace(/[^a-z]/g, ''); const key = AI_ICON_P[k] ? k : AI_ICON_ALIAS[k];
+  const px = size || 64;
+  if(key) return `<svg width="${px}" height="${px}" viewBox="0 0 24 24" fill="none" stroke="${color || '#0f172a'}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${AI_ICON_P[key]}</svg>`;
+  if(/[^\x00-\x7F]/.test(raw) && raw.length <= 8) return `<span style="font-size:${Math.round(px * .8)}px;line-height:1;">${aiEsc(raw)}</span>`;
+  return `<svg width="${px}" height="${px}" viewBox="0 0 24 24" fill="none" stroke="${color || '#0f172a'}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${AI_ICON_P.megaphone}</svg>`;
+}
 const AI = { cfg: null, conn: null, loaded: false, mode: 'std' };
 async function aiLoad(force){
   if(AI.cfg && !force) return AI.cfg;
   const d = await window.__db.getConfigObject('aiLetters', {});
   const D = aiDefaults();
   AI.cfg = { master: d.master || D.master, approver: Object.assign({}, D.approver, d.approver || {}), signers: Array.isArray(d.signers) ? d.signers : [], layout: (d.layout && typeof d.layout === 'object') ? d.layout : {}, types: Array.isArray(d.types) && d.types.length ? d.types : D.types };
+  if(!AI.cfg.types.some(t => t.id === 'free')){ const F = D.types.find(t => t.id === 'free'); if(F) AI.cfg.types.push(F); }
   AI.loaded = true; return AI.cfg;
 }
 async function aiSave(){
@@ -15867,7 +15931,7 @@ function aiParseAnswer(txt){
    LETTERS TAB > "Write with AI": one fixed letterhead (text lines only), the letter body written by AI (or a standard text),
    signatures from the ready-made list, PDF, and optionally saved in the person's Violations.
    ============================================================ */
-const aiU = { typeId: '', emp: '', date: '', from: '', to: '', amount: '', toText: '', pron: 'his', facts: '', subject: '', body: '', mode: 'std', table: [], picks: {}, empSign: false, busy: false, tm: '', tt: '', appr: true, g: {}, apos: 'left', edit: '', just: null, savedId: '', showSp: false, layoutInit: false, showSaved: false, svq: '' };
+const aiU = { typeId: '', emp: '', date: '', from: '', to: '', amount: '', toText: '', pron: 'his', facts: '', subject: '', body: '', mode: 'std', table: [], picks: {}, empSign: false, busy: false, tm: '', tt: '', appr: true, g: {}, apos: 'left', edit: '', just: null, savedId: '', showSp: false, layoutInit: false, showSaved: false, svq: '', noLh: false };
 const aiEsc = (t) => String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const AI_MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 function aiLong(ymd){ const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(ymd || ''); return m ? (+m[3]) + ' ' + AI_MONTHS[+m[2] - 1] + ' ' + m[1] : ''; }
@@ -15906,14 +15970,28 @@ function aiModel(){
     end: T.end, empName, empId: u ? u.loginId : '', empDept: u ? u.department || '' : '', empPos: u && u.profile ? u.profile.position || '' : '', empSign: aiU.empSign, appr: aiU.appr, groups, ceo, signoff: T.signoff || 'Sincerely,', closing: T.closing || '', sign: T.sign || '',
     table: (T.table && rows.length) ? { heads: ['Sl.'].concat((T.tableCols || ['name', 'id']).map(k => aiCols[k] || k)), rows } : null };
 }
-const AI_FREE = '\n\nHR\'S WISHES COME FIRST: the style rules above are only defaults. If the HR notes or the instruction ask for another format or style (bullet points, short lines, headings, numbered steps, "do not write a paragraph", "easy to understand", longer, shorter, more formal, a different structure), do exactly that, even when it differs from the style rules or the example. Use your own judgment to make the letter clear and well organised. You may use these marks in the body: a heading line that starts with "## ", bullet lines that start with "- " (sub-points: two spaces then "- "), numbered lines like "1. ", and **bold** for labels. Never invent facts, but how to present them is your choice.';
+function aiFreeNote(T){ return T && T.end === 'free' ? '\n\nFREE DESIGN PAGE: the application prints only the letterhead. No date, no To, no greeting and no "Sincerely" are printed. You write the ENTIRE page content with the design marks, including the title, the icon, the subject line and the sign-off or signature lines. Put everything in "body" and leave "subject" empty. Make it professional, balanced and easy to read at a glance; do not make it long.' : ''; }
+const AI_FREE = '\n\nHR\'S WISHES COME FIRST: the style rules above are only defaults. If the HR notes or the instruction ask for another format or style (bullet points, short lines, headings, numbered steps, "do not write a paragraph", "easy to understand", longer, shorter, more formal, a different structure), do exactly that, even when it differs from the style rules or the example. Use your own judgment to make the letter clear and well organised. You may use these marks in the body: a heading line that starts with "## ", bullet lines that start with "- " (sub-points: two spaces then "- "), numbered lines like "1. ", and **bold** for labels. Never invent facts, but how to present them is your choice.\n\nPAGE DESIGN MARKS (each on its own line; use them whenever they make the page clearer or more professional - this is how you design announcements, notices and posters): [icon: name] a big centred icon that fits the topic - choose it on your own even if HR did not ask (names: ' + Object.keys(AI_ICON_P).join(', ') + '; or one emoji); [title: TEXT] big centred underlined title such as ATTENTION; [subject: TEXT] centred bold subject line with a thin line under it; [center] text, a centred paragraph; [big: TEXT] bigger bold centred text; [box: TEXT] centred text in a highlighted box; [right] text; [line] thin divider; [space] extra gap; [sign: THE MANAGEMENT] centred bold sign-off; [lines: Date | Approved By] signature lines. Bullets, numbered steps, ## headings and **bold** also work.';
 function aiBodyHtml(text, just){
   const out = []; let buf = [], blank = 0;
   const em = (t) => aiEsc(t).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
   const flush = () => { if(buf.length){ out.push(`<div style="margin:0 0 10px;${just ? 'text-align:justify;' : ''}">${buf.map(em).join('<br>')}</div>`); buf = []; } };
   String(text || '').replace(/\r/g, '').split('\n').forEach(l => {
     let m;
-    if((m = /^(\s*)[-•]\s+(.*)$/.exec(l))){ flush(); const sub = m[1].length >= 2; out.push(`<div style="display:flex;gap:8px;margin:3px 0 3px ${sub ? 36 : 16}px;"><span>${sub ? '\u25E6' : '\u2022'}</span><span style="flex:1;">${em(m[2])}</span></div>`); blank = 0; }
+    if((m = /^\s*\[(icon|title|subject|box|sign|lines|center|right|line|space|big)\s*(?::\s*(.*?))?\]\s*(.*)$/i.exec(l))){
+      flush(); const k = m[1].toLowerCase(), v = (m[2] || '').trim(), rest = (m[3] || '').trim(); blank = 0;
+      if(k === 'icon') out.push(`<div style="text-align:center;margin:22px 0 18px;">${aiIconSvg(v, 72)}</div>`);
+      else if(k === 'title') out.push(`<div style="text-align:center;margin:30px 0 10px;"><span style="font-family:'Oswald',sans-serif;font-size:32px;font-weight:700;letter-spacing:.08em;border-bottom:3px solid #0f172a;padding-bottom:4px;">${em(v)}</span></div>`);
+      else if(k === 'subject') out.push(`<div style="text-align:center;font-weight:700;font-size:16px;margin:22px 0 16px;padding-bottom:10px;border-bottom:1px solid #e2e8f0;">${em(v)}</div>`);
+      else if(k === 'box') out.push(`<div style="text-align:center;font-weight:700;font-size:15px;margin:16px 0;padding:14px 16px;background:#f1f2f6;border:1px solid #d9dce6;border-radius:6px;">${em(v || rest)}</div>`);
+      else if(k === 'sign') out.push(`<div style="text-align:center;font-weight:700;font-size:14px;margin:30px 0 10px;">${em(v || rest)}</div>`);
+      else if(k === 'lines'){ const parts = (v || rest).split('|').map(x => x.trim()).filter(Boolean); out.push(`<div style="display:flex;justify-content:center;gap:40px;margin:56px 0 10px;">${parts.map(x => `<div style="width:180px;text-align:center;border-top:1px solid #0f172a;padding-top:6px;font-size:12.5px;font-weight:700;">${em(x)}</div>`).join('')}</div>`); }
+      else if(k === 'center' || k === 'big') out.push(`<div style="text-align:center;margin:0 0 12px;${k === 'big' ? 'font-size:1.25em;font-weight:700;' : ''}">${em(v || rest)}</div>`);
+      else if(k === 'right') out.push(`<div style="text-align:right;margin:0 0 10px;">${em(v || rest)}</div>`);
+      else if(k === 'line') out.push('<div style="border-top:1px solid #e2e8f0;margin:14px 0;"></div>');
+      else if(k === 'space') out.push('<div style="height:22px;"></div>');
+    }
+    else if((m = /^(\s*)[-•]\s+(.*)$/.exec(l))){ flush(); const sub = m[1].length >= 2; out.push(`<div style="display:flex;gap:8px;margin:3px 0 3px ${sub ? 36 : 16}px;"><span>${sub ? '\u25E6' : '\u2022'}</span><span style="flex:1;">${em(m[2])}</span></div>`); blank = 0; }
     else if((m = /^\s*(\d{1,2})[.)]\s+(.*)$/.exec(l))){ flush(); out.push(`<div style="display:flex;gap:8px;margin:3px 0 3px 16px;"><span style="min-width:16px;">${m[1]}.</span><span style="flex:1;">${em(m[2])}</span></div>`); blank = 0; }
     else if((m = /^\s*#{1,3}\s+(.*)$/.exec(l))){ flush(); out.push(`<div style="font-weight:700;margin:12px 0 4px;">${em(m[1])}</div>`); blank = 0; }
     else if(l.trim()){ buf.push(l.trim()); blank = 0; }
@@ -15936,14 +16014,19 @@ function aiApprBlock(m){
   return `<div style="font-size:12.5px;line-height:1.45;"><div style="font-weight:700;margin-bottom:${aiG('gApprSign')}px;">Approved By:</div><div style="font-weight:700;">${aiEsc(String(m.ceo.name).toUpperCase())}</div><div style="color:#475569;">${aiEsc(m.ceo.title || '')}</div></div>`;
 }
 function aiApprHtml(m){
-  if(!m.appr || m.end === 'ceo' || !m.ceo || !m.ceo.name) return '';
+  if(!m.appr || m.end === 'ceo' || m.end === 'free' || !m.ceo || !m.ceo.name) return '';
   const pos = aiU.apos || 'left', mt = aiG('gAppr');
   return `<div style="margin-top:${mt}px;${pos === 'right' ? 'display:flex;justify-content:flex-end;' : pos === 'center' ? 'display:flex;justify-content:center;' : ''}">${aiApprBlock(m)}</div>`;
 }
 function aiLetterHtml(m){
   const S = state.hrSettings || hrDefaults(), lh = lhFull(S.letterhead), pg = lhPage(S.letterhead);
   const meta = (k, v, first) => v ? `<div style="display:flex;gap:10px;margin-top:${first ? 0 : aiG('gSub')}px;font-size:13px;"><div style="width:78px;font-weight:700;flex:none;">${k}</div><div style="flex:1;font-weight:700;">${v}</div></div>` : '';
-  const head = lhHeaderHtml(S.letterhead, lh.company || S.company);
+  const head = (m.end === 'free' && aiU.noLh) ? '' : lhHeaderHtml(S.letterhead, lh.company || S.company);
+  if(m.end === 'free'){
+    const fb = `<div style="margin-top:6px;font-size:${lh.bodySize}px;line-height:${lh.lineH - 0.1};">${aiBodyHtml(m.body, aiU.just == null ? false : aiU.just)}</div>`;
+    const ff = lh.footer && !aiU.noLh ? `<div style="margin-top:auto;padding-top:10px;border-top:1px solid #e2e8f0;font-size:10.5px;color:#64748b;text-align:center;">${aiEsc(lh.footer)}</div>` : '';
+    return `<div style="width:760px;min-height:${pg.pxH}px;box-sizing:border-box;padding:${pg.pT}px ${pg.pR}px ${pg.pB}px ${pg.pL}px;background:#fff;color:#0f172a;font-family:'Inter',sans-serif;display:flex;flex-direction:column;">${head}<div style="flex:1;">${fb}</div>${ff}</div>`;
+  }
   let b = `<div style="margin-top:${aiG('gDate')}px;font-size:12.5px;color:#475569;">Date: ${aiEsc(fmtDate(aiU.date || aiToday()))}</div>`;
   if(m.title) b += `<div style="text-align:center;font-family:'Oswald',sans-serif;font-size:19px;font-weight:700;letter-spacing:.05em;margin:${m.end === 'ceo' ? 24 : 16}px 0 4px;">${aiEsc(m.title)}</div>`;
   let first = true; const rows = [];
@@ -15976,6 +16059,7 @@ function aiLetterHtml(m){
   return `<div style="width:760px;min-height:${pg.pxH}px;box-sizing:border-box;padding:${pg.pT}px ${pg.pR}px ${pg.pB}px ${pg.pL}px;background:#fff;color:#0f172a;font-family:'Inter',sans-serif;display:flex;flex-direction:column;">${head}<div style="flex:1;">${b}</div>${foot}</div>`;
 }
 function aiPlain(m){
+  if(m.end === 'free') return m.body;
   const L = []; if(m.title) L.push(m.title); L.push('DATE: ' + m.date); if(m.to.length) L.push('TO: ' + m.to.join(', ')); if(m.from) L.push('FROM: ' + m.from); if(m.subject) L.push('SUBJECT: ' + m.subject); L.push('');
   if(m.salutation) L.push(m.salutation, ''); L.push(m.body); return L.join('\n');
 }
@@ -15984,7 +16068,7 @@ function aiPlain(m){
 function aiSetType(id){
   const T = ((AI.cfg && AI.cfg.types) || []).find(t => t.id === id); if(!T) return;
   aiU.typeId = id; aiU.subject = ''; aiU.body = ''; aiU.mode = T.std ? 'std' : 'ai'; aiU.table = []; aiU.facts = ''; aiU.amount = '';
-  aiU.empSign = !!(T.ack || T.end === 'request'); aiU.appr = T.end !== 'ceo' && T.end !== 'notice'; aiU.toText = T.toText || ''; aiU.from = ''; aiU.to = '';
+  aiU.empSign = !!(T.ack || T.end === 'request'); aiU.appr = T.end !== 'ceo' && T.end !== 'notice' && T.end !== 'free'; aiU.noLh = false; aiU.toText = T.toText || ''; aiU.from = ''; aiU.to = '';
   aiU.picks = Object.assign({}, aiPicksLoad(), {});
   aiU.g = Object.assign({}, ((AI.cfg && AI.cfg.layout) || {}).g || {}); aiU.apos = ((AI.cfg && AI.cfg.layout) || {}).apos || 'left'; aiU.just = null;
 }
@@ -16005,7 +16089,7 @@ function aiDraw(){
   const C = AI.cfg, T = aiType(), people = hrAllPeople().sort((a, c) => (a.name || '').localeCompare(c.name || '')), u = hrFind(aiU.emp);
   const fld = (l, inner, wide) => `<div class="field${wide ? ' wide' : ''}"><label>${l}</label>${inner}</div>`;
   const hasStd = !!T.std;
-  let f = fld('Letter', `<select data-ai="type">${C.types.map(t => `<option value="${aiEsc(t.id)}" ${t.id === aiU.typeId ? 'selected' : ''}>${aiEsc(t.name)}</option>`).join('')}</select>`) + fld('Letter date', `<input type="date" data-ai="f" data-f="date" value="${aiEsc(aiU.date)}">`);
+  let f = fld('Letter', `<select data-ai="type">${C.types.map(t => `<option value="${aiEsc(t.id)}" ${t.id === aiU.typeId ? 'selected' : ''}>${aiEsc(t.name)}</option>`).join('')}</select>`) + (T.end === 'free' ? '' : fld('Letter date', `<input type="date" data-ai="f" data-f="date" value="${aiEsc(aiU.date)}">`));
   if(T.emp) f += fld('Employee (type a name or ID)', `<input type="text" list="aiEmpList" data-ai="emp" value="${u ? aiEsc(hrEmpLabel(u)) : ''}" placeholder="Start typing..."><datalist id="aiEmpList">${people.map(x => `<option value="${aiEsc(hrEmpLabel(x))}"></option>`).join('')}</datalist>`, true);
   if(T.to === 'text') f += fld('To', `<input type="text" data-ai="f" data-f="toText" value="${aiEsc(aiU.toText)}" placeholder="e.g. Finance & Payroll Department">`, true);
   if(T.dates) f += fld(T.end === 'ceo' ? 'Joined on' : 'From', `<input type="date" data-ai="f" data-f="from" value="${aiEsc(aiU.from)}">`) + fld(T.end === 'ceo' ? 'Last day' : 'To', `<input type="date" data-ai="f" data-f="to" value="${aiEsc(aiU.to)}">`);
@@ -16017,7 +16101,7 @@ function aiDraw(){
       <div class="aiAddRow"><input type="text" list="aiEmpList2" data-ai="tadd" placeholder="Add a person: type a name or ID"><datalist id="aiEmpList2">${people.map(x => `<option value="${aiEsc(hrEmpLabel(x))}"></option>`).join('')}</datalist>
       <span class="hrNote">or everyone who joined in</span><input type="month" data-ai="tm" value="${aiEsc(aiU.tm)}"><select data-ai="tt"><option value="">any type</option><option value="Sponsor" ${aiU.tt === 'Sponsor' ? 'selected' : ''}>Sponsor</option><option value="Non-Sponsor" ${aiU.tt === 'Non-Sponsor' ? 'selected' : ''}>Non-Sponsor</option></select><button class="pillBtn" data-ai="tmonth">${aiIc('plus', 13)} Add them</button></div></div>`;
   }
-  f += fld('Subject (leave empty to let the standard or the AI choose)', `<input type="text" data-ai="f" data-f="subject" value="${aiEsc(aiU.subject)}" placeholder="${aiEsc(hrFill(T.subject || '', aiVars()))}">`, true);
+  if(T.end !== 'free') f += fld('Subject (leave empty to let the standard or the AI choose)', `<input type="text" data-ai="f" data-f="subject" value="${aiEsc(aiU.subject)}" placeholder="${aiEsc(hrFill(T.subject || '', aiVars()))}">`, true);
   f += fld('What should the letter say? (the reason or details - short notes are enough)', `<textarea rows="3" data-ai="f" data-f="facts" placeholder="e.g. Did not follow the instruction to check the stock list on 12 Sept; second time this month.">${aiEsc(aiU.facts)}</textarea>`, true);
   const groups = (T.groups || []).map(g => { const sg = C.signers; return `<div class="field wide"><label>${aiEsc(g.label)}</label><div class="aiChips">${sg.length ? sg.map(s => `<button class="aiPick ${(aiU.picks[g.label] || []).includes(s.id) ? 'on' : ''}" data-ai="pick" data-g="${aiEsc(g.label)}" data-id="${aiEsc(s.id)}">${aiEsc(s.name)}<small>${aiEsc(s.title || '')}</small></button>`).join('') : '<span class="hrNote">No names yet - Admin &rarr; AI &amp; Letters &rarr; Signatures</span>'}</div></div>`; }).join('');
   b.innerHTML = aiSwitchHtml() + aiSavedHtml() + `<div class="hrForm">${f}</div>
@@ -16026,7 +16110,8 @@ function aiDraw(){
     </div><div class="hrForm" style="margin-top:-2px;"><div class="field wide"><label>Ask the AI to change the text (shorter, more formal, add a sentence, change the subject...)</label><div class="aiAddRow"><input type="text" data-ai="edit" value="${aiEsc(aiU.edit)}" placeholder="e.g. make it more formal and add that the medical paper is attached"><button class="pillBtn" data-ai="editgo" ${aiU.busy ? 'disabled' : ''}>${aiIc('spark', 13)} Change</button></div></div>
     ${T.emp ? `<label class="aiChk"><input type="checkbox" data-ai="esign" ${aiU.empSign ? 'checked' : ''}> Add the employee's signature and name at the bottom (if unticked, his name, ID and position are written inside the letter text instead)</label>` : ''}
     <label class="aiChk"><input type="checkbox" data-ai="just" ${(aiU.just == null ? lhPage((state.hrSettings || {}).letterhead).justify : aiU.just) ? 'checked' : ''}> Justify the paragraph text (straight edge on both sides)</label>
-    ${T.end !== 'ceo' ? `<label class="aiChk"><input type="checkbox" data-ai="appr" ${aiU.appr ? 'checked' : ''}> Add the approver's signature: ${aiEsc(C.approver.name)} (${aiEsc(C.approver.title)})</label>` : ''}
+    ${T.end === 'free' ? `<label class="aiChk"><input type="checkbox" data-ai="nolh" ${aiU.noLh ? '' : 'checked'}> Print the letterhead on this page</label>` : ''}
+    ${T.end !== 'ceo' && T.end !== 'free' ? `<label class="aiChk"><input type="checkbox" data-ai="appr" ${aiU.appr ? 'checked' : ''}> Add the approver's signature: ${aiEsc(C.approver.name)} (${aiEsc(C.approver.title)})</label>` : ''}
     </div>
     <div class="aiGen"><button class="btn btn-primary btn-sm" data-ai="pdf">${aiIc('down', 14)} Download PDF</button><button class="btn btn-ghost btn-sm" data-ai="copy">${aiIc('copy', 14)} Copy text</button><button class="btn btn-ghost btn-sm" data-ai="savel">${aiIc('save', 14)} ${aiU.savedId ? 'Update saved letter' : 'Save for later'}</button>${aiU.savedId ? `<button class="pillBtn" data-ai="savenew">Save as new copy</button>` : ''}${T.save && u ? `<button class="btn btn-ghost btn-sm" data-ai="viol">${aiIc('save', 14)} Save in ${aiEsc((u.name || '').split(/\s+/)[0])}'s violations</button>` : ''}
       <button class="mini-icon-btn aiSpBtn" data-ai="sptoggle" title="Spacing and signature position" aria-label="Spacing and signature position" style="margin-left:auto;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg><i class="aiDot" id="aiSpDot" style="display:${aiLayoutDirty() ? '' : 'none'}"></i></button></div>
@@ -16053,7 +16138,7 @@ async function aiGenerate(){
   try{
     const V = aiVars(), P = u && u.profile || {};
     const intro = (T.end === 'request' && !T.noSincerely && !aiU.empSign) ? '\n\nIMPORTANT FOR THIS LETTER: the employee name is NOT printed at the bottom, so the first sentence of the body must introduce him: his name, ID number, position and department (from the facts), then the request.' : '';
-    const sys = AI.cfg.master + intro + '\n\nIf the HR notes contain wishes about wording or the subject (for example "the subject should be formal"), follow them. Spacing and layout are handled by the application: never write about them. If addressed_to is given, the letter is written to that person or company: the greeting line (Dear ...) is printed by the application, so do not write a greeting, and write the body so it speaks to that recipient (use "you" / "your" for them where natural, never "Dear Sir").\n\nLETTER TYPE: ' + T.name + '\nINSTRUCTION FOR THIS TYPE: ' + (T.instruction || '') + (T.example ? '\n\nEXAMPLE of this type (copy its structure, tone and length; change only the details):\n"""\n' + T.example + '\n"""' : '') + AI_FREE;
+    const sys = AI.cfg.master + intro + '\n\nIf the HR notes contain wishes about wording or the subject (for example "the subject should be formal"), follow them. Spacing and layout are handled by the application: never write about them. If addressed_to is given, the letter is written to that person or company: the greeting line (Dear ...) is printed by the application, so do not write a greeting, and write the body so it speaks to that recipient (use "you" / "your" for them where natural, never "Dear Sir").\n\nLETTER TYPE: ' + T.name + '\nINSTRUCTION FOR THIS TYPE: ' + (T.instruction || '') + (T.example ? '\n\nEXAMPLE of this type (copy its structure, tone and length; change only the details):\n"""\n' + T.example + '\n"""' : '') + AI_FREE + aiFreeNote(T);
     const facts = { letter_type: T.name, employee_name: V.name || undefined, employee_id: V.id || undefined, position: V.position || undefined, department: V.department || undefined, joining_date: T.dates && T.end === 'ceo' ? (aiU.from ? aiLong(aiU.from) : V.joiningDate) || undefined : undefined,
       from_date: T.end === 'ceo' ? undefined : V.from || undefined, to_date: V.to || undefined, days: T.end === 'ceo' ? undefined : V.days || undefined, last_day: T.end === 'ceo' ? V.to || undefined : undefined, deduction_amount_SAR: V.amount || undefined, pronoun: T.pronoun ? aiU.pron : undefined, addressed_to: T.to === 'text' ? ((aiU.toText || T.toText || '').trim() || undefined) : undefined, details_from_hr: aiU.facts.trim() || undefined, other_employees_count: T.table ? aiU.table.length : undefined, letter_date: V.date };
     const raw = await aiAsk(sys, 'Facts for this letter (use only these):\n' + JSON.stringify(facts, null, 1) + '\n\nReturn the JSON now.');
@@ -16080,7 +16165,7 @@ async function aiSaveLetter(asNew){
   if(T.emp && !aiU.emp){ toast('Choose the employee first'); return; }
   const u = hrFind(aiU.emp), id = (!asNew && aiU.savedId) ? aiU.savedId : 'L' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
   const rec = { id, name: [T.name, u ? u.name : (aiU.toText || ''), aiLong(aiU.date)].filter(Boolean).join(' - '), at: Date.now(), by: state.user.loginId, byName: state.user.name || '',
-    typeId: T.id, emp: aiU.emp, date: aiU.date, from: aiU.from, to: aiU.to, amount: aiU.amount, toText: aiU.toText, pron: aiU.pron, facts: aiU.facts, subject: aiU.subject, body: aiBodyText(), table: aiU.table.slice(), picks: aiU.picks, empSign: aiU.empSign, appr: aiU.appr };
+    typeId: T.id, emp: aiU.emp, date: aiU.date, from: aiU.from, to: aiU.to, amount: aiU.amount, toText: aiU.toText, pron: aiU.pron, facts: aiU.facts, subject: aiU.subject, body: aiBodyText(), table: aiU.table.slice(), picks: aiU.picks, empSign: aiU.empSign, appr: aiU.appr, noLh: aiU.noLh };
   aiU.busy = true;
   try{
     const list = await aiSavedLoad(), i = list.findIndex(x => x.id === id);
@@ -16095,7 +16180,7 @@ function aiOpenSaved(id){
   const r = (AI.saved || []).find(x => x.id === id); if(!r) return;
   if(!((AI.cfg.types || []).some(t => t.id === r.typeId))){ toast('The letter type of this letter was deleted'); return; }
   aiSetType(r.typeId);
-  Object.assign(aiU, { emp: r.emp || '', date: r.date || aiToday(), from: r.from || '', to: r.to || '', amount: r.amount || '', toText: r.toText || '', pron: r.pron || 'his', facts: r.facts || '', subject: r.subject || '', body: r.body || '', mode: 'edit', table: (r.table || []).slice(), picks: r.picks || {}, empSign: !!r.empSign, appr: r.appr !== false, just: null, savedId: r.id, showSaved: false });
+  Object.assign(aiU, { emp: r.emp || '', date: r.date || aiToday(), from: r.from || '', to: r.to || '', amount: r.amount || '', toText: r.toText || '', pron: r.pron || 'his', facts: r.facts || '', subject: r.subject || '', body: r.body || '', mode: 'edit', table: (r.table || []).slice(), picks: r.picks || {}, empSign: !!r.empSign, appr: r.appr !== false, noLh: !!r.noLh, just: null, savedId: r.id, showSaved: false });
   aiU.g = Object.assign({}, (AI.cfg.layout || {}).g || {}); aiU.apos = (AI.cfg.layout || {}).apos || 'left';
   aiDraw(); toast('Letter opened - change anything and press "Update saved letter"');
 }
@@ -16116,7 +16201,7 @@ async function aiEditText(){
   if(!cur.trim()){ toast('There is no text yet - write it first'); return; }
   aiU.busy = true; aiDraw();
   try{
-    const sys = AI.cfg.master + '\n\nEDIT MODE: You are given the current letter body and an instruction from HR. Apply only that instruction and keep every fact, name, date and number unless the instruction changes it. Do not add a letterhead, date, greeting or signature. Spacing and layout are handled by the application. Reply with the JSON {"subject": "...", "body": "..."}; keep the subject as it is unless the instruction asks to change it.' + AI_FREE;
+    const sys = AI.cfg.master + '\n\nEDIT MODE: You are given the current letter body and an instruction from HR. Apply only that instruction and keep every fact, name, date and number unless the instruction changes it. Do not add a letterhead, date, greeting or signature. Spacing and layout are handled by the application. Reply with the JSON {"subject": "...", "body": "..."}; keep the subject as it is unless the instruction asks to change it.' + AI_FREE + aiFreeNote(T);
     const raw = await aiAsk(sys, JSON.stringify({ letter_type: T.name, current_subject: hrFill(aiU.subject || T.subject || '', aiVars()), current_body: cur, instruction: ins }));
     const r = aiParseAnswer(raw); aiU.body = r.body; aiU.mode = 'ai'; if(r.subject && /subject|title/i.test(ins)) aiU.subject = r.subject; aiU.edit = '';
     aiU.busy = false; aiDraw(); const mm = $('aiMsg'); if(mm) mm.textContent = 'Changed. Read it again.';
@@ -16185,6 +16270,7 @@ function aiOnChange(e){
     case 'esign': aiU.empSign = el.checked; aiPreview(); break;
     case 'appr': aiU.appr = el.checked; aiPreview(); break;
     case 'just': aiU.just = el.checked; aiPreview(); break;
+    case 'nolh': aiU.noLh = !el.checked; aiPreview(); break;
     case 'apos': aiU.apos = el.value; aiGapSave(); aiPreview(); break;
     case 'tadd': { const id = hrEmpFromLabel(el.value); if(id && !aiU.table.includes(id)) aiU.table.push(id); aiDraw(); break; }
     case 'tm': aiU.tm = el.value; break;
