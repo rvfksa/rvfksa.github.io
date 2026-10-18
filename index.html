@@ -15902,17 +15902,22 @@ function aiModel(){
   const groups = (T.groups || []).map(g => ({ label: g.label, people: (aiU.picks[g.label] || []).map(id => C.signers.find(s => s.id === id)).filter(Boolean) }));
   const rows = aiU.table.map(id => hrFind(id)).filter(Boolean).map((x, i) => (T.tableCols || ['name', 'id']).map(k => k === 'name' ? x.name : k === 'id' ? x.loginId : k === 'dept' ? x.department || '' : k === 'joining' ? (x.profile && x.profile.joiningDate ? aiLong(x.profile.joiningDate) : '') : k === 'position' ? (x.profile && x.profile.position) || '' : k === 'salary' ? (x.profile && x.profile.salary && x.profile.salary.basicSalary) || '' : ''));
   const bodyV = hrFill(aiBodyText(), V);
-  return { T, V, date: aiLong(aiU.date || aiToday()), title: T.title || '', to, from: T.from === 'ceo' ? up(ceo.name) + ', CEO' : '', subject: hrFill(aiU.subject || T.subject || '', V), salutation: hrFill(T.salutation || '', V), body: bodyV,
+  return { T, V, date: aiLong(aiU.date || aiToday()), title: T.title || '', to, from: T.from === 'ceo' ? up(ceo.name) + ', CEO' : '', subject: hrFill(aiU.subject || T.subject || '', V), salutation: (T.to === 'text' && (aiU.toText || '').trim() && /^\s*(dear|respected)\s+sir/i.test(T.salutation || '')) ? 'Dear ' + aiU.toText.trim().replace(/[,\s]+$/, '') + ',' : hrFill(T.salutation || '', V), body: bodyV,
     end: T.end, empName, empId: u ? u.loginId : '', empDept: u ? u.department || '' : '', empPos: u && u.profile ? u.profile.position || '' : '', empSign: aiU.empSign, appr: aiU.appr, groups, ceo, signoff: T.signoff || 'Sincerely,', closing: T.closing || '', sign: T.sign || '',
     table: (T.table && rows.length) ? { heads: ['Sl.'].concat((T.tableCols || ['name', 'id']).map(k => aiCols[k] || k)), rows } : null };
 }
+const AI_FREE = '\n\nHR\'S WISHES COME FIRST: the style rules above are only defaults. If the HR notes or the instruction ask for another format or style (bullet points, short lines, headings, numbered steps, "do not write a paragraph", "easy to understand", longer, shorter, more formal, a different structure), do exactly that, even when it differs from the style rules or the example. Use your own judgment to make the letter clear and well organised. You may use these marks in the body: a heading line that starts with "## ", bullet lines that start with "- " (sub-points: two spaces then "- "), numbered lines like "1. ", and **bold** for labels. Never invent facts, but how to present them is your choice.';
 function aiBodyHtml(text, just){
   const out = []; let buf = [], blank = 0;
-  const flush = () => { if(buf.length){ out.push(`<div style="margin:0 0 10px;${just ? 'text-align:justify;' : ''}">${buf.map(aiEsc).join('<br>')}</div>`); buf = []; } };
+  const em = (t) => aiEsc(t).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
+  const flush = () => { if(buf.length){ out.push(`<div style="margin:0 0 10px;${just ? 'text-align:justify;' : ''}">${buf.map(em).join('<br>')}</div>`); buf = []; } };
   String(text || '').replace(/\r/g, '').split('\n').forEach(l => {
-    if(/^\s*[-•]\s+/.test(l)){ flush(); out.push(`<div style="display:flex;gap:8px;margin:3px 0 3px 16px;"><span>\u2022</span><span style="flex:1;">${aiEsc(l.replace(/^\s*[-•]\s+/, ''))}</span></div>`); blank = 0; }
+    let m;
+    if((m = /^(\s*)[-•]\s+(.*)$/.exec(l))){ flush(); const sub = m[1].length >= 2; out.push(`<div style="display:flex;gap:8px;margin:3px 0 3px ${sub ? 36 : 16}px;"><span>${sub ? '\u25E6' : '\u2022'}</span><span style="flex:1;">${em(m[2])}</span></div>`); blank = 0; }
+    else if((m = /^\s*(\d{1,2})[.)]\s+(.*)$/.exec(l))){ flush(); out.push(`<div style="display:flex;gap:8px;margin:3px 0 3px 16px;"><span style="min-width:16px;">${m[1]}.</span><span style="flex:1;">${em(m[2])}</span></div>`); blank = 0; }
+    else if((m = /^\s*#{1,3}\s+(.*)$/.exec(l))){ flush(); out.push(`<div style="font-weight:700;margin:12px 0 4px;">${em(m[1])}</div>`); blank = 0; }
     else if(l.trim()){ buf.push(l.trim()); blank = 0; }
-    else { flush(); blank++; if(blank >= 2) out.push('<div style="height:' + (blank === 2 ? 14 : 14) + 'px;"></div>'); }
+    else { flush(); blank++; if(blank >= 2) out.push('<div style="height:14px;"></div>'); }
   });
   flush(); return out.join('');
 }
@@ -15942,9 +15947,9 @@ function aiLetterHtml(m){
   let b = `<div style="margin-top:${aiG('gDate')}px;font-size:12.5px;color:#475569;">Date: ${aiEsc(fmtDate(aiU.date || aiToday()))}</div>`;
   if(m.title) b += `<div style="text-align:center;font-family:'Oswald',sans-serif;font-size:19px;font-weight:700;letter-spacing:.05em;margin:${m.end === 'ceo' ? 24 : 16}px 0 4px;">${aiEsc(m.title)}</div>`;
   let first = true; const rows = [];
-  if(m.end !== 'ceo' && m.to.length){ rows.push(meta('TO:', m.to.map(aiEsc).join('<br>'), first)); first = false; }
+  if((m.end !== 'ceo' || m.T.to === 'text') && m.to.filter(Boolean).length){ rows.push(meta('TO:', m.to.map(aiEsc).join('<br>'), first)); first = false; }
   if(m.from){ rows.push(meta('FROM:', aiEsc(m.from), first)); first = false; }
-  if(m.end !== 'ceo' && m.subject){ rows.push(meta('SUBJECT:', aiEsc(m.subject), first)); first = false; }
+  if((m.end !== 'ceo' || m.T.to === 'text') && m.subject){ rows.push(meta('SUBJECT:', aiEsc(m.subject), first)); first = false; }
   if(rows.length) b += `<div style="margin-top:${aiG('gTo')}px;">${rows.join('')}</div>`;
   if(m.salutation) b += `<div style="margin-top:${aiG('gGreet')}px;font-size:${lh.bodySize}px;">${aiEsc(m.salutation)}</div>`;
   b += `<div style="margin-top:${m.salutation ? aiG('gBody') : aiG('gGreet')}px;font-size:${lh.bodySize}px;line-height:${lh.lineH - 0.1};">${aiBodyHtml(m.body, aiU.just == null ? pg.justify : aiU.just)}</div>`;
@@ -16048,9 +16053,9 @@ async function aiGenerate(){
   try{
     const V = aiVars(), P = u && u.profile || {};
     const intro = (T.end === 'request' && !T.noSincerely && !aiU.empSign) ? '\n\nIMPORTANT FOR THIS LETTER: the employee name is NOT printed at the bottom, so the first sentence of the body must introduce him: his name, ID number, position and department (from the facts), then the request.' : '';
-    const sys = AI.cfg.master + intro + '\n\nIf the HR notes contain wishes about wording or the subject (for example "the subject should be formal"), follow them. Spacing and layout are handled by the application: never write about them.\n\nLETTER TYPE: ' + T.name + '\nINSTRUCTION FOR THIS TYPE: ' + (T.instruction || '') + (T.example ? '\n\nEXAMPLE of this type (copy its structure, tone and length; change only the details):\n"""\n' + T.example + '\n"""' : '');
+    const sys = AI.cfg.master + intro + '\n\nIf the HR notes contain wishes about wording or the subject (for example "the subject should be formal"), follow them. Spacing and layout are handled by the application: never write about them. If addressed_to is given, the letter is written to that person or company: the greeting line (Dear ...) is printed by the application, so do not write a greeting, and write the body so it speaks to that recipient (use "you" / "your" for them where natural, never "Dear Sir").\n\nLETTER TYPE: ' + T.name + '\nINSTRUCTION FOR THIS TYPE: ' + (T.instruction || '') + (T.example ? '\n\nEXAMPLE of this type (copy its structure, tone and length; change only the details):\n"""\n' + T.example + '\n"""' : '') + AI_FREE;
     const facts = { letter_type: T.name, employee_name: V.name || undefined, employee_id: V.id || undefined, position: V.position || undefined, department: V.department || undefined, joining_date: T.dates && T.end === 'ceo' ? (aiU.from ? aiLong(aiU.from) : V.joiningDate) || undefined : undefined,
-      from_date: T.end === 'ceo' ? undefined : V.from || undefined, to_date: V.to || undefined, days: T.end === 'ceo' ? undefined : V.days || undefined, last_day: T.end === 'ceo' ? V.to || undefined : undefined, deduction_amount_SAR: V.amount || undefined, pronoun: T.pronoun ? aiU.pron : undefined, details_from_hr: aiU.facts.trim() || undefined, other_employees_count: T.table ? aiU.table.length : undefined, letter_date: V.date };
+      from_date: T.end === 'ceo' ? undefined : V.from || undefined, to_date: V.to || undefined, days: T.end === 'ceo' ? undefined : V.days || undefined, last_day: T.end === 'ceo' ? V.to || undefined : undefined, deduction_amount_SAR: V.amount || undefined, pronoun: T.pronoun ? aiU.pron : undefined, addressed_to: T.to === 'text' ? ((aiU.toText || T.toText || '').trim() || undefined) : undefined, details_from_hr: aiU.facts.trim() || undefined, other_employees_count: T.table ? aiU.table.length : undefined, letter_date: V.date };
     const raw = await aiAsk(sys, 'Facts for this letter (use only these):\n' + JSON.stringify(facts, null, 1) + '\n\nReturn the JSON now.');
     const r = aiParseAnswer(raw);
     aiU.body = r.body; aiU.mode = 'ai'; if(!aiU.subject.trim() && r.subject && (!(T.subject || '').trim() || /subject/i.test(aiU.facts))) aiU.subject = r.subject;
@@ -16111,7 +16116,7 @@ async function aiEditText(){
   if(!cur.trim()){ toast('There is no text yet - write it first'); return; }
   aiU.busy = true; aiDraw();
   try{
-    const sys = AI.cfg.master + '\n\nEDIT MODE: You are given the current letter body and an instruction from HR. Apply only that instruction and keep every fact, name, date and number unless the instruction changes it. Do not add a letterhead, date, greeting or signature. Spacing and layout are handled by the application. Reply with the JSON {"subject": "...", "body": "..."}; keep the subject as it is unless the instruction asks to change it.';
+    const sys = AI.cfg.master + '\n\nEDIT MODE: You are given the current letter body and an instruction from HR. Apply only that instruction and keep every fact, name, date and number unless the instruction changes it. Do not add a letterhead, date, greeting or signature. Spacing and layout are handled by the application. Reply with the JSON {"subject": "...", "body": "..."}; keep the subject as it is unless the instruction asks to change it.' + AI_FREE;
     const raw = await aiAsk(sys, JSON.stringify({ letter_type: T.name, current_subject: hrFill(aiU.subject || T.subject || '', aiVars()), current_body: cur, instruction: ins }));
     const r = aiParseAnswer(raw); aiU.body = r.body; aiU.mode = 'ai'; if(r.subject && /subject|title/i.test(ins)) aiU.subject = r.subject; aiU.edit = '';
     aiU.busy = false; aiDraw(); const mm = $('aiMsg'); if(mm) mm.textContent = 'Changed. Read it again.';
