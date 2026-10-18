@@ -1490,11 +1490,13 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
   table.report-table-compact{ width:100%; table-layout:auto; font-size:10.5px; }
   table.report-table-compact th{ padding:6px 1.5px; font-size:8px; }
   table.report-table-compact td{ padding:6px 1.5px; white-space:nowrap; text-overflow:ellipsis; overflow:hidden; max-width:32px; }
-  table.report-table-compact tbody tr:not(.date-group-row) td:first-child{
-    max-width:66px; position:sticky; left:0; z-index:1; background:#fff; box-shadow: 1px 0 0 var(--line);
+  table.report-table-compact tbody tr:not(.date-group-row) td.serial{ width:20px; min-width:20px; max-width:20px; position:sticky; left:0; z-index:1; background:#fff; text-align:center; color:var(--muted); font-size:9px; padding-left:0; padding-right:0; }
+  table.report-table-compact th.serial{ width:20px; min-width:20px; max-width:20px; position:sticky; left:0; z-index:2; text-align:center; padding-left:0; padding-right:0; }
+  table.report-table-compact tbody tr:not(.date-group-row) td:nth-child(2){
+    max-width:66px; position:sticky; left:20px; z-index:1; background:#fff; box-shadow: 1px 0 0 var(--line);
   }
-  table.report-table-compact th:first-child{
-    max-width:66px; position:sticky; left:0; z-index:2; box-shadow: 1px 0 0 var(--line);
+  table.report-table-compact th:nth-child(2){
+    max-width:66px; position:sticky; left:20px; z-index:2; box-shadow: 1px 0 0 var(--line);
   }
   table.report-table-compact td:last-child, table.report-table-compact th:last-child{ width:28px; max-width:28px; overflow:visible; }
   table.report-table-compact .mini-icon-btn.has-note{ position:relative; }
@@ -2623,6 +2625,22 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
 #purchaseMount .pcOrder.open > .pcOrderHead .c-act .pcBtnMain{ background:#fff; color:#4f46e5; box-shadow:0 0 0 1px #c7d2fe; }
 #purchaseMount .pcOrder:not(.open) > .pcOrderHead:hover{ background:#f8f9fe; }
 
+/* v42: serial column + Employee Overview columns */
+table.report-table:not(.report-table-compact) th.serial, table.report-table:not(.report-table-compact) td.serial{ text-align:center; color:var(--muted); width:30px; }
+.ovColG{ margin-bottom:8px; }
+.ovColGL{ font-size:10px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); font-weight:700; margin:6px 0 4px; }
+.ovCols{ display:flex; flex-wrap:wrap; gap:6px; }
+.field .ovColChip, .ovColChip{ display:inline-flex; align-items:center; gap:6px; font-size:12px; padding:6px 11px; border-radius:999px; background:#fff; color:var(--text); box-shadow:0 1px 2px rgba(15,23,42,.10), 0 0 0 1px rgba(15,23,42,.04); cursor:pointer; text-transform:none; letter-spacing:0; font-weight:500; user-select:none; }
+.ovColChip input{ display:none; }
+.ovColChip.on{ background:#eef2ff; color:#4f46e5; box-shadow:0 0 0 1px #c7d2fe; font-weight:600; }
+.ovColChip.on::before{ content:"\2713"; font-size:11px; }
+table.ovTbl td, table.ovTbl th{ white-space:nowrap; }
+table.ovTbl td .btn{ white-space:nowrap; }
+.report-table.ovPdfT{ font-size:10.5px; width:100%; table-layout:auto; }
+.report-table.ovPdfT th, .report-table.ovPdfT td{ white-space:normal; word-break:break-word; padding:6px 5px; }
+.report-table.ovPdfT.ovW2{ font-size:8.5px; } .report-table.ovPdfT.ovW3{ font-size:7px; }
+.report-table.ovPdfT.ovW2 th, .report-table.ovPdfT.ovW2 td{ padding:5px 3px; } .report-table.ovPdfT.ovW3 th, .report-table.ovPdfT.ovW3 td{ padding:4px 2px; }
+
 </style>
 </head>
 <body>
@@ -3697,6 +3715,7 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
               <div class="field"><label>Gender</label><select id="ceoFilterGender"><option value="">All</option><option>Male</option><option>Female</option><option>Other</option></select></div>
               <div class="field"><label>Position</label><select id="ceoFilterPosition"><option value="">All</option></select></div>
             </div>
+            <div class="field"><label>Columns to show in the list and in the downloads (taken from each person's profile)</label><div id="ceoColsBox"></div></div>
             <div class="field"><label>Tenure at least (years)</label><select id="ceoFilterTenure"><option value="0">Any</option><option value="1">1+</option><option value="5">5+</option><option value="10">10+</option></select></div>
             <div class="field">
               <label>Date Range <span style="text-transform:none; font-weight:400; color:var(--muted);">(applies to New Joined / Exit-Terminated)</span></label>
@@ -3713,7 +3732,7 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
               <div class="field" style="margin-bottom:0;"><label>To</label><input type="date" id="ceoFilterDateTo"></div>
             </div>
           </div>
-          <div id="ceoEmpDrillHeader" style="display:flex; padding:6px 12px; font-size:9.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); font-weight:600;">
+          <div id="ceoEmpDrillHeader" style="display:none; padding:6px 12px; font-size:9.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); font-weight:600;">
             <span style="flex:1;">ID</span><span style="flex:2;">Name</span><span style="flex:1.5;">Department</span><span style="width:70px;"></span>
           </div>
           <div id="ceoEmpDrillList"></div>
@@ -8249,14 +8268,14 @@ function drawReportTable(rows){
   const isAdmin = state.user.role === 'admin';
   $('addManualEntryBtn').style.display = isAdmin ? 'inline-flex' : 'none';
   $('reviewUnusualBtn').style.display = showFlags ? 'inline-flex' : 'none';
-  const colCount = 8 + (showFlags ? 1 : 0) + (isAdmin ? 1 : 0);
+  const colCount = 9 + (showFlags ? 1 : 0) + (isAdmin ? 1 : 0);
   let html = '<div class="table-scroll"><table class="report-table report-table-compact"><thead><tr>' +
-    '<th>Mc</th><th>Sh</th><th>Prev</th><th>New</th><th>Diff</th>' +
+    '<th class="serial">#</th><th>Mc</th><th>Sh</th><th>Prev</th><th>New</th><th>Diff</th>' +
     (showFlags ? '<th></th>' : '') +
     '<th>Stop</th><th>Rsn</th><th>By</th><th></th>' +
     (isAdmin ? '<th></th>' : '') +
     '</tr></thead><tbody>';
-  let lastDate = null;
+  let lastDate = null, sn = 0;
   rows.forEach(r => {
     if(!r.reviewCompanion && r.date !== lastDate){
       lastDate = r.date;
@@ -8294,6 +8313,7 @@ function drawReportTable(rows){
     }
     const rowCls = [r.reviewReason ? 'has-review-reason' : '', r.reviewCompanion ? 'review-prev-row' : ''].filter(Boolean).join(' ');
     html += `<tr${rowCls ? ' class="' + rowCls + '"' : ''}>
+        <td class="serial">${r.reviewCompanion ? '' : ++sn}</td>
         <td title="${r.machine} (ID ${r.machineId})">${r.machineId ? r.machineId + ' ' : ''}${r.machine}</td>
         <td title="${shiftTitle}">${shiftLetter}<span style="color:var(--muted); font-size:9px;">${photoTypeLetter}</span></td>
         <td>${r.prevReading}</td><td>${r.reading}</td>
@@ -8507,12 +8527,12 @@ $('exportPdfBtn').addEventListener('click', async () => {
   const rows = reportDisplayRows(lastReportRows), esc = assignEsc;
   const diffTxt = (r) => typeof r.diff === 'number' ? Number(r.diff).toLocaleString() : '\u2014';
   const statusCell = (r) => r.status === 'approved' ? '<span class="badge badge-approved">Approved</span>' : r.status === 'rejected' ? '<span class="badge badge-rejected">Rejected</span>' : '<span class="badge badge-pending">Pending</span>';
-  const head = '<tr><th>Machine</th><th>Shift</th><th>Prev</th><th>New</th><th>Diff</th><th>Stop</th><th>Reason</th><th>By</th><th>Status</th></tr>';
-  const items = []; let lastDate = null;
+  const head = '<tr><th>#</th><th>Machine</th><th>Shift</th><th>Prev</th><th>New</th><th>Diff</th><th>Stop</th><th>Reason</th><th>By</th><th>Status</th></tr>';
+  const items = []; let lastDate = null, sn = 0;
   rows.forEach(r => {
-    if(r.date !== lastDate){ lastDate = r.date; items.push(`<tr class="date-group-row"><td colspan="9">${esc(fmtDate(r.date))}</td></tr>`); }
+    if(r.date !== lastDate){ lastDate = r.date; items.push(`<tr class="date-group-row"><td colspan="10">${esc(fmtDate(r.date))}</td></tr>`); }
     const diffClass = (typeof r.diff === 'number') ? (r.diff >= 0 ? 'diff-pos' : 'diff-neg') : '';
-    items.push(`<tr><td>${esc(r.machineId ? r.machineId + ' ' : '')}${esc(r.machine)}</td><td>${r.shift === 'Day' ? 'Day' : 'Night'} ${r.combined ? 'S+E' : (r.photoType === 'Starting' ? 'S' : 'E')}${r.combined && typeof r.startDiff === 'number' && r.startDiff !== 0 && !r.resetApplied ? '<div style="color:#92400e; font-size:9px;">start ' + esc(r.startReading) + '</div>' : ''}</td><td>${esc(r.prevReading)}</td><td>${esc(r.reading)}</td>
+    items.push(`<tr><td>${++sn}</td><td>${esc(r.machineId ? r.machineId + ' ' : '')}${esc(r.machine)}</td><td>${r.shift === 'Day' ? 'Day' : 'Night'} ${r.combined ? 'S+E' : (r.photoType === 'Starting' ? 'S' : 'E')}${r.combined && typeof r.startDiff === 'number' && r.startDiff !== 0 && !r.resetApplied ? '<div style="color:#92400e; font-size:9px;">start ' + esc(r.startReading) + '</div>' : ''}</td><td>${esc(r.prevReading)}</td><td>${esc(r.reading)}</td>
       <td class="${diffClass}">${esc(diffTxt(r))}${r.resetApplied ? ' <span style="color:#64748b; font-size:9px;">reset</span>' : ''}</td><td>${esc(r.stopTime)}</td><td>${esc(r.reason)}</td><td>${esc(r.enteredBy)}</td><td>${statusCell(r)}</td></tr>`);
   });
   const from = $('reportFromDate').value, to = $('reportToDate').value;
@@ -9246,11 +9266,11 @@ function renderPicksRowsTable(containerId, rows, onPageChange){
   const pageRows = rows.slice((page-1)*perPage, page*perPage);
 
   let rowsHtml = '';
-  pageRows.forEach(row => {
+  pageRows.forEach((row, ix) => {
     const dayTotal = row.picks + row.stopPicks;
-    rowsHtml += `<tr><td>${fmtDate(row.date)}</td><td>${machineName(row.machine)}</td><td>${row.picks.toLocaleString()}</td><td>${row.stopHours.toFixed(1)}</td><td>${Math.round(row.stopPicks).toLocaleString()}</td><td>${Math.round(dayTotal).toLocaleString()}</td></tr>`;
+    rowsHtml += `<tr><td>${(page - 1) * perPage + ix + 1}</td><td>${fmtDate(row.date)}</td><td>${machineName(row.machine)}</td><td>${row.picks.toLocaleString()}</td><td>${row.stopHours.toFixed(1)}</td><td>${Math.round(row.stopPicks).toLocaleString()}</td><td>${Math.round(dayTotal).toLocaleString()}</td></tr>`;
   });
-  box.innerHTML = `<div class="table-scroll"><table class="report-table"><thead><tr><th>Date</th><th>Machine</th><th>Machine Reading</th><th>Stopped Time</th><th>Earned Picks from Stop</th><th>Total</th></tr></thead><tbody>${rowsHtml}</tbody></table></div>
+  box.innerHTML = `<div class="table-scroll"><table class="report-table"><thead><tr><th>#</th><th>Date</th><th>Machine</th><th>Machine Reading</th><th>Stopped Time</th><th>Earned Picks from Stop</th><th>Total</th></tr></thead><tbody>${rowsHtml}</tbody></table></div>
     <div class="card row" style="margin-top:10px;"><span class="k">Total Picks (selected range)</span><span><b>${Math.round(running).toLocaleString()}</b></span></div>`;
   renderPaginationControls(containerId + 'Pagination', rows.length, perPage, onPageChange);
 }
@@ -9607,7 +9627,7 @@ async function resubmitReading(id){
 
 $('exportBtn').addEventListener('click', () => {
   if(!lastReportRows || lastReportRows.length === 0){ toast('Nothing to export yet'); return; }
-  const headerRow = ['Machine','Date','Shift','Photo Type','Previous Reading','Recent Reading','Difference','Stop Time / Hour','Reason','Remarks','Entered By','Entered By ID','Status','Approved By','Supervisor Note'];
+  const headerRow = ['#','Machine','Date','Shift','Photo Type','Previous Reading','Recent Reading','Difference','Stop Time / Hour','Reason','Remarks','Entered By','Entered By ID','Status','Approved By','Supervisor Note'];
   const aoa = [headerRow];
   const dateGroupRowIdx = [];
   const dataRowInfo = []; // { aoaIdx, hasFormula, diff, status }
@@ -9616,7 +9636,7 @@ $('exportBtn').addEventListener('click', () => {
     if(r.date !== lastDate){
       lastDate = r.date;
       dateGroupRowIdx.push(aoa.length);
-      aoa.push(['— ' + fmtDate(r.date) + ' —']);
+      aoa.push(['', '— ' + fmtDate(r.date) + ' —']);
     }
     // Write Previous/Recent Reading as real numbers (not text) wherever
     // possible, so the Difference formula below evaluates cleanly instead
@@ -9625,10 +9645,10 @@ $('exportBtn').addEventListener('click', () => {
     const curNum = isValidNumber(r.reading) ? Number(r.reading) : r.reading;
     const hasFormula = typeof prevNum === 'number' && typeof curNum === 'number' && !r.resetApplied; // a reset row is counted as 0, so it gets that value, not a subtraction formula
     dataRowInfo.push({ aoaIdx: aoa.length, hasFormula, diff: r.diff, status: r.status });
-    aoa.push([r.machine, fmtDate(r.date), r.shift, r.photoType || 'Ending', prevNum, curNum, hasFormula ? null : r.diff, r.stopTime, r.reason, (r.resetApplied ? (r.resetMode === 'zero' ? 'Meter reset point — counted from 0' : 'Meter reset point') + (r.remarks ? ' — ' + r.remarks : '') : (r.remarks || '')), r.enteredBy, r.enteredById, r.status, r.approvedBy, r.supervisorRemarks || '']);
+    aoa.push([dataRowInfo.length, r.machine, fmtDate(r.date), r.shift, r.photoType || 'Ending', prevNum, curNum, hasFormula ? null : r.diff, r.stopTime, r.reason, (r.resetApplied ? (r.resetMode === 'zero' ? 'Meter reset point — counted from 0' : 'Meter reset point') + (r.remarks ? ' — ' + r.remarks : '') : (r.remarks || '')), r.enteredBy, r.enteredById, r.status, r.approvedBy, r.supervisorRemarks || '']);
   });
   const ws = XLSX.utils.aoa_to_sheet(aoa);
-  ws['!cols'] = [{wch:12},{wch:12},{wch:8},{wch:10},{wch:14},{wch:14},{wch:11},{wch:14},{wch:20},{wch:24},{wch:16},{wch:12},{wch:10},{wch:16},{wch:24}];
+  ws['!cols'] = [{wch:5},{wch:12},{wch:12},{wch:8},{wch:10},{wch:14},{wch:14},{wch:11},{wch:14},{wch:20},{wch:24},{wch:16},{wch:12},{wch:10},{wch:16},{wch:24}];
 
   // Real formulas for Difference — Recent Reading minus Previous Reading —
   // so anyone with a doubt about a number can click the cell in Excel and
@@ -9637,8 +9657,8 @@ $('exportBtn').addEventListener('click', () => {
   dataRowInfo.forEach(info => {
     if(!info.hasFormula) return;
     const sheetRow = info.aoaIdx + 1; // 1-indexed row for A1-style refs
-    const cellRef = XLSX.utils.encode_cell({ r: info.aoaIdx, c: 6 });
-    ws[cellRef] = Object.assign({}, ws[cellRef], { t: 'n', f: `F${sheetRow}-E${sheetRow}` });
+    const cellRef = XLSX.utils.encode_cell({ r: info.aoaIdx, c: 7 });
+    ws[cellRef] = Object.assign({}, ws[cellRef], { t: 'n', f: `G${sheetRow}-F${sheetRow}` });
   });
 
   // Best-effort styling to mirror the on-screen colors — bold shaded header
@@ -9653,16 +9673,16 @@ $('exportBtn').addEventListener('click', () => {
     ws[ref] = Object.assign({}, ws[ref], { s: { font: { bold: true }, fill: headerFill } });
   });
   dateGroupRowIdx.forEach(r => {
-    const ref = XLSX.utils.encode_cell({ r, c: 0 });
+    const ref = XLSX.utils.encode_cell({ r, c: 1 });
     ws[ref] = Object.assign({}, ws[ref], { s: { font: { bold: true }, fill: groupFill } });
   });
   dataRowInfo.forEach(info => {
     if(typeof info.diff === 'number'){
-      const diffRef = XLSX.utils.encode_cell({ r: info.aoaIdx, c: 6 });
+      const diffRef = XLSX.utils.encode_cell({ r: info.aoaIdx, c: 7 });
       ws[diffRef] = Object.assign({}, ws[diffRef], { s: { font: { color: { rgb: info.diff < 0 ? 'DC2626' : '16A34A' } } } });
     }
     const statusColor = info.status === 'approved' ? '16A34A' : info.status === 'rejected' ? 'DC2626' : 'D97706';
-    const statusRef = XLSX.utils.encode_cell({ r: info.aoaIdx, c: 12 });
+    const statusRef = XLSX.utils.encode_cell({ r: info.aoaIdx, c: 13 });
     ws[statusRef] = Object.assign({}, ws[statusRef], { s: { font: { color: { rgb: statusColor }, bold: true } } });
   });
 
@@ -9940,10 +9960,10 @@ function asumDownloadExcel(key, staged){
     if(!x.ops.length) sRows.push([x.b.name + x.b.note, x.b.id === '__none__' ? '' : x.b.id, '(no operators)', '', '', '', 0, '']);
     x.ops.forEach(o => sRows.push([x.b.name + x.b.note, x.b.id === '__none__' ? '' : x.b.id, o.name, o.id, o.dept, shiftTag(o.shift), o.machines.length, mlist(o)]));
   });
-  add('By supervisor', sRows, [24, 14, 24, 12, 14, 8, 14, 60]);
+  add('By supervisor', rvfNumRows(sRows), [5, 24, 14, 24, 12, 14, 8, 14, 60]);
   const oRows = [['Operator', 'Operator ID', 'Department', 'Shift', 'Supervisor', 'Machine count', 'Machines']];
   D.ops.filter(ok).forEach(o => oRows.push([o.name, o.id, o.dept, shiftTag(o.shift), o.sup ? o.sup.name : 'None', o.machines.length, mlist(o)]));
-  add('By operator', oRows, [24, 12, 14, 8, 24, 14, 60]);
+  add('By operator', rvfNumRows(oRows), [5, 24, 12, 14, 8, 24, 14, 60]);
   // Same columns and same supervisors as the screen: with a Day or Night filter on, only that shift is listed.
   const showDay = st.fShift !== 'Night', showNight = st.fShift !== 'Day';
   const mRows = [['Machine', 'Machine ID', 'Department', 'Status', 'Shift setting'].concat(showDay ? ['Day operator'] : [], showNight ? ['Night operator'] : [], ['Supervisor'])];
@@ -9954,7 +9974,7 @@ function asumDownloadExcel(key, staged){
     mRows.push([x.m.name, x.m.id, x.m.department || '', x.m.status === 'stopped' ? 'Stopped' : 'Running', (x.m.shiftRun === 'Day' || x.m.shiftRun === 'Night') ? x.m.shiftRun + ' only' : 'Both']
       .concat(showDay ? [cellOf(x.d, machineRunsShift(x.m, 'Day'))] : [], showNight ? [cellOf(x.n, machineRunsShift(x.m, 'Night'))] : [], [names.join(', ')]));
   });
-  add('By machine', mRows, [20, 11, 14, 10, 12].concat(showDay ? [30] : [], showNight ? [30] : [], [34]));
+  add('By machine', rvfNumRows(mRows), [5, 20, 11, 14, 10, 12].concat(showDay ? [30] : [], showNight ? [30] : [], [34]));
   XLSX.writeFile(wb, 'team-machine-summary-' + rvfDateStamp() + '.xlsx');
   toast('Excel file downloaded');
 }
@@ -10049,8 +10069,8 @@ function renderAssignSummary(mountId, key, staged){
   let body = '';
   if(st.view === 'operator'){
     const rows = D.ops.filter(opOk);
-    body = rows.length ? `<div class="table-scroll"><table class="report-table asumTbl"><thead><tr><th style="width:26%;">Operator</th><th style="width:15%;">Dept &middot; shift</th><th style="width:22%;">Supervisor</th><th>Machines</th></tr></thead><tbody>${rows.map(o =>
-      `<tr><td>${esc(o.name)} <span style="color:var(--muted); font-size:12px;">${esc(o.id)}</span></td><td>${esc(o.dept || '—')} &middot; ${shiftTag(o.shift)}</td>
+    body = rows.length ? `<div class="table-scroll"><table class="report-table asumTbl"><thead><tr><th style="width:4%;">#</th><th style="width:24%;">Operator</th><th style="width:15%;">Dept &middot; shift</th><th style="width:22%;">Supervisor</th><th>Machines</th></tr></thead><tbody>${rows.map((o, ix) =>
+      `<tr><td>${ix + 1}</td><td>${esc(o.name)} <span style="color:var(--muted); font-size:12px;">${esc(o.id)}</span></td><td>${esc(o.dept || '—')} &middot; ${shiftTag(o.shift)}</td>
        <td>${o.sup ? esc(o.sup.name) + ' ' + idTag(o.sup.id) + (o.sup.current ? '' : ' <span style="color:var(--warn);" title="No longer a supervisor">&#9888;</span>') : '<span style="color:var(--warn);">None</span>'}</td>
        <td style="font-size:13px;"><b>${o.machines.length}</b> &middot; ${chips(o.machines)}</td></tr>`).join('')}</tbody></table></div>
       <div class="hint" style="text-align:left; margin:6px 0 0;">${rows.length} operator${rows.length === 1 ? '' : 's'} shown.</div>` : '<div class="empty-state">No operators match.</div>';
@@ -10063,8 +10083,8 @@ function renderAssignSummary(mountId, key, staged){
       return held.map(h => `<span class="asumNm">${esc(h.name)} ${idTag(h.id)}</span>`).join('') + (runs ? '' : ' <span style="color:var(--warn);" title="This machine is set not to run this shift">&#9888;</span>');
     };
     const supOf = (x) => { const seen = new Set(), out = []; (showDay ? x.d : []).concat(showNight ? x.n : []).slice().sort((p, q) => ((p.sup && p.sup.name) || '~').localeCompare((q.sup && q.sup.name) || '~')).forEach(o => { const k = o.sup ? o.sup.id : '__none__'; if(seen.has(k)) return; seen.add(k); out.push(o.sup ? `<span class="asumNm">${esc(o.sup.name)} ${idTag(o.sup.id)}</span>` : '<span class="asumNm" style="color:var(--warn);">No supervisor</span>'); }); return out.length ? out.join('') : '—'; };
-    body = rows.length ? `<div class="table-scroll"><table class="report-table asumTbl"><thead><tr><th style="width:15%;">Machine</th>${showDay ? '<th style="width:28%;">Day operator</th>' : ''}${showNight ? '<th style="width:28%;">Night operator</th>' : ''}<th>Supervisor</th></tr></thead><tbody>${rows.map(x =>
-      `<tr><td>${esc(x.m.name)}${x.m.status === 'stopped' ? ' <span style="color:var(--muted); font-size:11px;">stopped</span>' : ''}</td>${showDay ? `<td>${cellOf(x, 'Day')}</td>` : ''}${showNight ? `<td>${cellOf(x, 'Night')}</td>` : ''}<td style="font-size:13px;">${supOf(x)}</td></tr>`).join('')}</tbody></table></div>
+    body = rows.length ? `<div class="table-scroll"><table class="report-table asumTbl"><thead><tr><th style="width:4%;">#</th><th style="width:13%;">Machine</th>${showDay ? '<th style="width:28%;">Day operator</th>' : ''}${showNight ? '<th style="width:28%;">Night operator</th>' : ''}<th>Supervisor</th></tr></thead><tbody>${rows.map((x, ix) =>
+      `<tr><td>${ix + 1}</td><td>${esc(x.m.name)}${x.m.status === 'stopped' ? ' <span style="color:var(--muted); font-size:11px;">stopped</span>' : ''}</td>${showDay ? `<td>${cellOf(x, 'Day')}</td>` : ''}${showNight ? `<td>${cellOf(x, 'Night')}</td>` : ''}<td style="font-size:13px;">${supOf(x)}</td></tr>`).join('')}</tbody></table></div>
       <div class="hint" style="text-align:left; margin:6px 0 0;">${rows.length} machine${rows.length === 1 ? '' : 's'} shown. Permanently stopped machines are left out.</div>` : '<div class="empty-state">No machines match.</div>';
   } else {
     // one card per supervisor: tap to open the team, with each operator's shift and machines
@@ -10077,8 +10097,8 @@ function renderAssignSummary(mountId, key, staged){
         <summary>
           <span><span style="font-size:14px; font-weight:600; color:${x.b.warn ? 'var(--warn)' : 'var(--text-strong)'};">${esc(x.b.name)}${esc(x.b.note)}</span><br>${idTag(x.b.id === '__none__' ? 'Not assigned to a supervisor' : [x.b.id, x.b.dept, x.b.shift ? (x.b.shift === 'Both' ? 'Day & Night' : x.b.shift) : ''].filter(Boolean).join(' \u00B7 '))}</span>
           <span style="display:inline-flex; align-items:center; gap:6px;"><span class="asumBadge b-op">${x.ops.length} operator${x.ops.length === 1 ? '' : 's'}</span><span class="asumBadge b-mc">${msl.length} machine${msl.length === 1 ? '' : 's'}</span><svg class="asumChev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span></summary>
-        ${x.ops.length ? `<div class="table-scroll"><table class="report-table asumTbl"><thead><tr><th style="width:42%;">Operator</th><th style="width:14%;">Shift</th><th>Machines</th></tr></thead><tbody>${x.ops.map(o =>
-          `<tr><td>${esc(o.name)} <span style="color:var(--muted); font-size:12px;">${esc(o.id)}</span></td><td>${shiftTag(o.shift)}</td><td style="font-size:13px;">${chips(o.machines)}</td></tr>`).join('')}</tbody></table></div>` : '<div class="hint" style="text-align:left; margin:0 16px 14px;">No operators under this supervisor yet.</div>'}
+        ${x.ops.length ? `<div class="table-scroll"><table class="report-table asumTbl"><thead><tr><th style="width:5%;">#</th><th style="width:38%;">Operator</th><th style="width:14%;">Shift</th><th>Machines</th></tr></thead><tbody>${x.ops.map((o, ix) =>
+          `<tr><td>${ix + 1}</td><td>${esc(o.name)} <span style="color:var(--muted); font-size:12px;">${esc(o.id)}</span></td><td>${shiftTag(o.shift)}</td><td style="font-size:13px;">${chips(o.machines)}</td></tr>`).join('')}</tbody></table></div>` : '<div class="hint" style="text-align:left; margin:0 16px 14px;">No operators under this supervisor yet.</div>'}
       </details>`;
     }).join('') + '</div>' : '<div class="empty-state">Nothing matches.</div>';
   }
@@ -10169,14 +10189,15 @@ function renderAssignApproversTable(){
   if(!rows.length){ box.innerHTML = '<div class="empty-state">No operators match.</div>'; return; }
   const allTicked = rows.every(o => assignUI.selected.has(o.loginId));
   box.innerHTML = `<div class="table-scroll"><table class="report-table"><thead><tr>
-      <th><input type="checkbox" id="assignAll" ${allTicked ? 'checked' : ''}></th><th>Operator</th><th>Dept &middot; shift</th><th>Machines</th><th>Approver</th>
-    </tr></thead><tbody>${rows.map(o => {
+      <th><input type="checkbox" id="assignAll" ${allTicked ? 'checked' : ''}></th><th>#</th><th>Operator</th><th>Dept &middot; shift</th><th>Machines</th><th>Approver</th>
+    </tr></thead><tbody>${rows.map((o, ix) => {
       const cur = assignApproverOf(o), orig = assignOriginalApprover(o);
       const changed = Object.prototype.hasOwnProperty.call(assignUI.stagedApprover, o.loginId);
       const was = changed ? `<div class="hint" style="margin:2px 0 0; text-align:left; color:var(--warn);">was ${assignEsc(orig ? ((assignUserById(orig.loginId) || orig).name || orig.loginId) : 'no approver')}</div>` : '';
       const ms = Array.from(assignMachinesOf(o)).map(machineName).join(', ');
       return `<tr style="${changed ? 'background:var(--lcd-dim);' : ''}">
         <td><input type="checkbox" class="assignTick" data-id="${assignEsc(o.loginId)}" ${assignUI.selected.has(o.loginId) ? 'checked' : ''}></td>
+        <td>${ix + 1}</td>
         <td>${assignEsc(o.name)} <span style="color:var(--muted); font-size:11px;">${assignEsc(o.loginId)}</span></td>
         <td>${assignEsc(o.department || '—')} &middot; ${o.assignedShift === 'Day' ? 'Day' : (o.assignedShift === 'Night' ? 'Night' : 'Both')}</td>
         <td style="max-width:220px; font-size:12px;">${assignEsc(ms || '—')}</td>
@@ -10226,12 +10247,12 @@ function renderAssignMachinesTable(){
     const wasTxt = changed ? `<div class="hint" style="margin:2px 0 0; text-align:left; color:var(--warn);">was ${assignEsc(was.length ? was.map(h => h.name).join(', ') : 'nobody')}</div>` : '';
     return { html: `<select class="assignSlotSel" data-m="${assignEsc(m.id)}" data-slot="${slot}">${assignOpOptions(m, slot, held.length ? held[0].loginId : '')}</select>${extra}${wasTxt}`, changed };
   };
-  box.innerHTML = `<div class="table-scroll"><table class="report-table"><thead><tr><th>Machine</th><th>Day operator</th><th>Night operator</th><th>Setting</th></tr></thead><tbody>${list.map(m => {
+  box.innerHTML = `<div class="table-scroll"><table class="report-table"><thead><tr><th>#</th><th>Machine</th><th>Day operator</th><th>Night operator</th><th>Setting</th></tr></thead><tbody>${list.map((m, ix) => {
     const d = cell(m, 'Day'), n = cell(m, 'Night');
     const dh = (slots.day[m.id] || []).length, nh = (slots.night[m.id] || []).length;
     const warn = ((!machineRunsShift(m, 'Day') && dh) || (!machineRunsShift(m, 'Night') && nh)) ? ' <span style="color:var(--warn); font-weight:800;" title="An operator is assigned for a shift this machine is set not to run">&#9888;</span>' : '';
     const setting = (m.shiftRun === 'Day' || m.shiftRun === 'Night') ? m.shiftRun + ' only' : 'Both';
-    return `<tr style="${(d.changed || n.changed) ? 'background:var(--lcd-dim);' : ''}"><td>${assignEsc(m.name)}${m.status === 'stopped' ? ' <span style="color:var(--muted); font-size:11px;">stopped</span>' : ''}</td><td>${d.html}</td><td>${n.html}</td><td style="font-size:12px;">${setting}${warn}</td></tr>`;
+    return `<tr style="${(d.changed || n.changed) ? 'background:var(--lcd-dim);' : ''}"><td>${ix + 1}</td><td>${assignEsc(m.name)}${m.status === 'stopped' ? ' <span style="color:var(--muted); font-size:11px;">stopped</span>' : ''}</td><td>${d.html}</td><td>${n.html}</td><td style="font-size:12px;">${setting}${warn}</td></tr>`;
   }).join('')}</tbody></table></div>`;
   box.querySelectorAll('.assignSlotSel').forEach(sel => sel.addEventListener('change', () => { assignSetSlot(sel.dataset.m, sel.dataset.slot, sel.value); renderAssignBoard(); }));
 }
@@ -11987,10 +12008,10 @@ function hrVars(u, extra){
 }
 function hrSettingsReady(){ return !!(state.hrSettings && state.hrSettingsLoaded); }
 async function hrLoadSettings(force){
-  if(state.hrSettings && state.hrSettingsLoaded && !force) return state.hrSettings;
+  if(state.hrSettings && state.hrSettingsLoaded && !force && Date.now() - (state.hrSettingsAt || 0) < 120000) return state.hrSettings;
   try{
     const saved = await window.__db.getConfigObject('hrSettings', {});
-    state.hrSettings = hrMerge(saved); state.hrSettingsLoaded = true;
+    state.hrSettings = hrMerge(saved); state.hrSettingsLoaded = true; state.hrSettingsAt = Date.now();
   }catch(err){
     console.error(err);
     if(!state.hrSettings) state.hrSettings = hrDefaults();   // show standard values, but never allow saving over the real ones
@@ -12001,7 +12022,7 @@ async function hrLoadSettings(force){
 async function hrSaveSettings(){
   if(!hrCanEdit()){ toast('Only Admin can change this'); return false; }
   if(!state.hrSettingsLoaded){ toast('Settings could not be loaded — reload the page before saving'); return false; }
-  try{ await window.__db.saveConfigObject('hrSettings', state.hrSettings); return true; }
+  try{ await window.__db.saveConfigObject('hrSettings', state.hrSettings); state.hrSettingsAt = Date.now(); return true; }
   catch(err){ console.error(err); toast('Could not save — check your connection'); return false; }
 }
 /* Ramadan dates: automatic (Umm al-Qura calendar) unless Settings gives dates */
@@ -12339,8 +12360,8 @@ function hrRenderPeopleList(){
   const list = hrPeopleFiltered(), shown = list.slice(0, hrUI.ppl.limit);
   if(!list.length){ box.innerHTML = '<div class="hrEmpty">No one matches.</div>'; return; }
   box.innerHTML = `<div class="hrNote" style="margin-bottom:8px;">${list.length} ${list.length === 1 ? 'person' : 'people'}. Tap a row to open. Numbers are days left until expiry.</div>
-    <div class="hrScroll"><table class="hrTbl"><thead><tr><th>Employee</th><th>Department</th><th>Country</th><th>Iqama</th><th>Passport</th><th>Insurance</th></tr></thead><tbody>${shown.map(u => { const p = u.profile || {}, hr = p.hr || {};
-      return `<tr class="clk" data-hr="opencard" data-id="${hrEsc(u.loginId)}"><td><b style="font-weight:600;color:var(--text-strong);">${hrEsc(u.name)}</b> <span class="id">${hrEsc(u.loginId)}</span><div class="hrSub" style="margin:0;">${hrEsc(p.position || '')}</div></td><td>${hrEsc(u.department || '-')}</td><td class="nw">${hrEsc(p.homeCountry || '-')}</td><td class="nw">${hrIsSaudi(u) ? '<span class="hrDays">n/a</span>' : hrDaysSpan(p.iqama && p.iqama.expiry)}</td><td class="nw">${hrDaysSpan(p.passport && p.passport.expiryDate)}</td><td class="nw">${hrDaysSpan(hr.insuranceExpiry)}</td></tr>`; }).join('')}</tbody></table></div>
+    <div class="hrScroll"><table class="hrTbl"><thead><tr><th>#</th><th>Employee</th><th>Department</th><th>Country</th><th>Iqama</th><th>Passport</th><th>Insurance</th></tr></thead><tbody>${shown.map((u, ix) => { const p = u.profile || {}, hr = p.hr || {};
+      return `<tr class="clk" data-hr="opencard" data-id="${hrEsc(u.loginId)}"><td class="nw" style="color:var(--muted);">${ix + 1}</td><td><b style="font-weight:600;color:var(--text-strong);">${hrEsc(u.name)}</b> <span class="id">${hrEsc(u.loginId)}</span><div class="hrSub" style="margin:0;">${hrEsc(p.position || '')}</div></td><td>${hrEsc(u.department || '-')}</td><td class="nw">${hrEsc(p.homeCountry || '-')}</td><td class="nw">${hrIsSaudi(u) ? '<span class="hrDays">n/a</span>' : hrDaysSpan(p.iqama && p.iqama.expiry)}</td><td class="nw">${hrDaysSpan(p.passport && p.passport.expiryDate)}</td><td class="nw">${hrDaysSpan(hr.insuranceExpiry)}</td></tr>`; }).join('')}</tbody></table></div>
     ${list.length > shown.length ? `<div style="text-align:center;margin-top:10px;"><button class="pillBtn" data-hr="pmore">Show more (${list.length - shown.length})</button></div>` : ''}`;
 }
 function hrPeopleXlsx(){
@@ -12348,7 +12369,7 @@ function hrPeopleXlsx(){
   const list = hrPeopleFiltered(); if(!list.length){ toast('Nobody to download'); return; }
   const aoa = [['ID', 'Name', 'Department', 'Position', 'Home country', 'Employment type', 'Status', 'Phone', 'Joining date', 'Date of birth', 'Passport no.', 'Passport expiry', 'Iqama no.', 'Iqama expiry', 'Insurance expiry', 'Contract end', 'File completeness %', 'Missing']]
     .concat(list.map(u => { const p = u.profile || {}, hr = p.hr || {}, c = hrComplete(u); return [u.loginId, u.name, u.department || '', p.position || '', p.homeCountry || '', p.employmentType || '', empStatusLabel(p.employmentStatus), p.phone || '', p.joiningDate || '', (p.passport && p.passport.dob) || '', (p.passport && p.passport.passportNo) || '', (p.passport && p.passport.expiryDate) || '', (p.iqama && p.iqama.no) || '', (p.iqama && p.iqama.expiry) || '', hr.insuranceExpiry || '', hr.contractEnd || '', c.pct, c.missing.join(', ')]; }));
-  const ws = XLSX.utils.aoa_to_sheet(aoa); ws['!cols'] = aoa[0].map((h, i) => ({ wch: i === 1 ? 26 : (i === 17 ? 40 : 15) }));
+  const ws = XLSX.utils.aoa_to_sheet(rvfNumRows(aoa)); ws['!cols'] = [{ wch: 5 }].concat(aoa[0].map((h, i) => ({ wch: i === 1 ? 26 : (i === 17 ? 40 : 15) })));
   const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Employees'); XLSX.writeFile(wb, 'employees-' + rvfDateStamp() + '.xlsx'); toast('Excel file downloaded');
 }
 async function hrPeoplePdf(){
@@ -12356,8 +12377,8 @@ async function hrPeoplePdf(){
   const f = hrUI.ppl, esc = hrEsc;
   const filt = [f.q && 'Search: ' + f.q, f.dept && 'Department: ' + f.dept, f.country && 'Country: ' + f.country, f.issue && HR_ISSUES[f.issue], f.status !== 'active' && 'Who: ' + f.status].filter(Boolean).join(' · ');
   const day = (d) => d ? fmtDate(d) + (hrDaysTo(d) < 0 ? ' (expired)' : '') : '-';
-  const rows = list.map(u => { const p = u.profile || {}, hr = p.hr || {}; return `<tr><td>${esc(u.loginId)}</td><td>${esc(u.name)}</td><td>${esc(u.department || '')}</td><td>${esc(p.position || '')}</td><td>${esc(p.homeCountry || '')}</td><td>${hrIsSaudi(u) ? 'n/a' : day(p.iqama && p.iqama.expiry)}</td><td>${day(p.passport && p.passport.expiryDate)}</td><td>${day(hr.insuranceExpiry)}</td></tr>`; });
-  const head = '<tr><th>ID</th><th>Name</th><th>Department</th><th>Position</th><th>Country</th><th>Iqama expiry</th><th>Passport expiry</th><th>Insurance</th></tr>';
+  const rows = list.map((u, ix) => { const p = u.profile || {}, hr = p.hr || {}; return `<tr><td>${ix + 1}</td><td>${esc(u.loginId)}</td><td>${esc(u.name)}</td><td>${esc(u.department || '')}</td><td>${esc(p.position || '')}</td><td>${esc(p.homeCountry || '')}</td><td>${hrIsSaudi(u) ? 'n/a' : day(p.iqama && p.iqama.expiry)}</td><td>${day(p.passport && p.passport.expiryDate)}</td><td>${day(hr.insuranceExpiry)}</td></tr>`; });
+  const head = '<tr><th>#</th><th>ID</th><th>Name</th><th>Department</th><th>Position</th><th>Country</th><th>Iqama expiry</th><th>Passport expiry</th><th>Insurance</th></tr>';
   toast('Making the PDF…');
   await rvfMakePdf([rvfPdfHeader('Employees', [list.length + ' people · ' + rvfNowText(), filt])].concat(rvfTableBlocks(head, rows, 28)), 'employees-' + rvfDateStamp() + '.pdf');
 }
@@ -13160,8 +13181,8 @@ $('ovBrkToggle').addEventListener('click', () => {
 $('ovBrkBy').addEventListener('change', renderEmpBreakdown);
 
 let empDrillKind = null;
-function renderEmpDrillList(){
-  const kind = empDrillKind;
+function empDrillCompute(kind0){
+  const kind = kind0 || empDrillKind;
   const withProfile = state.users.filter(u => u.role !== 'pending');
   let list = withProfile;
   let title = 'All Employees';
@@ -13229,18 +13250,9 @@ function renderEmpDrillList(){
   }
 
   list = list.slice().sort((a, b) => String(a.loginId || '').localeCompare(String(b.loginId || ''), undefined, { numeric: true, sensitivity: 'base' }));
-  $('ceoEmpDrillTitle').textContent = `${title} (${list.length})`;
-  const listBox = $('ceoEmpDrillList');
-  listBox.innerHTML = list.length ? list.slice(0, 300).map(u => `
-    <div class="card row" style="padding:10px 12px;">
-      <span style="flex:1; font-family:'JetBrains Mono',monospace; font-size:12px;">${u.loginId}</span>
-      <span style="flex:2; font-weight:600;">${u.name}</span>
-      <span style="flex:1.5; font-size:12px; color:var(--muted);">${u.department||'—'}</span>
-      <button class="btn btn-ghost btn-sm viewDetailsBtn" data-id="${u.loginId}" data-name="${u.name}" style="width:70px; flex-shrink:0;">View</button>
-    </div>`).join('') + (list.length > 300 ? `<div class="hint">+ ${list.length-300} more — narrow the filter to see them.</div>` : '')
-    : '<div class="empty-state">No one matches yet.</div>';
-  listBox.querySelectorAll('.viewDetailsBtn').forEach(btn => btn.addEventListener('click', () => openViewDetailsChooser(btn.dataset.id, btn.dataset.name)));
+  return { title, list };
 }
+function renderEmpDrillList(){ const r = empDrillCompute(); empDrillPaint(r.title, r.list); }
 
 $('ceoFilterToggle').addEventListener('click', () => {
   const body = $('ceoFilterBody');
@@ -13510,12 +13522,12 @@ function renderMachineDrillList(scopedMachines, range){
   // straight into Excel, exactly like the Report page's table.
   box.innerHTML = `<div class="table-scroll"><table class="report-table">
     <thead><tr>
-      <th>Machine</th><th>Operator</th><th>Status</th>
+      <th>#</th><th>Machine</th><th>Operator</th><th>Status</th>
       <th>Day Shift Hrs</th><th>Day Stop Hrs</th><th>Day Picks</th>
       <th>Night Shift Hrs</th><th>Night Stop Hrs</th><th>Night Picks</th>
     </tr></thead>
     <tbody>
-      ${list.map(m => {
+      ${list.map((m, ix) => {
         const statusClass = m.status === 'stopped' ? 'status-text-stopped' : 'status-text-running';
         const statusLabel = m.status === 'stopped' ? (m.stopType === 'permanent' ? 'Perm. Stopped' : 'Stopped') : 'Running';
         const b = perMachine[m.id] || { dayPicks:0, nightPicks:0, dayStop:0, nightStop:0 };
@@ -13538,6 +13550,7 @@ function renderMachineDrillList(scopedMachines, range){
         const showDay = runsDay || b.dayPicks > 0 || b.dayStop > 0, showNight = runsNight || b.nightPicks > 0 || b.nightStop > 0;
         const clash = shiftClash(m);
         return `<tr>
+          <td>${ix + 1}</td>
           <td${clash.length ? ' title="' + clash.join(' \u00B7 ').replace(/"/g, '&quot;') + '"' : ''}>${m.id} &middot; ${m.name}${clash.length ? ' <span style="color:var(--warn); font-weight:800;">\u26A0</span>' : ''}</td>
           <td title="${opTitle}">${dayFirst} / ${nightFirst}</td>
           <td class="${statusClass}">${statusLabel}</td>
@@ -15883,12 +15896,12 @@ async function aiLoad(force){
   const D = aiDefaults();
   AI.cfg = { master: d.master || D.master, approver: Object.assign({}, D.approver, d.approver || {}), signers: Array.isArray(d.signers) ? d.signers : [], layout: (d.layout && typeof d.layout === 'object') ? d.layout : {}, types: Array.isArray(d.types) && d.types.length ? d.types : D.types };
   if(!AI.cfg.types.some(t => t.id === 'free')){ const F = D.types.find(t => t.id === 'free'); if(F) AI.cfg.types.push(F); }
-  AI.loaded = true; return AI.cfg;
+  AI.loaded = true; AI.at = Date.now(); return AI.cfg;
 }
 async function aiSave(){
   if(!AI.loaded) throw new Error('NOTLOADED');
   if(JSON.stringify(AI.cfg).length > 800000) throw new Error('TOO_BIG');
-  await window.__db.saveConfigObject('aiLetters', AI.cfg);
+  await window.__db.saveConfigObject('aiLetters', AI.cfg); AI.at = Date.now();
 }
 async function aiLoadConn(force){
   if(AI.conn && !force) return AI.conn;
@@ -15901,13 +15914,13 @@ async function aiSaveConn(){ await window.__db.saveConfigObject('aiConn', AI.con
 async function aiAsk(system, user){
   const c = await aiLoadConn();
   if(!c.baseUrl || !c.model) throw new Error('NOT_SET');
-  if(!c.key && /api\.(groq|openai)\.com/.test(c.baseUrl)) throw new Error('NO_KEY');
+  if(!c.key && /api\.(groq|openai)\.com|generativelanguage\.googleapis\.com/.test(c.baseUrl)) throw new Error('NO_KEY');
   const headers = { 'Content-Type': 'application/json' }; if(c.key) headers.Authorization = 'Bearer ' + c.key;
   const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 45000);
   let res;
   try{
     res = await fetch(c.baseUrl.replace(/\/+$/, '') + '/chat/completions', { method: 'POST', headers, signal: ctl.signal,
-      body: JSON.stringify({ model: c.model, temperature: 0.3, max_tokens: 1000, messages: [{ role: 'system', content: system }, { role: 'user', content: user }] }) });
+      body: JSON.stringify({ model: c.model, temperature: 0.3, max_tokens: /generativelanguage/.test(c.baseUrl) ? 6000 : 1000, messages: [{ role: 'system', content: system }, { role: 'user', content: user }] }) });
   }catch(err){ clearTimeout(t); throw new Error(err.name === 'AbortError' ? 'TIMEOUT' : 'NETWORK'); }
   clearTimeout(t);
   let j = null; try{ j = await res.json(); }catch(e){}
@@ -16014,7 +16027,7 @@ function aiApprBlock(m){
   return `<div style="font-size:12.5px;line-height:1.45;"><div style="font-weight:700;margin-bottom:${aiG('gApprSign')}px;">Approved By:</div><div style="font-weight:700;">${aiEsc(String(m.ceo.name).toUpperCase())}</div><div style="color:#475569;">${aiEsc(m.ceo.title || '')}</div></div>`;
 }
 function aiApprHtml(m){
-  if(!m.appr || m.end === 'ceo' || m.end === 'free' || !m.ceo || !m.ceo.name) return '';
+  if(!m.appr || m.end === 'ceo' || !m.ceo || !m.ceo.name) return '';
   const pos = aiU.apos || 'left', mt = aiG('gAppr');
   return `<div style="margin-top:${mt}px;${pos === 'right' ? 'display:flex;justify-content:flex-end;' : pos === 'center' ? 'display:flex;justify-content:center;' : ''}">${aiApprBlock(m)}</div>`;
 }
@@ -16023,7 +16036,7 @@ function aiLetterHtml(m){
   const meta = (k, v, first) => v ? `<div style="display:flex;gap:10px;margin-top:${first ? 0 : aiG('gSub')}px;font-size:13px;"><div style="width:78px;font-weight:700;flex:none;">${k}</div><div style="flex:1;font-weight:700;">${v}</div></div>` : '';
   const head = (m.end === 'free' && aiU.noLh) ? '' : lhHeaderHtml(S.letterhead, lh.company || S.company);
   if(m.end === 'free'){
-    const fb = `<div style="margin-top:6px;font-size:${lh.bodySize}px;line-height:${lh.lineH - 0.1};">${aiBodyHtml(m.body, aiU.just == null ? false : aiU.just)}</div>`;
+    const fb = `<div style="margin-top:6px;font-size:${lh.bodySize}px;line-height:${lh.lineH - 0.1};">${aiBodyHtml(m.body, aiU.just == null ? false : aiU.just)}</div>${aiApprHtml(m)}`;
     const ff = lh.footer && !aiU.noLh ? `<div style="margin-top:auto;padding-top:10px;border-top:1px solid #e2e8f0;font-size:10.5px;color:#64748b;text-align:center;">${aiEsc(lh.footer)}</div>` : '';
     return `<div style="width:760px;min-height:${pg.pxH}px;box-sizing:border-box;padding:${pg.pT}px ${pg.pR}px ${pg.pB}px ${pg.pL}px;background:#fff;color:#0f172a;font-family:'Inter',sans-serif;display:flex;flex-direction:column;">${head}<div style="flex:1;">${fb}</div>${ff}</div>`;
   }
@@ -16075,7 +16088,7 @@ function aiSetType(id){
 function aiRenderLetters(){
   const b = $('hrBody'); if(!b) return;
   b.innerHTML = aiSwitchHtml() + '<div class="hrEmpty">Loading…</div>';
-  aiLoad().then(() => {
+  (async () => { try{ await hrLoadSettings(); }catch(e){} return aiLoad(Date.now() - (AI.at || 0) > 120000); })().then(() => {
     if(!aiU.date) aiU.date = aiToday();
     if(!aiU.layoutInit){ aiU.g = Object.assign({}, AI.cfg.layout.g || {}); aiU.apos = AI.cfg.layout.apos || 'left'; aiU.layoutInit = true; }
     if(!aiType()) aiSetType(AI.cfg.types[0].id);
@@ -16111,7 +16124,7 @@ function aiDraw(){
     ${T.emp ? `<label class="aiChk"><input type="checkbox" data-ai="esign" ${aiU.empSign ? 'checked' : ''}> Add the employee's signature and name at the bottom (if unticked, his name, ID and position are written inside the letter text instead)</label>` : ''}
     <label class="aiChk"><input type="checkbox" data-ai="just" ${(aiU.just == null ? lhPage((state.hrSettings || {}).letterhead).justify : aiU.just) ? 'checked' : ''}> Justify the paragraph text (straight edge on both sides)</label>
     ${T.end === 'free' ? `<label class="aiChk"><input type="checkbox" data-ai="nolh" ${aiU.noLh ? '' : 'checked'}> Print the letterhead on this page</label>` : ''}
-    ${T.end !== 'ceo' && T.end !== 'free' ? `<label class="aiChk"><input type="checkbox" data-ai="appr" ${aiU.appr ? 'checked' : ''}> Add the approver's signature: ${aiEsc(C.approver.name)} (${aiEsc(C.approver.title)})</label>` : ''}
+    ${T.end !== 'ceo' ? `<label class="aiChk"><input type="checkbox" data-ai="appr" ${aiU.appr ? 'checked' : ''}> Add the approver's signature: ${aiEsc(C.approver.name)} (${aiEsc(C.approver.title)})</label>` : ''}
     </div>
     <div class="aiGen"><button class="btn btn-primary btn-sm" data-ai="pdf">${aiIc('down', 14)} Download PDF</button><button class="btn btn-ghost btn-sm" data-ai="copy">${aiIc('copy', 14)} Copy text</button><button class="btn btn-ghost btn-sm" data-ai="savel">${aiIc('save', 14)} ${aiU.savedId ? 'Update saved letter' : 'Save for later'}</button>${aiU.savedId ? `<button class="pillBtn" data-ai="savenew">Save as new copy</button>` : ''}${T.save && u ? `<button class="btn btn-ghost btn-sm" data-ai="viol">${aiIc('save', 14)} Save in ${aiEsc((u.name || '').split(/\s+/)[0])}'s violations</button>` : ''}
       <button class="mini-icon-btn aiSpBtn" data-ai="sptoggle" title="Spacing and signature position" aria-label="Spacing and signature position" style="margin-left:auto;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg><i class="aiDot" id="aiSpDot" style="display:${aiLayoutDirty() ? '' : 'none'}"></i></button></div>
@@ -16284,7 +16297,7 @@ document.addEventListener('click', aiOnClick); document.addEventListener('input'
    ============================================================ */
 const aiA = { sel: '', msg: '', conn: false, cfg: false };
 const aiAEsc = (t) => String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-const AI_PRESETS = { groq: ['https://api.groq.com/openai/v1', 'llama-3.3-70b-versatile'], openai: ['https://api.openai.com/v1', 'gpt-4o-mini'], custom: ['', ''] };
+const AI_PRESETS = { groq: ['https://api.groq.com/openai/v1', 'llama-3.3-70b-versatile'], openai: ['https://api.openai.com/v1', 'gpt-4o-mini'], gemini: ['https://generativelanguage.googleapis.com/v1beta/openai', 'gemini-2.5-flash'], custom: ['', ''] };
 const AI_WORKER = `export default {
   async fetch(req, env) {
     const cors = { 'Access-Control-Allow-Origin': 'https://app.rvf.sa', 'Access-Control-Allow-Headers': 'Content-Type', 'Access-Control-Allow-Methods': 'POST, OPTIONS' };
@@ -16305,14 +16318,14 @@ function aiAdminDraw(){
   const p = $('admin-ai'); if(!p || !AI.cfg) return;
   const C = AI.cfg, K = AI.conn, T = C.types.find(t => t.id === aiA.sel) || C.types[0]; aiA.sel = T.id;
   const users = (state.users || []).filter(u => u.role !== 'pending').sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-  const preset = /groq\.com/.test(K.baseUrl) ? 'groq' : /openai\.com/.test(K.baseUrl) ? 'openai' : 'custom';
+  const preset = /groq\.com/.test(K.baseUrl) ? 'groq' : /openai\.com/.test(K.baseUrl) ? 'openai' : /generativelanguage\.googleapis\.com/.test(K.baseUrl) ? 'gemini' : 'custom';
   const uopt = (sel) => '<option value="">Choose from the user list…</option>' + users.map(u => `<option value="${aiAEsc(u.loginId)}" ${u.loginId === sel ? 'selected' : ''}>${aiAEsc(u.name)} (${aiAEsc(u.loginId)})</option>`).join('');
   const fld = (l, inner, wide) => `<div class="field${wide ? ' wide' : ''}"><label>${l}</label>${inner}</div>`;
   const inp = (k, v, ph) => `<input type="text" data-aia="tf" data-k="${k}" value="${aiAEsc(v || '')}" ${ph ? `placeholder="${aiAEsc(ph)}"` : ''}>`;
   const chk = (k, l) => `<label class="aiChk"><input type="checkbox" data-aia="tc" data-k="${k}" ${T[k] ? 'checked' : ''}> ${l}</label>`;
   p.innerHTML = `<div class="card aiAdm">
     <div class="aiH">1 &middot; AI connection</div>
-    <div class="hrForm">${fld('Service', `<select data-aia="preset"><option value="groq" ${preset === 'groq' ? 'selected' : ''}>Groq</option><option value="openai" ${preset === 'openai' ? 'selected' : ''}>OpenAI</option><option value="custom" ${preset === 'custom' ? 'selected' : ''}>Other / my own proxy</option></select>`)}
+    <div class="hrForm">${fld('Service', `<select data-aia="preset"><option value="groq" ${preset === 'groq' ? 'selected' : ''}>Groq</option><option value="openai" ${preset === 'openai' ? 'selected' : ''}>OpenAI</option><option value="gemini" ${preset === 'gemini' ? 'selected' : ''}>Google Gemini</option><option value="custom" ${preset === 'custom' ? 'selected' : ''}>Other / my own proxy</option></select>`)}
       ${fld('Model', `<input type="text" data-aia="cf" data-k="model" value="${aiAEsc(K.model)}">`)}
       ${fld('Address (base URL)', `<input type="text" data-aia="cf" data-k="baseUrl" value="${aiAEsc(K.baseUrl)}">`, true)}
       ${fld('API key', `<input type="password" autocomplete="off" data-aia="cf" data-k="key" value="${aiAEsc(K.key)}" placeholder="paste the key here">`, true)}</div>
@@ -16380,7 +16393,7 @@ function aiAOnClick(e){
 }
 function aiAOnChange(e){
   const el = e.target, a = el.dataset && el.dataset.aia; if(!a || !AI.cfg) return; const C = AI.cfg, T = C.types.find(t => t.id === aiA.sel);
-  if(a === 'preset'){ const P = AI_PRESETS[el.value]; if(P && P[0]){ AI.conn.baseUrl = P[0]; AI.conn.model = P[1]; } else AI.conn.baseUrl = ''; aiAdminDraw(); }
+  if(a === 'preset'){ const P = AI_PRESETS[el.value]; if(P && P[0]){ AI.conn.baseUrl = P[0]; AI.conn.model = P[1]; if(el.value === 'gemini'){ AI.conn.visionModel = 'gemini-2.5-flash'; AI.conn.chatModel = ''; } } else AI.conn.baseUrl = ''; aiAdminDraw(); }
   else if(a === 'appr'){ const u = (state.users || []).find(x => x.loginId === el.value); if(u){ C.approver = { id: u.loginId, name: String(u.name || '').toUpperCase(), title: (u.profile && u.profile.position) || C.approver.title || 'C.E.O' }; aiAdminDraw(); aiSaveCfg(); } }
   else if(a === 'sadd'){ const u = (state.users || []).find(x => x.loginId === el.value); if(u && !C.signers.some(s => s.id === u.loginId)){ C.signers.push({ id: u.loginId, name: u.name, title: (u.profile && u.profile.position) || '' }); aiAdminDraw(); aiSaveCfg(); } }
   else if(a === 'tsel'){ aiA.sel = el.value; aiAdminDraw(); }
@@ -16438,7 +16451,7 @@ function chJson(raw){ const t = String(raw).trim().replace(/^```(?:json)?/i, '')
 async function chApi(messages, model, maxTokens){
   const c = await aiLoadConn();
   if(!c.baseUrl || !(model || c.chatModel || c.model)) throw new Error('NOT_SET');
-  if(!c.key && /api\.(groq|openai)\.com/.test(c.baseUrl)) throw new Error('NO_KEY');
+  if(!c.key && /api\.(groq|openai)\.com|generativelanguage\.googleapis\.com/.test(c.baseUrl)) throw new Error('NO_KEY');
   const headers = { 'Content-Type': 'application/json' }; if(c.key) headers.Authorization = 'Bearer ' + c.key;
   const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 120000); let res;
   try{ res = await fetch(c.baseUrl.replace(/\/+$/, '') + '/chat/completions', { method: 'POST', headers, signal: ctl.signal, body: JSON.stringify({ model: model || c.chatModel || c.model, temperature: 0.7, max_tokens: maxTokens || 4096, messages }) }); }
@@ -17337,6 +17350,142 @@ function poDrawSign(pdf, m, M, CW, BOT, y, txt, wrap){
   slot(ax, aw, ap.name, ap.title, y + 3);
   return y + 3 + rowsOb * (H + 18);
 }
+
+/* ============================================================
+   v42: serial numbers (#) for lists and downloads, and the Employee Overview list:
+   column picker (from each person's profile), PDF and Excel.
+   ============================================================ */
+function rvfNumRows(aoa){ return aoa.map((r, i) => i === 0 ? ['#'].concat(r) : [i].concat(r)); }
+
+const OV_GROUPS = ['Basic', 'Work', 'Dates', 'Passport', 'Iqama & contract', 'Admin only'];
+const OV_DT = (v) => v ? fmtDate(v) : '';
+const OV_COLS = [
+  { k: 'id', l: 'ID', g: 'Basic', get: u => u.loginId || '' },
+  { k: 'name', l: 'Name', g: 'Basic', get: u => u.name || '' },
+  { k: 'dept', l: 'Department', g: 'Basic', get: u => u.department || '' },
+  { k: 'pos', l: 'Position', g: 'Basic', get: u => (u.profile || {}).position || '' },
+  { k: 'gender', l: 'Gender', g: 'Basic', get: u => (u.profile || {}).gender || '' },
+  { k: 'phone', l: 'Phone', g: 'Basic', get: u => { const p = u.profile || {}; return p.phone || p.phoneNumber || ''; } },
+  { k: 'country', l: 'Home country', g: 'Basic', get: u => (u.profile || {}).homeCountry || '' },
+  { k: 'airport', l: 'Home airport', g: 'Basic', get: u => (u.profile || {}).homeCountryAirport || '' },
+  { k: 'type', l: 'Sponsor type', g: 'Work', get: u => (u.profile || {}).employmentType || '' },
+  { k: 'status', l: 'Status', g: 'Work', get: u => empStatusLabel((u.profile || {}).employmentStatus) },
+  { k: 'shift', l: 'Shift', g: 'Work', get: u => { try{ return profileShiftText(u) || ''; }catch(e){ return ''; } } },
+  { k: 'vac', l: 'Vacation every (years)', g: 'Work', get: u => (u.profile || {}).vacationEligibility || '' },
+  { k: 'complete', l: 'File complete %', g: 'Work', get: u => { try{ return hrComplete(u).pct + '%'; }catch(e){ return ''; } } },
+  { k: 'join', l: 'Joining date', g: 'Dates', get: u => OV_DT((u.profile || {}).joiningDate) },
+  { k: 'tenure', l: 'Time with us', g: 'Dates', get: u => { const y = calcTotalYears((u.profile || {}).joiningDate); return y === null || y === undefined ? '' : y.toFixed(1) + ' yrs'; } },
+  { k: 'end', l: 'End date', g: 'Dates', get: u => OV_DT((u.profile || {}).endDate) },
+  { k: 'pexp', l: 'Passport expiry', g: 'Passport', get: u => OV_DT(((u.profile || {}).passport || {}).expiryDate) },
+  { k: 'pissue', l: 'Passport issue', g: 'Passport', get: u => OV_DT(((u.profile || {}).passport || {}).issueDate) },
+  { k: 'iexp', l: 'Iqama expiry', g: 'Iqama & contract', get: u => OV_DT(((u.profile || {}).iqama || {}).expiry) },
+  { k: 'ins', l: 'Insurance expiry', g: 'Iqama & contract', get: u => OV_DT((((u.profile || {}).hr) || {}).insuranceExpiry) },
+  { k: 'contract', l: 'Contract end', g: 'Iqama & contract', get: u => OV_DT((((u.profile || {}).hr) || {}).contractEnd) },
+  { k: 'pno', l: 'Passport no.', g: 'Admin only', adm: true, get: u => ((u.profile || {}).passport || {}).passportNo || '' },
+  { k: 'dob', l: 'Date of birth', g: 'Admin only', adm: true, get: u => OV_DT(((u.profile || {}).passport || {}).dob) },
+  { k: 'ploc', l: 'Passport is', g: 'Admin only', adm: true, get: u => { const l = ((u.profile || {}).passport || {}).location; return l === 'office' ? 'In office' : l === 'employee' ? 'With employee' : ''; } },
+  { k: 'ino', l: 'Iqama no.', g: 'Admin only', adm: true, get: u => ((u.profile || {}).iqama || {}).no || '' },
+  { k: 'sal', l: 'Basic salary', g: 'Admin only', adm: true, get: u => { const s = (u.profile || {}).salary; return s && s.basicSalary ? s.basicSalary : ''; } }
+];
+const OV_DEF = ['id', 'name', 'dept'];
+const OVC = { sel: null, cur: null };
+function ovIsAdmin(){ return !!(state.user && state.user.role === 'admin'); }
+function ovAvail(){ return OV_COLS.filter(c => !c.adm || ovIsAdmin()); }
+function ovLoadSel(){
+  if(OVC.sel) return OVC.sel;
+  let s = null; try{ s = JSON.parse(localStorage.getItem('rvfOvCols') || 'null'); }catch(e){}
+  OVC.sel = Array.isArray(s) && s.length ? s.filter(k => OV_COLS.some(c => c.k === k)) : OV_DEF.slice();
+  if(!OVC.sel.length) OVC.sel = OV_DEF.slice();
+  return OVC.sel;
+}
+function ovSaveSel(){ try{ localStorage.setItem('rvfOvCols', JSON.stringify(OVC.sel)); }catch(e){} }
+function ovSelCols(){ const sel = ovLoadSel(); const av = ovAvail(); const out = av.filter(c => sel.includes(c.k)); return out.length ? out : av.filter(c => OV_DEF.includes(c.k)); }
+
+function ovColsHtml(){
+  const sel = ovLoadSel(), av = ovAvail();
+  return OV_GROUPS.map(g => { const cs = av.filter(c => c.g === g); return cs.length ? `<div class="ovColG"><div class="ovColGL">${g}</div><div class="ovCols">${cs.map(c => `<label class="ovColChip${sel.includes(c.k) ? ' on' : ''}"><input type="checkbox" data-ovc="${c.k}" ${sel.includes(c.k) ? 'checked' : ''}>${assignEsc(c.l)}</label>`).join('')}</div></div>` : ''; }).join('')
+    + '<div style="margin-top:8px;"><button type="button" class="pillBtn" id="ovColsReset">Back to ID, Name, Department</button></div>';
+}
+function ovColsDraw(){ const b = document.getElementById('ceoColsBox'); if(b) b.innerHTML = ovColsHtml(); }
+
+// the screen list: # first, then the chosen columns, then the View button
+function empDrillPaint(title, list){
+  OVC.cur = { title, list };
+  const esc = assignEsc, cols = ovSelCols();
+  document.getElementById('ceoEmpDrillTitle').textContent = `${title} (${list.length})`;
+  if(!document.getElementById('ceoColsBox') || !document.getElementById('ceoColsBox').firstChild) ovColsDraw();
+  const box = document.getElementById('ceoEmpDrillList');
+  const shown = list.slice(0, 100);
+  box.innerHTML = list.length ? `<div class="table-scroll"><table class="report-table ovTbl"><thead><tr><th class="serial">#</th>${cols.map(c => `<th>${esc(c.l)}</th>`).join('')}<th></th></tr></thead><tbody>${shown.map((u, i) =>
+      `<tr><td class="serial">${i + 1}</td>${cols.map(c => `<td${c.k === 'name' ? ' style="font-weight:600;"' : ''}>${esc(c.get(u)) || '<span style="color:var(--muted);">—</span>'}</td>`).join('')}<td><button class="btn btn-ghost btn-sm viewDetailsBtn" data-id="${esc(u.loginId)}" data-name="${esc(u.name)}">View</button></td></tr>`).join('')}</tbody></table></div>`
+    + (list.length > 100 ? `<div class="hint">+ ${list.length - 100} more — narrow the filter to see them. The PDF and Excel downloads include everyone.</div>` : '')
+    : '<div class="empty-state">No one matches yet.</div>';
+  box.querySelectorAll('.viewDetailsBtn').forEach(btn => btn.addEventListener('click', () => openViewDetailsChooser(btn.dataset.id, btn.dataset.name)));
+}
+
+function ovEnsureList(){
+  if(!empDrillKind){ empDrillExtra = null; empDrillKind = 'all'; document.getElementById('ceoEmpDrill').style.display = 'block'; document.getElementById('ceoEmpDrillSearch').value = ''; }
+  renderEmpDrillList();
+}
+function ovFilterText(){
+  const g = (id) => { const e = document.getElementById(id); return e ? e.value : ''; };
+  const f = [['Department', g('ceoFilterDept')], ['Country', g('ceoFilterCountry')], ['Gender', g('ceoFilterGender')], ['Position', g('ceoFilterPosition')]].filter(x => x[1]).map(x => x[0] + ': ' + x[1]);
+  if(parseFloat(g('ceoFilterTenure'))) f.push('Time with us: ' + g('ceoFilterTenure') + '+ years');
+  const q = (g('ceoEmpDrillSearch') || '').trim(); if(q) f.push('Search: ' + q);
+  return f.join(' · ');
+}
+function ovDownload(kind){
+  const r = empDrillCompute(empDrillKind || 'all'), list = r.list;
+  if(!list.length){ toast('Nobody to download'); return; }
+  const cols = ovSelCols(), filt = ovFilterText();
+  if(kind === 'xlsx'){
+    if(typeof XLSX === 'undefined'){ toast('Excel tool not loaded — check your connection'); return; }
+    const count = (fn) => list.filter(fn).length, T = (u) => (u.profile || {}).employmentType;
+    const wb = XLSX.utils.book_new();
+    const ws1 = XLSX.utils.aoa_to_sheet([['Employees — ' + r.title], ['Created', rvfNowText()], ['Filters', filt || 'none'], [], ['People listed', list.length], ['  Sponsor', count(u => T(u) === 'Sponsor')], ['  Non-Sponsor', count(u => T(u) === 'Non-Sponsor')], ['Columns', cols.map(c => c.l).join(', ')]]);
+    ws1['!cols'] = [{ wch: 20 }, { wch: 60 }]; XLSX.utils.book_append_sheet(wb, ws1, 'Summary');
+    const aoa = [cols.map(c => c.l)].concat(list.map(u => cols.map(c => c.get(u))));
+    const ws = XLSX.utils.aoa_to_sheet(rvfNumRows(aoa)); ws['!cols'] = [{ wch: 5 }].concat(cols.map(c => ({ wch: c.k === 'name' ? 28 : c.k === 'dept' || c.k === 'pos' ? 20 : 15 })));
+    XLSX.utils.book_append_sheet(wb, ws, 'Employees');
+    XLSX.writeFile(wb, 'employees-' + rvfDateStamp() + '.xlsx'); toast('Excel file downloaded');
+    return;
+  }
+  const esc = assignEsc, n = cols.length, cls = n > 12 ? 'ovPdfT ovW3' : n > 8 ? 'ovPdfT ovW2' : 'ovPdfT';
+  const head = '<tr><th>#</th>' + cols.map(c => `<th>${esc(c.l)}</th>`).join('') + '</tr>';
+  const rows = list.map((u, i) => `<tr><td>${i + 1}</td>${cols.map(c => `<td>${esc(c.get(u)) || '—'}</td>`).join('')}</tr>`);
+  toast('Making the PDF…');
+  rvfMakePdf([rvfPdfHeader('Employees', [r.title + ' · ' + list.length + ' people · ' + rvfNowText(), filt])].concat(rvfTableBlocks(head, rows, n > 8 ? 24 : 28, cls)), 'employees-' + rvfDateStamp() + '.pdf');
+}
+
+// top bar of the Employee Overview: filter / columns, PDF, Excel (same look as Team & Machine Summary)
+function ovInitToolbar(){
+  const card = document.querySelector('#employeeOverviewBlock > .card'); if(!card || document.getElementById('ovEmpTop')) return;
+  const dl = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
+  const fl = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>';
+  const d = document.createElement('div'); d.className = 'asumTop'; d.id = 'ovEmpTop';
+  d.innerHTML = `<button type="button" class="iconBtn" id="ovFiltBtn" title="Filter and choose the columns" aria-label="Filter and choose the columns">${fl}</button><span class="hrNote" style="margin:0;">Filter, choose columns, download</span><span style="flex:1;"></span><button type="button" class="pillBtn" id="ovPdfBtn" title="Download as PDF">${dl}PDF</button><button type="button" class="pillBtn" id="ovXlsBtn" title="Download as Excel">${dl}Excel</button>`;
+  card.insertBefore(d, card.firstChild);
+}
+document.addEventListener('click', (e) => {
+  const t = e.target.closest('#ovFiltBtn, #ovPdfBtn, #ovXlsBtn, #ovColsReset'); if(!t) return;
+  if(t.id === 'ovPdfBtn') ovDownload('pdf');
+  else if(t.id === 'ovXlsBtn') ovDownload('xlsx');
+  else if(t.id === 'ovColsReset'){ OVC.sel = OV_DEF.slice(); ovSaveSel(); ovColsDraw(); if(empDrillKind) renderEmpDrillList(); }
+  else {
+    ovEnsureList(); ovColsDraw();
+    const b = document.getElementById('ceoFilterBody'); b.style.display = 'block'; document.getElementById('ceoFilterToggleLbl').textContent = 'Hide';
+    document.getElementById('ceoEmpDrill').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+});
+document.addEventListener('change', (e) => {
+  const c = e.target.closest('[data-ovc]'); if(!c) return;
+  const k = c.dataset.ovc, sel = ovLoadSel().slice(), i = sel.indexOf(k);
+  if(c.checked && i < 0) sel.push(k); else if(!c.checked && i >= 0){ if(sel.length <= 1){ c.checked = true; toast('Keep at least one column'); return; } sel.splice(i, 1); }
+  OVC.sel = OV_COLS.map(x => x.k).filter(x => sel.includes(x)); ovSaveSel();
+  const lab = c.closest('.ovColChip'); if(lab) lab.classList.toggle('on', c.checked);
+  if(empDrillKind) renderEmpDrillList();
+});
+if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', ovInitToolbar); else ovInitToolbar();
 
 (function(){
   const b=$('bkOpenBtn'); if(b) b.addEventListener('click', () => bkOpen());
