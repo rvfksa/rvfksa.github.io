@@ -14121,7 +14121,7 @@ function pcMergeSettings(d){
   out.tpl = Object.assign({}, PC_DEF.tpl, (d && d.tpl) || {});
   ['requesters', 'procurement', 'approvers', 'units'].forEach(k => { if(!Array.isArray(out[k])) out[k] = PC_DEF[k].slice(); });
   ['reqSigners', 'poSigners'].forEach(k => { if(!Array.isArray(out.tpl[k])) out.tpl[k] = []; });
-  { const n = parseInt(out.remindDays, 10); out.remindDays = isNaN(n) ? 7 : Math.max(0, Math.min(90, n)); }
+  { const n = parseInt(out.remindDays, 10); out.remindDays = (isNaN(n) || n < 1) ? 7 : Math.min(90, n); }
   return out;
 }
 const pcMoney = (n) => (n || n === 0) && Number(n) > 0 ? Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '\u2013';
@@ -14752,7 +14752,7 @@ function pcOpenRemind(o){
     <div class="pcActs">${phone ? `<button class="pcBtnMain sm" data-pc="waopen" data-t="person" data-id="${pcEsc(o.docId)}">${pcSvg('wa', 14)}WhatsApp ${pcEsc((o.reqBy.name || '').split(' ')[0] || 'person')}</button>` : ''}
     <button class="${phone ? 'pcBtnSoft' : 'pcBtnMain sm'}" data-pc="waopen" data-t="group" data-id="${pcEsc(o.docId)}">${pcSvg('wa', 14)}WhatsApp group / other</button>
     <button class="pcBtnSoft" data-pc="wacopy">Copy</button></div>
-    <button class="pcBtnSoft ok" data-pc="wadone" data-id="${pcEsc(o.docId)}">${pcSvg('check', 14)}I sent it — ${pc.settings.remindDays ? 'remind me again in ' + pc.settings.remindDays + ' days' : 'test mode: it will show again straight away'}</button>`);
+    <button class="pcBtnSoft ok" data-pc="wadone" data-id="${pcEsc(o.docId)}">${pcSvg('check', 14)}I sent it — remind me again in ${pc.settings.remindDays} days</button>`);
 }
 function pcOpenPhoto(o, i, k){
   const p = o.items[i] && o.items[i].photos && o.items[i].photos[k]; if(!p) return;
@@ -15248,7 +15248,7 @@ async function pcRenderAdmin0(){
       <div id="pcPeople"></div>
       <div class="card" style="margin-top:16px"><div class="sub" style="margin-top:0;font-weight:600;color:var(--text);text-transform:none">Reminders &amp; wording</div>
         <p class="hrNote" style="margin:0 0 10px">The letterhead (logo, address, colour, footer) is the same one used for HR letters — change it in Admin → Letterhead.</p>
-        <div class="hrForm"><div class="field"><label>Remind the creator every (days) \u2014 0 = test mode</label><input type="number" min="0" max="90" id="pcaDays" value="${S.remindDays}"></div>${inp('pcaUnits', 'Units in the item list (comma separated)', S.units.join(', '))}
+        <div class="hrForm"><div class="field"><label>Remind the creator every (days) \u2014 normal is 7</label><input type="number" min="1" max="90" id="pcaDays" value="${S.remindDays}"></div>${inp('pcaUnits', 'Units in the item list (comma separated)', S.units.join(', '))}
         ${ta('pcaWa', 'WhatsApp message (you can use {po} {dept} {person} {status} {pending} {days})', S.waMessage)}
         ${inp('pcaPoT', 'Purchase Order title', T.poTitle)}${inp('pcaRqT', 'Requisition title', T.reqTitle)}
         ${ta('pcaPoI', 'Purchase Order — starting text', T.poIntro)}${ta('pcaPoC', 'Purchase Order — ending text', T.poClosing)}
@@ -15324,7 +15324,7 @@ async function pcAdmSaveText(){
   if(pc.ui.busy) return; pc.ui.busy = true; const S = pc.settings, old = JSON.stringify(S);
   try{
     const units = $('pcaUnits').value.split(',').map(x => x.trim()).filter(Boolean);
-    { const n = parseInt($('pcaDays').value, 10); S.remindDays = isNaN(n) ? 7 : Math.max(0, Math.min(90, n)); } S.units = units.length ? units : PC_DEF.units.slice();
+    { const n = parseInt($('pcaDays').value, 10); S.remindDays = (isNaN(n) || n < 1) ? 7 : Math.min(90, n); } S.units = units.length ? units : PC_DEF.units.slice();
     S.waMessage = $('pcaWa').value.trim() || PC_DEF.waMessage; S.tpl = Object.assign({}, S.tpl, pcAdmReadTpl());
     await pcAdmSaveSettings(); toast('Purchase settings saved');
   }catch(err){ console.error(err); Object.assign(S, JSON.parse(old)); toast('Could not save — please try again'); }
