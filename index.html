@@ -3982,6 +3982,7 @@ function computeStopPicks(r){
 // them back into separate boxes (one per reason named, hours divided
 // evenly as an estimate) instead of leaving everything piled into box 1
 // with a reason dropdown that can't match anything.
+function meOpSort(a, b){ return String(a.loginId || '').localeCompare(String(b.loginId || ''), undefined, { numeric: true }) || (a.name || '').localeCompare(b.name || ''); }
 function stopBoxSeeds(r){
   if(Array.isArray(r.stopBreakdown) && r.stopBreakdown.length){
     return r.stopBreakdown.slice(0,4).map(b => ({ hours: Number(b.hours) || 0, reason: b.reason || '' }));
@@ -8971,7 +8972,7 @@ $('addManualEntryBtn').addEventListener('click', async () => {
     try{ state.users = await window.__db.listUsersOnce(); }catch(err){ console.error(err); }
   }
   const machineOpts = state.machines.map(m => `<option value="${m.id}">${m.name}</option>`).join('');
-  const operators = (state.users || []).filter(u => (u.role === 'operator' || u.role === 'supervisor') && !isExitedEmployee(u)).sort((a,b) => a.name.localeCompare(b.name));
+  const operators = (state.users || []).filter(u => (u.role === 'operator' || u.role === 'supervisor') && !isExitedEmployee(u)).sort(meOpSort);
   const opOpts = operators.length
     ? operators.map(u => `<option value="${u.loginId}">${u.name} (${u.loginId})</option>`).join('')
     : '<option value="">No operators/supervisors found</option>';
@@ -8985,10 +8986,9 @@ $('addManualEntryBtn').addEventListener('click', async () => {
       <div class="field"><label>Shift</label><select id="me-shift"><option>Day</option><option>Night</option></select></div>
       <div class="field"><label>Reading</label><input type="text" inputmode="numeric" id="me-reading"></div>
     </div>
-    <div class="grid-2">
-      <div class="field"><label>Stop Time / Hour</label><input type="text" inputmode="decimal" id="me-stopTime" placeholder="0"></div>
-      <div class="field"><label>Reason</label><input type="text" id="me-reason" placeholder="— leave blank if no stop —"></div>
-    </div>
+    <div class="field"><label>This Photo Is</label><select id="me-photoType"><option value="end">Ending Photo</option><option value="start">Starting Photo</option></select></div>
+    <div class="field" style="margin-bottom:6px;"><label>Stop Time &amp; Reason <span style="text-transform:none; font-weight:400; color:var(--muted);">(optional — add more than one if there were several stoppages)</span></label></div>
+    <div id="me-stopBoxes">${[0,1,2,3].map(i => `<div class="row-2" style="margin-bottom:8px;"><input type="text" inputmode="decimal" class="me-stopTimeInput${i}" placeholder="Stop Time / Hour"><select class="me-reasonInput${i}">${reasonOptionsHtml('')}</select></div>`).join('')}</div>
     <div class="field"><label>Operator <span style="text-transform:none; font-weight:400; color:var(--muted);">(picks go to their account &amp; Earned Picks)</span></label><select id="me-operator">${opOpts}</select></div>
     <div class="field"><label>Remarks</label><input type="text" id="me-remarks"></div>
     <div class="row-2">
@@ -9007,18 +9007,29 @@ async function saveManualEntry(){
   const date = $('me-date').value;
   const shift = $('me-shift').value;
   const reading = $('me-reading').value.trim();
-  const stopTime = $('me-stopTime').value.trim() || '0';
-  const reason = $('me-reason').value.trim() || '—';
+  const photoType = $('me-photoType').value === 'start' ? 'start' : 'end';
+  let stopTime = '0', reason = '—'; const stopBreakdown = [];
+  { let total = 0; const reasons = [];
+    for(let i = 0; i < 4; i++){
+      const se = document.querySelector('.me-stopTimeInput' + i), re = document.querySelector('.me-reasonInput' + i);
+      const sv = se ? se.value.trim() : '', rv = re ? re.value : '';
+      if(sv !== ''){
+        if(!isValidNumber(sv)){ toast('Stop Time / Hour must be a number'); se.focus(); return; }
+        total += Number(sv);
+        if(Number(sv) !== 0) stopBreakdown.push({ reason: rv || '—', hours: Number(sv) });
+      }
+      if(rv) reasons.push(rv);
+    }
+    stopTime = String(total); reason = reasons.length ? reasons.join('; ') : '—'; }
   const operatorId = $('me-operator').value;
   const operatorObj = (state.users || []).find(u => u.loginId === operatorId);
   const remarks = $('me-remarks').value.trim();
   if(!date || !reading){ toast('Date and Reading are required'); return; }
   if(!isValidNumber(reading)){ toast('Reading must be a number'); return; }
-  if(stopTime !== '' && !isValidNumber(stopTime)){ toast('Stop Time / Hour must be a number'); return; }
   if(!operatorId){ toast('Select which operator this reading belongs to'); return; }
   if(!requireDb()) return;
   const record = {
-    machine, machineName: machineName(machine), shift, date, reading, stopTime, reason, remarks,
+    machine, machineName: machineName(machine), shift, date, reading, stopTime, reason, remarks, photoType, stopBreakdown,
     timestamp: Date.now(), operatorId, operatorName: operatorObj ? operatorObj.name : operatorId,
     status: 'approved', approvedBy: state.user.loginId, approvedByName: state.user.name, approvedAt: Date.now(),
     photoDataUrl: null, originalReading: reading,
@@ -9046,7 +9057,7 @@ async function openReportEditPanel(id){
   if(!state.users || state.users.length === 0){
     try{ state.users = await window.__db.listUsersOnce(); }catch(err){ console.error(err); }
   }
-  const operators = (state.users || []).filter(u => (u.role === 'operator' || u.role === 'supervisor') && !isExitedEmployee(u)).sort((a,b) => a.name.localeCompare(b.name));
+  const operators = (state.users || []).filter(u => (u.role === 'operator' || u.role === 'supervisor') && !isExitedEmployee(u)).sort(meOpSort);
   const opOpts = operators.map(u => `<option value="${u.loginId}" ${u.loginId===r.enteredById?'selected':''}>${u.name} (${u.loginId})</option>`).join('');
   const backdrop = document.createElement('div');
   backdrop.className = 'edit-modal-backdrop';
