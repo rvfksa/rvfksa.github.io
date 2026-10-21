@@ -2732,7 +2732,87 @@ table.ovTbl td.pick input{ width:16px; height:16px; accent-color:#4f46e5; cursor
 .phTr + .phTr{ border-top:1px solid var(--line); } .phTh .r, .phTr .r{ text-align:right; }
 .phTr i{ font-style:normal; font-size:10px; color:#b45309; background:#fef3c7; border-radius:9px; padding:1px 6px; margin-left:4px; }
 
-</style>
+/* v60 Accounts */
+.acTabs{ display:flex; gap:6px; margin-bottom:12px; flex-wrap:wrap; }
+.acTab{ height:32px; padding:0 14px; border-radius:999px; border:1px solid rgba(15,23,42,.10); background:#fff; color:var(--muted); font:inherit; font-size:12px; font-weight:600; cursor:pointer; }
+.acTab.on{ background:var(--amber); color:#fff; border-color:var(--amber); }
+.acBar{ display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-bottom:10px; }
+.acBar input[type=date], .acQ, .acFilt select{ height:34px; border-radius:11px; border:1px solid rgba(15,23,42,.10); background:#fff; padding:0 10px; font:inherit; font-size:12px; width:auto; min-width:0; }
+.acQ{ width:170px; }
+.acMonth{ min-width:78px; text-align:center; font-size:13px; }
+.iconBtn.on{ background:var(--amber); color:#fff; border-color:var(--amber); }
+.acBadge{ position:absolute; top:-5px; right:-5px; min-width:16px; height:16px; border-radius:8px; background:var(--danger); color:#fff; font-size:9px; display:flex; align-items:center; justify-content:center; }
+.acFilt{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; background:#fff; border:1px solid var(--line); border-radius:14px; padding:10px; margin-bottom:10px; box-shadow:var(--shadow); }
+.acChk{ display:inline-flex; align-items:center; gap:5px; font-size:12px; color:var(--text); text-transform:none; font-weight:500; margin:0; }
+.acChk input{ width:auto; }
+.acSelBar{ display:flex; align-items:center; gap:8px; font-size:12px; color:var(--amber); font-weight:600; margin-bottom:8px; }
+table.acTbl{ border-collapse:separate; border-spacing:0; font-size:12px; min-width:100%; }
+.acTbl th, .acTbl td{ padding:7px 9px; border-bottom:1px solid var(--line); white-space:nowrap; background:#fff; text-align:left; vertical-align:middle; }
+.acTbl thead th{ position:sticky; top:0; background:var(--panel-2); font-size:10.5px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); z-index:2; }
+.acTbl .acN{ text-align:right; } .acTbl .acL{ text-align:left; } .acTbl th.acD{ color:var(--danger); }
+.acStickS, .acStick0, .acStick1, .acStick2{ position:sticky; z-index:1; }
+.acStickS{ left:0; min-width:34px; width:34px; text-align:center !important; color:var(--muted); font-size:11px; }
+.acStick0{ left:34px; min-width:54px; } .acStick1{ left:88px; min-width:46px; } .acStick2{ left:134px; min-width:130px; box-shadow:2px 0 0 var(--line); }
+.acTbl thead .acStickS, .acTbl thead .acStick0, .acTbl thead .acStick1, .acTbl thead .acStick2{ z-index:3; }
+.acSm{ display:block; font-size:9.5px; color:var(--muted); font-weight:500; line-height:1.2; }
+.acTbl tfoot td{ background:var(--panel-2); position:sticky; bottom:0; }
+.acTbl tr.acMk td{ background:#eef2ff; } .acTbl tr.acEx td{ opacity:.55; }
+.acTbl input[type=checkbox]{ width:auto; margin:0 4px 0 0; vertical-align:middle; }
+.acFlag{ border:0; background:none; color:#cbd5e1; padding:0 2px; cursor:pointer; vertical-align:middle; } .acFlag.on{ color:var(--amber); }
+.acIn{ width:82px; height:28px; border-radius:8px; border:1px solid rgba(15,23,42,.14); padding:0 7px; font:inherit; font-size:12px; text-align:right; background:#fff; } .acIn.acRm{ width:140px; text-align:left; }
+.acFx{ display:flex; align-items:center; justify-content:flex-end; gap:3px; font-size:9.5px; color:var(--muted); text-transform:none; font-weight:500; margin:2px 0 0; }
+.acEmpty{ text-align:center; color:var(--muted); padding:20px; }
+.acSec{ background:#fff; border:1px solid var(--line); border-radius:14px; margin-bottom:10px; box-shadow:var(--shadow); }
+.acSec > summary{ padding:12px 14px; font-weight:600; font-size:13px; cursor:pointer; }
+.acSecB{ padding:2px 14px 14px; }
+.acCR{ display:flex; flex-wrap:wrap; align-items:center; gap:8px; padding:6px 0; border-bottom:1px solid var(--line); }
+.acNm{ height:32px; border-radius:9px; border:1px solid rgba(15,23,42,.12); padding:0 9px; font:inherit; font-size:12px; width:170px; max-width:100%; }
+.acNum{ height:32px; border-radius:9px; border:1px solid rgba(15,23,42,.12); padding:0 8px; font:inherit; font-size:12px; width:78px; }
+.acSecB select, .acGrid select, .acGrid input{ height:32px; border-radius:9px; border:1px solid rgba(15,23,42,.12); padding:0 8px; font:inherit; font-size:12px; width:auto; max-width:100%; }
+.acArr{ display:inline-flex; gap:3px; } .acMv{ width:26px; height:26px; border-radius:8px; border:1px solid var(--line); background:#fff; color:var(--muted); cursor:pointer; } .acMv:disabled{ opacity:.35; cursor:default; }
+.acBd{ font-size:10px; font-weight:700; text-transform:uppercase; color:var(--amber); background:var(--amber-soft); border-radius:999px; padding:2px 9px; }
+.acX{ width:26px; height:26px; border-radius:50%; border:0; background:var(--danger-soft, #fee2e2); color:var(--danger); font-size:16px; line-height:1; cursor:pointer; }
+.acCE{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; width:100%; padding:2px 0 4px 62px; }
+.acAdd{ background:var(--panel-2); border-radius:12px; padding:12px; margin-top:12px; }
+.acGrid{ display:flex; flex-wrap:wrap; gap:12px; margin:8px 0; } .acGrid label{ display:flex; flex-direction:column; gap:4px; font-size:11px; color:var(--muted); text-transform:none; font-weight:600; }
+.acL1{ display:block; font-size:11px; color:var(--muted); font-weight:600; margin:10px 0 4px; text-transform:none; }
+.acTx{ width:100%; font-family:ui-monospace, monospace; font-size:12px; border:1px solid rgba(15,23,42,.14); border-radius:10px; padding:8px; }
+.acRow2{ display:flex; gap:8px; align-items:center; margin-top:12px; }
+.acQF{ margin-top:8px; } .acQF summary{ font-size:12px; font-weight:600; cursor:pointer; color:var(--amber); }
+#acMain input.acQ{ width:170px; }
+.acSecB select, .acFilt select{ min-width:96px; padding-right:24px; text-overflow:ellipsis; }
+.acCE select{ min-width:120px; }
+.acNm{ width:170px !important; }
+details.acMs{ position:relative; }
+details.acMs > summary{ list-style:none; height:34px; display:inline-flex; align-items:center; gap:6px; padding:0 26px 0 11px; border-radius:11px; border:1px solid rgba(15,23,42,.10); background:#fff; font-size:12px; cursor:pointer; position:relative; max-width:200px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+details.acMs > summary::-webkit-details-marker{ display:none; }
+details.acMs > summary::after{ content:''; position:absolute; right:10px; top:13px; border:4px solid transparent; border-top-color:var(--muted); }
+.acMsL{ position:absolute; z-index:20; top:38px; left:0; min-width:180px; max-height:260px; overflow:auto; background:#fff; border:1px solid var(--line); border-radius:12px; box-shadow:0 10px 30px rgba(15,23,42,.14); padding:6px; }
+.acMsL label{ display:flex; align-items:center; gap:7px; padding:5px 8px; font-size:12px; text-transform:none; font-weight:500; color:var(--text); margin:0; border-radius:8px; cursor:pointer; } .acMsL label:hover{ background:var(--amber-soft); }
+.acMsL input{ width:auto; margin:0; }
+.acMsC{ display:block; width:100%; margin-top:4px; border:0; background:var(--panel-2); border-radius:8px; padding:5px; font-size:11px; font-weight:600; color:var(--amber); cursor:pointer; }
+.acRule{ font-size:12px; color:var(--muted); } .acRule .acNum{ width:70px; }
+
+/* v63 Earned picks */
+.pkxBar{ display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+table.pkxTbl th, table.pkxTbl td{ padding:7px 7px; font-size:12px; white-space:nowrap; }
+table.pkxTbl td:nth-child(n+4), table.pkxTbl th:nth-child(n+4){ text-align:right; }
+table.pkxTbl td:nth-child(1){ color:var(--muted); width:30px; }
+table.pkxTbl td.pkS, table.pkxTbl td.pkE{ font-family:ui-monospace, monospace; color:var(--muted); }
+.dlOv .acBar input[type=date]{ height:34px; border-radius:11px; border:1px solid rgba(15,23,42,.10); padding:0 10px; font:inherit; font-size:12px; width:auto; }
+table.pkxTbl{ width:100%; }
+table.pkxTbl th{ padding:8px 6px; font-size:9px; white-space:nowrap; }
+.pkxEff{ display:flex; gap:10px; flex-wrap:wrap; margin:0 0 10px; }
+.pkxEff span{ background:#fff; border-radius:12px; padding:8px 14px; box-shadow:0 1px 2px rgba(15,23,42,.08), 0 0 0 1px rgba(15,23,42,.04); display:flex; flex-direction:column; gap:2px; min-width:96px; }
+.pkxEff i{ font-style:normal; font-size:10px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); font-weight:700; }
+.pkxEff b{ font-family:'JetBrains Mono',monospace; font-size:15px; }
+.dlSimple{ max-width:460px; }
+.dlSec{ border-top:1px solid var(--line); }
+.dlSecH{ width:100%; display:flex; align-items:center; justify-content:space-between; gap:10px; background:none; border:0; padding:12px 2px; font:inherit; font-size:13px; font-weight:600; color:var(--text); cursor:pointer; }
+.dlSecH i{ font-style:normal; font-weight:500; color:var(--muted); font-size:12px; max-width:60%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.dlSecB{ padding:0 0 12px; }
+.dlOpt{ display:flex; gap:8px; align-items:center; padding:10px 2px 0; font-size:13px; cursor:pointer; }
+\n</style>
 </head>
 <body>
 <div class="app">
@@ -3879,7 +3959,7 @@ table.ovTbl td.pick input{ width:16px; height:16px; accent-color:#4f46e5; cursor
     <section class="screen" id="screen-accounts">
       <div class="eyebrow">Accounts</div>
       <h1>Accounts Overview</h1>
-      <p class="sub">Salary and payroll calculations will be added here later. For now, this gives a quick employee and vacation-money reference.</p>
+      <p class="sub">Monthly salary sheet.</p>
       <div id="accountsBody"></div>
     </section>
 
@@ -7460,6 +7540,7 @@ $('submitBtn').addEventListener('click', async () => {
   if(!isValidNumber(reading)){ toast('Meter Reading must be a number'); $('readingInput').focus(); return; }
   if(stopTime !== '' && !isValidNumber(stopTime)){ toast('Stop Time / Hour must be a number'); $('stopTimeInput').focus(); return; }
   if(hasStop && !reason){ toast('A stop time was entered — please select a reason'); $('reasonSelect').focus(); return; }
+  if(!rvfStopOk(date, state.shift, stopTime || 0)) return;
   if(shouldBlockLateSubmission(date, state.shift)){
     toast(`The deadline for logging ${state.shift} shift has passed — this can no longer be submitted. Contact your Supervisor or Admin.`);
     return;
@@ -9027,6 +9108,7 @@ async function saveManualEntry(){
   if(!date || !reading){ toast('Date and Reading are required'); return; }
   if(!isValidNumber(reading)){ toast('Reading must be a number'); return; }
   if(!operatorId){ toast('Select which operator this reading belongs to'); return; }
+  if(!rvfStopOk(date, shift, stopTime)) return;
   if(!requireDb()) return;
   const record = {
     machine, machineName: machineName(machine), shift, date, reading, stopTime, reason, remarks, photoType, stopBreakdown,
@@ -9165,6 +9247,7 @@ async function saveReportEdit(id){
       }
       if(reasonVal) reasons.push(reasonVal);
     }
+    if(!rvfStopOk($('re-date').value, $('re-shift').value, totalStop)) return;
     stopTime = String(totalStop);
     reason = reasons.length ? reasons.join('; ') : '—';
   }
@@ -9318,6 +9401,7 @@ function renderPicksReport(containerId, allRecords, operatorId, fromDate, toDate
   const rows = Object.values(byKey).sort((a,b) =>
     a.date === b.date ? machineName(a.machine).localeCompare(machineName(b.machine)) : b.date.localeCompare(a.date)
   );
+  PKX.ctx[containerId] = { op: operatorId, from: fromDate, to: toDate };
   renderPicksRowsTable(containerId, rows, (p) => {
     paginationState[containerId + 'Pagination'] = p;
     renderPicksReport(containerId, allRecords, operatorId, fromDate, toDate);
@@ -9346,6 +9430,7 @@ function renderPicksReportFromSummaries(containerId, summaries, operatorId, from
   const rows = Object.values(byKey).sort((a,b) =>
     a.date === b.date ? machineName(a.machine).localeCompare(machineName(b.machine)) : b.date.localeCompare(a.date)
   );
+  PKX.ctx[containerId] = { op: operatorId, from: fromDate, to: toDate };
   renderPicksRowsTable(containerId, rows, (p) => {
     paginationState[containerId + 'Pagination'] = p;
     renderPicksReportFromSummaries(containerId, summaries, operatorId, fromDate, toDate);
@@ -9360,7 +9445,7 @@ function renderPicksReportFromSummaries(containerId, summaries, operatorId, from
 // (see machineHoursForDate). Always computed live from current config, on
 // both the raw-records and summary-based paths, so an admin's rule change
 // is instantly reflected everywhere.
-function applyWeeklyAutoStop(byKey){
+function applyWeeklyAutoStopOld(byKey){
   Object.values(byKey).forEach(row => {
     const auto = getWeekdayAutoStopRule(row.date);
     if(!auto) return;
@@ -9373,6 +9458,36 @@ function applyWeeklyAutoStop(byKey){
       row.stopHours += Number(auto.night.hours);
       row.stopPicks += Number(auto.night.hours) * rate;
     }
+  });
+}
+
+// Shift limit for stop time: the shift's own machine hours (e.g. 11.5), NOT the reduced weekday value.
+function rvfShiftCap(dateStr, shiftName){
+  const rule = getShiftRuleForDate(dateStr); const cfg = shiftName === 'Night' ? rule.night : rule.day;
+  const h = Number(cfg && cfg.machineHours); return isFinite(h) && h > 0 ? h : 11.5;
+}
+function rvfStopOk(dateStr, shiftName, total){
+  const cap = rvfShiftCap(dateStr, shiftName);
+  if(Number(total) > cap + 1e-9){ toast('Total stop time (' + Number(total) + 'h) cannot be more than the shift hours (' + cap + 'h)'); return false; }
+  return true;
+}
+function applyWeeklyAutoStop(byKey){
+  Object.values(byKey).forEach(row => {
+    const shifts = Array.from(row.shiftsSeen || []).filter(x => x === 'Day' || x === 'Night');
+    const cap = shifts.length ? shifts.reduce((a, sh) => a + rvfShiftCap(row.date, sh), 0) : rvfShiftCap(row.date, 'Day');
+    // logged stop can never exceed the shift
+    if(row.stopHours > cap){ const k = cap / row.stopHours; row.stopPicks *= k; row.stopHours = cap; }
+    row.logStop = row.stopHours;   // what was really logged (the weekly auto stop is not held against efficiency)
+    const auto = getWeekdayAutoStopRule(row.date);
+    if(!auto) return;
+    const rate = stopReasonRate(auto.reason);
+    ['Day','Night'].forEach(sh => {
+      const cfg = sh === 'Day' ? auto.day : auto.night;
+      if(!row.shiftsSeen.has(sh) || !(Number(cfg.hours) > 0)) return;
+      const room = Math.max(0, cap - row.stopHours);
+      const add = Math.min(Number(cfg.hours), room);
+      row.stopHours += add; row.stopPicks += add * rate;
+    });
   });
 }
 function renderPicksRowsTable(containerId, rows, onPageChange){
@@ -9733,6 +9848,7 @@ async function resubmitReading(id){
   if(stopTime !== '' && !isValidNumber(stopTime)){ toast('Stop Time / Hour must be a number'); return; }
   const hasStop = stopTime !== '' && Number(stopTime) !== 0;
   if(hasStop && !reason){ toast('A stop time was entered — please select a reason'); return; }
+  if(!rvfStopOk(date, shift, stopTime || 0)) return;
   if(!requireDb()) return;
   try{
     await window.__db.updateReading(id, {
@@ -10001,6 +10117,7 @@ async function rvfMakePdf(blocks, filename, opts){
     const pw = pdf.internal.pageSize.getWidth(), ph = pdf.internal.pageSize.getHeight(), m = (opts && opts.m != null) ? opts.m : 10, usableW = pw - 2 * m, usableH = ph - 2 * m;
     let y = m;
     for(const el of els){
+      if(el.querySelector('[data-pgbreak]') && y > m){ pdf.addPage(); y = m; }
       if(!RVF_AR.test(el.textContent) || await rvfArReady(pdf)){
         const kk = usableW / el.offsetWidth; let hh = el.offsetHeight * kk, sc = 1; if(hh > usableH){ sc = usableH / hh; hh = usableH; }
         if(y + hh > ph - m && y > m){ pdf.addPage(); y = m; }
@@ -18260,6 +18377,831 @@ function mpDownload(kind){
 document.addEventListener('click', (e) => { const t = e.target.closest('#mpPdfBtn, #mpXlsBtn'); if(!t) return; mpDownload(t.id === 'mpPdfBtn' ? 'pdf' : 'xlsx'); });
 
 if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mpInitToolbar); else mpInitToolbar();
+
+/* ============================================================
+   v60: ACCOUNTS - monthly salary sheet. Data + calculation (no screen code here).
+   Documents (all in "config"): acctSettings (columns, salary structure, extra-money rules),
+   acctTables (premium rate tables), payroll_YYYY-MM (one month: dates, attendance, monthly entries, marks).
+   Per-person values live on the profile (profile.salary.*) so the Profile and this sheet are the same data.
+   ============================================================ */
+const AC = { tab: 'sheet', ym: '', set: null, tbl: null, pay: null, sums: null, sumsKey: '', sumsCache: {}, edit: false, q: '', fopen: false,
+  f: { dept: [], cat: [], pos: [], type: [], marked: false, exited: false }, msOpen: null, sel: new Set(), onlySel: false, dirty: { p: {}, m: {}, period: false, marks: false }, ready: false, busy: false, rows: [] };
+const AC_BUILTIN = {
+  basic: { n: 'Basic', kind: 'add' }, housing: { n: 'Housing', kind: 'add' }, transport: { n: 'Transport', kind: 'add' }, ot: { n: 'Overtime (fixed)', kind: 'add' },
+  picks: { n: 'Earned picks', kind: 'info' }, rate: { n: 'Average rate', kind: 'info' }, premium: { n: 'Premium', kind: 'add' }, extra: { n: 'Extra money', kind: 'add' },
+  present: { n: 'Present', kind: 'info' }, absent: { n: 'Absent', kind: 'info' }, absentDed: { n: 'Absent deduction', kind: 'deduct' },
+  gross: { n: 'Total', kind: 'sum' }, totded: { n: 'Total deductions', kind: 'sum' }, net: { n: 'Net pay', kind: 'sum' }, remarks: { n: 'Remarks', kind: 'info' }
+};
+function acDefaults(){
+  return { cols: ['basic', 'housing', 'transport', 'ot', 'picks', 'rate', 'premium', 'extra', 'present', 'absent', 'absentDed', 'gross'].map(id => ({ id }))
+      .concat([{ id: 'c_gosi', name: 'GOSI', kind: 'deduct', calc: 'pct', pct: 9.75, of: 'basicHousing', scope: 'flag' }])
+      .concat(['totded', 'net', 'remarks'].map(id => ({ id }))),
+    std: { basic: 65, housing: 25, transport: 10 }, absent: { base: 'basic', days: 30 }, round: { step: 100, from: 50 }, rules: [], next: 1 };
+}
+function acNormSettings(s){
+  const d = acDefaults(); s = Object.assign({}, d, s || {});
+  s.std = Object.assign({}, d.std, s.std || {}); s.absent = Object.assign({}, d.absent, s.absent || {}); s.round = Object.assign({}, d.round, s.round || {});
+  s.cols = Array.isArray(s.cols) ? s.cols.slice() : d.cols; s.rules = (Array.isArray(s.rules) ? s.rules : []).map(r => Object.assign({}, r, { depts: Array.isArray(r.depts) ? r.depts : (r.dept ? [r.dept] : []) }));
+  Object.keys(AC_BUILTIN).forEach(id => { if(!s.cols.some(c => c.id === id)) s.cols.push({ id }); });
+  return s;
+}
+const acNum = (x) => { const n = parseFloat(String(x == null ? '' : x).replace(/,/g, '')); return isFinite(n) ? n : 0; };
+const acR2 = (x) => Math.round((x + Number.EPSILON) * 100) / 100;
+const acEsc = (t) => String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+const acMoney = (x) => (x === '' || x == null) ? '' : Number(x).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+function acColDef(c){
+  const b = AC_BUILTIN[c.id];
+  if(b) return { id: c.id, builtin: true, kind: b.kind, name: c.name || b.n, hide: !!c.hide };
+  return { id: c.id, builtin: false, kind: c.kind === 'deduct' ? 'deduct' : 'add', calc: c.calc === 'pct' ? 'pct' : 'amount', pct: acNum(c.pct), of: c.of || 'basic', src: c.src === 'month' ? 'month' : 'profile', scope: c.scope === 'flag' ? 'flag' : 'all', name: c.name || 'Column', hide: !!c.hide };
+}
+function acCols(){ return (AC.set ? AC.set.cols : []).map(acColDef); }
+function acPath(o, path){ return path.split('.').reduce((a, k) => (a == null ? undefined : a[k]), o); }
+function acP(u, k){ const d = AC.dirty.p[u.loginId]; if(d && Object.prototype.hasOwnProperty.call(d, k)) return d[k]; return acPath(u.profile || {}, k); }
+function acM(id, k){ const d = AC.dirty.m[id]; if(d && Object.prototype.hasOwnProperty.call(d, k)) return d[k]; const r = ((AC.pay && AC.pay.rows) || {})[id]; return r ? acPath(r, k) : undefined; }
+/* ---------- dates / months ---------- */
+function acYmNow(){ const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); }
+function acYmShift(ym, n){ const [y, m] = ym.split('-').map(Number); const d = new Date(y, m - 1 + n, 1); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); }
+function acYmLabel(ym){ const [y, m] = ym.split('-').map(Number); return ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][m - 1] + ' ' + y; }
+function acDefaultRange(ym){
+  const sd = Number(state.salaryCycleStartDay) || 1, ds = (y, m, d) => y + '-' + String(m).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+  const [y, m] = ym.split('-').map(Number);
+  if(sd <= 1){ const last = new Date(y, m, 0).getDate(); return { from: ds(y, m, 1), to: ds(y, m, last) }; }
+  const p = acYmShift(ym, -1).split('-').map(Number);
+  return { from: ds(p[0], p[1], sd), to: ds(y, m, sd - 1) };
+}
+/* ---------- loading ---------- */
+async function acLoadAll(force){
+  if(!requireDb()) return false;
+  if(!AC.ym) AC.ym = acYmNow();
+  const [set, tbl] = await Promise.all([
+    (AC.set && !force) ? AC.set : window.__db.getConfigObject('acctSettings', {}).then(acNormSettings),
+    (AC.tbl && !force) ? AC.tbl : window.__db.getConfigObject('acctTables', { tables: [], next: 1 })]);
+  AC.set = set; AC.tbl = tbl; if(!Array.isArray(AC.tbl.tables)) AC.tbl.tables = [];
+  acTblNormalize(); if(force){ AC.sd = null; AC.td = null; }
+  if(force || !state.users || !state.users.length) state.users = await window.__db.listUsersOnce();
+  await acLoadMonth(!!force);
+  AC.ready = true; return true;
+}
+AC.payCache = {};
+async function acLoadMonth(force){
+  const o = (!force && AC.payCache[AC.ym]) ? JSON.parse(JSON.stringify(AC.payCache[AC.ym])) : await window.__db.getConfigObject('payroll_' + AC.ym, { rows: {} });
+  AC.payCache[AC.ym] = JSON.parse(JSON.stringify(o));
+  const def = acDefaultRange(AC.ym);
+  AC.pay = { from: o.from || def.from, to: o.to || def.to, rows: o.rows || {} };
+  AC.dirty = { p: {}, m: {}, period: false, marks: false };
+  AC.sums = AC.sumsCache[AC.pay.from + '|' + AC.pay.to] || null;
+}
+async function acLoadPicks(force){
+  const key = AC.pay.from + '|' + AC.pay.to;
+  if(!force && AC.sumsCache[key]){ AC.sums = AC.sumsCache[key]; return; }
+  const list = await window.__db.loadSummariesInRange(AC.pay.from, AC.pay.to);
+  const by = {};
+  list.forEach(s => { if(!s.operatorId) return; ((by[s.operatorId] = by[s.operatorId] || {})[s.date + '|' + s.machine] = { date: s.date, machine: String(s.machine), picks: Number(s.picks) || 0,
+    stopPicks: (s.stopBreakdown || []).reduce((a, b) => a + (Number(b.hours) || 0) * stopReasonRate(b.reason), 0), shiftsSeen: new Set(s.shifts || []) }); });
+  const out = { entries: list.length, ops: {} };
+  Object.keys(by).forEach(op => {
+    try{ applyWeeklyAutoStop(by[op]); }catch(e){}
+    const bm = {}; let total = 0;
+    Object.values(by[op]).forEach(r => { const e = r.picks + r.stopPicks; bm[r.machine] = (bm[r.machine] || 0) + e; total += e; });
+    out.ops[op] = { total, bm };
+  });
+  AC.sumsCache[key] = out; AC.sums = out;
+}
+/* ---------- premium ---------- */
+function acLevel(total){
+  if(!(total > 0)) return 0;
+  const st = Math.max(1, acNum(AC.set.round.step) || 100), fr = acNum(AC.set.round.from);
+  const base = Math.floor(total / st) * st;
+  return (total - base) >= (fr || st / 2) ? base + st : base;
+}
+function acTableFor(mid){ return (AC.tbl.tables || []).find(t => (t.machines || []).map(String).indexOf(String(mid)) >= 0) || null; }
+function acRateAt(t, colName, level){
+  const ci = 0, rows = (t.rows || []).slice().sort((a, b) => b[0] - a[0]);
+  if(!rows.length) return 0;
+  if(level >= rows[0][0]) return acNum(rows[0][ci + 1]);
+  const hit = rows.find(r => r[0] <= level);
+  return hit ? acNum(hit[ci + 1]) : 0;
+}
+function acRuleFor(u, total, mcCount){
+  const ok = (AC.set.rules || []).filter(r => total >= acNum(r.min) && (!(r.depts || []).length || r.depts.indexOf(u.department || '') >= 0) && (!r.mc || (acNum(r.mc) >= 4 ? mcCount >= 4 : mcCount === acNum(r.mc))));
+  ok.sort((a, b) => (((b.depts || []).length ? 1 : 0) + (b.mc ? 1 : 0)) - (((a.depts || []).length ? 1 : 0) + (a.mc ? 1 : 0)) || acNum(b.min) - acNum(a.min));
+  return ok[0] || null;
+}
+/* ---------- one person's row ---------- */
+function acRow(u){
+  const S = AC.set, id = u.loginId, sal = (u.profile && u.profile.salary) || {};
+  const r = { u, id, name: u.name, dept: u.department || '', pos: (u.profile && u.profile.position) || '', cat: (u.profile && u.profile.employmentType) || '', role: u.role,
+    exited: isExitedEmployee(u), custom: {}, flags: {} };
+  r.fixed = acP(u, 'salary.salaryType') === 'fixed';
+  r.basic = acNum(acP(u, 'salary.basicSalary'));
+  if(!r.fixed && r.basic){ const G = r.basic / (acNum(S.std.basic) / 100 || 1); r.housing = acR2(G * acNum(S.std.housing) / 100); r.transport = acR2(G * acNum(S.std.transport) / 100); } else { r.housing = 0; r.transport = 0; }
+  r.ot = acNum(acP(u, 'salary.overtime'));
+  r.premEl = u.role === 'operator' || !!acP(u, 'salary.premiumEligible');   // operators always; anyone else only when ticked on the profile
+  r.rateCol = acP(u, 'salary.rateCol') || '';
+  const pk = AC.sums && AC.sums.ops[id];
+  r.picks = pk ? acR2(pk.total) : ''; r.mcCount = pk ? Object.keys(pk.bm).filter(m => pk.bm[m] > 0).length : 0;
+  r.level = ''; r.rate = ''; r.premium = 0; r.extra = 0; r.premNote = '';
+  if(r.premEl && pk && pk.total > 0){
+    r.level = acLevel(pk.total);
+    const t0 = (AC.tbl.tables || [])[0], rates = []; let missing = 0;
+    Object.keys(pk.bm).filter(m => pk.bm[m] > 0).forEach(m => { const t = acTableFor(m); if(!t){ missing++; return; } rates.push(acRateAt(t, r.rateCol || (t.cols || [])[0], r.level)); });
+    if(rates.length){ r.rate = Math.round(rates.reduce((a, b) => a + b, 0) / rates.length * 1e6) / 1e6; r.premium = acR2(pk.total * r.rate); }
+    if(missing) r.premNote = missing + ' machine(s) have no rate table';
+    const rule = acRuleFor(u, pk.total, r.mcCount); if(rule) r.extra = acNum(rule.amount);
+  }
+  if(!r.extra) r.extra = acNum(acP(u, 'salary.extraMoney'));
+  r.absent = acNum(acM(id, 'ab')); r.presentRaw = acM(id, 'pr'); r.present = (r.presentRaw === undefined || r.presentRaw === '') ? '' : acNum(r.presentRaw);
+  const dayBase = S.absent.base === 'gross' ? (r.basic + r.housing + r.transport) : r.basic;
+  r.absentDed = acR2(r.absent * dayBase / (acNum(S.absent.days) || 30));
+  r.remarks = acM(id, 'rm') || ''; r.marked = !!acM(id, 'mk');
+  let adds = r.basic + r.housing + r.transport + r.ot + r.premium + r.extra, deds = r.absentDed;
+  const cols = acCols(), pctCols = [];
+  cols.forEach(c => {
+    if(c.builtin) return;
+    const flagged = !!acP(u, 'salary.fl.' + c.id); r.flags[c.id] = flagged;
+    if(c.scope === 'flag' && !flagged){ r.custom[c.id] = ''; return; }
+    if(c.calc === 'pct'){ pctCols.push(c); return; }
+    const v = acNum(c.src === 'month' ? acM(id, 'cv.' + c.id) : acP(u, 'salary.cv.' + c.id));
+    r.custom[c.id] = v; if(c.kind === 'deduct') deds += v; else adds += v;
+  });
+  const gross0 = adds;
+  pctCols.forEach(c => {
+    const base = c.of === 'gross' ? gross0 : (c.of === 'basicHousing' ? r.basic + r.housing : r.basic);
+    const v = acR2(base * c.pct / 100); r.custom[c.id] = v; if(c.kind === 'deduct') deds += v; else adds += v;
+  });
+  r.gross = acR2(adds); r.totded = acR2(deds); r.net = acR2(adds - deds);
+  return r;
+}
+function acBuildRows(){
+  const list = (state.users || []).filter(u => u.role !== 'pending');
+  AC.rows = list.map(acRow).sort((a, b) => String(a.id).localeCompare(String(b.id), undefined, { numeric: true }));
+  return AC.rows;
+}
+function acFiltered(){
+  const q = AC.q.trim().toLowerCase(), f = AC.f;
+  return AC.rows.filter(r => (f.exited || !r.exited) && (!f.dept.length || f.dept.indexOf(r.dept) >= 0) && (!f.cat.length || f.cat.indexOf(r.cat) >= 0) && (!f.pos.length || f.pos.indexOf(r.pos) >= 0) && (!f.type.length || f.type.indexOf(r.fixed ? 'Fixed salary' : 'Standard salary') >= 0) && (!f.marked || r.marked)
+    && (!q || (r.id + ' ' + r.name + ' ' + r.dept + ' ' + r.pos).toLowerCase().includes(q)) && (!AC.onlySel || AC.sel.has(r.id)));
+}
+/* value of one column for a row (screen + downloads) */
+function acVal(r, c){
+  if(!c.builtin) return r.custom[c.id] === '' || r.custom[c.id] === undefined ? '' : r.custom[c.id];
+  switch(c.id){
+    case 'basic': return r.basic || ''; case 'housing': return r.housing || ''; case 'transport': return r.transport || ''; case 'ot': return r.ot || '';
+    case 'picks': return r.picks; case 'rate': return r.rate === '' ? '' : acR2(r.rate * 1000) / 1000; case 'premium': return r.premium || '';
+    case 'extra': return r.extra || ''; case 'present': return r.present; case 'absent': return r.absent || ''; case 'absentDed': return r.absentDed || '';
+    case 'gross': return r.gross; case 'totded': return r.totded || ''; case 'net': return r.net; case 'remarks': return r.remarks;
+  }
+  return '';
+}
+
+/* v60: ACCOUNTS screen - salary sheet, settings, download */
+const AC_ICON = {
+  filter: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.5 10 19 14 21 14 12.5 22 3"/></svg>',
+  edit: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg>',
+  refresh: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.5 15a9 9 0 11-2.1-9.4L23 10"/></svg>',
+  flag: '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 22V4h13l-2 4 2 4H4"/></svg>'
+};
+function acCanEdit(){ return !!(state.user && (state.user.role === 'admin' || (state.user.pages || []).indexOf('accounts') >= 0)); }
+async function loadAccountsPage(){
+  const body = $('accountsBody'); if(!body) return;
+  if(!AC.ready) body.innerHTML = '<div class="empty-state">Loading…</div>';
+  try{ await acLoadAll(); acDraw(); }catch(err){ console.error(err); toast('Could not load'); body.innerHTML = '<div class="empty-state">Could not load. Check your connection and open the page again.</div>'; }
+}
+function acDirtyCount(){ return Object.keys(AC.dirty.p).length + Object.keys(AC.dirty.m).length + (AC.dirty.period ? 1 : 0) + (AC.dirty.marks ? 1 : 0); }
+function acDraw(){
+  const body = $('accountsBody'); if(!body) return;
+  const tabs = [['sheet', 'Salary sheet'], ['set', 'Settings'], ['ppl', 'People']];
+  body.innerHTML = `<div class="acTabs">${tabs.map(t => `<button type="button" class="acTab${AC.tab === t[0] ? ' on' : ''}" data-ac="tab" data-v="${t[0]}">${t[1]}</button>`).join('')}</div><div id="acMain"></div>`;
+  if(AC.tab === 'sheet') acDrawSheet(); else if(AC.tab === 'set') acDrawSettings(); else acDrawPeople();
+}
+function acDrawPeople(){
+  const list = (state.users || []).filter(u => u.role !== 'pending');
+  $('acMain').innerHTML = list.map(u => { const p = u.profile || {}; return `<div class="card row"><span class="k">${acEsc(u.name)} (${acEsc(u.loginId)})</span><span>${acEsc(p.employmentType || '—')} &middot; ${acEsc(u.department || '—')}</span></div>`; }).join('') || '<div class="empty-state">No employees yet.</div>';
+}
+/* ---------- the sheet ---------- */
+function acOpts(list, cur, any){ return `<option value="">${any}</option>` + list.map(v => `<option value="${acEsc(v)}" ${v === cur ? 'selected' : ''}>${acEsc(v)}</option>`).join(''); }
+function acUniq(fn){ return Array.from(new Set(AC.rows.map(fn).filter(Boolean))).sort(); }
+function acDrawSheet(){
+  const dirty = acDirtyCount(), ed = AC.edit && acCanEdit(), f = AC.f;
+  const filtN = (f.dept.length ? 1 : 0) + (f.cat.length ? 1 : 0) + (f.pos.length ? 1 : 0) + (f.type.length ? 1 : 0) + (f.marked ? 1 : 0) + (f.exited ? 1 : 0) + (AC.onlySel ? 1 : 0);
+  acBuildRows();
+  const picksTxt = AC.sums ? `Picks loaded &middot; ${AC.sums.entries} daily entries` : 'Picks not loaded yet';
+  $('acMain').innerHTML = `
+    <div class="acBar">
+      <button type="button" class="iconBtn" data-ac="prev" title="Previous month">&lsaquo;</button><b class="acMonth">${acYmLabel(AC.ym)}</b><button type="button" class="iconBtn" data-ac="next" title="Next month">&rsaquo;</button>
+      <input type="date" id="acFrom" value="${AC.pay.from}" title="Count picks from"><span class="hrNote" style="margin:0;">to</span><input type="date" id="acTo" value="${AC.pay.to}" title="Count picks until">
+      <button type="button" class="pillBtn ok" data-ac="picks">${AC.sums ? 'Recalculate picks' : 'Calculate picks'}</button>
+      <span class="hrNote" style="margin:0;">${picksTxt}</span>
+    </div>
+    <div class="acBar">
+      <input type="text" id="acQ" class="acQ" placeholder="Search name or ID" value="${acEsc(AC.q)}">
+      <button type="button" class="iconBtn${filtN || AC.fopen ? ' on' : ''}" data-ac="ftog" title="Filters">${AC_ICON.filter}${filtN ? `<span class="acBadge">${filtN}</span>` : ''}</button>
+      ${acCanEdit() ? `<button type="button" class="iconBtn${ed ? ' on' : ''}" data-ac="edit" title="${ed ? 'Stop editing' : 'Edit the sheet'}">${AC_ICON.edit}</button>` : ''}
+      <button type="button" class="iconBtn" data-ac="reload" title="Reload people">${AC_ICON.refresh}</button>
+      <span style="flex:1;"></span>
+      ${dirty ? `<button type="button" class="pillBtn" data-ac="discard">Discard</button><button type="button" class="pillBtn ok" data-ac="save">Save changes (${dirty})</button>` : ''}
+      <button type="button" class="pillBtn" data-ac="dl">${DL_ICON}Download</button>
+    </div>
+    ${AC.fopen ? `<div class="acFilt">
+      ${acMs('dept', acUniq(r => r.dept), f.dept, 'All departments')}${acMs('cat', acUniq(r => r.cat), f.cat, 'All categories')}${acMs('pos', acUniq(r => r.pos), f.pos, 'All positions')}${acMs('type', ['Fixed salary', 'Standard salary'], f.type, 'Fixed & standard')}
+      <label class="acChk"><input type="checkbox" data-ac="f" data-k="marked" ${f.marked ? 'checked' : ''}> Marked only</label>
+      <label class="acChk"><input type="checkbox" data-ac="f" data-k="onlySel" ${AC.onlySel ? 'checked' : ''}> Ticked only</label>
+      <label class="acChk"><input type="checkbox" data-ac="f" data-k="exited" ${f.exited ? 'checked' : ''}> Include exited</label>
+      <button type="button" class="pillBtn" data-ac="fclear">Clear all</button>
+    </div>` : ''}
+    ${AC.sel.size ? `<div class="acSelBar"><span>${AC.sel.size} ticked</span><button type="button" class="pillBtn" data-ac="selclear">Untick all</button></div>` : ''}
+    <div id="acTbl"></div>`;
+  acDrawTable();
+}
+function acInput(r, k, val, t, ph){ return `<input class="acIn" data-id="${acEsc(r.id)}" data-t="${t}" data-k="${k}" value="${acEsc(val == null ? '' : val)}" inputmode="decimal"${ph ? ` placeholder="${ph}"` : ''}>`; }
+function acCell(r, c, ed){
+  const v = acVal(r, c), money = acMoney;
+  const num = (x) => (x === '' || x == null) ? '' : money(x);
+  if(c.builtin){
+    switch(c.id){
+      case 'basic': return ed ? `${acInput(r, 'salary.basicSalary', acP(r.u, 'salary.basicSalary'), 'p')}<label class="acFx"><input type="checkbox" class="acFl" data-id="${acEsc(r.id)}" data-k="salary.salaryType" ${r.fixed ? 'checked' : ''}> fixed</label>` : `${num(v)}${r.fixed && r.basic ? '<span class="acSm">fixed</span>' : ''}`;
+      case 'ot': return ed ? acInput(r, 'salary.overtime', acP(r.u, 'salary.overtime'), 'p') : num(v);
+      case 'present': return ed ? acInput(r, 'pr', r.presentRaw, 'm') : (v === '' ? '' : v);
+      case 'absent': return ed ? acInput(r, 'ab', acM(r.id, 'ab'), 'm') : (v === '' ? '' : v);
+      case 'remarks': return ed ? `<input class="acIn acRm" data-id="${acEsc(r.id)}" data-t="m" data-k="rm" value="${acEsc(r.remarks)}">` : acEsc(r.remarks);
+      case 'picks': return v === '' ? '' : Number(v).toLocaleString('en-US', { maximumFractionDigits: 0 });
+      case 'rate': return v === '' ? '' : String(v);
+      case 'premium': return num(v) + (r.premNote ? `<span class="acSm" title="${acEsc(r.premNote)}">!</span>` : '');
+      case 'extra': return num(v);
+      default: return num(v);
+    }
+  }
+  if(c.scope === 'flag'){
+    const on = r.flags[c.id], flagBox = ed ? `<label class="acFx"><input type="checkbox" class="acFl" data-id="${acEsc(r.id)}" data-k="salary.fl.${c.id}" ${on ? 'checked' : ''}> applies</label>` : '';
+    if(c.calc === 'pct') return (on ? num(v) : '') + flagBox;
+    if(!on && !ed) return '';
+    return (ed && on ? acInput(r, c.src === 'month' ? 'cv.' + c.id : 'salary.cv.' + c.id, c.src === 'month' ? acM(r.id, 'cv.' + c.id) : acP(r.u, 'salary.cv.' + c.id), c.src === 'month' ? 'm' : 'p') : (on ? num(v) : '')) + flagBox;
+  }
+  if(c.calc === 'pct') return num(v);
+  return ed ? acInput(r, c.src === 'month' ? 'cv.' + c.id : 'salary.cv.' + c.id, c.src === 'month' ? acM(r.id, 'cv.' + c.id) : acP(r.u, 'salary.cv.' + c.id), c.src === 'month' ? 'm' : 'p') : num(v);
+}
+function acVisCols(){ return acCols().filter(c => !c.hide); }
+function acDrawTable(){
+  const box = $('acTbl'); if(!box) return;
+  const ed = AC.edit && acCanEdit(), cols = acVisCols(), rows = acFiltered();
+  const head = `<tr><th class="acStickS">#</th><th class="acStick0"><input type="checkbox" data-ac="selall" ${rows.length && rows.every(r => AC.sel.has(r.id)) ? 'checked' : ''}></th><th class="acStick1">ID</th><th class="acStick2">Name</th>${cols.map(c => `<th class="acN ${c.kind === 'deduct' ? 'acD' : ''}">${acEsc(c.name)}</th>`).join('')}</tr>`;
+  const tr = rows.map((r, n) => `<tr data-id="${acEsc(r.id)}" class="${r.marked ? 'acMk' : ''}${r.exited ? ' acEx' : ''}"><td class="acStickS">${n + 1}</td><td class="acStick0"><input type="checkbox" data-ac="sel" data-id="${acEsc(r.id)}" ${AC.sel.has(r.id) ? 'checked' : ''}><button type="button" class="acFlag${r.marked ? ' on' : ''}" data-ac="mark" data-id="${acEsc(r.id)}" title="Mark">${AC_ICON.flag}</button></td><td class="acStick1">${acEsc(r.id)}</td><td class="acStick2" title="${acEsc(r.dept + ' · ' + r.pos)}">${acEsc(r.name)}<span class="acSm">${acEsc(r.dept)}</span></td>${cols.map(c => `<td class="acN${c.id === 'remarks' ? ' acL' : ''}" data-c="${c.id}">${acCell(r, c, ed)}</td>`).join('')}</tr>`).join('');
+  box.innerHTML = `<div class="table-scroll"><table class="acTbl"><thead>${head}</thead><tbody>${tr || `<tr><td colspan="${cols.length + 4}" class="acEmpty">No one matches.</td></tr>`}</tbody><tfoot>${acFootHtml(rows, cols)}</tfoot></table></div>
+    <div class="hrNote" style="margin-top:8px;">${rows.length} people &middot; ${acYmLabel(AC.ym)} &middot; picks ${AC.pay.from} to ${AC.pay.to}${AC.edit && acCanEdit() ? ' &middot; Editing: basic, overtime and your own columns are saved to each profile; attendance and monthly items are saved for this month.' : ''}</div>`;
+}
+function acFootHtml(rows, cols){
+  const sum = (c) => { if(['remarks', 'rate', 'present'].indexOf(c.id) >= 0) return ''; let t = 0, any = false; rows.forEach(r => { const v = acVal(r, c); if(v !== '' && isFinite(Number(v))){ t += Number(v); any = true; } }); return any ? t : ''; };
+  return `<tr><td class="acStickS"></td><td class="acStick0"></td><td class="acStick1"></td><td class="acStick2"><b>Total</b></td>${cols.map(c => { const t = sum(c); return `<td class="acN" data-f="${c.id}"><b>${t === '' ? '' : (c.id === 'picks' || c.id === 'absent' ? Number(t).toLocaleString('en-US', { maximumFractionDigits: 0 }) : acMoney(t))}</b></td>`; }).join('')}</tr>`;
+}
+function acRefreshRow(id){
+  const u = (state.users || []).find(x => x.loginId === id); if(!u) return;
+  const i = AC.rows.findIndex(r => r.id === id), r = acRow(u); if(i >= 0) AC.rows[i] = r;
+  const tr = document.querySelector('#acTbl tr[data-id="' + CSS.escape(id) + '"]'); if(!tr) return;
+  const cols = acVisCols();
+  cols.forEach(c => { const td = tr.querySelector('td[data-c="' + c.id + '"]'); if(td && !td.querySelector('input.acIn')) td.innerHTML = acCell(r, c, false); });
+  const foot = document.querySelector('#acTbl tfoot'); if(foot) foot.innerHTML = acFootHtml(acFiltered(), cols);
+}
+/* ---------- editing / saving ---------- */
+function acSetVal(id, t, k, val){
+  const u = (state.users || []).find(x => x.loginId === id); if(!u) return;
+  const bag = AC.dirty[t]; bag[id] = bag[id] || {}; bag[id][k] = val;
+  const orig = t === 'p' ? acPath(u.profile || {}, k) : (((AC.pay.rows || {})[id]) ? acPath(AC.pay.rows[id], k) : undefined);
+  if((orig === undefined ? '' : orig) === val || (orig === undefined && (val === '' || val === false))){ delete bag[id][k]; if(!Object.keys(bag[id]).length) delete bag[id]; }
+}
+async function acSave(){
+  if(AC.busy) return; AC.busy = true;
+  try{
+    const ids = Object.keys(AC.dirty.p);
+    for(const id of ids) await saveProfileFields(id, AC.dirty.p[id]);
+    if(Object.keys(AC.dirty.m).length || AC.dirty.period || AC.dirty.marks){
+      Object.keys(AC.dirty.m).forEach(id => {
+        let row = JSON.parse(JSON.stringify(AC.pay.rows[id] || {}));
+        Object.keys(AC.dirty.m[id]).forEach(k => { const v = AC.dirty.m[id][k]; if(k.indexOf('.') < 0) row[k] = v; else { const [a, b] = k.split('.'); row[a] = row[a] || {}; row[a][b] = v; } });
+        Object.keys(row).forEach(k => { if(row[k] === '' || row[k] === false || row[k] == null) delete row[k]; });
+        if(row.cv){ Object.keys(row.cv).forEach(k => { if(row.cv[k] === '') delete row.cv[k]; }); if(!Object.keys(row.cv).length) delete row.cv; }
+        if(Object.keys(row).length) AC.pay.rows[id] = row; else delete AC.pay.rows[id];
+      });
+      await window.__db.saveConfigObject('payroll_' + AC.ym, { from: AC.pay.from, to: AC.pay.to, rows: AC.pay.rows });
+      AC.payCache[AC.ym] = JSON.parse(JSON.stringify({ from: AC.pay.from, to: AC.pay.to, rows: AC.pay.rows }));
+    }
+    AC.dirty = { p: {}, m: {}, period: false, marks: false };
+    toast('Saved'); acDrawSheet();
+  }catch(err){ console.error(err); toast('Could not save — check your connection. Nothing was lost; press Save again.'); }
+  AC.busy = false;
+}
+/* ---------- download ---------- */
+function acDlCfg(){
+  const cols = acVisCols(), grp = (c) => ['picks', 'rate', 'premium', 'extra'].indexOf(c.id) >= 0 ? 'Premium & extra' : ['present', 'absent', 'absentDed'].indexOf(c.id) >= 0 ? 'Attendance' : ['gross', 'totded', 'net'].indexOf(c.id) >= 0 ? 'Totals' : c.builtin ? 'Salary' : (c.kind === 'deduct' ? 'Deductions' : 'Additions');
+  const list = [{ k: 'id', l: 'ID', g: 'Person', get: r => r.id }, { k: 'name', l: 'Name', g: 'Person', get: r => r.name }, { k: 'dept', l: 'Department', g: 'Person', get: r => r.dept }, { k: 'pos', l: 'Position', g: 'Person', get: r => r.pos }, { k: 'cat', l: 'Category', g: 'Person', get: r => r.cat }, { k: 'fixed', l: 'Salary type', g: 'Person', get: r => r.fixed ? 'Fixed' : 'Standard' }]
+    .concat(cols.map(c => ({ k: c.id, l: c.name, g: grp(c), get: r => { const v = acVal(r, c); return v === '' ? '' : (c.id === 'present' || c.id === 'absent' || c.id === 'remarks' ? v : v); } })));
+  return { key: 'accounts', title: 'Salary sheet - ' + acYmLabel(AC.ym), noun: 'people', file: 'salary-' + AC.ym, sheet: 'Salary', def: ['id', 'name'].concat(cols.map(c => c.id)),
+    items: () => acFiltered(), id: r => r.id, label: r => r.id + ' · ' + r.name + (r.dept ? ' · ' + r.dept : ''), cols: () => list,
+    sumExtra: (it) => [['Picks counted', AC.pay.from + ' to ' + AC.pay.to], ['Total net pay', acMoney(it.reduce((a, r) => a + r.net, 0))]] };
+}
+/* ---------- events ---------- */
+document.addEventListener('click', async (e) => {
+  const t = e.target.closest('[data-ac]'); if(!t || !$('accountsBody') || !$('accountsBody').contains(t)) return;
+  const a = t.dataset.ac;
+  if(a === 'tab'){ AC.tab = t.dataset.v; acDraw(); }
+  else if(a === 'prev' || a === 'next'){
+    if(acDirtyCount() && !confirm('You have unsaved changes for this month. Leave without saving?')) return;
+    AC.ym = acYmShift(AC.ym, a === 'next' ? 1 : -1); AC.sums = null; try{ await acLoadMonth(); acDrawSheet(); }catch(err){ console.error(err); toast('Could not load that month'); }
+  }
+  else if(a === 'picks'){ if(AC.busy) return; AC.busy = true; t.disabled = true; try{ await acLoadPicks(!!AC.sums); toast('Picks loaded'); }catch(err){ console.error(err); toast('Could not load picks'); } AC.busy = false; acDrawSheet(); }
+  else if(a === 'ftog'){ AC.fopen = !AC.fopen; acDrawSheet(); }
+  else if(a === 'fclear'){ AC.f = { dept: [], cat: [], pos: [], type: [], marked: false, exited: false }; AC.onlySel = false; acDrawSheet(); }
+  else if(a === 'msclear'){ const k = t.dataset.k; if(AC.f[k]) AC.f[k] = []; acDrawSheet(); }
+  else if(a === 'edit'){ AC.edit = !AC.edit; acDrawSheet(); }
+  else if(a === 'reload'){ if(acDirtyCount() && !confirm('Reloading drops unsaved changes. Continue?')) return; try{ await acLoadAll(true); acDrawSheet(); toast('Reloaded'); }catch(err){ console.error(err); toast('Could not reload'); } }
+  else if(a === 'save'){ acSave(); }
+  else if(a === 'discard'){ AC.dirty = { p: {}, m: {}, period: false, marks: false }; AC.pay.from = AC.pay.from; acLoadMonth().then(acDrawSheet); }
+  else if(a === 'dl'){ dlOpen(acDlCfg()); }
+  else if(a === 'mark'){ const id = t.dataset.id; acSetVal(id, 'm', 'mk', !acM(id, 'mk')); AC.dirty.marks = true; acDrawSheet(); }
+  else if(a === 'sel'){ if(t.checked) AC.sel.add(t.dataset.id); else AC.sel.delete(t.dataset.id); acDrawSheet(); }
+  else if(a === 'selall'){ acFiltered().forEach(r => { if(t.checked) AC.sel.add(r.id); else AC.sel.delete(r.id); }); acDrawSheet(); }
+  else if(a === 'selclear'){ AC.sel.clear(); AC.onlySel = false; acDrawSheet(); }
+  else if(a.indexOf('s_') === 0){ acSettingsClick(a, t); }
+});
+document.addEventListener('input', (e) => {
+  const t = e.target; if(!$('accountsBody') || !$('accountsBody').contains(t)) return;
+  if(t.id === 'acQ'){ AC.q = t.value; acDrawTable(); const q = $('acQ'); if(q){ q.focus(); q.setSelectionRange(q.value.length, q.value.length); } return; }
+  if(t.classList.contains('acIn')){ acSetVal(t.dataset.id, t.dataset.t, t.dataset.k, t.value.trim()); acRefreshRow(t.dataset.id); const sv = document.querySelector('[data-ac="save"]'); if(sv) sv.textContent = 'Save changes (' + acDirtyCount() + ')'; else acEnsureSaveBtn(); }
+});
+function acEnsureSaveBtn(){ if(document.querySelector('[data-ac="save"]')) return; const bar = document.querySelectorAll('#acMain .acBar')[1]; if(!bar) return; const dl = bar.querySelector('[data-ac="dl"]'); const html = `<button type="button" class="pillBtn" data-ac="discard">Discard</button><button type="button" class="pillBtn ok" data-ac="save">Save changes (${acDirtyCount()})</button>`; dl.insertAdjacentHTML('beforebegin', html); }
+document.addEventListener('change', (e) => {
+  const t = e.target; if(!$('accountsBody') || !$('accountsBody').contains(t)) return;
+  if(t.id === 'acFrom' || t.id === 'acTo'){ AC.pay.from = $('acFrom').value || AC.pay.from; AC.pay.to = $('acTo').value || AC.pay.to; AC.dirty.period = true; AC.sums = AC.sumsCache[AC.pay.from + '|' + AC.pay.to] || null; acDrawSheet(); return; }
+  if(t.classList.contains('acFl')){
+    const k = t.dataset.k; acSetVal(t.dataset.id, 'p', k, k === 'salary.salaryType' ? (t.checked ? 'fixed' : '') : t.checked);
+    acDrawSheet(); return;
+  }
+  if(t.dataset.ac === 'f'){ const k = t.dataset.k; if(k === 'marked' || k === 'exited') AC.f[k] = t.checked; else if(k === 'onlySel') AC.onlySel = t.checked; acDrawSheet(); return; }
+  if(t.dataset.ms && AC.f[t.dataset.ms]){ const k = t.dataset.ms, a = AC.f[k], i = a.indexOf(t.value); if(t.checked && i < 0) a.push(t.value); else if(!t.checked && i >= 0) a.splice(i, 1); AC.msOpen = k; acDrawSheet(); }
+});
+
+/* small "tick several" drop-down used by the filters and the extra-money rules */
+function acMs(key, list, sel, all){
+  const label = sel.length ? (sel.length <= 2 ? sel.join(', ') : sel.length + ' selected') : all;
+  return `<details class="acMs" data-msd="${key}" ${AC.msOpen === key ? 'open' : ''}><summary>${acEsc(label)}</summary><div class="acMsL">${list.map(v => `<label><input type="checkbox" data-ms="${key}" value="${acEsc(v)}" ${sel.indexOf(v) >= 0 ? 'checked' : ''}> ${acEsc(v)}</label>`).join('')}${sel.length ? `<button type="button" class="acMsC" data-ac="msclear" data-k="${key}">Clear</button>` : ''}</div></details>`;
+}
+document.addEventListener('toggle', (e) => { const d = e.target; if(d && d.classList && d.classList.contains('acMs')){ if(d.open) AC.msOpen = d.dataset.msd; else if(AC.msOpen === d.dataset.msd) AC.msOpen = null; } }, true);
+document.addEventListener('click', (e) => { if(!AC.msOpen || e.target.closest('.acMs')) return; AC.msOpen = null; document.querySelectorAll('details.acMs[open]').forEach(d => { d.open = false; }); });
+
+/* v60: ACCOUNTS settings - columns, salary structure, extra-money rules, premium rate tables */
+function acParseTable(text){
+  const lines = String(text || '').split(/\r?\n/).map(l => l.replace(/\s+$/, '')).filter(l => l.trim());
+  const cellsOf = (l) => l.indexOf('\t') >= 0 ? l.split('\t').map(x => x.trim()) : l.trim().split(/[\s,;]+/);
+  const toN = (x) => { x = String(x).replace(/\s+/g, '').replace(/,/g, ''); if(x === '' || x === '-') return 0; const n = Number(x); return isFinite(n) ? n : NaN; };
+  let header = null; const rows = [];
+  lines.forEach(l => { const c = cellsOf(l), nums = c.map(toN); if(c.length >= 2 && nums.every(n => !isNaN(n))) rows.push(nums); else if(!rows.length) header = c; });
+  const n = rows.reduce((m, r) => Math.max(m, r.length - 1), 0);
+  const bad = rows.filter(r => r.length - 1 !== n).length;
+  let cols = [];
+  for(let i = 0; i < n; i++) cols.push('Rate ' + (i + 1));
+  if(header){ if(header.length === n + 1) cols = header.slice(1); else if(header.length === n) cols = header; }
+  return { rows, cols: cols.map(c => String(c || '').trim() || 'Rate'), n, bad };
+}
+function acTblNormalize(){ (AC.tbl.tables || []).forEach(t => { const p = acParseTable(t.text); t.rows = p.rows; if(!t.cols || !t.cols.length) t.cols = p.cols; }); }
+const AC_KIND = { add: 'Adds to pay', deduct: 'Deducts from pay' };
+function acCloneSet(){ AC.sd = JSON.parse(JSON.stringify(AC.set)); AC.td = JSON.parse(JSON.stringify({ tables: (AC.tbl.tables || []).map(t => ({ id: t.id, name: t.name, machines: t.machines || [], cols: t.cols || [], text: t.text || '' })), next: AC.tbl.next || 1 })); }
+function acDrawSettings(){
+  if(!AC.sd) acCloneSet();
+  const S = AC.sd, open = AC.open || (AC.open = { cols: true }), sec = (id, title, inner) => `<details class="acSec" data-sec="${id}" ${open[id] ? 'open' : ''}><summary>${title}</summary><div class="acSecB">${inner}</div></details>`;
+  const colRows = S.cols.map((c, i) => { const d = acColDef(c), cu = !d.builtin;
+    return `<div class="acCR"><span class="acArr"><button type="button" class="acMv" data-ac="s_up" data-i="${i}" ${i ? '' : 'disabled'}>&uarr;</button><button type="button" class="acMv" data-ac="s_dn" data-i="${i}" ${i < S.cols.length - 1 ? '' : 'disabled'}>&darr;</button></span>
+      <input class="acNm" data-sk="cname" data-i="${i}" value="${acEsc(d.name)}">
+      <span class="acBd">${d.builtin ? (d.kind === 'add' ? 'adds' : d.kind === 'deduct' ? 'deducts' : d.kind === 'sum' ? 'total' : 'info') : (d.kind === 'deduct' ? 'deducts' : 'adds')}</span>
+      <label class="acChk"><input type="checkbox" data-sk="cshow" data-i="${i}" ${d.hide ? '' : 'checked'}> show</label>
+      ${cu ? `<button type="button" class="acX" data-ac="s_delcol" data-i="${i}" title="Delete this column">&times;</button>
+        <div class="acCE"><select data-sk="ckind" data-i="${i}"><option value="add" ${d.kind === 'add' ? 'selected' : ''}>Adds</option><option value="deduct" ${d.kind === 'deduct' ? 'selected' : ''}>Deducts</option></select>
+        <select data-sk="ccalc" data-i="${i}"><option value="amount" ${d.calc === 'amount' ? 'selected' : ''}>Amount</option><option value="pct" ${d.calc === 'pct' ? 'selected' : ''}>Percent</option></select>
+        ${d.calc === 'pct' ? `<input class="acNum" data-sk="cpct" data-i="${i}" value="${d.pct}" inputmode="decimal"> % of <select data-sk="cof" data-i="${i}"><option value="basic" ${d.of === 'basic' ? 'selected' : ''}>Basic</option><option value="basicHousing" ${d.of === 'basicHousing' ? 'selected' : ''}>Basic + Housing</option><option value="gross" ${d.of === 'gross' ? 'selected' : ''}>Total before this</option></select>` : `<select data-sk="csrc" data-i="${i}"><option value="profile" ${d.src === 'profile' ? 'selected' : ''}>Amount kept on the profile</option><option value="month" ${d.src === 'month' ? 'selected' : ''}>Typed every month</option></select>`}
+        <select data-sk="cscope" data-i="${i}"><option value="all" ${d.scope === 'all' ? 'selected' : ''}>For everyone</option><option value="flag" ${d.scope === 'flag' ? 'selected' : ''}>Only people ticked</option></select></div>` : ''}</div>`; }).join('');
+  const addCol = `<div class="acAdd"><b>Add a column</b><div class="acCE"><input id="acNcName" placeholder="Name, e.g. Violation" class="acNm">
+      <select id="acNcKind"><option value="add">Adds</option><option value="deduct" selected>Deducts</option></select><select id="acNcCalc"><option value="amount">Amount</option><option value="pct">Percent</option></select>
+      <input id="acNcPct" class="acNum" placeholder="%" inputmode="decimal"><select id="acNcOf"><option value="basic">of Basic</option><option value="basicHousing">of Basic + Housing</option><option value="gross">of Total</option></select>
+      <select id="acNcSrc"><option value="month">Typed every month</option><option value="profile">Kept on the profile</option></select><select id="acNcScope"><option value="all">For everyone</option><option value="flag">Only people ticked</option></select>
+      <button type="button" class="pillBtn ok" data-ac="s_addcol">Add</button></div><div class="hrNote">Percent columns use the percentage set here. Amount columns are typed in the sheet. A column kept on the profile also appears as a box in each person's Salary Info.</div></div>`;
+  const colsHtml = colRows + addCol;
+  const stdHtml = `<div class="acGrid"><label>Basic share %<input class="acNum" data-sk="std_basic" value="${S.std.basic}" inputmode="decimal"></label><label>Housing share %<input class="acNum" data-sk="std_housing" value="${S.std.housing}" inputmode="decimal"></label><label>Transport share %<input class="acNum" data-sk="std_transport" value="${S.std.transport}" inputmode="decimal"></label></div>
+    <div class="hrNote">For people with the standard salary the typed Basic is this share of the total, and Housing and Transport are worked out from it. People marked <b>fixed</b> get only what is typed.</div>
+    <div class="acGrid"><label>Absent day is paid from<select data-sk="abs_base"><option value="basic" ${S.absent.base === 'basic' ? 'selected' : ''}>Basic</option><option value="gross" ${S.absent.base === 'gross' ? 'selected' : ''}>Basic + Housing + Transport</option></select></label><label>Divided by days<input class="acNum" data-sk="abs_days" value="${S.absent.days}" inputmode="numeric"></label></div>
+    <div class="acGrid"><label>Picks are rounded to the nearest<input class="acNum" data-sk="rnd_step" value="${S.round.step}" inputmode="numeric"></label><label>Rounds up from<input class="acNum" data-sk="rnd_from" value="${S.round.from}" inputmode="numeric"></label></div>
+    <div class="hrNote">With 100 and 50: 4152 is counted as 4200 and 4149 as 4100.</div>`;
+  const depts = Array.from(new Set((state.departments || []).concat((state.users || []).map(u => u.department).filter(Boolean)))).sort();
+  const ruleHtml = `<div class="hrNote" style="margin-bottom:8px;">Example: an operator on 3 machines who reaches 3000 picks gets 200 SAR. Each line is one rule. If more than one fits, the more specific one is used.</div>` + (S.rules.length ? S.rules.map((r, i) => `<div class="acCR acRule"><span>Operators in</span>${acMs('rl' + i, depts, r.depts || [], 'any department')}<span>on</span>
+      <select data-sk="rl_mc" data-i="${i}">${[[0, 'any number of machines'], [1, '1 machine'], [2, '2 machines'], [3, '3 machines'], [4, '4 or more machines']].map(m => `<option value="${m[0]}" ${acNum(r.mc) === m[0] ? 'selected' : ''}>${m[1]}</option>`).join('')}</select>
+      <span>who reach</span><input class="acNum" data-sk="rl_min" data-i="${i}" value="${acEsc(r.min)}" inputmode="numeric"><span>picks get</span><input class="acNum" data-sk="rl_amt" data-i="${i}" value="${acEsc(r.amount)}" inputmode="decimal"><span>SAR</span><button type="button" class="acX" data-ac="s_delrule" data-i="${i}">&times;</button></div>`).join('') : '<div class="hrNote">No rules yet.</div>')
+    + '<button type="button" class="pillBtn" data-ac="s_addrule" style="margin-top:8px;">Add a rule</button>';
+  const T = AC.td.tables;
+  const rateRange = (p) => p.rows.length ? p.rows[0][1] + ' \u2192 ' + p.rows[p.rows.length - 1][1] : '';
+  const tblList = T.map((t, i) => { const p = acParseTable(t.text); return `<div class="acCR"><b style="min-width:90px;">${acEsc(t.name || 'Table')}</b><span class="hrNote" style="margin:0;">${(t.machines || []).length} machines &middot; ${p.rows.length} levels &middot; rate ${rateRange(p)}</span><span style="flex:1"></span><button type="button" class="pillBtn" data-ac="s_edtbl" data-i="${i}">Edit</button><button type="button" class="acX" data-ac="s_deltbl" data-i="${i}">&times;</button></div>`; }).join('') || '<div class="hrNote">No rate tables yet.</div>';
+  let editor = '';
+  if(AC.te !== undefined && AC.te !== null){
+    const t = AC.te === 'new' ? (AC.tn || (AC.tn = { name: '', machines: [], cols: [], text: '' })) : T[AC.te];
+    const used = {}; T.forEach((x, j) => { if(AC.te !== j) (x.machines || []).forEach(m => { used[String(m)] = x.name; }); });
+    const p = acParseTable(t.text);
+    editor = `<div class="acAdd"><b>${AC.te === 'new' ? 'New rate table' : 'Edit rate table'}</b>
+      <label class="acL1">1. Name<input class="acNm" data-sk="t_name" value="${acEsc(t.name)}" placeholder="e.g. Group 6"></label>
+      <div class="acL1">2. Machines that use this table</div><div class="checkbox-grid">${(state.machines || []).map(m => `<label><input type="checkbox" data-sk="t_m" value="${acEsc(m.id)}" ${(t.machines || []).map(String).indexOf(String(m.id)) >= 0 ? 'checked' : ''}> ${acEsc(m.name)}${used[String(m.id)] ? `<span class="acSm">in ${acEsc(used[String(m.id)])}</span>` : ''}</label>`).join('')}</div>
+      <div class="acL1">3. Rate for each picks level &mdash; one line each: the level, then the rate (paste from Excel, or use Quick fill below)</div>
+      <textarea id="acTx" class="acTx" data-sk="t_text" rows="8" placeholder="8000&#9;0.35&#10;7900&#9;0.34&#10;7800&#9;0.33">${acEsc(t.text)}</textarea>
+      <div class="hrNote" id="acTxInfo">${acTxInfo(p)}</div>
+      <details class="acQF"><summary>Quick fill (the rate drops by the same amount each step)</summary><div class="acGrid">
+        <label>Top level<input class="acNum" data-sk="qf_top" value="8000" inputmode="numeric"></label><label>Bottom level<input class="acNum" data-sk="qf_bot" value="4200" inputmode="numeric"></label>
+        <label>Step<input class="acNum" data-sk="qf_step" value="100" inputmode="numeric"></label><label>Rate at the top level<input class="acNum" data-sk="qf_rates" value="0.35" inputmode="decimal"></label>
+        <label>Rate change each step<input class="acNum" data-sk="qf_chg" value="-0.01" inputmode="decimal"></label></div>
+        <button type="button" class="pillBtn" data-ac="s_qf">Fill the box above</button></details>
+      <div class="acRow2"><button type="button" class="pillBtn" data-ac="s_canceltbl">Cancel</button><button type="button" class="pillBtn ok" data-ac="s_savetbl">Save table</button></div></div>`;
+  }
+  const test = T.length ? `<div class="acAdd" style="margin-top:10px;"><b>Try it</b><div class="acCE" style="padding-left:0;"><input class="acNum" id="acTestP" placeholder="picks" inputmode="numeric" value="4174"><select id="acTestM">${(state.machines || []).filter(m => acTableFor(m.id)).map(m => `<option value="${acEsc(m.id)}">${acEsc(m.name)}</option>`).join('')}</select><span id="acTestR" class="hrNote" style="margin:0;"></span></div></div>` : '';
+  const tblHtml = `<div class="hrNote" style="margin-bottom:8px;">Premium is paid per pick. The person's total picks are rounded (set above) and the rate for that level is multiplied by the total picks. If a person works on machines from different tables, the average of their rates is used.</div>${tblList}${editor || '<button type="button" class="pillBtn" data-ac="s_addtbl" style="margin-top:8px;">Add a rate table</button>'}${test}`;
+  $('acMain').innerHTML = sec('cols', 'Columns', colsHtml) + sec('std', 'Salary structure, attendance and rounding', stdHtml) + sec('rules', 'Extra money (picks targets)', ruleHtml) + sec('tbl', 'Premium rate tables', tblHtml)
+    + `<div class="acRow2"><span class="hrNote" style="margin:0;">Columns, structure and extra-money rules are saved together. Rate tables are saved with their own button.</span><span style="flex:1"></span><button type="button" class="pillBtn ok" data-ac="s_save">Save settings</button></div>`;
+  acTestRun();
+}
+function acTxInfo(p){ return p.rows.length ? `${p.rows.length} levels &middot; ${p.rows[0][0]} down to ${p.rows[p.rows.length - 1][0]} &middot; rate ${p.rows[0][1]} to ${p.rows[p.rows.length - 1][1]}${p.n > 1 ? ' &middot; only the first rate column is used' : ''}${p.bad ? ` &middot; <span style="color:var(--danger)">${p.bad} line(s) have a different number of columns</span>` : ''}` : 'Nothing read yet.'; }
+function acTestRun(){ const el = $('acTestR'); if(!el) return; const pk = acNum($('acTestP').value), m = $('acTestM').value, tb = acTableFor(m); if(!tb || !pk){ el.textContent = ''; return; } const lv = acLevel(pk), rt = acRateAt(tb, null, lv); el.innerHTML = `counted as <b>${lv}</b> &rarr; rate <b>${rt}</b> &rarr; premium <b>${acMoney(acR2(pk * rt))}</b> SAR`; }
+function acSettingsClick(a, t){
+  const S = AC.sd, i = Number(t.dataset.i);
+  if(a === 's_up' || a === 's_dn'){ const j = a === 's_up' ? i - 1 : i + 1; if(j >= 0 && j < S.cols.length){ const x = S.cols[i]; S.cols[i] = S.cols[j]; S.cols[j] = x; } acDrawSettings(); }
+  else if(a === 's_delcol'){ if(!confirm('Delete the column "' + (S.cols[i].name || '') + '"? Amounts already saved on profiles stay on the profiles.')) return; S.cols.splice(i, 1); acDrawSettings(); }
+  else if(a === 's_addcol'){
+    const name = $('acNcName').value.trim(); if(!name){ toast('Give the column a name'); return; }
+    if(S.cols.some(c => acColDef(c).name.toLowerCase() === name.toLowerCase())){ toast('There is already a column with that name'); return; }
+    const calc = $('acNcCalc').value, id = 'c_' + Date.now().toString(36);
+    const c = { id, name, kind: $('acNcKind').value, calc, scope: $('acNcScope').value, src: $('acNcSrc').value, of: $('acNcOf').value, pct: acNum($('acNcPct').value) };
+    if(calc === 'pct' && !c.pct){ toast('Type the percentage'); return; }
+    const k = S.cols.findIndex(x => x.id === (c.kind === 'deduct' ? 'totded' : 'gross')); S.cols.splice(k >= 0 ? k : S.cols.length, 0, c); acDrawSettings();
+  }
+  else if(a === 's_addrule'){ S.rules.push({ depts: [], mc: 0, min: '', amount: '' }); acDrawSettings(); }
+  else if(a === 's_delrule'){ S.rules.splice(i, 1); acDrawSettings(); }
+  else if(a === 's_save'){ acSaveSettings(); }
+  else if(a === 's_addtbl'){ AC.te = 'new'; AC.tn = null; AC.open.tbl = true; acDrawSettings(); }
+  else if(a === 's_edtbl'){ AC.te = i; AC.open.tbl = true; acDrawSettings(); }
+  else if(a === 's_canceltbl'){ AC.te = null; AC.tn = null; acDrawSettings(); }
+  else if(a === 's_deltbl'){ if(!confirm('Delete the rate table "' + (AC.td.tables[i].name || '') + '"?')) return; AC.td.tables.splice(i, 1); acSaveTables().then(acDrawSettings); }
+  else if(a === 's_savetbl'){ acSaveOneTable(); }
+  else if(a === 's_qf'){
+    const g = (k) => document.querySelector('[data-sk="' + k + '"]').value;
+    const top = acNum(g('qf_top')), bot = acNum(g('qf_bot')), st = acNum(g('qf_step')) || 100, chg = acNum(g('qf_chg')), r0 = acNum(g('qf_rates'));
+    if(!top || bot > top){ toast('Check the levels'); return; }
+    const lines = []; let k = 0;
+    for(let l = top; l >= bot; l -= st, k++) lines.push(l + '\t' + (Math.round((r0 + chg * k) * 10000) / 10000));
+    $('acTx').value = lines.join('\n'); acTxSync();
+  }
+}
+function acTxSync(){ const tx = $('acTx'); if(!tx) return; const t = AC.te === 'new' ? AC.tn : AC.td.tables[AC.te]; if(!t) return; t.text = tx.value; $('acTxInfo').innerHTML = acTxInfo(acParseTable(tx.value)); }
+async function acSaveSettings(){
+  const S = AC.sd; S.std.basic = acNum(S.std.basic); S.std.housing = acNum(S.std.housing); S.std.transport = acNum(S.std.transport);
+  if(Math.abs(S.std.basic + S.std.housing + S.std.transport - 100) > 0.01 && !confirm('Basic + Housing + Transport shares add up to ' + (S.std.basic + S.std.housing + S.std.transport) + '%, not 100%. Save anyway?')) return;
+  S.absent.days = acNum(S.absent.days) || 30; S.round.step = acNum(S.round.step) || 100; S.round.from = acNum(S.round.from);
+  S.rules = S.rules.filter(r => acNum(r.min) > 0 && acNum(r.amount) > 0).map(r => ({ depts: r.depts || [], mc: acNum(r.mc), min: acNum(r.min), amount: acNum(r.amount) }));
+  S.cols.forEach(c => { if(c.pct !== undefined) c.pct = acNum(c.pct); });
+  try{ await window.__db.saveConfigObject('acctSettings', S); AC.set = acNormSettings(JSON.parse(JSON.stringify(S))); acCloneSet(); toast('Settings saved'); acDrawSettings(); }
+  catch(err){ console.error(err); toast('Could not save — check your connection'); }
+}
+async function acSaveTables(){
+  try{ await window.__db.saveConfigObject('acctTables', { tables: AC.td.tables.map(t => ({ id: t.id, name: t.name, machines: t.machines || [], cols: t.cols || [], text: t.text || '' })), next: AC.td.next || 1 });
+    AC.tbl = JSON.parse(JSON.stringify(AC.td)); acTblNormalize(); toast('Saved'); return true; }
+  catch(err){ console.error(err); toast('Could not save — check your connection'); return false; }
+}
+async function acSaveOneTable(){
+  const t = AC.te === 'new' ? AC.tn : AC.td.tables[AC.te]; if(!t) return;
+  acTxSync(); const p = acParseTable(t.text);
+  if(!(t.name || '').trim()){ toast('Give the table a name'); return; }
+  if(!p.rows.length){ toast('Paste the rates first'); return; }
+  if(p.bad){ toast('Some lines have a different number of columns'); return; }
+  t.cols = ['Rate']; t.machines = Array.from(document.querySelectorAll('[data-sk="t_m"]:checked')).map(x => x.value);
+  if(AC.te === 'new'){ t.id = 't' + (AC.td.next++); AC.td.tables.push(t); }
+  if(await acSaveTables()){ AC.te = null; AC.tn = null; acDrawSettings(); }
+}
+document.addEventListener('input', (e) => { const t = e.target; if(!t.dataset || !t.dataset.sk || !AC.sd || !$('accountsBody') || !$('accountsBody').contains(t)) return; acSkChange(t, false); });
+document.addEventListener('change', (e) => { const t = e.target; if(!t.dataset || !t.dataset.sk || !AC.sd || !$('accountsBody') || !$('accountsBody').contains(t)) return; acSkChange(t, true); });
+document.addEventListener('toggle', (e) => { const d = e.target; if(d && d.classList && d.classList.contains('acSec') && AC.open) AC.open[d.dataset.sec] = d.open; }, true);
+function acSkChange(t, isChange){
+  const k = t.dataset.sk, S = AC.sd, i = Number(t.dataset.i), v = t.value;
+  if(k === 'cname'){ S.cols[i].name = v; }
+  else if(k === 'cshow'){ S.cols[i].hide = !t.checked; }
+  else if(k === 'ckind' || k === 'cscope' || k === 'csrc' || k === 'cof'){ S.cols[i][{ ckind: 'kind', cscope: 'scope', csrc: 'src', cof: 'of' }[k]] = v; }
+  else if(k === 'ccalc'){ S.cols[i].calc = v; if(isChange) acDrawSettings(); }
+  else if(k === 'cpct'){ S.cols[i].pct = v; }
+  else if(k.indexOf('std_') === 0){ S.std[k.slice(4)] = v; }
+  else if(k === 'abs_base'){ S.absent.base = v; } else if(k === 'abs_days'){ S.absent.days = v; }
+  else if(k === 'rnd_step'){ S.round.step = v; } else if(k === 'rnd_from'){ S.round.from = v; }
+  else if(k.indexOf('rl_') === 0){ S.rules[i][{ rl_mc: 'mc', rl_min: 'min', rl_amt: 'amount' }[k]] = v; }
+  else if(k === 't_name'){ const tt = AC.te === 'new' ? AC.tn : AC.td.tables[AC.te]; if(tt) tt.name = v; }
+  else if(k === 't_text'){ acTxSync(); }
+}
+
+document.addEventListener('change', (e) => {
+  const t = e.target; if(!$('accountsBody') || !$('accountsBody').contains(t) || !AC.sd) return;
+  if(t.dataset.ms && /^rl\d+$/.test(t.dataset.ms)){ const i = Number(t.dataset.ms.slice(2)), a = AC.sd.rules[i].depts = AC.sd.rules[i].depts || [], k = a.indexOf(t.value); if(t.checked && k < 0) a.push(t.value); else if(!t.checked && k >= 0) a.splice(k, 1); AC.msOpen = t.dataset.ms; acDrawSettings(); }
+  if(t.id === 'acTestM') acTestRun();
+});
+document.addEventListener('input', (e) => { if(e.target.id === 'acTestP') acTestRun(); });
+
+/* v60: Profile > Salary Info follows the Accounts sheet: same values, and a box for every column that is kept on the profile */
+async function acEnsureLoaded(){
+  if(AC.set && AC.tbl) return true;
+  try{
+    const [set, tbl] = await Promise.all([window.__db.getConfigObject('acctSettings', {}).then(acNormSettings), window.__db.getConfigObject('acctTables', { tables: [], next: 1 })]);
+    AC.set = set; AC.tbl = tbl; if(!Array.isArray(AC.tbl.tables)) AC.tbl.tables = []; acTblNormalize(); return true;
+  }catch(err){ console.error(err); return false; }
+}
+function acRateColNames(){ const s = []; ((AC.tbl && AC.tbl.tables) || []).forEach(t => (t.cols || []).forEach(c => { if(s.indexOf(c) < 0) s.push(c); })); return s; }
+function renderSalaryTab(){
+  const el = $('ptab-salary');
+  if(!el) return;
+  if(!(AC.set && AC.tbl)){ acEnsureLoaded().then(ok => { if(ok && $('ptab-salary') === el) renderSalaryTab(); }); }
+  const canEdit = state.profileEditMode;
+  const s = (profileCache.user.profile && profileCache.user.profile.salary) || {};
+  const extraComponents = state.salaryComponents || [];
+  const cols = (AC.set ? AC.set.cols : []).map(acColDef).filter(c => !c.builtin);
+  const profCols = cols.filter(c => c.calc === 'amount' && c.src === 'profile'), flagCols = cols.filter(c => c.scope === 'flag');
+  const cv = s.cv || {}, fl = s.fl || {};
+  if(!canEdit){
+    el.innerHTML = `<div class="card">
+      ${fieldRow('Basic Salary', s.basicSalary)}
+      ${fieldRow('Salary type', s.salaryType === 'fixed' ? 'Fixed amount' : 'Standard (housing and transport added)')}
+      ${fieldRow('Overtime (fixed)', s.overtime)}
+      ${fieldRow('Extra Money', s.extraMoney)}
+      ${fieldRow('Premium &amp; extra money', (s.premiumEligible || (profileCache.user && profileCache.user.role === 'operator')) ? 'Yes' : 'No')}
+      ${profCols.map(c => fieldRow(c.name, cv[c.id])).join('')}
+      ${flagCols.map(c => fieldRow(c.name + ' applies', fl[c.id] ? 'Yes' : 'No')).join('')}
+      ${extraComponents.map(c => fieldRow(c, (s.components||{})[c])).join('')}
+    </div>
+    ${s.premiumEligible ? '<div class="hint">Premium Money is worked out in Accounts from the earned picks and the rate tables.</div>' : ''}`;
+    return;
+  }
+  el.innerHTML = `<div class="grid-2">
+      <div class="field"><label>Basic Salary</label><input type="text" inputmode="decimal" id="sal-basic" value="${s.basicSalary||''}"></div>
+      <div class="field"><label>Overtime (fixed)</label><input type="text" inputmode="decimal" id="sal-ot" value="${s.overtime||''}"></div>
+    </div>
+    <div class="field"><label>Salary type</label><select id="sal-type"><option value="">Standard (housing and transport added to the basic)</option><option value="fixed" ${s.salaryType === 'fixed' ? 'selected' : ''}>Fixed amount (basic is the whole salary)</option></select></div>
+    <div class="field"><label>Extra Money <span style="text-transform:none; font-weight:400; color:var(--muted);">(only used when no picks target pays them)</span></label><input type="text" inputmode="decimal" id="sal-extra" value="${s.extraMoney||''}"></div>
+    <div class="field">
+      <label style="display:flex; align-items:center; gap:8px; text-transform:none; font-weight:600; color:var(--text); cursor:pointer;">
+        <input type="checkbox" id="sal-premium" style="width:auto;" ${s.premiumEligible?'checked':''}>
+        Eligible for Premium &amp; extra money <span style="text-transform:none; font-weight:400; color:var(--muted);">(operators always are &mdash; tick for anyone else)</span>
+      </label>
+    </div>
+    ${profCols.length ? `<div class="grid-2">${profCols.map(c => `<div class="field"><label>${acEsc(c.name)}</label><input type="text" inputmode="decimal" class="sal-cv" data-id="${c.id}" value="${acEsc(cv[c.id] || '')}"></div>`).join('')}</div>` : ''}
+    ${flagCols.length ? `<div class="field">${flagCols.map(c => `<label style="display:flex; align-items:center; gap:8px; text-transform:none; font-weight:600; color:var(--text); cursor:pointer; margin-bottom:6px;"><input type="checkbox" class="sal-fl" data-id="${c.id}" style="width:auto;" ${fl[c.id] ? 'checked' : ''}> ${acEsc(c.name)} applies to this person</label>`).join('')}</div>` : ''}
+    ${extraComponents.length ? `<div class="grid-2">${extraComponents.map(c => `<div class="field"><label>${c}</label><input type="text" inputmode="decimal" class="sal-comp" data-comp="${c}" value="${(s.components||{})[c]||''}"></div>`).join('')}</div>` : ''}
+    <button class="btn btn-primary" id="saveSalaryBtn">Save Salary Info</button>`;
+  $('saveSalaryBtn').addEventListener('click', saveSalaryInfo);
+}
+async function saveSalaryInfo(){
+  const old = (profileCache.user.profile && profileCache.user.profile.salary) || {};
+  const components = {};
+  document.querySelectorAll('.sal-comp').forEach(inp => { components[inp.dataset.comp] = inp.value.trim(); });
+  const cv = Object.assign({}, old.cv || {}), fl = Object.assign({}, old.fl || {});
+  document.querySelectorAll('.sal-cv').forEach(inp => { cv[inp.dataset.id] = inp.value.trim(); });
+  document.querySelectorAll('.sal-fl').forEach(inp => { fl[inp.dataset.id] = inp.checked; });
+  const salary = Object.assign({}, old, {
+    basicSalary: $('sal-basic').value.trim(),
+    extraMoney: $('sal-extra').value.trim(),
+    premiumEligible: $('sal-premium').checked,
+    overtime: $('sal-ot').value.trim(), salaryType: $('sal-type').value,
+    components, cv, fl
+  });
+  try{
+    await saveProfileFields(profileCache.user.loginId, { salary });
+    toast('Salary info saved');
+  }catch(err){ console.error(err); toast('Could not save — check your connection'); }
+}
+
+/* ============================================================
+   v63: EARNED PICKS (Approvals page for admin/supervisor, My Status for operators)
+   - compact table with Start / End reading, small hidden filter, download (Excel + PDF)
+   Reads: Start/End use the per-machine history digest (1 small read per machine, kept for the session until a reading changes).
+   The download reads each chosen operator's summaries once (kept 5 minutes) - or one date-range read when many are chosen.
+   Nothing here writes to the database.
+   ============================================================ */
+const PKX = { ctx: {}, f: {}, last: {}, chains: {}, chainVer: null, sums: {}, dl: null, digestOk: null };
+function pkxF(id){ return PKX.f[id] || (PKX.f[id] = { mach: [], q: '', stop: false, open: false, msOpen: false }); }
+function pkxShortDate(d){ const p = String(d).split('-'); return Number(p[2]) + ' ' + FMT_MONTHS[Number(p[1]) - 1]; }
+const pkxFmt = (n) => Math.round(n).toLocaleString('en-US');
+async function pkxEnsureChains(mids){
+  const ver = window.__db.readingsVersion ? window.__db.readingsVersion() : -1;
+  if(PKX.chainVer !== ver){ PKX.chains = {}; PKX.chainVer = ver; }
+  const need = Array.from(new Set(mids.map(String))).filter(m => !(m in PKX.chains));
+  if(!need.length) return true;
+  if(PKX.digestOk === null) PKX.digestOk = await window.__db.getHistoryDigestReady();
+  if(!PKX.digestOk) return false;
+  const d = await window.__db.loadMachineHistories(need);
+  need.forEach(m => { const lines = d[m]; PKX.chains[m] = lines ? lines.map(l => window.__db.decodeHistoryEntry(l, m)).sort(chronoCompare) : null; });
+  return true;
+}
+function pkxStartEnd(mid, date, shifts){
+  const ch = PKX.chains[String(mid)]; if(!ch) return null;
+  const idx = []; ch.forEach((e, i) => { if(e.date === date && (!shifts || !shifts.size || shifts.has(e.shift)) && e.photoType !== 'start') idx.push(i); });
+  if(!idx.length) return null;
+  const first = ch[idx[0]], last = ch[idx[idx.length - 1]]; let start = '';
+  if(isZeroReset(first)) start = '0';
+  else if(idx[0] > 0){ const p = ch[idx[0] - 1]; start = (p.photoType === 'start' && isZeroReset(p)) ? '0' : String(p.reading); }
+  else { const m = (state.machines || []).find(x => String(x.id) === String(mid)); start = (m && m.baselineReading != null && String(m.baselineReading) !== '') ? String(m.baselineReading) : ''; }
+  return { start, end: String(last.reading) };
+}
+/* ---------- the table ---------- */
+function renderPicksRowsTable(containerId, rows, onPageChange){
+  PKX.last[containerId] = { rows, onPageChange, ctx: PKX.ctx[containerId] || {} };
+  pkxDraw(containerId);
+}
+function pkxVisible(id){
+  const L = PKX.last[id], f = pkxF(id), q = f.q.trim().toLowerCase();
+  return L.rows.filter(r => (!f.mach.length || f.mach.indexOf(String(r.machine)) >= 0) && (!f.stop || r.stopHours > 0 || r.stopPicks > 0) && (!q || (machineName(r.machine) + ' ' + fmtDate(r.date) + ' ' + pkxShortDate(r.date)).toLowerCase().includes(q)));
+}
+function pkxEff(rows, assigned){
+  const set = new Set(); let stop = 0;
+  rows.forEach(r => { const ls = r.logStop != null ? r.logStop : r.stopHours; stop += ls; Array.from(r.shiftsSeen || []).forEach(sh => set.add((assigned === 'Day' || assigned === 'Night') ? r.date : r.date + '|' + sh)); });
+  let hrs = 0; set.forEach(k => { const a = k.split('|'); hrs += machineHoursForDate(a[0], a[1] || assigned); });
+  return { hrs, stop, shifts: set.size, pct: hrs > 0 ? Math.max(0, Math.min(100, (hrs - stop) / hrs * 100)) : null };
+}
+function pkxRowEff(r){
+  const sh = Array.from(r.shiftsSeen || []).filter(x => x === 'Day' || x === 'Night'); let h = 0; (sh.length ? sh : ['Day']).forEach(x => { h += machineHoursForDate(r.date, x); });
+  const ls = r.logStop != null ? r.logStop : r.stopHours; return h > 0 ? Math.max(0, Math.min(100, (h - ls) / h * 100)) : null;
+}
+function pkxDraw(id){
+  const box = $(id), L = PKX.last[id]; if(!box || !L) return;
+  const f = pkxF(id), rows = pkxVisible(id), all = L.rows;
+  let running = 0; rows.forEach(r => { running += r.picks + r.stopPicks; });
+  const perPage = 15, pgKey = id + 'Pagination', totalPages = Math.max(1, Math.ceil(rows.length / perPage));
+  const page = Math.min(paginationState[pgKey] || 1, totalPages), pageRows = rows.slice((page - 1) * perPage, page * perPage);
+  const machs = Array.from(new Set(all.map(r => String(r.machine)))).sort((a, b) => (Number(a) || 0) - (Number(b) || 0));
+  const n = (f.mach.length ? 1 : 0) + (f.q.trim() ? 1 : 0) + (f.stop ? 1 : 0);
+  const mlabel = f.mach.length ? (f.mach.length <= 2 ? f.mach.map(machineName).join(', ') : f.mach.length + ' machines') : 'All machines';
+  const adm = state.user && state.user.role === 'admin';
+  const bar = `<div class="pkxBar"><span style="flex:1;"></span><button type="button" class="iconBtn${n || f.open ? ' on' : ''}" data-pk="ftog" data-c="${id}" title="Filter">${AC_ICON.filter}${n ? `<span class="acBadge">${n}</span>` : ''}</button>${adm ? `<button type="button" class="pillBtn" data-pk="dl" data-c="${id}">${DL_ICON}Download</button>` : ''}</div>
+    ${f.open ? `<div class="acFilt"><details class="acMs" ${f.msOpen ? 'open' : ''} data-pkms="${id}"><summary>${acEsc(mlabel)}</summary><div class="acMsL">${machs.map(m => `<label><input type="checkbox" data-pk="mach" data-c="${id}" value="${acEsc(m)}" ${f.mach.indexOf(m) >= 0 ? 'checked' : ''}> ${acEsc(machineName(m))}</label>`).join('')}${f.mach.length ? `<button type="button" class="acMsC" data-pk="mclear" data-c="${id}">Clear</button>` : ''}</div></details>
+      ${adm ? `<input type="text" class="acQ" data-pk="q" data-c="${id}" placeholder="Search date or machine" value="${acEsc(f.q)}"><label class="acChk"><input type="checkbox" data-pk="stop" data-c="${id}" ${f.stop ? 'checked' : ''}> Days with stop time only</label><button type="button" class="pillBtn" data-pk="fclear" data-c="${id}">Clear all</button>` : ''}</div>` : ''}`;
+  let body = '', lastDate = '';
+  pageRows.forEach((r, ix) => {
+    const day = r.picks + r.stopPicks;
+    body += `<tr><td>${(page - 1) * perPage + ix + 1}</td><td>${pkxShortDate(r.date)}</td><td title="${acEsc(machineName(r.machine))}">${acEsc(machineName(r.machine))}</td><td class="pkS" data-k="${acEsc(r.date + '|' + r.machine)}"></td><td class="pkE" data-k="${acEsc(r.date + '|' + r.machine)}"></td><td><b>${r.picks.toLocaleString()}</b></td><td>${r.stopHours.toFixed(1)}</td><td>${pkxFmt(r.stopPicks)}</td><td><b>${pkxFmt(day)}</b></td></tr>`;
+  });
+  let effHtml = '';
+  if(id === 'picksBody' && all.length){
+    const ctx = PKX.ctx[id] || {}, u = (state.users || []).find(x => x.loginId === ctx.op), e = pkxEff(all, u ? u.assignedShift : null);
+    if(e.pct !== null) effHtml = `<div class="pkxEff"><span><i>Efficiency</i><b style="color:${e.pct >= 80 ? 'var(--ok)' : e.pct >= 50 ? 'var(--warn)' : 'var(--danger)'};">${e.pct.toFixed(1)}%</b></span><span><i>Shifts</i><b>${e.shifts} &middot; ${e.hrs.toFixed(1)}h</b></span><span><i>Stop time</i><b>${e.stop.toFixed(1)}h</b></span></div>`;
+  }
+  box.innerHTML = bar + `<div class="table-scroll"><table class="report-table pkxTbl"><thead><tr><th>#</th><th>Date</th><th>Machine</th><th>Start</th><th>End</th><th title="End minus Start">Reading</th><th>Stop h</th><th title="Earned picks from stop time">Stop picks</th><th>Total</th></tr></thead><tbody>${body || '<tr><td colspan="9" class="acEmpty">No entries.</td></tr>'}</tbody></table></div>
+    <div class="card row" style="margin-top:10px;"><span class="k">Total Picks (${rows.length === all.length ? 'selected range' : 'filtered'})</span><span><b>${pkxFmt(running)}</b></span></div>` + effHtml;
+  renderPaginationControls(pgKey, rows.length, perPage, (p) => { paginationState[pgKey] = p; L.onPageChange(p); });
+  pkxFillSE(id, pageRows);
+}
+async function pkxFillSE(id, pageRows){
+  try{
+    if(!pageRows.length) return;
+    const ok = await pkxEnsureChains(pageRows.map(r => r.machine));
+    const box = $(id); if(!box) return;
+    pageRows.forEach(r => {
+      const k = r.date + '|' + r.machine, se = ok ? pkxStartEnd(r.machine, r.date, r.shiftsSeen) : null;
+      box.querySelectorAll('td[data-k="' + CSS.escape(k) + '"]').forEach(td => { td.textContent = se ? (td.classList.contains('pkS') ? se.start : se.end) : ''; });
+    });
+  }catch(err){ console.error('Start/End readings could not be loaded', err); }
+}
+document.addEventListener('click', (e) => {
+  const t = e.target.closest('[data-pk]'); if(!t) return;
+  const a = t.dataset.pk, id = t.dataset.c, f = id ? pkxF(id) : null;
+  if(a === 'ftog'){ f.open = !f.open; pkxDraw(id); }
+  else if(a === 'fclear'){ PKX.f[id] = { mach: [], q: '', stop: false, open: true, msOpen: false }; paginationState[id + 'Pagination'] = 1; pkxDraw(id); }
+  else if(a === 'mclear'){ f.mach = []; paginationState[id + 'Pagination'] = 1; pkxDraw(id); }
+  else if(a === 'dl'){ if(state.user && state.user.role === 'admin') pkxOpenDl(id); }
+});
+document.addEventListener('change', (e) => {
+  const t = e.target; if(!t.dataset || !t.dataset.pk) return; const id = t.dataset.c, f = pkxF(id);
+  if(t.dataset.pk === 'mach'){ const i = f.mach.indexOf(t.value); if(t.checked && i < 0) f.mach.push(t.value); else if(!t.checked && i >= 0) f.mach.splice(i, 1); f.msOpen = true; paginationState[id + 'Pagination'] = 1; pkxDraw(id); }
+  else if(t.dataset.pk === 'stop'){ f.stop = t.checked; paginationState[id + 'Pagination'] = 1; pkxDraw(id); }
+});
+document.addEventListener('input', (e) => { const t = e.target; if(t.dataset && t.dataset.pk === 'q'){ const id = t.dataset.c; pkxF(id).q = t.value; paginationState[id + 'Pagination'] = 1; pkxDraw(id); const q = document.querySelector('[data-pk="q"][data-c="' + id + '"]'); if(q){ q.focus(); q.setSelectionRange(q.value.length, q.value.length); } } });
+document.addEventListener('toggle', (e) => { const d = e.target; if(d && d.dataset && d.dataset.pkms) pkxF(d.dataset.pkms).msOpen = d.open; }, true);
+/* ---------- download ---------- */
+function pkxAllowed(){
+  const me = state.user, list = (state.users || []).filter(u => (u.role === 'operator' || u.role === 'supervisor') && !isExitedEmployee(u));
+  if(me.role === 'admin') return list;
+  if(me.role === 'supervisor') return list.filter(u => u.loginId === me.loginId || (u.role === 'operator' && u.profile && u.profile.directSupervisor && u.profile.directSupervisor.loginId === me.loginId));
+  const id = state.execViewTarget || me.loginId; return [(state.users || []).find(u => u.loginId === id) || { loginId: me.loginId, name: me.name, role: me.role }];
+}
+const PKX_COLS = [['date', 'Date'], ['op', 'Operator'], ['mach', 'Machine'], ['start', 'Start'], ['end', 'End'], ['picks', 'Reading (picks)'], ['stopH', 'Stop hours'], ['stopP', 'Stop picks'], ['total', 'Total']];
+function pkxDefCols(group){ return PKX_COLS.map(c => c[0]).filter(k => !(group === 'op' && k === 'op') && !(group === 'mach' && k === 'mach')); }
+function pkxOpenDl(id){
+  const ctx = PKX.ctx[id] || {}, me = state.user, allowed = pkxAllowed(), single = me.role === 'operator';
+  const first = ctx.op && allowed.some(u => u.loginId === ctx.op) ? ctx.op : (allowed[0] && allowed[0].loginId);
+  PKX.dl = { id, group: 'op', ops: new Set(first ? [first] : []), mach: [], from: ctx.from || '', to: ctx.to || '', cols: new Set(pkxDefCols('op')), q: '', busy: false, single, allowed, sec: '', eff: false };
+  let ov = document.getElementById('pkOv'); if(ov) ov.remove(); ov = document.createElement('div'); ov.id = 'pkOv'; ov.className = 'dlOv'; document.body.appendChild(ov); pkxDlDraw();
+}
+function pkxSec(d, key, title, sum, body){
+  return `<div class="dlSec${d.sec === key ? ' open' : ''}"><button type="button" class="dlSecH" data-pkd="sec" data-v="${key}"><span>${title}</span><i>${sum}</i></button>${d.sec === key ? `<div class="dlSecB">${body}</div>` : ''}</div>`;
+}
+function pkxDlDraw(){
+  const ov = document.getElementById('pkOv'), d = PKX.dl; if(!ov || !d) return;
+  const q = d.q.trim().toLowerCase(), list = d.allowed.filter(u => !q || (u.name + ' ' + u.loginId).toLowerCase().includes(q));
+  const mach = (state.machines || []);
+  const who = `<input type="text" class="dlQ" data-pkd="q" placeholder="Search a name or ID" value="${acEsc(d.q)}"><div class="dlPickBar"><button type="button" class="pillBtn" data-pkd="all">Tick all shown</button><button type="button" class="pillBtn" data-pkd="none">Clear</button></div><div class="dlList">${list.slice(0, 200).map(u => `<label class="dlRow"><input type="checkbox" data-pkd="op" data-id="${acEsc(u.loginId)}" ${d.ops.has(u.loginId) ? 'checked' : ''}> <span>${acEsc(u.name)} (${acEsc(u.loginId)})</span></label>`).join('')}</div>`;
+  const mc = `<div class="ovCols">${mach.map(m => `<label class="ovColChip${d.mach.indexOf(String(m.id)) >= 0 ? ' on' : ''}"><input type="checkbox" data-pkd="mach" value="${acEsc(m.id)}" ${d.mach.indexOf(String(m.id)) >= 0 ? 'checked' : ''}> ${acEsc(m.name)}</label>`).join('')}</div>`;
+  const cc = `<div class="ovCols">${PKX_COLS.map(c => `<label class="ovColChip${d.cols.has(c[0]) ? ' on' : ''}"><input type="checkbox" data-pkd="col" value="${c[0]}" ${d.cols.has(c[0]) ? 'checked' : ''}> ${c[1]}</label>`).join('')}</div>`;
+  const nm = d.ops.size === 1 ? (function(){ const u = d.allowed.find(x => d.ops.has(x.loginId)); return u ? u.name : '1 person'; })() : d.ops.size + ' people';
+  ov.innerHTML = `<div class="dlCard dlSimple"><div class="dlHead"><b>Download earned picks</b><button type="button" class="dlX" data-pkd="close" aria-label="Close">&times;</button></div>
+    <div class="dlMode">${[['op', 'Page per operator'], ['mach', 'Page per machine'], ['one', 'One list']].map(g => `<label class="ovColChip${d.group === g[0] ? ' on' : ''}"><input type="radio" name="pkg" data-pkd="group" data-v="${g[0]}" ${d.group === g[0] ? 'checked' : ''}> ${g[1]}</label>`).join('')}</div>
+    <div class="acBar" style="margin:4px 0 10px;"><input type="date" data-pkd="from" value="${d.from}"><span class="hrNote" style="margin:0;">to</span><input type="date" data-pkd="to" value="${d.to}"></div>
+    ${pkxSec(d, 'who', 'Who', acEsc(nm), who)}${pkxSec(d, 'mach', 'Machines', d.mach.length ? d.mach.length + ' chosen' : 'All', mc)}${pkxSec(d, 'cols', 'Columns', d.cols.size + ' chosen', cc)}
+    <label class="dlOpt"><input type="checkbox" data-pkd="eff" ${d.eff ? 'checked' : ''}> <span>Add efficiency at the bottom</span></label>
+    <div class="dlGo"><span style="flex:1"></span><button type="button" class="pillBtn" data-pkd="pdf" ${d.busy ? 'disabled' : ''}>${DL_ICON}PDF</button><button type="button" class="pillBtn ok" data-pkd="xlsx" ${d.busy ? 'disabled' : ''}>${DL_ICON}Excel</button></div></div>`;
+  const qi = ov.querySelector('.dlQ'); if(qi && d.keepFocus){ qi.focus(); qi.setSelectionRange(qi.value.length, qi.value.length); }
+}
+document.addEventListener('click', (e) => {
+  const t = e.target.closest('[data-pkd]'); if(!t || !PKX.dl) return; const a = t.dataset.pkd, d = PKX.dl;
+  if(a === 'close'){ document.getElementById('pkOv').remove(); PKX.dl = null; }
+  else if(a === 'sec'){ d.sec = d.sec === t.dataset.v ? '' : t.dataset.v; d.keepFocus = false; pkxDlDraw(); }
+  else if(a === 'all'){ const q = d.q.trim().toLowerCase(); d.allowed.filter(u => !q || (u.name + ' ' + u.loginId).toLowerCase().includes(q)).forEach(u => d.ops.add(u.loginId)); d.keepFocus = false; pkxDlDraw(); }
+  else if(a === 'none'){ d.ops.clear(); d.keepFocus = false; pkxDlDraw(); }
+  else if(a === 'pdf' || a === 'xlsx'){ pkxGo(a); }
+});
+document.addEventListener('change', (e) => {
+  const t = e.target; if(!t.dataset || !t.dataset.pkd || !PKX.dl) return; const a = t.dataset.pkd, d = PKX.dl; d.keepFocus = false;
+  if(a === 'group'){ d.group = t.dataset.v; d.cols = new Set(pkxDefCols(d.group)); pkxDlDraw(); }
+  else if(a === 'from'){ d.from = t.value; } else if(a === 'to'){ d.to = t.value; }
+  else if(a === 'op'){ if(t.checked) d.ops.add(t.dataset.id); else d.ops.delete(t.dataset.id); pkxDlDraw(); }
+  else if(a === 'mach'){ const i = d.mach.indexOf(t.value); if(t.checked && i < 0) d.mach.push(t.value); else if(!t.checked && i >= 0) d.mach.splice(i, 1); pkxDlDraw(); }
+  else if(a === 'eff'){ d.eff = t.checked; }
+  else if(a === 'col'){ if(t.checked) d.cols.add(t.value); else d.cols.delete(t.value); pkxDlDraw(); }
+});
+document.addEventListener('input', (e) => { const t = e.target; if(t.dataset && t.dataset.pkd === 'q' && PKX.dl){ PKX.dl.q = t.value; PKX.dl.keepFocus = true; pkxDlDraw(); } });
+function pkxRowsFromSummaries(sums, from, to, machFilter){
+  let f = sums; if(from) f = f.filter(s => s.date >= from); if(to) f = f.filter(s => s.date <= to);
+  const byKey = {};
+  f.forEach(s => { if(machFilter.length && machFilter.indexOf(String(s.machine)) < 0) return;
+    byKey[s.date + '|' + s.machine] = { date: s.date, machine: s.machine, picks: Number(s.picks) || 0, stopHours: (s.stopBreakdown || []).reduce((a, b) => a + (Number(b.hours) || 0), 0),
+      stopPicks: (s.stopBreakdown || []).reduce((a, b) => a + (Number(b.hours) || 0) * stopReasonRate(b.reason), 0), shiftsSeen: new Set(s.shifts || []) }; });
+  applyWeeklyAutoStop(byKey);
+  return Object.values(byKey);
+}
+async function pkxCollect(d){
+  const ids = Array.from(d.ops).filter(id => d.allowed.some(u => u.loginId === id));   // only people this person may see
+  const range = ids.length > 6 ? await window.__db.loadSummariesInRange(d.from || '0000-01-01', d.to || '9999-12-31') : null;
+  const out = [];
+  for(const id of ids){
+    let sums;
+    if(range) sums = range.filter(s => s.operatorId === id);
+    else { const c = PKX.sums[id]; if(c && Date.now() - c.at < 300000) sums = c.list; else { sums = await window.__db.loadOperatorSummaries(id); PKX.sums[id] = { list: sums, at: Date.now() }; } }
+    const u = d.allowed.find(x => x.loginId === id);
+    pkxRowsFromSummaries(sums, d.from, d.to, d.mach).forEach(r => out.push(Object.assign(r, { op: id, opName: u ? u.name : id })));
+  }
+  if(d.cols.has('start') || d.cols.has('end')){
+    const ok = await pkxEnsureChains(out.map(r => r.machine));
+    out.forEach(r => { const se = ok ? pkxStartEnd(r.machine, r.date, r.shiftsSeen) : null; r.start = se ? se.start : ''; r.end = se ? se.end : ''; });
+  }
+  return out;
+}
+async function pkxGo(kind){
+  const d = PKX.dl; if(!d || d.busy) return;
+  if(!d.ops.size){ toast('Choose who to include'); return; }
+  const cols = PKX_COLS.filter(c => d.cols.has(c[0])); if(!cols.length){ toast('Tick at least one column'); return; }
+  d.busy = true; pkxDlDraw(); toast('Collecting…');
+  try{
+    const rows = await pkxCollect(d);
+    if(!rows.length){ toast('No entries for that choice'); d.busy = false; pkxDlDraw(); return; }
+    const key = (r) => d.group === 'op' ? r.op : d.group === 'mach' ? String(r.machine) : 'all';
+    const label = (r) => d.group === 'op' ? r.opName + ' (' + r.op + ')' : d.group === 'mach' ? machineName(r.machine) : 'Earned picks';
+    const groups = {}; rows.forEach(r => { const k = key(r); (groups[k] = groups[k] || { label: label(r), rows: [] }).rows.push(r); });
+    const gl = Object.values(groups).sort((a, b) => d.group === 'mach' ? (parseInt(a.rows[0].machine, 10) || 0) - (parseInt(b.rows[0].machine, 10) || 0) : a.label.localeCompare(b.label));
+    gl.forEach(g => g.rows.sort((a, b) => a.date === b.date ? (d.group === 'op' ? machineName(a.machine).localeCompare(machineName(b.machine)) : a.opName.localeCompare(b.opName)) : a.date.localeCompare(b.date)));
+    const val = (r, k) => ({ date: fmtDate(r.date), op: r.opName, mach: machineName(r.machine), start: r.start === undefined ? '' : r.start, end: r.end === undefined ? '' : r.end, picks: r.picks, stopH: Math.round(r.stopHours * 10) / 10, stopP: Math.round(r.stopPicks), total: Math.round(r.picks + r.stopPicks) })[k];
+    const gEff = (g) => { const u = d.group === 'op' ? (state.users || []).find(x => x.loginId === g.rows[0].op) : null; return pkxEff(g.rows, u ? u.assignedShift : null); };
+    const tot = (rs) => rs.reduce((a, r) => a + r.picks + r.stopPicks, 0);
+    const stamp = rvfDateStamp(), title = 'Earned picks', rng = (d.from || 'start') + ' to ' + (d.to || 'today'), file = 'earned-picks';
+    if(kind === 'xlsx'){
+      if(typeof XLSX === 'undefined'){ toast('Excel tool not loaded — check your connection'); d.busy = false; pkxDlDraw(); return; }
+      const wb = XLSX.utils.book_new();
+      const sum = [[title], ['Created', rvfNowText()], ['Dates', rng], ['Arranged', { op: 'By operator', mach: 'By machine', one: 'One list' }[d.group]], ['Entries', rows.length], ['Total picks', Math.round(tot(rows))]];
+      const ws1 = XLSX.utils.aoa_to_sheet(sum); ws1['!cols'] = [{ wch: 18 }, { wch: 40 }]; XLSX.utils.book_append_sheet(wb, ws1, 'Summary');
+      const used = {};
+      gl.forEach(g => {
+        const aoa = [['#'].concat(cols.map(c => c[1]))].concat(g.rows.map((r, i) => [i + 1].concat(cols.map(c => { const v = val(r, c[0]); return (typeof v === 'string' && v !== '' && /^-?\d+(\.\d+)?$/.test(v) && !/^0\d/.test(v)) ? Number(v) : v; }))));
+        aoa.push(['', 'Total'].concat(cols.slice(1).map(c => c[0] === 'total' ? Math.round(tot(g.rows)) : (c[0] === 'picks' ? g.rows.reduce((a, r) => a + r.picks, 0) : ''))));
+        if(d.eff){ const e = gEff(g); if(e.pct != null) aoa.push(['', 'Efficiency', Math.round(e.pct * 10) / 10 + '%', e.shifts + ' shifts = ' + e.hrs.toFixed(1) + 'h', 'stop ' + e.stop.toFixed(1) + 'h']); }
+        const ws = XLSX.utils.aoa_to_sheet(aoa); ws['!cols'] = [{ wch: 5 }].concat(cols.map(c => ({ wch: c[0] === 'op' ? 24 : 14 })));
+        let nm = g.label.replace(/[\\\/\?\*\[\]:]/g, ' ').slice(0, 28) || 'Sheet'; let k = 1; while(used[nm]){ nm = nm.slice(0, 26) + ' ' + (++k); } used[nm] = 1;
+        XLSX.utils.book_append_sheet(wb, ws, nm);
+      });
+      XLSX.writeFile(wb, file + '-' + stamp + '.xlsx'); toast('Excel file downloaded');
+    } else {
+      const hd = '<tr><th>#</th>' + cols.map(c => `<th>${c[1]}</th>`).join('') + '</tr>';
+      const blocks = [rvfPdfHeader(title, [rng + ' · ' + rvfNowText(), gl.length + (d.group === 'op' ? ' operators' : d.group === 'mach' ? ' machines' : ' list') + ' · ' + rows.length + ' entries · total ' + pkxFmt(tot(rows)) + ' picks'])];
+      gl.forEach((g, gi) => {
+        if(d.group !== 'one') blocks.push(`<div ${gi ? 'data-pgbreak="1"' : ''} style="font-size:14px; font-weight:700; color:#4f46e5; margin:6px 0 6px;">${acEsc(g.label)} <span style="font-weight:500; color:#64748b; font-size:11px;">&middot; ${g.rows.length} entries &middot; total ${pkxFmt(tot(g.rows))}</span></div>`);
+        const trs = g.rows.map((r, i) => `<tr><td>${i + 1}</td>${cols.map(c => `<td>${acEsc(val(r, c[0]))}</td>`).join('')}</tr>`);
+        trs.push(`<tr><td></td><td><b>Total</b></td>${cols.slice(1).map(c => `<td><b>${c[0] === 'total' ? pkxFmt(tot(g.rows)) : c[0] === 'picks' ? pkxFmt(g.rows.reduce((a, r) => a + r.picks, 0)) : ''}</b></td>`).join('')}</tr>`);
+        rvfTableBlocks(hd, trs, 30, 'ovPdfT').forEach(b => blocks.push(b));
+        if(d.eff){ const e = gEff(g); if(e.pct != null) blocks.push(`<div style="font-size:11px; margin:6px 0 12px; color:#334155;"><b>Efficiency ${e.pct.toFixed(1)}%</b> &middot; ${e.shifts} shifts = ${e.hrs.toFixed(1)}h &middot; stop time ${e.stop.toFixed(1)}h</div>`); }
+      });
+      await rvfMakePdf(blocks, file + '-' + stamp + '.pdf', { landscape: cols.length > 8 });
+    }
+  }catch(err){ console.error(err); toast('Could not make the file — check your connection'); }
+  d.busy = false; pkxDlDraw();
+}
 
 (function(){
   const b=$('bkOpenBtn'); if(b) b.addEventListener('click', () => bkOpen());
