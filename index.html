@@ -2812,6 +2812,18 @@ table.pkxTbl th{ padding:8px 6px; font-size:9px; white-space:nowrap; }
 .dlSecH i{ font-style:normal; font-weight:500; color:var(--muted); font-size:12px; max-width:60%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .dlSecB{ padding:0 0 12px; }
 .dlOpt{ display:flex; gap:8px; align-items:center; padding:10px 2px 0; font-size:13px; cursor:pointer; }
+
+table.pkPdf{ width:100%; table-layout:fixed; border-collapse:collapse; font-size:10px; margin:0; }
+table.pkPdf th{ background:#f1f2f9; color:#64748b; font-size:8.5px; text-transform:uppercase; letter-spacing:.04em; font-weight:700; text-align:left; padding:6px 6px; line-height:12px; }
+table.pkPdf td{ padding:2px 6px; line-height:13px; height:17px; border-bottom:1px solid #eceef6; white-space:nowrap; overflow:hidden; text-overflow:clip; }
+table.pkPdf th.r, table.pkPdf td.r{ text-align:right; }
+table.pkPdf tbody tr:nth-child(even) td{ background:#fafbfe; }
+table.pkPdf tr.tot td{ background:#eef2ff !important; border-top:1px solid #c7d2fe; }
+.pkPdfH{ font-size:15px; font-weight:700; color:#4f46e5; margin:0 0 8px; padding-top:2px; }
+.pkPdfH span{ font-weight:500; color:#64748b; font-size:11px; }
+.pkPdfH.c{ font-size:12px; }
+.pkPdfEff{ font-size:11px; margin:8px 2px 0; color:#334155; }
+.ovRemark{ display:inline-block; margin-left:8px; font-size:10px; font-weight:600; color:#b45309; background:#fef3c7; border-radius:999px; padding:1px 8px; vertical-align:middle; }
 \n</style>
 </head>
 <body>
@@ -3889,6 +3901,8 @@ table.pkxTbl th{ padding:8px 6px; font-size:9px; white-space:nowrap; }
               <div class="field"><label>Position</label><select id="ceoFilterPosition"><option value="">All</option></select></div>
             </div>
             <div class="field"><label>Columns to show in the list and in the downloads (taken from each person's profile)</label><div id="ceoColsBox"></div></div>
+            <div class="field"><label>Sponsor type</label><select id="ceoFilterType"><option value="">Both</option><option value="Sponsor">Sponsor only</option><option value="Non-Sponsor">Non-Sponsor only</option></select></div>
+            <div class="field"><label>Current job status</label><select id="ceoFilterStatus"><option value="">All</option><option value="running">On The Job</option><option value="vacation">Vacation</option><option value="leave">On Leave</option><option value="terminated">Exit / Terminated</option></select></div>
             <div class="field"><label>Tenure at least (years)</label><select id="ceoFilterTenure"><option value="0">Any</option><option value="1">1+</option><option value="5">5+</option><option value="10">10+</option></select></div>
             <div class="field">
               <label>Date Range <span style="text-transform:none; font-weight:400; color:var(--muted);">(applies to New Joined / Exit-Terminated)</span></label>
@@ -10130,6 +10144,7 @@ async function rvfMakePdf(blocks, filename, opts){
       pdf.addImage(canvas.toDataURL('image/jpeg', 0.92), 'JPEG', m, y, w, h);
       y += h + 1.5;
     }
+    if(opts && opts.footer){ const n = pdf.getNumberOfPages(), pw2 = pdf.internal.pageSize.getWidth(), ph2 = pdf.internal.pageSize.getHeight(); pdf.setFont('helvetica','normal'); pdf.setFontSize(7.5); pdf.setTextColor(120,130,150); for(let i = 1; i <= n; i++){ pdf.setPage(i); pdf.text(String(opts.footer), 10, ph2 - 5); pdf.text('Page ' + i + ' of ' + n, pw2 - 10, ph2 - 5, { align: 'right' }); } }
     pdf.save(filename);
     return true;
   }catch(err){ console.error(err); toast('Could not make the PDF'); return false; }
@@ -13444,17 +13459,20 @@ function empDrillCompute(kind0){
   const withProfile = state.users.filter(u => u.role !== 'pending');
   let list = withProfile;
   let title = 'All Employees';
+  OVV.back = new Set();
+  const typeF = ($('ceoFilterType') || {}).value || '';
+  const stF = ($('ceoFilterStatus') || {}).value || '';   // a chosen job status overrides the 'running only' rule
   let onlyRunning = true; // most categories mean "currently active in that bucket"
 
   if(kind === 'all'){
     title = 'All Employees';
     // CEO Dashboard only ever shows running employees — Exit/Terminated people
     // drop out of this list the moment Admin marks them (item 4).
-    list = list.filter(u => !isExitedEmployee(u));
+    list = list.filter(u => stF || !isExitedEmployee(u));
     onlyRunning = false;
   } else if(kind === 'Sponsor' || kind === 'Non-Sponsor'){
     title = kind + ' Employees';
-    list = list.filter(u => u.profile && u.profile.employmentType === kind && !isExitedEmployee(u));
+    list = list.filter(u => u.profile && u.profile.employmentType === kind && (stF || !isExitedEmployee(u)));
     onlyRunning = false;
   } else if(kind && kind.startsWith('status:')){
     const status = kind.split(':')[1];
@@ -13468,7 +13486,18 @@ function empDrillCompute(kind0){
   } else if(kind === 'highlight:newJoin'){
     const dr = getDetailsDateRange();
     title = 'New Joined' + (dr.mode && dr.mode !== 'all' ? ' \u2014 ' + dr.label : '');
-    list = list.filter(u => u.profile && u.profile.joiningDate && dateWithinDetailsRange(u.profile.joiningDate, dr));
+    // a Non-Sponsor who joined and has already left is not shown; a Sponsor stays, with his job status as a remark
+    list = list.filter(u => u.profile && u.profile.joiningDate && dateWithinDetailsRange(u.profile.joiningDate, dr) && !(isExitedEmployee(u) && u.profile.employmentType === 'Non-Sponsor'));
+    // + people who came back from vacation in the same period (their own group)
+    OVV.back = new Set();
+    if(ovVacEnsure()){
+      const have = new Set(list.map(u => String(u.loginId))), today = dateToStr(new Date());
+      withProfile.forEach(u => {
+        const p = u.profile || {}, v = OVV.map[u.loginId];
+        if(have.has(String(u.loginId)) || isExitedEmployee(u) || p.employmentStatus === 'vacation' || !v || !v.to || v.to > today) return;
+        if(dateWithinDetailsRange(v.to, dr)){ list.push(u); OVV.back.add(String(u.loginId)); }
+      });
+    }
     onlyRunning = false;
   } else if(kind === 'highlight:exited'){
     const dr = getDetailsDateRange();
@@ -13479,10 +13508,11 @@ function empDrillCompute(kind0){
     title = 'On Vacation';
     // Only people currently marked on vacation ever count here (item 1).
     list = list.filter(u => u.profile && u.profile.employmentStatus === 'vacation');
+    ovVacEnsure();
     onlyRunning = false;
   }
 
-  if(onlyRunning){
+  if(onlyRunning && !stF){
     list = list.filter(u => !u.profile || !u.profile.employmentStatus || u.profile.employmentStatus === 'running');
   }
 
@@ -13496,6 +13526,8 @@ function empDrillCompute(kind0){
     if(country && p.homeCountry !== country) return false;
     if(gender && p.gender !== gender) return false;
     if(position && p.position !== position) return false;
+    if(typeF && p.employmentType !== typeF) return false;
+    if(stF){ const st0 = p.employmentStatus || 'running', st = st0 === 'final_exit' ? 'terminated' : st0; if(st !== stF) return false; }
     if(tenure){ const years = calcTotalYears(p.joiningDate); if(years === null || years < tenure) return false; }
     return true;
   });
@@ -13518,7 +13550,7 @@ $('ceoFilterToggle').addEventListener('click', () => {
   body.style.display = open ? 'none' : 'block';
   $('ceoFilterToggleLbl').textContent = open ? 'Filter' : 'Hide';
 });
-['ceoFilterDept','ceoFilterCountry','ceoFilterGender','ceoFilterPosition','ceoFilterTenure'].forEach(id => {
+['ceoFilterDept','ceoFilterCountry','ceoFilterGender','ceoFilterPosition','ceoFilterTenure','ceoFilterStatus','ceoFilterType'].forEach(id => {
   $(id).addEventListener('change', () => { if(empDrillKind) renderEmpDrillList(); });
 });
 $('ceoEmpDrillSearch').addEventListener('input', () => { if(empDrillKind) renderEmpDrillList(); });
@@ -18155,7 +18187,7 @@ document.addEventListener('click', (e) => {
    ============================================================ */
 function rvfNumRows(aoa){ return aoa.map((r, i) => i === 0 ? ['#'].concat(r) : [i].concat(r)); }
 
-const OV_GROUPS = ['Basic', 'Work', 'Dates', 'Passport', 'Iqama & contract', 'Photo', 'Admin only'];
+const OV_GROUPS = ['Basic', 'Work', 'Dates', 'Vacation', 'Passport', 'Iqama & contract', 'Photo', 'Admin only'];
 const OV_DT = (v) => v ? fmtDate(v) : '';
 const OV_COLS = [
   { k: 'id', l: 'ID', g: 'Basic', get: u => u.loginId || '' },
@@ -18198,10 +18230,35 @@ const OV_COLS = [
 ];
 // the salary lines an admin added in the profile (Admin > Dropdowns) become columns too
 function ovAll(){ return OV_COLS.concat((state.salaryComponents || []).map(c => ({ k: 'sc_' + c, l: c, g: 'Admin only', adm: true, get: u => { const m = ((((u.profile || {}).salary) || {}).components) || {}; return m[c] == null ? '' : m[c]; } }))); }
+// ---- vacation info: the latest vacation of each person (one shared read of the vacations list per session, only when it is needed)
+const OVV = { loaded: false, loading: false, map: {}, back: new Set() };
+function ovVacEnsure(){
+  if(OVV.loaded) return true;
+  if(OVV.loading || !window.__db || !window.__db.listVacations) return false;
+  OVV.loading = true;
+  window.__db.listVacations().then(all => {
+    const m = {}; (all || []).forEach(v => { const e = v.employeeId; if(e && (!m[e] || (v.from || '') > (m[e].from || ''))) m[e] = v; });
+    OVV.map = m; OVV.loaded = true; OVV.loading = false;
+    try{ if(typeof empDrillKind !== 'undefined' && empDrillKind && document.getElementById('ceoEmpDrill').style.display === 'block') renderEmpDrillList(); }catch(e){}
+  }).catch(err => { console.error(err); OVV.loading = false; });
+  return false;
+}
+const ovVac = (u) => OVV.map[u.loginId] || null;
+const ovTk = (u) => (ovVac(u) || {}).ticket || {};
+OV_COLS.push(
+  { k: 'vfrom', l: 'Vacation from (going)', g: 'Vacation', get: u => OV_DT((ovVac(u) || {}).from) },
+  { k: 'vto', l: 'Return date', g: 'Vacation', get: u => OV_DT((ovVac(u) || {}).to) },
+  { k: 'vdays', l: 'Vacation days', g: 'Vacation', get: u => (ovVac(u) || {}).totalDays || '' },
+  { k: 'tdate', l: 'Ticket date', g: 'Vacation', tk: true, get: u => OV_DT(ovTk(u).date) },
+  { k: 'tair', l: 'Ticket airline', g: 'Vacation', tk: true, get: u => ovTk(u).airlines || '' },
+  { k: 'ttype', l: 'Ticket type', g: 'Vacation', tk: true, get: u => ovTk(u).status || '' },
+  { k: 'tdep', l: 'Departure time', g: 'Vacation', tk: true, get: u => ovTk(u).departureTime || '' },
+  { k: 'tarr', l: 'Arrival time', g: 'Vacation', tk: true, get: u => ovTk(u).arrivalTime || '' }
+);
 const OV_DEF = ['id', 'name', 'dept'];
 const OVC = { sel: null, cur: null, pick: new Set() };
 function ovIsAdmin(){ return !!(state.user && state.user.role === 'admin'); }
-function ovAvail(){ return ovAll().filter(c => !c.adm || ovIsAdmin()); }
+function ovAvail(){ const ceo = ovIsAdmin() || (typeof userPages === 'function' && userPages(state.user).includes('ceo')); return ovAll().filter(c => (!c.adm || ovIsAdmin()) && (!c.tk || ceo)); }
 function ovLoadSel(){
   if(OVC.sel) return OVC.sel;
   let s = null; try{ s = JSON.parse(localStorage.getItem('rvfOvCols') || 'null'); }catch(e){}
@@ -18210,7 +18267,9 @@ function ovLoadSel(){
   return OVC.sel;
 }
 function ovSaveSel(){ try{ localStorage.setItem('rvfOvCols', JSON.stringify(OVC.sel)); }catch(e){} }
-function ovSelCols(){ const sel = ovLoadSel(); const av = ovAvail(); const out = av.filter(c => sel.includes(c.k)); return out.length ? out : av.filter(c => OV_DEF.includes(c.k)); }
+function ovSelCols(){ const sel = ovLoadSel().slice(); const av = ovAvail();
+  if(sel.some(k => /^(vfrom|vto|vdays|tdate|tair|ttype|tdep|tarr)$/.test(k))) ovVacEnsure();
+  const out = av.filter(c => sel.includes(c.k)); return out.length ? out : av.filter(c => OV_DEF.includes(c.k)); }
 
 function ovColsHtml(){
   const sel = ovLoadSel(), av = ovAvail();
@@ -18220,9 +18279,22 @@ function ovColsHtml(){
 function ovColsDraw(){ const b = document.getElementById('ceoColsBox'); if(b) b.innerHTML = ovColsHtml(); }
 
 // the screen list: # first, then the chosen columns, then the View button
-const ovType = (u) => { const t = (u.profile || {}).employmentType; return t === 'Sponsor' ? 0 : t === 'Non-Sponsor' ? 1 : 2; };
-const OV_GL = ['Sponsor', 'Non-Sponsor', 'Type not set'];
+const ovType = (u) => { if(OVV.back.has(String(u.loginId))) return 3; const t = (u.profile || {}).employmentType; return t === 'Sponsor' ? 0 : t === 'Non-Sponsor' ? 1 : 2; };
+const OV_GL = ['Sponsor', 'Non-Sponsor', 'Type not set', 'Came back from vacation'];
 const ovSort = (list) => list.map((u, i) => [u, i]).sort((a, b) => ovType(a[0]) - ovType(b[0]) || a[1] - b[1]).map(x => x[0]);   // Sponsor first, then Non-Sponsor; the old order is kept inside each group
+// New Joined: Non-Sponsors who joined in the period but have already left are not listed - say so, so the numbers add up
+function ovLeftHidden(){
+  if(typeof empDrillKind === 'undefined' || empDrillKind !== 'highlight:newJoin') return [];
+  const dr = getDetailsDateRange();
+  return (state.users || []).filter(u => u.role !== 'pending' && u.profile && u.profile.joiningDate && dateWithinDetailsRange(u.profile.joiningDate, dr) && isExitedEmployee(u) && u.profile.employmentType === 'Non-Sponsor');
+}
+// New Joined: someone who is no longer On The Job gets his current job status as a small remark under the name
+function ovRemark(u){
+  if(typeof empDrillKind === 'undefined' || empDrillKind !== 'highlight:newJoin') return '';
+  if(OVV.back.has(String(u.loginId))){ const v = ovVac(u); return '<div class="ovRemark" style="color:#166534; background:#dcfce7;">Returned ' + assignEsc(v && v.to ? fmtDate(v.to) : '') + '</div>'; }
+  const st = (u.profile || {}).employmentStatus; if(!st || st === 'running') return '';
+  return '<div class="ovRemark">' + assignEsc(empStatusLabel(st)) + '</div>';
+}
 function empDrillPaint(title, list0){
   const list = ovSort(list0);
   OVC.cur = { title, list };
@@ -18230,13 +18302,13 @@ function empDrillPaint(title, list0){
   document.getElementById('ceoEmpDrillTitle').textContent = `${title} (${list.length})`;
   if(!document.getElementById('ceoColsBox') || !document.getElementById('ceoColsBox').firstChild) ovColsDraw();
   const box = document.getElementById('ceoEmpDrillList');
-  const shown = list.slice(0, 100), nc = cols.length + 3, cnt = [0, 0, 0]; list.forEach(u => cnt[ovType(u)]++);
-  const sum = `<div class="ovSum">${cnt.map((n, k) => (k < 2 || n) ? `<span>${OV_GL[k]} <b>${n}</b></span>` : '').join('')}</div>`;
+  const shown = list.slice(0, 100), nc = cols.length + 3, cnt = [0, 0, 0, 0]; list.forEach(u => cnt[ovType(u)]++);
+  const sum = `<div class="ovSum">${cnt.map((n, k) => (k < 2 || n) ? `<span>${OV_GL[k]} <b>${n}</b></span>` : '').join('')}${(() => { const h = ovLeftHidden(); return h.length ? `<span style="color:var(--danger);" title="${esc(h.map(u => u.name + ' (' + u.loginId + ')').join(', '))}">Joined &amp; already left (not listed) <b>${h.length}</b></span>` : ''; })()}</div>`;
   const pickBar = `<div class="ovPickBar"><span id="ovPickTxt"></span><button type="button" class="pillBtn" id="ovPickShown">Tick all shown</button><button type="button" class="pillBtn" id="ovPickClear">Clear</button></div>`;
   let body = '', last = -1, sn = 0;
   shown.forEach(u => {
     const g = ovType(u); if(g !== last){ last = g; sn = 0; body += `<tr class="ovGrp"><td colspan="${nc}">${OV_GL[g]} &middot; ${cnt[g]}</td></tr>`; }
-    body += `<tr><td class="pick"><input type="checkbox" data-ovpick="${esc(u.loginId)}" ${OVC.pick.has(String(u.loginId)) ? 'checked' : ''} aria-label="Choose ${esc(u.name)}"></td><td class="serial">${++sn}</td>${cols.map(c => `<td${c.k === 'name' ? ' style="font-weight:600;"' : ''}>${esc(c.get(u)) || '<span style="color:var(--muted);">—</span>'}</td>`).join('')}<td><button class="btn btn-ghost btn-sm viewDetailsBtn" data-id="${esc(u.loginId)}" data-name="${esc(u.name)}">View</button></td></tr>`;
+    body += `<tr><td class="pick"><input type="checkbox" data-ovpick="${esc(u.loginId)}" ${OVC.pick.has(String(u.loginId)) ? 'checked' : ''} aria-label="Choose ${esc(u.name)}"></td><td class="serial">${++sn}</td>${cols.map(c => `<td${c.k === 'name' ? ' style="font-weight:600;"' : ''}>${esc(c.get(u)) || '<span style="color:var(--muted);">—</span>'}${c.k === 'name' ? ovRemark(u) : ''}</td>`).join('')}<td><button class="btn btn-ghost btn-sm viewDetailsBtn" data-id="${esc(u.loginId)}" data-name="${esc(u.name)}">View</button></td></tr>`;
   });
   box.innerHTML = list.length ? sum + pickBar + `<div class="table-scroll"><table class="report-table ovTbl"><thead><tr><th class="pick"></th><th class="serial">#</th>${cols.map(c => `<th>${esc(c.l)}</th>`).join('')}<th></th></tr></thead><tbody>${body}</tbody></table></div>`
     + (list.length > 100 ? `<div class="hint">+ ${list.length - 100} more — narrow the filter or search to see them. The PDF and Excel downloads include everyone listed (or only the people you ticked).</div>` : '')
@@ -18259,28 +18331,37 @@ function ovEnsureList(){
 function ovFilterText(){
   const g = (id) => { const e = document.getElementById(id); return e ? e.value : ''; };
   const f = [['Department', g('ceoFilterDept')], ['Country', g('ceoFilterCountry')], ['Gender', g('ceoFilterGender')], ['Position', g('ceoFilterPosition')]].filter(x => x[1]).map(x => x[0] + ': ' + x[1]);
+  if(g('ceoFilterType')) f.push('Type: ' + g('ceoFilterType'));
+  if(g('ceoFilterStatus')) f.push('Job status: ' + empStatusLabel(g('ceoFilterStatus')));
   if(parseFloat(g('ceoFilterTenure'))) f.push('Time with us: ' + g('ceoFilterTenure') + '+ years');
   const q = (g('ceoEmpDrillSearch') || '').trim(); if(q) f.push('Search: ' + q);
   return f.join(' · ');
 }
-async function ovDownload(kind){
+async function ovDownload(kind, sectionOnly){
   const r = empDrillCompute(empDrillKind || 'all'), picked = OVC.pick.size > 0;
   const list = ovSort(picked ? (state.users || []).filter(u => u.role !== 'pending' && OVC.pick.has(String(u.loginId))) : r.list);
   if(!list.length){ toast('Nobody to download'); return; }
   const cols = ovSelCols(), filt = picked ? 'Chosen people (' + list.length + ')' : ovFilterText(), title = picked ? 'Chosen people' : r.title;
   const count = (fn) => list.filter(fn).length, T = (u) => (u.profile || {}).employmentType;
-  const sumAoa = [['Employees — ' + title], ['Created', rvfNowText()], ['Filters', filt || 'none'], [], ['People listed', list.length], ['  Sponsor', count(u => T(u) === 'Sponsor')], ['  Non-Sponsor', count(u => T(u) === 'Non-Sponsor')], ['Columns', cols.map(c => c.l).join(', ')]];
-  await dlExport({ kind, title: 'Employees', file: 'employees', sheet: 'Employees', cols, items: list, sumAoa, headLines: [title + ' · ' + list.length + ' people · ' + rvfNowText(), filt],
-    pre: picked ? [] : mpTilesBlock('#employeeOverviewBlock > .card'), group: { of: ovType, labels: OV_GL }, width: c => c.k === 'name' ? 28 : (c.k === 'dept' || c.k === 'pos') ? 20 : 15 });
+  const sumAoa = [['Employees — ' + title], ['Created', rvfNowText()], ['Filters', filt || 'none'], [], ['People listed', list.length], ['  Sponsor', count(u => T(u) === 'Sponsor')], ['  Non-Sponsor', count(u => T(u) === 'Non-Sponsor')], ['Columns', cols.map(c => c.l).join(', ')]].concat(picked ? [] : ovLeftHidden().length ? [['Joined & already left (not listed)', ovLeftHidden().map(u => u.name + ' (' + u.loginId + ')').join(', ')]] : []);
+  await dlExport({ kind, title: 'Employees', file: 'employees', sheet: 'Employees', cols, items: list, sumAoa, headLines: [title + ' · ' + list.length + ' people · ' + rvfNowText(), filt, (!picked && ovLeftHidden().length) ? ovLeftHidden().length + ' Non-Sponsor joined in this period and has already left (not listed): ' + ovLeftHidden().map(u => u.name + ' (' + u.loginId + ')').join(', ') : ''],
+    pre: picked ? [] : sectionOnly ? [ovSectionSummary(title, list)] : mpTilesBlock('#employeeOverviewBlock > .card'), group: { of: ovType, labels: OV_GL }, width: c => c.k === 'name' ? 28 : (c.k === 'dept' || c.k === 'pos') ? 20 : 15 });
 }
 
+// the small summary on top of a section-only PDF: how many people, and how they split
+function ovSectionSummary(title, list){
+  const cnt = [0, 0, 0, 0]; list.forEach(u => cnt[ovType(u)]++);
+  const st = {}; list.forEach(u => { const k = empStatusLabel((u.profile || {}).employmentStatus); st[k] = (st[k] || 0) + 1; });
+  const box = (n, l, c) => `<div style="flex:1; min-width:90px; background:#f4f4fb; border-radius:12px; padding:10px 12px;"><div style="font-size:20px; font-weight:700; color:${c || '#0f172a'};">${n}</div><div style="font-size:9.5px; letter-spacing:.05em; text-transform:uppercase; color:#64748b; margin-top:2px;">${assignEsc(l)}</div></div>`;
+  return `<div style="display:flex; gap:8px; flex-wrap:wrap; margin:0 0 12px;">${box(list.length, title)}${cnt.map((n, k) => (k < 2 || n) ? box(n, OV_GL[k], k === 3 ? '#166534' : '') : '').join('')}${Object.keys(st).filter(k => k !== 'On The Job').map(k => box(st[k], k, '#b45309')).join('')}${ovLeftHidden().length ? box(ovLeftHidden().length, 'Joined & already left (not listed)', '#dc2626') : ''}</div>`;
+}
 // top bar of the Employee Overview: filter / columns, PDF, Excel (same look as Team & Machine Summary)
 function ovInitToolbar(){
   const card = document.querySelector('#employeeOverviewBlock > .card'); if(!card || document.getElementById('ovEmpTop')) return;
   const dl = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
   const fl = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>';
   const d = document.createElement('div'); d.className = 'asumTop'; d.id = 'ovEmpTop';
-  d.innerHTML = `<button type="button" class="iconBtn" id="ovFiltBtn" title="Filter and choose the columns" aria-label="Filter and choose the columns">${fl}</button><span class="hrNote" style="margin:0;">Filter, choose columns, download</span><span style="flex:1;"></span><button type="button" class="pillBtn" id="ovPdfBtn" title="Download as PDF">${dl}PDF</button><button type="button" class="pillBtn" id="ovXlsBtn" title="Download as Excel">${dl}Excel</button>`;
+  d.innerHTML = `<button type="button" class="iconBtn" id="ovFiltBtn" title="Filter and choose the columns" aria-label="Filter and choose the columns">${fl}</button><span class="hrNote" style="margin:0;">Filter, choose columns, download</span><span style="flex:1;"></span><button type="button" class="pillBtn" id="ovPdfBtn" title="Download as PDF">${dl}PDF</button><button type="button" class="pillBtn" id="ovSecBtn" title="Only the list that is open, with its summary (no dashboard tiles)">${dl}Section PDF</button><button type="button" class="pillBtn" id="ovXlsBtn" title="Download as Excel">${dl}Excel</button>`;
   card.insertBefore(d, card.firstChild);
 }
 document.addEventListener('change', (e) => {
@@ -18290,8 +18371,9 @@ document.addEventListener('change', (e) => {
 document.addEventListener('click', (e) => {
   const pk = e.target.closest('#ovPickShown, #ovPickClear');
   if(pk){ if(pk.id === 'ovPickClear') OVC.pick.clear(); else document.querySelectorAll('[data-ovpick]').forEach(c => { OVC.pick.add(String(c.dataset.ovpick)); }); document.querySelectorAll('[data-ovpick]').forEach(c => { c.checked = OVC.pick.has(String(c.dataset.ovpick)); }); ovPickUi(); return; }
-  const t = e.target.closest('#ovFiltBtn, #ovPdfBtn, #ovXlsBtn, #ovColsReset'); if(!t) return;
+  const t = e.target.closest('#ovFiltBtn, #ovPdfBtn, #ovSecBtn, #ovXlsBtn, #ovColsReset'); if(!t) return;
   if(t.id === 'ovPdfBtn') ovDownload('pdf');
+  else if(t.id === 'ovSecBtn') ovDownload('pdf', true);
   else if(t.id === 'ovXlsBtn') ovDownload('xlsx');
   else if(t.id === 'ovColsReset'){ OVC.sel = OV_DEF.slice(); ovSaveSel(); ovColsDraw(); if(empDrillKind) renderEmpDrillList(); }
   else {
@@ -19188,16 +19270,33 @@ async function pkxGo(kind){
       });
       XLSX.writeFile(wb, file + '-' + stamp + '.xlsx'); toast('Excel file downloaded');
     } else {
-      const hd = '<tr><th>#</th>' + cols.map(c => `<th>${c[1]}</th>`).join('') + '</tr>';
+      const pc = cols.filter(c => !(d.group === 'op' && c[0] === 'op') && !(d.group === 'mach' && c[0] === 'mach'));
+      const W = { date: 12, op: 24, mach: 11, start: 10, end: 10, picks: 10, stopH: 8, stopP: 12, total: 9 }, R = { start: 1, end: 1, picks: 1, stopH: 1, stopP: 1, total: 1 };
+      const clip = (v, k) => { v = String(v == null ? '' : v); const n = k === 'op' ? 26 : k === 'mach' ? 14 : 99; return v.length > n ? v.slice(0, n - 1) + '…' : v; };
+      const SH = { picks: 'Reading', stopH: 'Stop h', stopP: 'Stop picks' };
+      const wsum = 4 + pc.reduce((a, c) => a + (W[c[0]] || 10), 0), pct = (n) => (n / wsum * 100).toFixed(2) + '%';
+      const colg = '<colgroup><col style="width:' + pct(4) + '">' + pc.map(c => '<col style="width:' + pct(W[c[0]] || 10) + '">').join('') + '</colgroup>';
+      const hd = '<tr><th>#</th>' + pc.map(c => `<th class="${R[c[0]] ? 'r' : ''}">${SH[c[0]] || c[1]}</th>`).join('') + '</tr>';
+      const tbl = (trs) => `<table class="pkPdf">${colg}<thead>${hd}</thead><tbody>${trs.join('')}</tbody></table>`;
       const blocks = [rvfPdfHeader(title, [rng + ' · ' + rvfNowText(), gl.length + (d.group === 'op' ? ' operators' : d.group === 'mach' ? ' machines' : ' list') + ' · ' + rows.length + ' entries · total ' + pkxFmt(tot(rows)) + ' picks'])];
       gl.forEach((g, gi) => {
-        if(d.group !== 'one') blocks.push(`<div ${gi ? 'data-pgbreak="1"' : ''} style="font-size:14px; font-weight:700; color:#4f46e5; margin:6px 0 6px;">${acEsc(g.label)} <span style="font-weight:500; color:#64748b; font-size:11px;">&middot; ${g.rows.length} entries &middot; total ${pkxFmt(tot(g.rows))}</span></div>`);
-        const trs = g.rows.map((r, i) => `<tr><td>${i + 1}</td>${cols.map(c => `<td>${acEsc(val(r, c[0]))}</td>`).join('')}</tr>`);
-        trs.push(`<tr><td></td><td><b>Total</b></td>${cols.slice(1).map(c => `<td><b>${c[0] === 'total' ? pkxFmt(tot(g.rows)) : c[0] === 'picks' ? pkxFmt(g.rows.reduce((a, r) => a + r.picks, 0)) : ''}</b></td>`).join('')}</tr>`);
-        rvfTableBlocks(hd, trs, 30, 'ovPdfT').forEach(b => blocks.push(b));
-        if(d.eff){ const e = gEff(g); if(e.pct != null) blocks.push(`<div style="font-size:11px; margin:6px 0 12px; color:#334155;"><b>Efficiency ${e.pct.toFixed(1)}%</b> &middot; ${e.shifts} shifts = ${e.hrs.toFixed(1)}h &middot; stop time ${e.stop.toFixed(1)}h</div>`); }
+        const trs = g.rows.map((r, i) => `<tr><td>${i + 1}</td>${pc.map(c => `<td class="${R[c[0]] ? 'r' : ''}">${acEsc(clip(val(r, c[0]), c[0]))}</td>`).join('')}</tr>`);
+        trs.push(`<tr class="tot"><td></td>${pc.map((c, ci) => `<td class="${R[c[0]] ? 'r' : ''}"><b>${ci === 0 ? 'Total' : c[0] === 'total' ? pkxFmt(tot(g.rows)) : c[0] === 'picks' ? pkxFmt(g.rows.reduce((a, r) => a + r.picks, 0)) : ''}</b></td>`).join('')}</tr>`);
+        let effLine = '';
+        if(d.eff){ const e = gEff(g); if(e.pct != null) effLine = `<div class="pkPdfEff"><b>Efficiency ${e.pct.toFixed(1)}%</b> &middot; ${e.shifts} shifts = ${e.hrs.toFixed(1)}h &middot; stop time ${e.stop.toFixed(1)}h</div>`; }
+        const PER = 50; let first = true;
+        for(let i = 0; i < trs.length; i += PER){
+          const part = trs.slice(i, i + PER), last = i + PER >= trs.length;
+          let head = '';
+          if(d.group !== 'one'){
+            head = first ? `<div class="pkPdfH" ${gi ? 'data-pgbreak="1"' : ''}>${acEsc(g.label)} <span>&middot; ${g.rows.length} entries &middot; total ${pkxFmt(tot(g.rows))} picks</span></div>`
+                         : `<div class="pkPdfH c" data-pgbreak="1">${acEsc(g.label)} <span>&middot; continued</span></div>`;
+          } else if(!first){ head = '<div data-pgbreak="1"></div>'; }
+          blocks.push(head + tbl(part) + (last ? effLine : ''));
+          first = false;
+        }
       });
-      await rvfMakePdf(blocks, file + '-' + stamp + '.pdf', { landscape: cols.length > 8 });
+      await rvfMakePdf(blocks, file + '-' + stamp + '.pdf', { landscape: pc.length > 9, footer: 'Riyadh Velvet Factory · Earned picks' });
     }
   }catch(err){ console.error(err); toast('Could not make the file — check your connection'); }
   d.busy = false; pkxDlDraw();
