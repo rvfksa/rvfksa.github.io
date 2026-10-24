@@ -2830,6 +2830,10 @@ table.pkPdf tr.tot td{ background:#eef2ff !important; border-top:1px solid #c7d2
 .pkmChip.on{ background:#eef2ff; color:#4f46e5; box-shadow:0 0 0 1.5px #c7d2fe; }
 .pkmChip.on small{ color:#6366f1; }
 .rmnPill{ position:fixed; left:16px; bottom:16px; z-index:60; box-shadow:0 6px 20px rgba(15,23,42,.18); background:#fff; }
+
+/* Local order form: no Price box (v76) */
+.pcLoc .pcFRow{ grid-template-columns:26px minmax(0,1.2fr) minmax(0,1.4fr) 66px 78px 80px 128px minmax(0,1fr) 64px; }
+@container (max-width:900px){ .pcLoc .pcFRow{ grid-template-columns:1fr 1fr 1fr; } .pcLoc .pcFRow > .c-lp{ grid-column:1 / 2; } .pcLoc .pcFRow > .c-ld{ grid-column:2 / 4; } }
 \n</style>
 </head>
 <body>
@@ -15089,21 +15093,22 @@ function pcPdfBlocks(o, kind, T, L){
   blocks.push(`<div style="padding:14px 0 6px;${F}"><div style="text-align:center;font-family:'Oswald',sans-serif;font-size:22px;font-weight:700;color:#0f172a;letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px">${esc(title)}</div>
     <table style="width:100%;border-collapse:collapse;table-layout:fixed"><tr>${row1}</tr>${extra.length ? `<tr>${extra.map((x, i) => `<td colspan="${i === 0 ? 2 : i === 1 ? 2 : 1}" style="padding:5px 8px;border:1px solid #cbd5e1;vertical-align:top"><div style="font-size:8.5px;text-transform:uppercase;letter-spacing:.05em;color:#64748b;font-weight:600">${x[0]}</div><div style="font-size:12px;font-weight:700;color:#0f172a;margin-top:1px">${esc(x[1] || '\u2014')}</div></td>`).join('')}</tr>` : ''}</table>
     ${intro ? `<div style="font-size:11.5px;color:#334155;margin-top:10px;line-height:1.5;white-space:pre-line">${esc(intro)}</div>` : ''}</div>`);
-  const W = isPO ? [4, 31, 9, 10, 13, 10, 23] : [5, 45, 12, 38];
-  const heads = isPO ? ['#', 'Description', 'Qty', 'Approx price', 'Last price / date', 'Total', 'Remarks'] : ['#', 'Description', 'Qty', 'Remarks'];
+  const withP = isPO && o.items.some(it => it.p > 0);
+  const W = withP ? [4, 14, 19, 9, 9, 10, 11, 9, 15] : [4, 17, 25, 10, 12, 13, 19];
+  const heads = withP ? ['#', 'Item name', 'Description', 'Qty', 'Price', 'Last price', 'Last date', 'Total', 'Remarks'] : ['#', 'Item name', 'Description', 'Qty', 'Last price', 'Last date', 'Remarks'];
   const th = heads.map((h, i) => `<th style="width:${W[i]}%;${/Qty|price|Last|Total/.test(h) ? 'text-align:right' : ''}">${h}</th>`).join('');
   const remarks = (it) => [it.phys ? ((it.link || (it.photos || []).length) ? 'Physical sample' : 'PHYSICAL SAMPLE ONLY \u2014 take it when buying') : '', it.link ? 'Link: ' + pcShortUrl(it.link) : '', (it.photos || []).length ? 'Photo(s) in the app' : '', it.note].filter(Boolean).join(' \u00B7 ') || '';
   const rows = o.items.map((it, i) => {
     const warn = it.phys && !it.link && !(it.photos || []).length, td = (v, r) => `<td${r ? ' style="text-align:right"' : ''}>${v}</td>`;
-    const desc = `<b>${esc(it.n)}</b>${[it.d, it.b].filter(Boolean).length ? ' \u2014 ' + [it.d, it.b].filter(Boolean).map(esc).join(', ') : ''}`;
+    const desc = [it.d, it.b].filter(Boolean).map(esc).join(', '), lpv = it.lp > 0 ? pcLastP(it) : '', ldv = it.lp > 0 && it.ld ? pcLastD(it) : '';
     const rem = `<td style="font-size:9.5px;${warn ? 'color:#b91c1c;font-weight:700' : ''}">${esc(remarks(it))}</td>`;
-    const cells = isPO ? [td(i + 1), td(desc), td(it.q + ' ' + esc(it.u || ''), 1), td(pcMoney(it.p), 1), td(pcLast(it), 1), td(`<b>${pcMoney(pcLine(it))}</b>`, 1), rem] : [td(i + 1), td(desc), td(it.q + ' ' + esc(it.u || ''), 1), rem];
+    const cells = withP ? [td(i + 1), td(`<b>${esc(it.n)}</b>`), td(desc), td(it.q + ' ' + esc(it.u || ''), 1), td(pcMoney(it.p), 1), td(lpv, 1), td(ldv, 1), td(`<b>${pcMoney(pcLine(it))}</b>`, 1), rem] : [td(i + 1), td(`<b>${esc(it.n)}</b>`), td(desc), td(it.q + ' ' + esc(it.u || ''), 1), td(lpv, 1), td(ldv, 1), rem];
     return `<tr>${cells.join('')}</tr>`; });
   const css = `<style>.pcPdfT{width:100%;table-layout:fixed;border-collapse:collapse;font-family:'Inter',sans-serif;font-size:10.5px;color:#0f172a}.pcPdfT th{background:#f1f5f9;border:1px solid #94a3b8;padding:5px 5px;font-size:9px;text-transform:uppercase;letter-spacing:.03em;text-align:left}.pcPdfT td{border:1px solid #cbd5e1;padding:4px 5px;vertical-align:top;word-wrap:break-word}</style>`;
   const total = pcTotal(o), per = 22;
   for(let i = 0; i < rows.length; i += per){
     const last = i + per >= rows.length;
-    const foot = (isPO && total && last) ? `<tr><td colspan="5" style="text-align:right;font-weight:700;background:#f8fafc">TOTAL (${pcCur(o)})</td><td style="text-align:right;font-weight:700;background:#f8fafc">${pcMoney(total)}</td><td style="background:#f8fafc"></td></tr>` : '';
+    const foot = (withP && total && last) ? `<tr><td colspan="7" style="text-align:right;font-weight:700;background:#f8fafc">TOTAL (${pcCur(o)})</td><td style="text-align:right;font-weight:700;background:#f8fafc">${pcMoney(total)}</td><td style="background:#f8fafc"></td></tr>` : '';
     blocks.push(`${css}<table class="pcPdfT"><thead><tr>${th}</tr></thead><tbody>${rows.slice(i, i + per).join('')}${foot}</tbody></table>`);
   }
   blocks.push(`<div style="${F};padding-top:12px">${closing ? `<div style="font-size:11.5px;color:#334155;line-height:1.5;margin-bottom:20px;white-space:pre-line">${esc(closing)}</div>` : '<div style="height:10px"></div>'}
@@ -15116,15 +15121,16 @@ function pcPdfModel0(o, kind, T, L){
   const S = pc.settings || PC_DEF; T = T || S.tpl; const isPO = kind === 'po';
   const remarks = (it) => [it.phys ? ((it.link || (it.photos || []).length) ? 'Physical sample' : 'PHYSICAL SAMPLE ONLY - take it when buying') : '', it.link ? 'Link: ' + pcShortUrl(it.link) : '', (it.photos || []).length ? 'Photo(s) in the app' : '', it.note].filter(Boolean).join(' | ');
   const cur = pcCur(o), sd = (t) => { if(!t) return ''; const d = new Date(t); return d.getDate() + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getMonth()] + ' ' + String(d.getFullYear()).slice(2); };
-  const head = isPO ? ['#', 'Item name', 'Description', 'Qty', 'Unit', 'Price', 'Last bought', 'Last date', 'Total', 'Remarks'] : ['#', 'Item name', 'Description', 'Qty', 'Unit', 'Remarks'];
-  const w = isPO ? [7, 17, 23, 8, 8, 11, 14, 15, 12, 22] : [10, 40, 46, 14, 16, 56];
-  const right = isPO ? [3, 5, 6, 8] : [3];
-  const rows = o.items.map((it, i) => { const d = [it.d, it.b].filter(Boolean).join(', ');
-    return isPO ? [String(i + 1), it.n, d, String(it.q), it.u || '', pcMoney(it.p), it.lp ? pcLastP(it, cur) : '-', it.lp ? sd(it.ld) : '', pcMoney(pcLine(it)), remarks(it)] : [String(i + 1), it.n, d, String(it.q), it.u || '', remarks(it)]; });
+  const hasP = o.items.some(it => it.p > 0), withP = isPO && hasP;
+  const head = withP ? ['#', 'Item name', 'Description', 'Qty', 'Unit', 'Price', 'Last price', 'Last date', 'Total', 'Remarks'] : ['#', 'Item name', 'Description', 'Qty', 'Unit', 'Last price', 'Last date', 'Remarks'];
+  const w = withP ? [6, 16, 21, 8, 8, 11, 13, 14, 11, 22] : [6, 17, 24, 8, 8, 12, 14, 26];
+  const right = withP ? [3, 5, 6, 8] : [3, 5];
+  const rows = o.items.map((it, i) => { const d = [it.d, it.b].filter(Boolean).join(', '), lpv = it.lp > 0 ? pcLastP(it, cur) : '', ldv = it.lp > 0 && it.ld ? pcLastD(it) : '';
+    return withP ? [String(i + 1), it.n, d, String(it.q), it.u || '', pcMoney(it.p), lpv, ldv, pcMoney(pcLine(it)), remarks(it)] : [String(i + 1), it.n, d, String(it.q), it.u || '', lpv, ldv, remarks(it)]; });
   const info = [[['P.O. No.', o.id], ['Date', pcFmt(o.createdAt)], ['Department', o.dept], ['Requested by', o.reqBy && o.reqBy.name], ['Priority', o.priority === 'urgent' ? 'URGENT' : 'Regular']]];
   if(isPO) info.push([['Supplier', o.proc && o.proc.supplier], ['Approved', o.approvedAt ? pcFmt(o.approvedAt) + (o.approvedByName ? ' - ' + o.approvedByName : '') : ''], ['Expected delivery', o.expected ? fmtDate(o.expected) : ''], ['Currency', pcCur(o)]]);
   return { kind, title: isPO ? T.poTitle : T.reqTitle, intro: isPO ? T.poIntro : T.reqIntro, closing: isPO ? T.poClosing : T.reqClosing, signers: (isPO ? T.poSigners : T.reqSigners) || [],
-    info, head, w, right, rows, total: isPO ? pcTotal(o) : 0, ti: 8, cur, L };
+    info, head, w, right, rows, total: withP ? pcTotal(o) : 0, ti: 8, dc: withP ? 7 : 6, cur, L };
 }
 function pcAscii(v){ return String(v == null ? '' : v).replace(/[‘’]/g, "'").replace(/[“”]/g, '"').replace(/…/g, '...').replace(/[^\u0000-ÿ–—•]/g, '?'); }
 const PC_AR = /[\u0590-\u08FF]/;
@@ -15189,10 +15195,11 @@ async function pcTextPdf(m, filename, ctx){
   let top = y;
   const closeCard = () => { pdf.setDrawColor(LINE[0], LINE[1], LINE[2]); pdf.setLineWidth(0.25); pdf.line(M, y, M + CW, y); };
   const vlines = (y0, y1) => { pdf.setDrawColor(203, 213, 225); pdf.setLineWidth(0.2); xs.forEach(c => pdf.line(c[0], y0, c[0], y1)); pdf.line(M + CW, y0, M + CW, y1); };
-  let HFS = 6.5; { pdf.setFont('helvetica', 'bold'); for(; HFS > 3.8; HFS -= 0.2){ pdf.setFontSize(HFS); if(m.head.every((t, i) => pdf.getTextWidth(A(t.toUpperCase())) <= xs[i][1] - 3.6)) break; } }
-  const drawHead = () => { const h = 7; top = y; pdf.setDrawColor(148, 163, 184); pdf.setLineWidth(0.3); pdf.line(M, y, M + CW, y); pdf.line(M, y + h, M + CW, y + h); vlines(y, y + h);
+  let HFS = 6.5; { pdf.setFont('helvetica', 'bold'); for(; HFS > 3.8; HFS -= 0.2){ pdf.setFontSize(HFS); if(m.head.every((t, i) => A(t.toUpperCase()).split(' ').every(wd => pdf.getTextWidth(wd) <= xs[i][1] - 3.6))) break; } }
+  const hl = m.head.map((t, i) => { pdf.setFont('helvetica', 'bold'); pdf.setFontSize(HFS); return pdf.splitTextToSize(A(t.toUpperCase()), xs[i][1] - 3.6); }), hn = Math.max(1, ...hl.map(a => a.length));
+  const drawHead = () => { const h = hn > 1 ? 3.6 + hn * 2.9 : 7; top = y; pdf.setDrawColor(148, 163, 184); pdf.setLineWidth(0.3); pdf.line(M, y, M + CW, y); pdf.line(M, y + h, M + CW, y + h); vlines(y, y + h);
     pdf.setFont('helvetica', 'bold'); pdf.setFontSize(HFS); pdf.setTextColor(100, 116, 139);
-    m.head.forEach((t, i) => { const [x, ww] = xs[i]; if(m.right.includes(i)) pdf.text(A(t.toUpperCase()), x + ww - 2, y + 4.5, { align: 'right' }); else pdf.text(A(t.toUpperCase()), x + 2, y + 4.5); }); y += h; };
+    m.head.forEach((t, i) => { const [x, ww] = xs[i], ls = hl[i], y0 = y + (h - ls.length * 2.9) / 2 + 2.1; ls.forEach((ln, k) => { if(m.right.includes(i)) pdf.text(ln, x + ww - 2, y0 + k * 2.9, { align: 'right' }); else pdf.text(ln, x + 2, y0 + k * 2.9); }); }); y += h; };
   drawHead();
   m.rows.forEach(r => {
     pdf.setFont('helvetica', 'normal'); pdf.setFontSize(8.5);
@@ -15202,7 +15209,7 @@ async function pcTextPdf(m, filename, ctx){
     cells.forEach((c, i) => { const [x, ww] = xs[i];
       const warn = i === m.head.length - 1 && /PHYSICAL SAMPLE ONLY/.test(r[i]);
       pdf.setFont('helvetica', i === (m.bc != null ? m.bc : 1) || (i === m.ti && m.kind === 'po') || warn ? 'bold' : 'normal'); pdf.setTextColor(warn ? 185 : 15, warn ? 28 : 23, warn ? 28 : 42);
-      if(i === 0 || (i === 7 && m.kind === 'po') || (i === 2 && m.bc == null) || (i === m.head.length - 1 && !warn)) pdf.setTextColor(100, 116, 139);
+      if(i === 0 || i === (m.dc != null ? m.dc : (m.kind === 'po' ? 7 : -1)) || (i === 2 && m.bc == null) || (i === m.head.length - 1 && !warn)) pdf.setTextColor(100, 116, 139);
       if(m.right.includes(i)) c.forEach((ln, k) => txt(ln, x + ww - 2.5, y + PAD + 2.8 + k * LH, { align: 'right' })); else c.forEach((ln, k) => txt(ln, x + 2.5, y + PAD + 2.8 + k * LH)); });
     vlines(y, y + h); y += h; });
   if(m.total){ const h = 7.5; if(y + h > BOT){ closeCard(); pdf.addPage(); y = M; top = y; } pdf.setDrawColor(LINE[0], LINE[1], LINE[2]); pdf.line(M, y, M + CW, y); const t = xs[m.ti]; pdf.setFont('helvetica', 'normal'); pdf.setFontSize(8); pdf.setTextColor(100, 116, 139);
@@ -17433,6 +17440,9 @@ function pcFormHtml(){
   const sel = F.docId ? `<div class="field"><label>Order type</label><div class="poTypeTxt">${PO_LABEL[F.type] || 'Local'}</div></div>` : `<div class="field"><label>Order type</label><div class="pcSeg poTypes">${PO_TYPES.map(t => `<button data-po="type" data-v="${t[0]}" class="${F.type === t[0] ? 'on' : ''}">${t[1]}</button>`).join('')}</div></div>`;
   h = h.replace(first, '<div class="hrForm">' + sel + '<div class="field"><label>Priority</label>');
   h = h.replace('Prices in (change only for international buying)', 'Prices in').replace('<label>Requested by department</label>', '<label>Department</label>').replace('Requested by person (search or type)', 'Requested by');
+  if((F.type || 'local') === 'local'){
+    h = h.replace(/<span>Price \([^)]*\)<\/span>/, '').replace('<div class="pcFT">', '<div class="pcFT pcLoc">');
+  }
   const mark = '<div class="pcSection" style="margin-top:6px">Items</div>';
   const X = poFormExtra(F), wh = '<div class="pcSug" id="pcWhoSug" style="display:none"></div></div></div>';
   if(h.includes(wh)) h = h.replace(wh, '<div class="pcSug" id="pcWhoSug" style="display:none"></div></div>' + X.inline + '</div>');
@@ -17441,7 +17451,7 @@ function pcFormHtml(){
 }
 function pcItemHtml(it, i, units){
   let h = pcItemHtml0(it, i, units); const t = (pc.ui.form && pc.ui.form.type) || 'local';
-  if(t === 'local') return h;
+  if(t === 'local') return h.replace(/<div class="c-price">[\s\S]*?<\/div>/, '');
   const x = (f, l, ty) => `<input type="${ty || 'text'}" data-po="ix" data-f="${f}" data-i="${i}" placeholder="${l}" title="${l}" value="${pcEsc(it[f] || '')}">`;
   const ex = `<div class="poIx">${x('cd', 'Code')}${x('ino', 'Item no')}${x('sq', 'Stock qty')}${t === 'packing' ? x('dd', 'Delivery expecting date', 'date') : ''}</div>`;
   const k = h.indexOf('<div class="pcItemMore');
@@ -17600,7 +17610,25 @@ function pcPdfModel(o, kind, T, L){
     info: [], head, w, right: intl ? [5, 6] : [5, 6], rows, total: 0, ti: 99, bc: 3, cur: pcCur(o), L, closing: '', intro: '', signers: [],
     sig2: { ordBy: intl ? (o.ordBy || []) : [], appr: ap } };
 }
+function poRcvLocal(o, L){
+  const c = o.comp || {}, cur = pcCur(o), rows = [], lastD = (it) => it.lp > 0 && it.ld ? fmtDate(pcDateStr(it.ld)) : '';
+  let tot = 0, last = 0;
+  const base = (it) => [it.n || '', [it.d, it.b].filter(Boolean).join(', '), it.u || '', String(it.q), it.lp > 0 ? pcLastP(it, cur) : '', lastD(it)];
+  const segs = (o.segs || []).slice();
+  if(!segs.length) o.items.forEach((it, i) => { if((it.rec || 0) > 0) segs.push({ t: it.recAt || o.closedAt || o.createdAt, rows: [{ i, q: it.rec, p: it.ap || 0 }] }); });
+  segs.forEach(s => { last = Math.max(last, s.t || 0); s.rows.forEach(r => { const it = o.items[r.i] || {}, p = r.p > 0 ? r.p : (it.ap || 0), line = p * r.q; tot += line;
+    rows.push([String(rows.length + 1)].concat(base(it), [poSd(s.t), String(r.q), p ? pcMoney(p) : '', p ? pcMoney(line) : '', [it.nn ? 'Not needed' : it.short ? 'Closed short' : '', it.note].filter(Boolean).join(' | ')])); }); });
+  o.items.forEach(it => { if(it.nn || !(it.rec > 0)) rows.push([String(rows.length + 1)].concat(base(it), ['', '0', '', '', [it.nn ? 'Not needed' : 'Not received', it.note].filter(Boolean).join(' | ')])); });
+  const supN = c.sup || (o.proc && o.proc.supplier) || '';
+  const info = [[['Order No.', o.id], ['Order date', poSd(o.createdAt)], ['Type', PO_LABEL.local], ['Department', o.dept], ['Priority', o.priority === 'urgent' ? 'URGENT' : 'Regular']],
+    [['Supplier', supN], ['Invoice number', c.inv], ['Invoice date', c.invd ? fmtDate(c.invd) : ''], ['Status', o.status === 'received' ? 'Complete' : 'Partly received']]];
+  return { kind: 'rcv', title: 'Goods Receiving Report', barTop: o.id, info, eq: true,
+    head: ['#', 'Item name', 'Description', 'Unit', 'Ordered Qty', 'Last price', 'Last date', 'Receiving Date', 'Received Qty', 'Actual Price', 'Total Price', 'Remarks'],
+    w: [4, 12.5, 15, 6, 9, 9, 10.5, 13, 9.5, 10, 10, 13], right: [4, 5, 8, 9, 10], rows, total: tot, ti: 10, bc: 1, cur, L, intro: '', closing: '',
+    signers: [{ name: c.rcv || '', title: 'Received By' }, { name: c.chk || '', title: 'Checked By' }] };
+}
 function poRcvModel(o, L){
+  if(poType(o) === 'local') return poRcvLocal(o, L);
   const t = poType(o), intl = t === 'international', c = o.comp || {}, cur = pcCur(o);
   const rows = []; let tot = 0, last = 0;
   const segs = (o.segs || []).slice();
