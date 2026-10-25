@@ -2839,6 +2839,96 @@ table.pkPdf tr.tot td{ background:#eef2ff !important; border-top:1px solid #c7d2
 .pcSetBtn{ padding:0 10px; min-width:36px; justify-content:center; }
 .pcSetMenu .pcMoreList{ min-width:150px; }
 .pcSetBar{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:14px; }
+/* My Tasks (v78) */
+.astWrap{ display:flex; flex-direction:column; gap:14px; }
+.astAdd{ background:#fff; border:1px solid var(--line); border-radius:16px; padding:14px; display:flex; flex-direction:column; gap:10px; }
+.astHead{ font-weight:700; font-size:14px; color:var(--text-strong); }
+.astAdd textarea, .astAdd input{ width:100%; }
+.astRow{ display:grid; grid-template-columns:1fr 1fr; gap:10px 12px; } @media (max-width:560px){ .astRow{ grid-template-columns:1fr; } }
+.astAdd .field{ margin:0; } .astAdd .field > span, .astLbl{ display:block; font-size:11px; text-transform:uppercase; letter-spacing:.05em; font-weight:700; color:var(--muted); margin-bottom:4px; }
+.astQuick{ display:flex; flex-wrap:wrap; gap:6px; align-items:center; font-size:11.5px; color:var(--muted); }
+.astQuick button{ border:1px solid var(--line); background:var(--panel-2); border-radius:999px; padding:4px 10px; font-size:11.5px; cursor:pointer; color:var(--text); }
+.astChips{ display:flex; flex-wrap:wrap; gap:6px; margin-bottom:6px; } .astChips:empty{ display:none; }
+.astChip{ display:inline-flex; align-items:center; gap:4px; background:#eef0ff; color:#4338ca; border-radius:999px; padding:3px 10px; font-size:12px; font-weight:600; margin:2px 4px 2px 0; }
+.astChip button{ border:0; background:transparent; color:inherit; cursor:pointer; font-size:14px; line-height:1; padding:0; }
+.astBtns{ display:flex; gap:8px; }
+.astBar{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; } .astBar .grow{ flex:1; }
+.astSeg{ display:inline-flex; background:var(--panel-2); border-radius:12px; padding:3px; gap:2px; }
+.astSeg button{ border:0; background:transparent; padding:7px 14px; border-radius:9px; font-size:13px; font-weight:600; color:var(--muted); cursor:pointer; display:inline-flex; gap:6px; align-items:center; }
+.astSeg button i{ font-style:normal; font-size:11px; background:rgba(15,23,42,.08); border-radius:8px; padding:0 6px; }
+.astSeg button.on{ background:#fff; color:var(--text-strong); box-shadow:0 1px 3px rgba(15,23,42,.12); }
+.astSeg button.on.st-pending{ color:#b45309; } .astSeg button.on.st-working{ color:#1d4ed8; } .astSeg button.on.st-done{ color:#15803d; }
+.astSeg.sm button{ padding:5px 10px; font-size:12px; }
+.astList{ display:flex; flex-direction:column; gap:10px; }
+.astCard{ background:#fff; border:1px solid var(--line); border-left:4px solid #f59e0b; border-radius:14px; padding:12px 14px; display:flex; flex-direction:column; gap:6px; }
+.astCard.st-working{ border-left-color:#3b82f6; } .astCard.st-done{ border-left-color:#22c55e; opacity:.85; } .astCard.due{ background:#fff7f7; border-color:#fecaca; border-left-color:#ef4444; }
+.astTop{ display:flex; justify-content:space-between; gap:10px; align-items:flex-start; flex-wrap:wrap; } .astTop b{ font-size:14.5px; color:var(--text-strong); }
+.astCard.st-done .astTop b{ text-decoration:line-through; }
+.astBadge{ font-size:11.5px; font-weight:600; background:#f1f5f9; border-radius:999px; padding:3px 10px; color:#475569; } .astBadge.late{ background:#fee2e2; color:#b91c1c; }
+.astMeta{ font-size:12px; color:var(--muted); } .astNote{ font-size:13px; color:var(--text); } .astHelp{ font-size:12px; color:var(--muted); }
+.astAct{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:4px; } .astAct .grow{ flex:1; }
+.astRing{ position:fixed; inset:0; background:rgba(15,23,42,.45); z-index:9999; display:flex; align-items:center; justify-content:center; padding:16px; }
+.astRingBox{ background:#fff; border-radius:18px; max-width:460px; width:100%; max-height:85vh; overflow:auto; padding:18px; box-shadow:0 20px 50px rgba(15,23,42,.3); }
+.astRingH{ font-size:17px; font-weight:800; margin-bottom:10px; color:var(--text-strong); }
+.astRingT{ border-top:1px solid var(--line); padding:10px 0; display:flex; flex-direction:column; gap:4px; } .astRingT span{ font-size:12px; color:var(--muted); }
+.astRingA, .astRingF{ display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; }
+.astRingA button, .astRingF button{ border:1px solid var(--line); background:var(--panel-2); border-radius:10px; padding:6px 12px; font-size:12.5px; font-weight:600; cursor:pointer; }
+.astRingF{ justify-content:flex-end; margin-top:12px; } .astRingF button:first-child{ background:#4f46e5; color:#fff; border-color:#4f46e5; }
+/* v79: purchase form columns per order type, remarks that wrap, wider quantity */
+.pcFR textarea.pcNote{ width:100%; min-height:36px; resize:none; overflow:hidden; line-height:1.3; padding:8px 8px; font:inherit; font-size:13px; border:1px solid var(--line); border-radius:10px; background:#fff; }
+.pcLoc .pcFRow{ grid-template-columns:26px minmax(0,1.2fr) minmax(0,1.4fr) 86px 78px 104px 150px minmax(0,1.3fr) 64px; }
+.pcInt .pcFRow{ grid-template-columns:26px minmax(0,1.3fr) minmax(0,1.5fr) 86px 80px minmax(0,1.3fr) 64px; }
+.pcPack .pcFRow{ grid-template-columns:26px minmax(0,1.3fr) minmax(0,1.5fr) 86px 80px 96px minmax(0,1.3fr) 64px; }
+.pcFR .c-qty input{ min-width:0; padding-left:6px; padding-right:4px; }
+@container (max-width:900px){ .pcLoc .pcFRow, .pcInt .pcFRow, .pcPack .pcFRow{ grid-template-columns:1fr 1fr 1fr; } }
+.poWord{ grid-column:1/-1; border:1px dashed var(--line); border-radius:12px; padding:8px 12px; margin:4px 0 10px; }
+.poWord summary{ cursor:pointer; font-size:12.5px; color:var(--muted); font-weight:600; }
+.poWord .field{ margin-top:8px; }
+
+/* My Tasks: reminders list + date box (v79) */
+.astAdd input[type=datetime-local], .astAdd select{ width:100%; min-height:42px; padding:9px 12px; border:1px solid var(--line); border-radius:12px; background:var(--panel-2); font:inherit; font-size:14px; color:var(--text); }
+.astDue{ background:#fff7ed; border:1px solid #fed7aa; border-radius:16px; padding:12px 14px; display:flex; flex-direction:column; gap:8px; }
+.astDueH{ font-weight:800; font-size:14px; color:#9a3412; } .astDueH i{ font-style:normal; background:#ef4444; color:#fff; border-radius:9px; padding:0 7px; font-size:11px; margin-left:6px; }
+.astDueRow{ background:#fff; border:1px solid #fde4c6; border-radius:12px; padding:10px 12px; display:flex; flex-direction:column; gap:6px; }
+.astDueT b{ display:block; font-size:14px; color:var(--text-strong); } .astDueT span{ font-size:12px; color:var(--muted); }
+.astDueA{ display:flex; flex-wrap:wrap; gap:6px; } .astDueA button{ border:1px solid var(--line); background:var(--panel-2); border-radius:10px; padding:6px 12px; font-size:12.5px; font-weight:600; cursor:pointer; } .astDueA button:first-child{ background:#4f46e5; color:#fff; border-color:#4f46e5; }
+/* My Tasks: compact one-screen layout (v80) */
+.astWrap{ gap:10px; }
+.astTool{ display:flex; gap:8px; align-items:center; }
+.astSearch{ flex:1; position:relative; display:flex; align-items:center; min-width:0; } .astSearch svg{ position:absolute; left:11px; color:var(--muted); pointer-events:none; }
+.astSearch input{ width:100%; height:38px; padding:0 12px 0 33px; border-radius:12px; border:1px solid var(--line); background:var(--panel-2); font-size:13.5px; }
+.astIcon{ flex:none; width:38px; height:38px; border-radius:12px; border:1px solid var(--line); background:#fff; color:var(--text); display:inline-flex; align-items:center; justify-content:center; cursor:pointer; box-shadow:0 1px 2px rgba(15,23,42,.06); }
+.astIcon.pri{ background:#4f46e5; border-color:#4f46e5; color:#fff; }
+.astAdd{ padding:12px; gap:8px; }
+.astAdd input[type=text], .astAdd input[type=datetime-local], .astAdd select{ min-height:38px; height:38px; padding:0 12px; font-size:13.5px; border-radius:11px; }
+.astRow3{ display:grid; grid-template-columns:1.2fr 1.4fr 1fr; gap:8px 10px; } .astRow2{ display:grid; grid-template-columns:1fr 1fr; gap:8px 10px; }
+@media (max-width:640px){ .astRow3, .astRow2{ grid-template-columns:1fr; } }
+.astBtns{ gap:8px; }
+#astSecs{ display:flex; flex-direction:column; gap:10px; }
+.astSec{ background:#fff; border:1px solid var(--line); border-radius:14px; overflow:hidden; }
+.astSecH{ display:flex; align-items:center; gap:8px; padding:9px 12px; background:var(--panel-2); font-size:13px; } .astSecH .grow{ flex:1; }
+.astSecH i{ font-style:normal; font-size:11px; background:rgba(15,23,42,.08); border-radius:8px; padding:0 7px; color:var(--muted); }
+.astDot{ width:9px; height:9px; border-radius:50%; flex:none; }
+.astLink{ border:0; background:transparent; color:#4f46e5; font-weight:700; font-size:12px; cursor:pointer; }
+.astNone{ padding:10px 14px; font-size:12.5px; color:var(--muted); }
+.astMore{ width:100%; border:0; border-top:1px solid var(--line); background:#fff; padding:9px; font-size:12.5px; font-weight:600; color:#4f46e5; cursor:pointer; }
+.astSec .astCard{ display:flex; flex-direction:row; align-items:center; justify-content:space-between; gap:10px; padding:8px 12px; border:0; border-top:1px solid var(--line); border-left:0; border-radius:0; background:transparent; opacity:1; }
+.astSec .astCard.due{ background:#fff7f7; }
+.astL{ flex:1; min-width:0; } .astL b{ display:block; font-size:13.5px; color:var(--text-strong); line-height:1.3; } .astCard.st-done .astL b{ text-decoration:line-through; color:var(--muted); }
+.astMeta{ display:block; font-size:11.5px; color:var(--muted); line-height:1.4; margin-top:1px; } .astMeta em{ font-style:normal; font-weight:600; } .astMeta em.late{ color:#dc2626; }
+.astR{ display:flex; align-items:center; gap:6px; flex:none; }
+.astSeg.sm{ padding:2px; } .astSeg.sm button{ padding:4px 9px; font-size:11.5px; }
+.astTiny{ border:1px solid var(--line); background:#fff; border-radius:9px; padding:4px 9px; font-size:11.5px; font-weight:600; cursor:pointer; color:var(--text); display:inline-flex; align-items:center; } .astTiny.dng{ color:#dc2626; padding:4px 7px; }
+@media (max-width:640px){ .astSec .astCard{ flex-direction:column; align-items:stretch; gap:6px; } .astR{ justify-content:space-between; } }
+.astHelpRow{ display:flex; gap:6px; align-items:center; } .astHelpRow input{ flex:1; min-width:0; } .astHelpRow .astTiny{ height:38px; padding:0 12px; font-size:12.5px; color:#4f46e5; }
+/* My Tasks: lighter text, more room (v82) */
+.astSec .astCard{ padding:13px 14px; }
+.astL b{ font-weight:500; font-size:13.5px; color:var(--text); letter-spacing:0; line-height:1.35; }
+.astMeta{ font-size:10.5px; color:#94a3b8; margin-top:3px; line-height:1.45; } .astMeta em.late{ color:#dc2626; } .astMeta em{ font-weight:500; }
+.astSecH b{ font-weight:600; font-size:12.5px; color:var(--text); } .astSecH{ padding:10px 14px; }
+.astCard.st-done .astL b{ color:#94a3b8; }
+.astDueT b{ font-weight:500; } .astDueH{ font-weight:700; }
+.astI{ vertical-align:-1px; margin-right:1px; opacity:.75; flex:none; } .astMeta .astI{ color:#94a3b8; } .astDueH .astI{ vertical-align:-1px; width:13px; height:13px; }
 \n</style>
 </head>
 <body>
@@ -12419,7 +12509,7 @@ const hrUI = {
 };
 function hrTabsDef(){
   const t = [['todo', 'todo', 'To-Do'], ['people', 'people', 'People']];
-  if(hrCanEdit()){ t.push(['message', 'msg', 'Message'], ['letters', 'file', 'Letters'], ['settings', 'gear', 'Settings']); }
+  if(hrCanEdit()){ t.splice(1, 0, ['tasks', 'check', 'My Tasks']); t.push(['message', 'msg', 'Message'], ['letters', 'file', 'Letters'], ['settings', 'gear', 'Settings']); }
   return t;
 }
 function hrRender(){
@@ -12438,11 +12528,11 @@ function hrRender(){
 }
 function hrRenderTabs(){
   const late = (hrUI.tasks || []).filter(t => t.level === 'late').length;
-  $('hrTabs').innerHTML = hrTabsDef().map(t => `<button data-hr="tab" data-v="${t[0]}" class="${hrUI.tab === t[0] ? 'active' : ''}" title="${t[2]}">${hrSvg(t[1], 15)}<span class="hrLbl">${t[2]}</span>${t[0] === 'todo' && late ? `<span class="hrCnt">${late}</span>` : ''}</button>`).join('');
+  $('hrTabs').innerHTML = hrTabsDef().map(t => `<button data-hr="tab" data-v="${t[0]}" class="${hrUI.tab === t[0] ? 'active' : ''}" title="${t[2]}">${hrSvg(t[1], 15)}<span class="hrLbl">${t[2]}</span>${t[0] === 'todo' && late ? `<span class="hrCnt">${late}</span>` : ''}${t[0] === 'tasks' && typeof astDueCount === 'function' && astDueCount() ? `<span class="hrCnt">${astDueCount()}</span>` : ''}</button>`).join('');
 }
 function hrRenderBody(){
   const b = $('hrBody'); if(!b) return;
-  const fn = { todo:hrRenderTodo, people:hrRenderPeople, message:hrRenderMessage, letters:hrRenderLetters, settings:hrRenderSettings }[hrUI.tab];
+  const fn = { todo:hrRenderTodo, tasks:astRender, people:hrRenderPeople, message:hrRenderMessage, letters:hrRenderLetters, settings:hrRenderSettings }[hrUI.tab];
   try{ fn(); }catch(err){ console.error(err); b.innerHTML = '<div class="hrEmpty">Something went wrong in this section. The rest of the page is not affected.</div>'; }
 }
 async function hrOnEmployeesPageLoad(){
@@ -12972,7 +13062,7 @@ function renderPassportLocationStats(users){
   // Exit/Terminated employees are excluded entirely — their passport status
   // no longer matters once they're no longer with the company. Anyone Admin
   // has manually marked "Not Applicable" is excluded too.
-  const tracked = users.filter(u => u.role !== 'pending' && !isExitedEmployee(u) &&
+  const tracked = users.filter(u => u.role !== 'pending' && !isExitedEmployee(u) && !(u.profile && u.profile.employmentType === 'Non-Sponsor') &&
     passportLocationBucket((u.profile && u.profile.passport) || {}) !== 'not_applicable');
   passportLocDrillTracked = tracked;
   $('kpiPassportOffice').textContent = tracked.filter(u => passportLocationBucket((u.profile||{}).passport||{}) === 'office').length;
@@ -14647,7 +14737,8 @@ function pcItemsTable(o, rec){
       <span class="c-tot">${pcMoney(pcLine(it))}</span><div class="c-rem">${pcRemarks(it, o.docId, i)}</div></div>${strip ? `<div class="pcRecStrip">${strip}</div>` : ''}`;
   });
   const tot = pcTotal(o), act = o.items.reduce((t, it) => t + (it.ap > 0 ? it.ap * (it.rec || 0) : 0), 0);
-  return h + (tot ? `<div class="pcItTotal"><span>Total (${cur})</span><b>${pcMoney(tot)}</b></div>` : '') + (act > 0 ? `<div class="pcItTotal pcAct"><span>Actual paid (${cur})</span><b>${pcMoney(act)}</b></div>` : '') + '</div>';
+  const tq = o.items.reduce((t, it) => t + (Number(it.q) || 0), 0);
+  return h + `<div class="pcItTotal"><span>Total quantity</span><b>${tq}</b></div>` + (tot ? `<div class="pcItTotal"><span>Total (${cur})</span><b>${pcMoney(tot)}</b></div>` : '') + (act > 0 ? `<div class="pcItTotal pcAct"><span>Actual paid (${cur})</span><b>${pcMoney(act)}</b></div>` : '') + '</div>';
 }
 const PC_STEPS = [['new', 'Created'], ['ordered', 'Ordered'], ['received', 'Received']];
 function pcStepsHtml(o){
@@ -15154,6 +15245,14 @@ async function pcRast(html, px){
 }
 function pcImgSize(src){ return new Promise(res => { const im = new Image(); im.onload = () => res({ w: im.naturalWidth, h: im.naturalHeight }); im.onerror = () => res(null); im.src = src; }); }
 async function pcTextPdf(m, filename, ctx){
+  if(m.onePage && !ctx){
+    try{ await rvfEnsurePdfLibs(); }catch(err){ return pcTextPdf1(m, filename, ctx); }
+    const PG = m.L.page || lhPage({});
+    for(const sc of [1, 0.9, 0.8, 0.7, 0.6]){ m.sc = sc; const c = { pdf: new window.jspdf.jsPDF({ unit: 'mm', format: PG.fmt, orientation: 'portrait', compress: true }), n: 0 }; await pcTextPdf1(m, filename, c); if(c.pdf.getNumberOfPages() <= 1) break; }
+  }
+  return pcTextPdf1(m, filename, ctx);
+}
+async function pcTextPdf1(m, filename, ctx){
   try{ await rvfEnsurePdfLibs(); }catch(err){ console.error(err); toast('Could not load the PDF tool — check your connection'); return false; }
   const PG = m.L.page || lhPage({});
   const pdf = (ctx && ctx.pdf) || new window.jspdf.jsPDF({ unit: 'mm', format: PG.fmt, orientation: 'portrait', compress: true });
@@ -15203,7 +15302,7 @@ async function pcTextPdf(m, filename, ctx){
   if(m.app) y = poDrawApp(pdf, m, M, CW, PW, y, txt, wrap);
   if(m.intro){ pdf.setFont('helvetica', 'normal'); pdf.setFontSize(9.5); pdf.setTextColor(51, 65, 85); const ls = wrap(m.intro, CW); pdf.text(ls, M, y + 3); y += ls.length * 4.2 + 3; }
   // table: rounded white card, grey heading row, light lines between rows, no vertical lines
-  const LH = 3.7, PAD = 1.9, xs = []; { let x = M; const sum = m.w.reduce((p, q) => p + q, 0); m.w.forEach(wd => { const ww = wd * CW / sum; xs.push([x, ww]); x += ww; }); }
+  const SC = m.sc || 1, LH = 3.7 * SC, PAD = 1.9 * SC, xs = []; { let x = M; const sum = m.w.reduce((p, q) => p + q, 0); m.w.forEach(wd => { const ww = wd * CW / sum; xs.push([x, ww]); x += ww; }); }
   let top = y;
   const closeCard = () => { pdf.setDrawColor(LINE[0], LINE[1], LINE[2]); pdf.setLineWidth(0.25); pdf.line(M, y, M + CW, y); };
   const vlines = (y0, y1) => { pdf.setDrawColor(203, 213, 225); pdf.setLineWidth(0.2); xs.forEach(c => pdf.line(c[0], y0, c[0], y1)); pdf.line(M + CW, y0, M + CW, y1); };
@@ -15214,7 +15313,7 @@ async function pcTextPdf(m, filename, ctx){
     m.head.forEach((t, i) => { const [x, ww] = xs[i], ls = hl[i], y0 = y + (h - ls.length * 2.9) / 2 + 2.1; ls.forEach((ln, k) => { if(m.right.includes(i)) pdf.text(ln, x + ww - 2, y0 + k * 2.9, { align: 'right' }); else pdf.text(ln, x + 2, y0 + k * 2.9); }); }); y += h; };
   drawHead();
   m.rows.forEach(r => {
-    pdf.setFont('helvetica', 'normal'); pdf.setFontSize(8.5);
+    pdf.setFont('helvetica', 'normal'); pdf.setFontSize(8.5 * Math.max(0.82, SC));
     const cells = r.map((t, i) => wrap(t, xs[i][1] - (xs[i][1] > 18 ? 6.5 : 2.5))), n = Math.max(...cells.map(c => c.length)), h = n * LH + 2 * PAD;
     if(y + h > BOT){ closeCard(); pdf.addPage(); y = M; drawHead(); }
     pdf.setDrawColor(203, 213, 225); pdf.setLineWidth(0.2); pdf.line(M, y, M + CW, y);
@@ -15227,7 +15326,12 @@ async function pcTextPdf(m, filename, ctx){
   if(m.total){ const h = 7.5; if(y + h > BOT){ closeCard(); pdf.addPage(); y = M; top = y; } pdf.setDrawColor(LINE[0], LINE[1], LINE[2]); pdf.line(M, y, M + CW, y); const t = xs[m.ti]; pdf.setFont('helvetica', 'normal'); pdf.setFontSize(8); pdf.setTextColor(100, 116, 139);
     txt('Total (' + m.cur + ')', xs[m.ti][0] - 2, y + 4.8, { align: 'right' }); pdf.setFont('helvetica', 'bold'); pdf.setFontSize(10); pdf.setTextColor(15, 23, 42); txt(pcMoney(m.total), t[0] + t[1] - 2.5, y + 4.9, { align: 'right' }); y += h; }
   closeCard();
-  y += 8;
+  if(m.sums && m.sums.length){ if(y + 12 > BOT){ pdf.addPage(); y = M; } y += 2; let sx = M + CW - 1;
+    for(let k = m.sums.length - 1; k >= 0; k--){ const lb = String(m.sums[k][0]), vl = String(m.sums[k][1]);
+      pdf.setFont('helvetica', 'bold'); pdf.setFontSize(10.5); pdf.setTextColor(15, 23, 42); txt(vl, sx, y + 5, { align: 'right' }); sx -= pdf.getTextWidth(A(vl)) + 2.5;
+      pdf.setFont('helvetica', 'normal'); pdf.setFontSize(8.5); pdf.setTextColor(100, 116, 139); txt(lb, sx, y + 5, { align: 'right' }); sx -= pdf.getTextWidth(A(lb)) + 9; }
+    y += 8; }
+  y += 8 * SC;
   // closing + signatures
   const sg = m.sig2 ? [] : (m.signers.length ? m.signers : [{ name: '', title: 'Authorised signature' }]);
   if(m.sig2) y = poDrawSign(pdf, m, M, CW, BOT, y, txt, wrap);
@@ -17407,13 +17511,13 @@ function poBarcode(pdf, text, x, y, w, h){
 
 /* ---------- form state ---------- */
 function pcNewForm(){
-  const F = pcNewForm0(); F.type = 'local'; F.depts2 = ['Account', 'Purchase']; F.subject = ''; F.appl = ''; F.mach = ''; F.supId = ''; F.sup = ''; F.exp = '';
+  const F = pcNewForm0(); F.type = 'local'; F.depts2 = ['Account', 'Purchase']; F.subject = ''; F.appl = ''; F.mach = ''; F.supId = ''; F.sup = ''; F.supAddr = ''; F.supPhone = ''; F.exp = '';
   F.ordBy = [{ name: (state.user && state.user.name) || pcMe(), title: poPosition() }];
   return F;
 }
 function pcFormFromOrder(o, asCopy){
   const F = pcFormFromOrder0(o, asCopy);
-  F.type = poType(o); F.depts2 = (o.depts2 || ['Account', 'Purchase']).slice(); F.subject = o.sub || ''; F.appl = o.appl || ''; F.mach = o.mach || ''; F.supId = o.supId || ''; F.sup = (o.proc && o.proc.supplier) || ''; F.exp = o.expected || '';
+  F.type = poType(o); F.depts2 = (o.depts2 || ['Account', 'Purchase']).slice(); F.subject = o.subAuto ? '' : (o.sub || ''); F.appl = o.applAuto ? '' : (o.appl || ''); F.mach = o.mach || ''; F.supId = ''; F.sup = (o.proc && o.proc.supplier) || ''; F.supAddr = o.supAddr || ''; F.supPhone = o.supPhone || ''; F.exp = o.expected || '';
   F.ordBy = (o.ordBy || []).map(x => Object.assign({}, x));
   F.items.forEach((it, k) => { const s = o.items[k] || {}; it.cd = s.cd || ''; it.ino = s.ino || ''; it.sq = s.sq || ''; it.dd = s.dd || ''; it.src = k; });
   return F;
@@ -17432,17 +17536,15 @@ function poFormExtra(F){
     inline += `<div class="field"><label>To (department)</label><div class="poDd"><button type="button" class="poDdBtn${F.ddOpen ? ' open' : ''}" data-po="ddtoggle"><span>${sel ? pcEsc(sel) : 'Choose department(s)'}</span>${pcSvg('chev', 14)}</button>
       ${F.ddOpen ? `<div class="poDdPanel">${all.map(d => `<label class="poDdRow"><input type="checkbox" data-po="dept" data-v="${pcEsc(d)}" ${F.depts2.includes(d) ? 'checked' : ''}><span>${pcEsc(d)}</span></label>`).join('')}</div>` : ''}</div></div>`;
   } else {
-    const sups = (pp.sups || []).filter(s => !s.off);
-    inline += `<div class="field"><label>Supplier (from your supplier list)</label>${pp.sups ? `<select data-po="supsel"><option value="">Select…</option>${sups.map(s => `<option value="${pcEsc(s.id)}" ${F.supId === s.id ? 'selected' : ''}>${pcEsc(s.n)}</option>`).join('')}${F.sup && !sups.some(s => s.id === F.supId) ? `<option value="" selected>${pcEsc(F.sup)}</option>` : ''}</select>` : '<div class="hrNote">Loading the supplier list…</div>'}</div>`;
+    inline += `<div class="field"><label>Supplier name</label><input type="text" ${f('sup', F.sup)} placeholder="Name of the supplier" autocomplete="off"></div>
+      <div class="field"><label>Supplier address (optional)</label><input type="text" ${f('supAddr', F.supAddr)} placeholder="City, street"></div>
+      <div class="field"><label>Phone / email (optional)</label><input type="text" ${f('supPhone', F.supPhone)} placeholder="For the order paper"></div>`;
   }
   inline += `<div class="field"><label>Department / machine</label><input type="text" ${f('mach', F.mach)} placeholder="e.g. Dornier machine 3"></div>`;
-  h += `<div class="field"><label>Subject</label><div class="poSubj"><input type="text" ${f('subject', F.subject)} placeholder="Request for purchase of …"><button type="button" class="pcBtnSoft" data-po="ai" title="Writes the subject and request from the items and the department / machine" ${pc.ui.poAi ? 'disabled' : ''}>${pcSvg('edit', 13)}${pc.ui.poAi ? 'Writing…' : 'AI write'}</button></div></div>
-    <div class="field"><label>Request (printed after “Dear Sir,”)</label><textarea rows="2" style="width:100%" data-po="f" data-k="appl" placeholder="We kindly request your approval to purchase the items below for …">${pcEsc(F.appl)}</textarea></div>`;
+  h += `<details class="poWord"${F.subject || F.appl ? ' open' : ''}><summary>Wording of the paper: written automatically from your items (tap to change)</summary>
+    <div class="field"><label>Subject (optional)</label><div class="poSubj"><input type="text" ${f('subject', F.subject)} placeholder="Leave empty — written automatically"><button type="button" class="pcBtnSoft" data-po="ai" title="Writes the subject and request from the items" ${pc.ui.poAi ? 'disabled' : ''}>${pcSvg('send', 13)}Write with AI</button></div></div>
+    <div class="field"><label>Request (optional)</label><textarea rows="2" style="width:100%" data-po="f" data-k="appl" placeholder="Leave empty — written automatically">${pcEsc(F.appl)}</textarea></div></details>`;
   h += '<div class="poSignRow">';
-  if(t === 'international'){
-    h += `<div class="field"><label>Ordered by (signatures, up to 5)</label><div class="poChips">${F.ordBy.map((x, i) => poChip(x.name + (x.title ? ' \u00B7 ' + x.title : ''), '', ['ordrm', i])).join('')}${F.ordBy.length < 5 ? `<button type="button" class="poAddBtn" data-po="ordtoggle">${pcSvg('plus', 12)}Add</button>` : ''}</div>
-      ${F.ordOpen && F.ordBy.length < 5 ? `<div class="poAddRow">${sigs.length ? `<select id="poOrdSel">${sigs.map((x, i) => `<option value="${i}">${pcEsc(x.name)}${x.title ? ' \u2014 ' + pcEsc(x.title) : ''}</option>`).join('')}</select><button type="button" class="pcBtnSoft sm" data-po="ordadd">Add</button><span class="poOr">or</span>` : ''}<input type="text" id="poOrdTxt" placeholder="Name"><input type="text" id="poOrdTitle" placeholder="Designation"><button type="button" class="pcBtnSoft sm" data-po="ordtxt">Add</button></div>` : ''}</div>`;
-  }
   h += `<div class="field"><label>Approver (signs separately)</label><div class="poApprTxt">${pcSvg('stamp', 14)}<span><b>${pcEsc(ap.name || '\u2014')}</b>${ap.title ? ' \u00B7 ' + pcEsc(ap.title) : ''}</span></div></div></div>`;
   return { inline, rest: h + '</div>' };
 }
@@ -17452,9 +17554,10 @@ function pcFormHtml(){
   const sel = F.docId ? `<div class="field"><label>Order type</label><div class="poTypeTxt">${PO_LABEL[F.type] || 'Local'}</div></div>` : `<div class="field"><label>Order type</label><div class="pcSeg poTypes">${PO_TYPES.map(t => `<button data-po="type" data-v="${t[0]}" class="${F.type === t[0] ? 'on' : ''}">${t[1]}</button>`).join('')}</div></div>`;
   h = h.replace(first, '<div class="hrForm">' + sel + '<div class="field"><label>Priority</label>');
   h = h.replace('Prices in (change only for international buying)', 'Prices in').replace('<label>Requested by department</label>', '<label>Department</label>').replace('Requested by person (search or type)', 'Requested by');
-  if((F.type || 'local') === 'local'){
-    h = h.replace(/<span>Price \([^)]*\)<\/span>/, '').replace('<div class="pcFT">', '<div class="pcFT pcLoc">');
-  }
+  { const ty = F.type || 'local', pr = /<span>Price \([^)]*\)<\/span>/, lp = '<span>Last price</span><span>Last date</span>';
+    if(ty === 'local') h = h.replace(pr, '').replace('<div class="pcFT">', '<div class="pcFT pcLoc">');
+    else if(ty === 'international') h = h.replace(pr, '').replace(lp, '').replace('<div class="pcFT">', '<div class="pcFT pcInt">');
+    else h = h.replace(lp, '').replace('<div class="pcFT">', '<div class="pcFT pcPack">'); }
   const mark = '<div class="pcSection" style="margin-top:6px">Items</div>';
   const X = poFormExtra(F), wh = '<div class="pcSug" id="pcWhoSug" style="display:none"></div></div></div>';
   if(h.includes(wh)) h = h.replace(wh, '<div class="pcSug" id="pcWhoSug" style="display:none"></div></div>' + X.inline + '</div>');
@@ -17463,7 +17566,11 @@ function pcFormHtml(){
 }
 function pcItemHtml(it, i, units){
   let h = pcItemHtml0(it, i, units); const t = (pc.ui.form && pc.ui.form.type) || 'local';
-  if(t === 'local') return h.replace(/<div class="c-price">[\s\S]*?<\/div>/, '');
+  const cut = (c) => { h = h.replace(new RegExp('<div class="' + c + '">[\\s\\S]*?<\\/div>'), ''); };
+  h = h.replace(/<input type="text" data-pc="inote"([^>]*)>/, (m, a) => { const v = (a.match(/value="([^"]*)"/) || [0, ''])[1]; return '<textarea rows="' + Math.min(4, Math.max(1, Math.ceil(v.length / 26))) + '" class="pcNote" data-pc="inote"' + a.replace(/\s*value="[^"]*"/, '') + '>' + v + '</textarea>'; });
+  if(t === 'local'){ cut('c-price'); return h; }
+  if(t === 'international') cut('c-price');
+  cut('c-lp'); cut('c-ld');
   const x = (f, l, ty) => `<input type="${ty || 'text'}" data-po="ix" data-f="${f}" data-i="${i}" placeholder="${l}" title="${l}" value="${pcEsc(it[f] || '')}">`;
   const ex = `<div class="poIx">${x('cd', 'Code')}${x('ino', 'Item no')}${x('sq', 'Stock qty')}${t === 'packing' ? x('dd', 'Delivery expecting date', 'date') : ''}</div>`;
   const k = h.indexOf('<div class="pcItemMore');
@@ -17477,10 +17584,16 @@ function pcSyncRow(i){
 function pcOrdCheck(F){
   const t = F.type || 'local'; if(t === 'local') return '';
   if(t === 'international' && !F.depts2.length) return 'Choose the department(s) for the application';
-  if(t === 'packing' && !F.supId && !F.sup.trim()) return 'Choose the supplier';
-  if(!F.subject.trim() || !F.appl.trim()) return 'Write the subject and the request (or tap Write with AI)';
-  if(t === 'international' && !F.ordBy.length) return 'Add at least one name under Ordered by';
+  if(t === 'packing' && !F.sup.trim()) return 'Write the supplier name';
   return '';
+}
+function poAutoSubject(F, t){
+  const it = F.items.filter(i => i.n.trim()), first = it[0] ? it[0].n.trim() : 'items', more = it.length > 1 ? ' and ' + (it.length - 1) + ' other item' + (it.length > 2 ? 's' : '') : '', where = (F.mach || '').trim();
+  return (t === 'packing' ? 'Order for packing material: ' : 'Request for purchase of ') + first + more + (where ? ' for ' + where : '');
+}
+function poAutoBody(F, t){
+  const where = (F.mach || '').trim() || (F.dept ? 'the ' + F.dept + ' department' : 'our factory');
+  return t === 'packing' ? 'Kindly supply the packing material listed below for ' + where + ', and confirm the delivery date.' : 'We kindly request your approval to purchase the items listed below for ' + where + '.';
 }
 // copy the extra form fields onto the order (create and edit)
 function pcOrdApply(o, F, isNew){
@@ -17488,9 +17601,10 @@ function pcOrdApply(o, F, isNew){
   o.proc = Object.assign({}, o.proc || {});
   if(t === 'local'){ o.proc.supplier = (F.sup || '').trim(); o.expected = F.exp || ''; }
   else {
-    o.sub = F.subject.trim(); o.appl = F.appl.trim(); o.mach = (F.mach || '').trim();
-    if(t === 'international'){ o.depts2 = F.depts2.slice(); o.ordBy = F.ordBy.slice(0, 5); }
-    else { const s = (pp.sups || []).find(x => x.id === F.supId); o.supId = F.supId || ''; o.proc.supplier = s ? s.n : (F.sup || '').trim(); o.supAddr = s ? s.a || '' : (o.supAddr || ''); }
+    o.mach = (F.mach || '').trim(); o.subAuto = !F.subject.trim(); o.applAuto = !F.appl.trim();
+    o.sub = F.subject.trim() || poAutoSubject(F, t); o.appl = F.appl.trim() || poAutoBody(F, t);
+    if(t === 'international'){ o.depts2 = F.depts2.slice(); o.ordBy = []; }
+    else { o.supId = ''; o.proc.supplier = (F.sup || '').trim(); o.supAddr = (F.supAddr || '').trim(); o.supPhone = (F.supPhone || '').trim(); }
     o.appr = poApprSnap();
   }
   if(isNew && !F.back){
@@ -17604,23 +17718,31 @@ async function poAiWrite(){
 }
 
 /* ---------- PDFs ---------- */
+const poNum = (n) => { const x = Math.round(n * 1000) / 1000; return String(x).replace(/\B(?=(\d{3})+(?!\d))/g, ','); };
 function poSd(t){ return t ? fmtDate(pcDateStr(t)) : ''; }
 function pcPdfModel(o, kind, T, L){
   const t = poType(o);
   if(kind === 'rcv') return poRcvModel(o, L);
-  if(t === 'local'){ const m = pcPdfModel0(o, kind, T, L); m.bar = o.id; return m; }
+  if(t === 'local'){ const m = pcPdfModel0(o, kind, T, L); m.bar = o.id;
+    if(!(m.signers || []).length) m.sig2 = { ordBy: [], appr: o.appr || poApprSnap() };
+    const qty = o.items.reduce((s, i) => s + (Number(i.q) || 0), 0), est = o.items.reduce((s, i) => s + (Number(i.q) || 0) * (i.p > 0 ? Number(i.p) : (Number(i.lp) || 0)), 0), hasP = o.items.some(i => i.p > 0);
+    m.sums = [['Total quantity', poNum(qty)]]; if(hasP && kind !== 'po') m.sums.push(['Total price (' + pcCur(o) + ')', pcMoney(pcTotal(o))]); else if(est > 0 && !hasP) m.sums.push(['Total price, from last prices (' + pcCur(o) + ')', pcMoney(est)]);
+    return m; }
   const intl = t === 'international', S = pc.settings || PC_DEF;
-  const head = intl ? ['Serial', 'Code', 'Item No', 'Description', 'Unit', 'Stock Quantity', 'Order Quantity', 'Remarks'] : ['Serial', 'Code', 'Item No', 'Description', 'Unit', 'Stock Quantity', 'Order Quantity', 'Delivery Expecting Date', 'Remarks'];
-  const w = intl ? [8, 10, 10, 27, 6, 13, 13, 13] : [8, 9, 9, 21, 6, 11, 11, 14, 11];
+  const hasP = !intl && o.items.some(i => i.p > 0);
+  const head = intl ? ['Serial', 'Code', 'Item No', 'Description', 'Unit', 'Stock Quantity', 'Order Quantity', 'Remarks'] : ['Serial', 'Code', 'Item No', 'Description', 'Unit', 'Stock Quantity', 'Order Quantity'].concat(hasP ? ['Unit Price'] : [], ['Delivery Expecting Date', 'Remarks']);
+  const w = intl ? [8, 10, 10, 27, 6, 13, 13, 13] : hasP ? [7, 8, 8, 19, 6, 10, 10, 10, 13, 10] : [8, 9, 9, 21, 6, 11, 11, 14, 11];
   const rem = (it) => [it.phys ? 'Physical sample' : '', it.link ? 'Link: ' + pcShortUrl(it.link) : '', it.note].filter(Boolean).join(' | ');
   const rows = o.items.map((it, i) => { const d = [it.n, it.d, it.b].filter(Boolean).join(' - ');
-    const r = [String(i + 1), it.cd || '', it.ino || '', d, it.u || '', String(it.sq || ''), String(it.q)]; if(!intl) r.push(it.dd ? fmtDate(it.dd) : ''); r.push(rem(it)); return r; });
-  const to = intl ? ['The ' + ((o.depts2 || []).join(' / ') || 'Management') + ' Department'] : [(o.proc && o.proc.supplier) || '', o.supAddr || ''].filter(Boolean);
+    const r = [String(i + 1), it.cd || '', it.ino || '', d, it.u || '', String(it.sq || ''), String(it.q)]; if(hasP) r.push(it.p > 0 ? pcMoney(it.p) : ''); if(!intl) r.push(it.dd ? fmtDate(it.dd) : ''); r.push(rem(it)); return r; });
+  const to = intl ? ['The ' + ((o.depts2 || []).join(' / ') || 'Management') + ' Department'] : [(o.proc && o.proc.supplier) || '', o.supAddr || '', o.supPhone || ''].filter(Boolean);
+  const qty = o.items.reduce((s, i) => s + (Number(i.q) || 0), 0), tp = hasP ? o.items.reduce((s, i) => s + (Number(i.q) || 0) * (Number(i.p) || 0), 0) : 0;
   const ap = o.appr || poApprSnap();
   return { kind: 'req', title: intl ? 'International Purchase Requisition' : 'Packing Material Purchase Order',
     app: { date: poSd(o.createdAt), ref: o.id, to, subject: o.sub || '', body: o.appl || '', urgent: o.priority === 'urgent', dept: o.dept },
-    info: [], head, w, right: intl ? [5, 6] : [5, 6], rows, total: 0, ti: 99, bc: 3, cur: pcCur(o), L, closing: '', intro: '', signers: [],
-    sig2: { ordBy: intl ? (o.ordBy || []) : [], appr: ap } };
+    info: [], head, w, right: hasP ? [5, 6, 7] : [5, 6], rows, total: 0, ti: 99, bc: 3, cur: pcCur(o), L, closing: '', intro: '', signers: [], onePage: intl,
+    sums: [['Total quantity', poNum(qty)]].concat(tp > 0 ? [['Total price (' + pcCur(o) + ')', pcMoney(tp)]] : []),
+    sig2: { ordBy: [], appr: ap } };
 }
 function poRcvLocal(o, L){
   const c = o.comp || {}, cur = pcCur(o), rows = [], lastD = (it) => it.lp > 0 && it.ld ? fmtDate(pcDateStr(it.ld)) : '';
@@ -17729,7 +17851,7 @@ function poDrawApp(pdf, m, M, CW, PW, y, txt, wrap){
   return y + 8;
 }
 function poDrawSign(pdf, m, M, CW, BOT, y, txt, wrap){
-  const S2 = m.sig2, ob = S2.ordBy || [], ap = S2.appr || {}, H = 28, per = 3, hasOb = ob.length > 0, wL = hasOb ? CW * 0.64 : 0, rowsOb = Math.max(1, Math.ceil(ob.length / per));
+  const S2 = m.sig2, ob = S2.ordBy || [], ap = S2.appr || {}, H = m.sc && m.sc < 1 ? 20 : 28, per = 3, hasOb = ob.length > 0, wL = hasOb ? CW * 0.64 : 0, rowsOb = Math.max(1, Math.ceil(ob.length / per));
   if(y + 6 + rowsOb * (H + 18) + 4 > BOT){ pdf.addPage(); y = M; }
   y += 6;
   const slot = (x, w, name, title, yy) => { pdf.setDrawColor(15, 23, 42); pdf.setLineWidth(0.3); pdf.line(x, yy + H, x + w, yy + H); const cx = x + w / 2;
@@ -17746,6 +17868,8 @@ function poDrawSign(pdf, m, M, CW, BOT, y, txt, wrap){
   slot(ax, aw, ap.name, ap.title, y + 3);
   return y + 3 + rowsOb * (H + 18);
 }
+
+document.addEventListener('input', (e) => { const el = e.target; if(el && el.classList && el.classList.contains('pcNote')){ el.style.height = 'auto'; el.style.height = Math.max(36, el.scrollHeight + 2) + 'px'; } });
 
 /* ===== v54: product photos can be opened full size (Products list, order-form suggestions, order items) ===== */
 function phClose(){ const e = document.getElementById('phLb'); if(e) e.remove(); }
@@ -19493,6 +19617,191 @@ document.addEventListener('click', (e) => {
   if(b.id === 'prodShowBtn'){ state.prodShown = true; renderMachineProductionBox(); }
   else { state.perfShown = true; renderPerformanceBox(); }
 });
+
+/* ============================================================
+   v78: MY TASKS - Admin's personal assistant inside HR Assistant.
+   Tasks given by the boss: Pending / Working / Done, reminder date+time, who helps.
+   Storage: ONE config document per admin (myTasks_<loginId>). It is read once per session and written only when you change something.
+   Reminders are checked in memory every 30 s (no database reads).
+   ============================================================ */
+const AST = { uid: '', loaded: false, loading: false, items: [], q: '', formOpen: false, showDone: false, doneAll: false, draft: null, editId: '', help: [], busy: false, ringing: false };
+const astEsc = (t) => String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+const astIco = (n) => n === 'rep' ? '<svg class="astI" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 014-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>' : hrSvg(n, 11).replace('<svg ', '<svg class="astI" ');
+const AST_ST = [['pending', 'Pending'], ['working', 'Working'], ['done', 'Done']];
+const astKey = () => 'myTasks_' + (state.user ? state.user.loginId : '');
+const astEmpty = () => ({ title: '', by: '', remind: '', repeat: 0, note: '', helpers: [] });
+const AST_REP = [[0, 'Do not repeat'], [1, 'Every day'], [2, 'Every 2 days'], [3, 'Every 3 days'], [5, 'Every 5 days'], [7, 'Every week'], [14, 'Every 2 weeks'], [30, 'Every month']];
+const astRepTxt = (n) => n ? (AST_REP.find(x => x[0] === n) || [0, 'Every ' + n + ' days'])[1].toLowerCase() : '';
+function astNext(t){ const d = new Date(t.remind), n = Date.now(); if(!isFinite(d)) return ''; let g = 0; do { d.setDate(d.getDate() + t.repeat); g++; } while(d.getTime() <= n && g < 4000); return astLocal(d.getTime()); }
+function astOn(){ return !!(state.user && state.user.role === 'admin'); }
+function astReset(){ if(state.user && AST.uid !== state.user.loginId){ Object.assign(AST, { uid: state.user.loginId, loaded: false, loading: false, items: [], draft: astEmpty(), editId: '' }); } if(!AST.draft) AST.draft = astEmpty(); }
+async function astLoad(force){
+  if(!astOn()) return false; astReset();
+  if(AST.loaded && !force) return true; if(AST.loading) return false;
+  AST.loading = true;
+  try{ const d = await window.__db.getConfigObject(astKey(), { items: [] }); AST.items = Array.isArray(d.items) ? d.items : []; AST.loaded = true; AST.loadedAt = Date.now(); }
+  catch(err){ console.error(err); AST.loaded = false; }
+  AST.loading = false; return AST.loaded;
+}
+async function astSave(){
+  if(!AST.loaded){ toast('Your tasks could not be loaded — reload the page before saving'); return false; }
+  try{ await window.__db.saveConfigObject(astKey(), { items: AST.items }); return true; }
+  catch(err){ console.error(err); toast('Could not save — check your connection'); return false; }
+}
+const astFired = () => { try{ return JSON.parse(localStorage.getItem('rvfAstFired') || '{}'); }catch(e){ return {}; } };
+const astSetFired = (m) => { try{ localStorage.setItem('rvfAstFired', JSON.stringify(m)); }catch(e){} };
+const astMs = (r) => { const t = r ? new Date(r).getTime() : 0; return isFinite(t) ? t : 0; };
+const astIsDue = (t) => t.status !== 'done' && t.remind && astMs(t.remind) <= Date.now();
+function astDueCount(){ return AST.loaded ? AST.items.filter(astIsDue).length : 0; }
+function astWhen(r){ const d = new Date(r); if(!isFinite(d)) return ''; const n = new Date(), day = (x) => x.toDateString();
+  const tm = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }), tom = new Date(n.getTime() + 86400000), yes = new Date(n.getTime() - 86400000);
+  return (day(d) === day(n) ? 'Today' : day(d) === day(tom) ? 'Tomorrow' : day(d) === day(yes) ? 'Yesterday' : d.toLocaleDateString([], { day: 'numeric', month: 'short', year: d.getFullYear() === n.getFullYear() ? undefined : 'numeric' })) + ', ' + tm; }
+const astLocal = (ms) => { const d = new Date(ms - new Date(ms).getTimezoneOffset() * 60000); return d.toISOString().slice(0, 16); };
+const astPeople = () => (state.users || []).filter(u => u.role !== 'pending' && !(typeof isExitedEmployee === 'function' && isExitedEmployee(u))).map(u => u.name).filter(Boolean).sort();
+
+function astRender(){
+  const b = $('hrBody'); if(!b) return; astReset();
+  if(!AST.loaded){ b.innerHTML = '<div class="hrEmpty">Loading your tasks…</div>'; astLoad().then(ok => { if(hrUI.tab === 'tasks'){ if(ok){ astRender(); astCheck(); } else b.innerHTML = '<div class="hrEmpty">Could not load your tasks — check your connection and open this tab again.</div>'; } }); return; }
+  if(!b.dataset.ast){ b.dataset.ast = '1'; b.addEventListener('click', astClick); b.addEventListener('input', astInput); b.addEventListener('change', astChange); b.addEventListener('keydown', astKey2); }
+  const canNote = typeof Notification !== 'undefined' && Notification.permission === 'default';
+  b.innerHTML = `<div class="astWrap">${astDueHtml()}
+    <div class="astTool"><div class="astSearch">${hrSvg('search', 14)}<input type="text" data-ast-in="q" placeholder="Search my tasks…" value="${astEsc(AST.q || '')}"></div>
+      <button class="astIcon pri" data-ast="toggleform" title="${AST.formOpen ? 'Close' : 'New task'}" aria-label="New task">${hrSvg(AST.formOpen ? 'x' : 'plus', 17)}</button>
+      ${canNote ? `<button class="astIcon" data-ast="notify" title="Turn on pop-up alerts" aria-label="Alerts">${hrSvg('bell', 16)}</button>` : ''}
+      <button class="astIcon" data-ast="dl" title="Download PDF / Excel" aria-label="Download">${hrSvg('down', 16)}</button></div>
+    ${AST.formOpen ? astFormHtml() : ''}
+    <div id="astSecs">${astSections()}</div></div>`;
+  if(AST.formOpen){ const t = $('astTitle'); if(t && !t.value) t.focus(); }
+}
+function astFormHtml(){
+  const D = AST.draft;
+  return `<div class="astAdd"><div class="astHead">${AST.editId ? 'Edit task' : 'New task'}</div>
+    <input type="text" id="astTitle" data-ast-in="title" placeholder="What did the boss ask for? e.g. Prepare the salary summary" value="${astEsc(D.title)}">
+    <div class="astRow3">
+      <label class="field"><span>Given by</span><input type="text" data-ast-in="by" placeholder="Boss / manager" value="${astEsc(D.by)}"></label>
+      <label class="field"><span>Remind me on</span><input type="datetime-local" data-ast-in="remind" value="${astEsc(D.remind)}"></label>
+      <label class="field"><span>Repeat</span><select data-ast-in="repeat">${AST_REP.map(x => `<option value="${x[0]}" ${+D.repeat === x[0] ? 'selected' : ''}>${x[1]}</option>`).join('')}</select></label>
+    </div>
+    <div class="astQuick"><span>Quick:</span><button type="button" data-ast="q" data-h="1">In 1 hour</button><button type="button" data-ast="q" data-d="0">Today 5 PM</button><button type="button" data-ast="q" data-d="1">Tomorrow 9 AM</button><button type="button" data-ast="q" data-d="7">Next week</button>${D.remind ? '<button type="button" data-ast="q" data-clear="1">No reminder</button>' : ''}</div>
+    <div class="astRow2">
+      <div class="field"><span class="astLbl">Who will help me</span><div class="astChips" id="astChips">${astChips(D.helpers)}</div>
+        <div class="astHelpRow"><input type="text" id="astHelp" list="astPpl" data-ast-in="help" placeholder="Pick or type a name — add as many as you need" autocomplete="off"><button type="button" class="astTiny" data-ast="addhelp">+ Add</button></div><datalist id="astPpl">${astPeople().map(n => `<option value="${astEsc(n)}">`).join('')}</datalist></div>
+      <label class="field"><span>Note (optional)</span><input type="text" data-ast-in="note" placeholder="Details, deadline…" value="${astEsc(D.note)}"></label>
+    </div>
+    <div class="astBtns"><button class="pcBtnMain sm" data-ast="save">${AST.editId ? 'Save changes' : 'Add task'}</button><button class="pcBtnSoft sm" data-ast="cancel">Cancel</button></div></div>`;
+}
+const AST_DOT = { pending: '#f59e0b', working: '#3b82f6', done: '#22c55e' };
+function astSections(){
+  const q = (AST.q || '').trim().toLowerCase(), match = (t) => !q || [t.title, t.by, t.note, (t.helpers || []).join(' ')].join(' ').toLowerCase().includes(q);
+  return AST_ST.map(([st, label]) => {
+    const all = AST.items.filter(t => t.status === st && match(t)).sort((a, b) => st === 'done' ? (b.doneAt || 0) - (a.doneAt || 0) : ((astMs(a.remind) || 9e15) - (astMs(b.remind) || 9e15)) || (b.created - a.created));
+    const isDone = st === 'done', open = !isDone || AST.showDone || !!q, list = isDone && !AST.doneAll ? all.slice(0, 5) : all;
+    return `<section class="astSec"><div class="astSecH"><span class="astDot" style="background:${AST_DOT[st]}"></span><b>${label}</b><i>${all.length}</i><span class="grow"></span>${isDone && !q ? `<button class="astLink" data-ast="toggledone">${AST.showDone ? 'Hide' : 'Show'}</button>` : ''}</div>
+      ${!open ? '' : list.length ? list.map(astCard).join('') + (isDone && !AST.doneAll && all.length > 5 ? `<button class="astMore" data-ast="doneall">Show all ${all.length} done tasks</button>` : (isDone && AST.doneAll && all.length > 5 ? '<button class="astMore" data-ast="doneall">Show only the latest 5</button>' : '')) : `<div class="astNone">${q ? 'No match' : st === 'pending' ? 'Nothing pending' : st === 'working' ? 'Nothing in progress' : 'No finished tasks yet'}</div>`}</section>`; }).join('');
+}
+function astCard(t){
+  const due = astIsDue(t);
+  return `<div class="astCard st-${t.status}${due ? ' due' : ''}" data-id="${astEsc(t.id)}"><div class="astL"><b>${astEsc(t.title)}</b>
+    <span class="astMeta">${t.by ? astEsc(t.by) + ' · ' : ''}${t.status === 'done' && t.doneAt ? 'Done ' + fmtDate(astLocal(t.doneAt).slice(0, 10)) : 'Added ' + fmtDate(astLocal(t.created).slice(0, 10))}${t.remind && t.status !== 'done' ? ` · <em class="${due ? 'late' : ''}">${astIco('clock')} ${astWhen(t.remind)}${t.repeat ? ' · ' + astIco('rep') + ' ' + astRepTxt(t.repeat) : ''}</em>` : ''}${(t.helpers || []).length ? ' · ' + astIco('people') + ' ' + astEsc(t.helpers.join(', ')) : ''}${t.note ? ' · ' + astEsc(t.note) : ''}</span></div>
+    <div class="astR"><div class="astSeg sm">${AST_ST.map(s => `<button data-ast="st" data-id="${astEsc(t.id)}" data-v="${s[0]}" title="${s[1]}" class="${t.status === s[0] ? 'on st-' + s[0] : ''}">${s[1]}</button>`).join('')}</div>
+      <button class="astTiny" data-ast="edit" data-id="${astEsc(t.id)}">Edit</button><button class="astTiny dng" data-ast="del" data-id="${astEsc(t.id)}" title="Delete" aria-label="Delete">${hrSvg('trash', 13)}</button></div></div>`;
+}
+function astDueHtml(){
+  const due = AST.items.filter(astIsDue).sort((a, b) => astMs(a.remind) - astMs(b.remind));
+  if(!due.length) return '';
+  return `<div class="astDue"><div class="astDueH">${astIco('clock')} Reminders waiting for you <i>${due.length}</i></div>${due.map(t => `<div class="astDueRow" data-id="${astEsc(t.id)}"><div class="astDueT"><b>${astEsc(t.title)}</b><span>${t.by ? 'Given by ' + astEsc(t.by) + ' · ' : ''}was due ${astWhen(t.remind)}${t.repeat ? ' · repeats ' + astRepTxt(t.repeat) : ''}${(t.helpers || []).length ? ' · Helping: ' + astEsc(t.helpers.join(', ')) : ''}</span></div>
+    <div class="astDueA"><button data-ast="ack" data-id="${astEsc(t.id)}">${t.repeat ? 'Got it — repeats ' + astRepTxt(t.repeat) : 'Got it'}</button><button data-ast="st" data-id="${astEsc(t.id)}" data-v="working">Working</button><button data-ast="st" data-id="${astEsc(t.id)}" data-v="done">Done</button><button data-ast="snz" data-id="${astEsc(t.id)}">+1 hour</button></div></div>`).join('')}</div>`;
+}
+const astChips = (h) => (h || []).map((n, i) => `<span class="astChip">${astEsc(n)}<button type="button" data-ast="unhelp" data-i="${i}" aria-label="Remove">×</button></span>`).join('');
+function astInput(e){ const k = e.target.dataset.astIn; if(k === 'help'){ const v = e.target.value; if(/[,;]\s*$/.test(v) || ((e.inputType === 'insertReplacementText' || !e.inputType) && astPeople().includes(v.trim()))) astAddHelper(); return; } if(!k) return; if(k === 'q'){ AST.q = e.target.value; const s = $('astSecs'); if(s) s.innerHTML = astSections(); return; } AST.draft[k] = k === 'repeat' ? Number(e.target.value) || 0 : e.target.value; }
+function astChange(e){ if(e.target.dataset.astIn === 'repeat') astInput(e); }
+function astKey2(e){ if(e.key === 'Enter' && e.target.id === 'astHelp'){ e.preventDefault(); astAddHelper(); } }
+function astAddHelper(){ const i = $('astHelp'); if(!i) return; const parts = i.value.split(/[,;]/).map(x => x.trim()).filter(Boolean); if(!parts.length){ i.value = ''; return; } parts.forEach(v => { if(!AST.draft.helpers.some(n => n.toLowerCase() === v.toLowerCase())) AST.draft.helpers.push(v); }); i.value = ''; $('astChips').innerHTML = astChips(AST.draft.helpers); i.focus(); }
+function astSetRemind(v){ AST.draft.remind = v; const i = document.querySelector('[data-ast-in="remind"]'); if(i) i.value = v; }
+async function astClick(e){
+  const el = e.target.closest('[data-ast]'); if(!el) return; const a = el.dataset.ast, id = el.dataset.id;
+  switch(a){
+    case 'toggleform': AST.formOpen = !AST.formOpen; if(!AST.formOpen){ AST.editId = ''; AST.draft = Object.assign(astEmpty(), { by: AST.draft.by }); } astRender(); break;
+    case 'toggledone': AST.showDone = !AST.showDone; AST.doneAll = false; astRender(); break;
+    case 'doneall': AST.doneAll = !AST.doneAll; astRender(); break;
+    case 'addhelp': astAddHelper(); break;
+    case 'unhelp': AST.draft.helpers.splice(+el.dataset.i, 1); $('astChips').innerHTML = astChips(AST.draft.helpers); break;
+    case 'q': { if(el.dataset.clear){ AST.draft.remind = ''; astRender(); break; } const n = new Date(); let t;
+      if(el.dataset.h){ t = new Date(n.getTime() + 3600000); } else { const d = +el.dataset.d; t = new Date(n.getFullYear(), n.getMonth(), n.getDate() + d, d === 0 ? 17 : 9, 0); if(t <= n) t = new Date(t.getTime() + 86400000); }
+      astSetRemind(astLocal(t.getTime())); if(!document.querySelector('[data-ast="q"][data-clear]')) astRender(); break; }
+    case 'save': await astSaveTask(); break;
+    case 'cancel': AST.editId = ''; AST.formOpen = false; AST.draft = astEmpty(); astRender(); break;
+    case 'edit': { const t = AST.items.find(x => x.id === id); if(!t) break; AST.editId = id; AST.formOpen = true; AST.draft = { title: t.title, by: t.by || '', remind: t.remind || '', repeat: t.repeat || 0, note: t.note || '', helpers: (t.helpers || []).slice() }; astRender(); window.scrollTo({ top: 0, behavior: 'smooth' }); break; }
+    case 'st': await astSetStatus(id, el.dataset.v); break;
+    case 'del': { const t = AST.items.find(x => x.id === id); if(t && confirm('Delete this task?\n\n' + t.title)){ AST.items = AST.items.filter(x => x.id !== id); if(AST.editId === id){ AST.editId = ''; AST.draft = astEmpty(); } await astSave(); astRender(); hrRenderTabs(); } break; }
+    case 'ack': await astAck(id); break;
+    case 'snz': { const t = AST.items.find(x => x.id === id); if(t){ t.remind = astLocal(Date.now() + 3600000); await astSave(); toast('Reminder moved to ' + astWhen(t.remind)); astRender(); hrRenderTabs(); } break; }
+    case 'notify': try{ await Notification.requestPermission(); }catch(err){} astRender(); break;
+    case 'dl': dlOpen(astCfg()); break;
+  }
+}
+async function astSaveTask(){
+  const D = AST.draft; astAddHelperQuiet();
+  if(!D.title.trim()) return toast('Write the task first');
+  if(AST.busy) return; AST.busy = true;
+  try{
+    if(AST.editId){ const t = AST.items.find(x => x.id === AST.editId); if(t){ if(t.remind !== D.remind){ const f = astFired(); delete f[t.id]; astSetFired(f); } Object.assign(t, { title: D.title.trim(), by: D.by.trim(), remind: D.remind, repeat: D.remind ? (+D.repeat || 0) : 0, note: D.note.trim(), helpers: D.helpers.slice() }); } }
+    else AST.items.push({ id: 't' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), title: D.title.trim(), by: D.by.trim(), remind: D.remind, repeat: D.remind ? (+D.repeat || 0) : 0, note: D.note.trim(), helpers: D.helpers.slice(), status: 'pending', created: Date.now(), doneAt: 0 });
+    const ok = await astSave(); if(!ok) return;
+    const by = D.by; AST.editId = ''; AST.formOpen = false; AST.draft = Object.assign(astEmpty(), { by });
+    toast(D.remind ? 'Saved — I will remind you' : 'Task saved'); astRender(); hrRenderTabs();
+  } finally { AST.busy = false; }
+}
+function astAddHelperQuiet(){ const i = $('astHelp'); if(i && i.value.trim()){ i.value.split(/[,;]/).map(x => x.trim()).filter(Boolean).forEach(v => { if(!AST.draft.helpers.some(n => n.toLowerCase() === v.toLowerCase())) AST.draft.helpers.push(v); }); i.value = ''; } }
+async function astSetStatus(id, st){
+  const t = AST.items.find(x => x.id === id); if(!t || t.status === st) return;
+  const was = t.status; t.status = st; t.doneAt = st === 'done' ? Date.now() : 0; if(await astSave()){ astRender(); hrRenderTabs(); astCheck(); } else { t.status = was; }
+}
+/* ---------- reminders ---------- */
+async function astAck(id){
+  const t = AST.items.find(x => x.id === id); if(!t) return;
+  const was = t.remind; if(t.repeat){ t.remind = astNext(t); } else t.remind = '';
+  if(await astSave()){ toast(t.repeat ? 'Okay — next reminder ' + astWhen(t.remind) : 'Okay — reminder cleared'); } else t.remind = was;
+  hrRenderTabs(); if(hrUI.tab === 'tasks') astRender();
+}
+function astNotifyBrowser(list){ try{ if(typeof Notification !== 'undefined' && Notification.permission === 'granted') new Notification('Task reminder', { body: list.map(t => t.title).join('\n').slice(0, 200) }); }catch(e){} }
+function astCheck(){
+  if(!astOn() || !AST.loaded || AST.ringing) return;
+  const f = astFired(), due = AST.items.filter(t => astIsDue(t) && f[t.id] !== t.remind);
+  if(!due.length) return;
+  due.forEach(t => { f[t.id] = t.remind; }); astSetFired(f); AST.ringing = true; astNotifyBrowser(due); astRing(due);
+}
+function astRing(due){
+  let ov = $('astRing'); if(ov) ov.remove();
+  ov = document.createElement('div'); ov.id = 'astRing'; ov.className = 'astRing';
+  ov.innerHTML = `<div class="astRingBox"><div class="astRingH">Reminder${due.length > 1 ? 's' : ''}</div>${due.map(t => `<div class="astRingT"><b>${astEsc(t.title)}</b><span>${t.by ? 'Given by ' + astEsc(t.by) + ' · ' : ''}${astWhen(t.remind)}${(t.helpers || []).length ? ' · Helping: ' + astEsc(t.helpers.join(', ')) : ''}</span>
+     <div class="astRingA"><button data-r="ack" data-id="${astEsc(t.id)}">Got it${t.repeat ? ' — ' + astRepTxt(t.repeat) : ''}</button><button data-r="work" data-id="${astEsc(t.id)}">Working</button><button data-r="done" data-id="${astEsc(t.id)}">Done</button><button data-r="snz" data-id="${astEsc(t.id)}">+1 hour</button><button data-r="tom" data-id="${astEsc(t.id)}">Tomorrow</button></div></div>`).join('')}
+    <div class="astRingF"><button data-r="open">Open My Tasks</button><button data-r="close">Close</button></div></div>`;
+  document.body.appendChild(ov);
+  ov.addEventListener('click', async (e) => { const b = e.target.closest('[data-r]'); if(!b) return; const r = b.dataset.r, id = b.dataset.id, t = AST.items.find(x => x.id === id);
+    if(r === 'close' || r === 'open'){ ov.remove(); AST.ringing = false; if(r === 'open'){ goTo('employees'); hrUI.tab = 'tasks'; hrRender(); } return; }
+    if(!t) return;
+    if(r === 'ack'){ await astAck(id); } else if(r === 'done') await astSetStatus(id, 'done'); else if(r === 'work') await astSetStatus(id, 'working');
+    else { const n = new Date(); const w = r === 'snz' ? new Date(n.getTime() + 3600000) : new Date(n.getFullYear(), n.getMonth(), n.getDate() + 1, 9, 0); t.remind = astLocal(w.getTime()); await astSave(); toast('Reminder moved to ' + astWhen(t.remind)); }
+    const row = b.closest('.astRingT'); if(row) row.remove(); if(!ov.querySelector('.astRingT')){ ov.remove(); AST.ringing = false; } hrRenderTabs(); if(hrUI.tab === 'tasks') astRender(); });
+}
+async function astTick(){
+  if(!astOn()){ return; } astReset();
+  if(!AST.loaded){ if(document.visibilityState !== 'visible') return; await astLoad(); }
+  if(AST.loaded){ astCheck(); const t = $('hrTabs'); if(t && astDueCount() !== AST.lastDue){ AST.lastDue = astDueCount(); hrRenderTabs(); } }
+}
+setTimeout(astTick, 5000); setInterval(astTick, 30000);
+/* ---------- download (PDF / Excel with column choice) ---------- */
+function astCfg(){
+  const st = (t) => (AST_ST.find(s => s[0] === t.status) || [0, ''])[1], d = (ms) => ms ? fmtDate(astLocal(ms).slice(0, 10)) : '';
+  return { key: 'mytasks', title: 'My Tasks', noun: 'tasks', file: 'my-tasks', sheet: 'My Tasks', def: ['task', 'status', 'by', 'help', 'remind'],
+    items: () => AST.items.slice().sort((a, b) => b.created - a.created), id: t => t.id, label: t => t.title + ' · ' + st(t),
+    cols: () => [
+      { k: 'task', l: 'Task', g: 'Task', get: t => t.title }, { k: 'status', l: 'Status', g: 'Task', get: st }, { k: 'by', l: 'Given by', g: 'Task', get: t => t.by || '' },
+      { k: 'help', l: 'Who helps', g: 'Task', get: t => (t.helpers || []).join(', ') }, { k: 'remind', l: 'Reminder', g: 'Dates', get: t => t.remind ? astWhen(t.remind) : '' },
+      { k: 'rep', l: 'Repeats', g: 'Dates', get: t => astRepTxt(t.repeat) }, { k: 'added', l: 'Added', g: 'Dates', get: t => d(t.created) }, { k: 'done', l: 'Done on', g: 'Dates', get: t => d(t.doneAt) }, { k: 'note', l: 'Note', g: 'Task', get: t => t.note || '' }
+    ], sumExtra: (it) => AST_ST.map(s => [s[1], it.filter(t => t.status === s[0]).length]) };
+}
 
 (function(){
   const b=$('bkOpenBtn'); if(b) b.addEventListener('click', () => bkOpen());
