@@ -2834,6 +2834,11 @@ table.pkPdf tr.tot td{ background:#eef2ff !important; border-top:1px solid #c7d2
 /* Local order form: no Price box (v76) */
 .pcLoc .pcFRow{ grid-template-columns:26px minmax(0,1.2fr) minmax(0,1.4fr) 66px 78px 80px 128px minmax(0,1fr) 64px; }
 @container (max-width:900px){ .pcLoc .pcFRow{ grid-template-columns:1fr 1fr 1fr; } .pcLoc .pcFRow > .c-lp{ grid-column:1 / 2; } .pcLoc .pcFRow > .c-ld{ grid-column:2 / 4; } }
+
+/* Purchase: small settings menu + settings header (v77) */
+.pcSetBtn{ padding:0 10px; min-width:36px; justify-content:center; }
+.pcSetMenu .pcMoreList{ min-width:150px; }
+.pcSetBar{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:14px; }
 \n</style>
 </head>
 <body>
@@ -14258,6 +14263,7 @@ async function rvfVecBlock(pdf, root, ox, oy, k){
    orders are read only when someone opens Completed for a month. Every action is one write on one order.
    ============================================================ */
 const PC_IC = {
+  gear:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
   cart:'<circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>',
   plus:'<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
   flame:'<path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.07-2.14-.22-4.05 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.15.43-2.29 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>',
@@ -14520,11 +14526,11 @@ function pcRender(){
 }
 // three simple stages: New (not ordered yet) -> Ordered -> Completed. Older orders that were waiting for approval stay under New.
 function pcTabOf(o){
-  if(o.status === 'ordered') return 'ordered';
-  if(pcIsOpen(o)) return 'new';
+  if(pcIsOpen(o)) return 'ordered';
   return 'done';
 }
-const PC_TABS = [['todo', 'To do'], ['new', 'New'], ['ordered', 'Ordered'], ['done', 'Completed'], ['prod', 'Products'], ['sup', 'Suppliers'], ['price', 'Prices']];
+const PC_TABS = [['todo', 'To do'], ['ordered', 'Open orders'], ['done', 'Completed']];
+const PC_SET = [['prod', 'Products', 'box'], ['sup', 'Suppliers', 'list'], ['price', 'Prices', 'file']];
 function pcFilterActive(){ const f = pc.ui.f; return !!(f.dept || f.prio || f.by || f.from || f.to); }
 function pcApplyFilters(list){
   const f = pc.ui.f, q = (pc.ui.q || '').trim().toLowerCase();
@@ -14540,10 +14546,10 @@ function pcApplyFilters(list){
 }
 function pcListHtml0(){
   const R = pcRoles(), U = pc.ui, mine = pcScope(pc.open || []), tasks = pcTasks();
-  const cnt = { todo: tasks.length, new: 0, ordered: 0 };
+  const cnt = { todo: tasks.length, ordered: 0 };
   mine.forEach(o => { const t = pcTabOf(o); if(cnt[t] != null) cnt[t]++; });
   const urgentOpen = mine.filter(o => o.priority === 'urgent' && pcIsOpen(o)).length;
-  let h = `<div class="pcTop">${R.req ? `<button class="pcBtnMain" data-pc="new">${pcSvg('plus', 16)}New order</button>` : ''}<span class="grow"></span>${urgentOpen ? `<span class="pcUrgent">${urgentOpen} URGENT</span>` : ''}<button class="pillBtn" data-pc="refresh" title="Load the latest orders">${pcSvg('clock', 14)}Refresh</button></div>`;
+  let h = `<div class="pcTop">${R.req ? `<button class="pcBtnMain" data-pc="new">${pcSvg('plus', 16)}New order</button>` : ''}<span class="grow"></span>${urgentOpen ? `<span class="pcUrgent">${urgentOpen} URGENT</span>` : ''}<button class="pillBtn" data-pc="refresh" title="Load the latest orders">${pcSvg('clock', 14)}Refresh</button><details class="pcMore pcSetMenu"><summary class="pillBtn pcSetBtn" title="Products, suppliers and prices" aria-label="Products, suppliers and prices">${pcSvg('gear', 15)}</summary><div class="pcMoreList">${PC_SET.map(t => `<button class="pcBtnSoft" data-pc="tab" data-v="${t[0]}">${pcSvg(t[2], 14)}${t[1]}</button>`).join('')}</div></details></div>`;
   const tabs = '<div class="hrTabs">' + PC_TABS.map(t => `<button class="${U.tab === t[0] ? 'active' : ''}" data-pc="tab" data-v="${t[0]}">${t[1]}${cnt[t[0]] ? `<span class="${t[0] === 'todo' ? 'hrCnt' : 'pcCnt'}">${cnt[t[0]]}</span>` : ''}</button>`).join('') + '</div>';
   if(U.tab === 'todo') h += '<div class="card pcCtrl">' + tabs + '</div><div class="pcCards">' + pcTodoHtml(tasks) + '</div>';
   else { const r = pcOrdersHtml(mine); h += '<div class="card pcCtrl">' + tabs + r[0] + '</div>' + r[1]; }
@@ -14802,6 +14808,7 @@ async function pcSaveForm(){
   if(pc.ui.busy) return;
   const cat = (pc.catalog && pc.catalog.items) || {};
   const items = F.items.filter(i => i.n.trim()).map(i => ({ lp: Number(i.lp) > 0 ? Number(i.lp) : 0, ld: Number(i.lp) > 0 ? (i.ld || Date.now()) : 0, lc: Number(i.lp) > 0 ? (i.lpm ? (F.cur || 'SAR') : (i.lc || 'SAR')) : '', lpm: !!i.lpm, cd: i.cd || '', ino: i.ino || '', sq: i.sq || '', dd: i.dd || '', n: i.n.trim(), d: (i.d || '').trim(), b: (i.b || '').trim(), q: Number(i.q), u: i.u, p: Number(i.p) > 0 ? Number(i.p) : 0, phys: !!i.phys, link: pcSafeUrl(i.link), photos: i.photos.slice(0, 3), note: (i.note || '').trim() }));
+  const srcIdx = F.items.filter(i => i.n.trim()).map(i => i.src);
   const forCatalog = items.map(i => Object.assign({}, i)); items.forEach(i => { delete i.lpm; });
   if(!F.dept) return toast('Choose the department');
   if(!F.reqBy.name.trim()) return toast('Write who requested it');
@@ -14815,7 +14822,12 @@ async function pcSaveForm(){
       o = await pcMutate(F.docId, (fresh) => {
         if(!pcOrdEditable(fresh)) throw new Error('LOCKED');
         fresh.priority = F.priority; fresh.cur = F.cur || 'SAR'; fresh.dept = F.dept; fresh.reqBy = { id: F.reqBy.id || '', name: F.reqBy.name.trim() }; fresh.note = F.note.trim();
-        fresh.items = items.map(n => Object.assign({ rec: 0 }, n)); fresh.recPhotos = F.recPhotos.slice();
+        { const KEEP = ['rec', 'ap', 'recAt', 'recAuto', 'nn', 'short'], old = fresh.items || [], map = {};
+          const nit = items.map((n, k) => { const sI = srcIdx[k], pv = sI != null ? old[sI] : null, r = { rec: 0 }; if(pv){ KEEP.forEach(f => { if(pv[f] !== undefined) r[f] = pv[f]; }); map[sI] = k; } return Object.assign(r, n); });
+          old.forEach((pv, sI) => { if((pv.rec || 0) > 0 && map[sI] == null) throw new Error('RECVD'); });
+          nit.forEach(n => { if((n.rec || 0) > n.q) throw new Error('RECQ'); });
+          fresh.items = nit; if(Array.isArray(fresh.segs)) fresh.segs.forEach(sg => (sg.rows || []).forEach(r => { if(map[r.i] != null) r.i = map[r.i]; })); }
+        fresh.recPhotos = F.recPhotos.slice();
         pcOrdApply(fresh, F, false); if(poFlow2(fresh) && fresh.status === 'rejected'){ fresh.status = 'approval'; fresh.rejectReason = ''; }
         pcLog(fresh, 'Edited the order');
       });
@@ -14837,7 +14849,7 @@ async function pcSaveForm(){
     pc.ui.view = 'done'; pc.ui.doneId = o.docId; pc.ui.form = null; pc.ui.openId = o.docId; pc.ui.tab = pcTabOf(o); pc.ui.isEdit = !!F.docId;
   }catch(err){
     console.error(err);
-    toast(err.message === 'BADDATE' ? 'Choose a date that is not in the future' : err.message === 'LOCKED' ? 'This order has moved on and can no longer be edited' : err.message === 'TOO_BIG' ? 'Photos are too large — remove one and try again' : 'Could not save — please try again');
+    toast(err.message === 'BADDATE' ? 'Choose a date that is not in the future' : err.message === 'LOCKED' ? 'This order is completed and can no longer be edited' : err.message === 'RECVD' ? 'An item that is already received cannot be removed' : err.message === 'RECQ' ? 'Quantity cannot be less than what is already received' : err.message === 'TOO_BIG' ? 'Photos are too large — remove one and try again' : 'Could not save — please try again');
   }finally{ pc.ui.busy = false; }
   pcRender(); pcBadge();
 }
@@ -17122,7 +17134,7 @@ async function ppAutoSetup(){
 }
 
 // ---------- screens ----------
-const ppTabsHtml = () => '<div class="hrTabs">' + PC_TABS.map(t => `<button class="${pc.ui.tab === t[0] ? 'active' : ''}" data-pc="tab" data-v="${t[0]}">${t[1]}</button>`).join('') + '</div>';
+const ppTabsHtml = () => '<div class="pcSetBar"><button class="pcBtnSoft sm" data-pc="tab" data-v="ordered">' + pcSvg('back', 14) + 'Orders</button><div class="pcSeg">' + PC_SET.map(t => `<button class="${pc.ui.tab === t[0] ? 'on' : ''}" data-pc="tab" data-v="${t[0]}">${t[1]}</button>`).join('') + '</div></div>';
 function pcpPage(){
   ppCheckUser();
   const tab = pc.ui.tab;
@@ -17403,7 +17415,7 @@ function pcFormFromOrder(o, asCopy){
   const F = pcFormFromOrder0(o, asCopy);
   F.type = poType(o); F.depts2 = (o.depts2 || ['Account', 'Purchase']).slice(); F.subject = o.sub || ''; F.appl = o.appl || ''; F.mach = o.mach || ''; F.supId = o.supId || ''; F.sup = (o.proc && o.proc.supplier) || ''; F.exp = o.expected || '';
   F.ordBy = (o.ordBy || []).map(x => Object.assign({}, x));
-  F.items.forEach((it, k) => { const s = o.items[k] || {}; it.cd = s.cd || ''; it.ino = s.ino || ''; it.sq = s.sq || ''; it.dd = s.dd || ''; });
+  F.items.forEach((it, k) => { const s = o.items[k] || {}; it.cd = s.cd || ''; it.ino = s.ino || ''; it.sq = s.sq || ''; it.dd = s.dd || ''; it.src = k; });
   return F;
 }
 const poChip = (label, attrs, x) => `<span class="poChip"${attrs || ''}>${pcEsc(label)}${x ? `<button data-po="${x[0]}" data-i="${x[1]}" aria-label="Remove">×</button>` : ''}</span>`;
@@ -17487,7 +17499,7 @@ function pcOrdApply(o, F, isNew){
     else { o.status = 'ordered'; o.orderedAt = now; o.approvedAt = now; o.approvedBy = pcMe(); o.approvedByName = ''; o.signed = true; o.signedAt = now; o.log = []; pcLog(o, 'Created the order' + (F.priority === 'urgent' ? ' (URGENT)' : '') + ' — waiting to be received'); }
   }
 }
-const pcOrdEditable = (o) => o.status === 'new' || o.status === 'rejected' || (poFlow2(o) && (o.status === 'approval' || (o.status === 'ordered' && !o.needAppr && !(o.items || []).some(i => (i.rec || 0) > 0))));
+const pcOrdEditable = (o) => pcIsOpen(o); // any order that is not completed or cancelled
 function pcOrdNext(o){
   if(o.status === 'approval') return 'It is with the approver now. If it is rejected you will see it in your To do.';
   if(poFlow2(o)) return 'The order is placed. When the goods arrive, open it and tap Received.';
@@ -17502,7 +17514,7 @@ function pcOrdSteps(o){
 function pcCanOrder(o){ return !poFlow2(o) && pcCanOrder0(o); }
 function pcCanReceive(o){ if(!poFlow2(o)) return pcCanReceive0(o); const R = pcRoles(); return o.status === 'ordered' && (R.admin || o.createdBy === pcMe()); }
 function pcCanActual(o){ if(!poFlow2(o)) return pcCanActual0(o); const R = pcRoles(); return pcInfoMissing(o) && (R.admin || o.createdBy === pcMe()); }
-function pcCanEdit(o){ const R = pcRoles(); if(poFlow2(o)) return pcOrdEditable(o) && (R.admin || o.createdBy === pcMe()); return pcCanEdit0(o); }
+function pcCanEdit(o){ const R = pcRoles(); return pcOrdEditable(o) && (R.admin || R.proc || o.createdBy === pcMe()); }
 function pcTasks(){
   const me = pcMe(), R = pcRoles();
   return pcTasks0().filter(t => { const o = pcFind(t.docId); if(!o || !poFlow2(o)) return true; if(['send', 'revise', 'paper', 'order'].includes(t.kind)) return false; if(t.kind === 'actual') return R.admin || o.createdBy === me; return true; });
