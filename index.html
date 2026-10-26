@@ -2930,6 +2930,14 @@ table.pkPdf tr.tot td{ background:#eef2ff !important; border-top:1px solid #c7d2
 .astDueT b{ font-weight:500; } .astDueH{ font-weight:700; }
 .astI{ vertical-align:-1px; margin-right:1px; opacity:.75; flex:none; } .astMeta .astI{ color:#94a3b8; } .astDueH .astI{ vertical-align:-1px; width:13px; height:13px; }
 .astHid{ display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--muted); cursor:pointer; } .astCard.masked .astL b{ letter-spacing:.12em; color:#94a3b8; } .astR .astTiny svg{ display:block; }
+
+/* My Tasks priority (v86) */
+.astPr{ display:inline-flex; align-items:center; gap:2px; font-size:11px; font-weight:600; margin-right:7px; vertical-align:1px; }
+.astPrRow em{ font-style:normal; text-transform:none; letter-spacing:0; font-weight:500; color:#94a3b8; }
+.astPrBtns{ display:flex; gap:6px; flex-wrap:wrap; }
+.astPrBtn{ border:1px solid var(--line); background:#fff; border-radius:10px; padding:5px 10px; font-size:12px; cursor:pointer; color:var(--muted); min-height:30px; display:inline-flex; align-items:center; } .astPrBtn .astPr{ margin:0; font-size:12px; }
+.astPrBtn.on{ border-color:var(--c, #64748b); background:#fff; box-shadow:0 0 0 2px color-mix(in srgb, var(--c, #64748b) 22%, transparent); color:var(--text); }
+.astAdd .astHid input{ width:auto; height:auto; min-height:0; flex:none; } .astHid{ justify-content:flex-start; }
 \n</style>
 </head>
 <body>
@@ -19626,12 +19634,15 @@ document.addEventListener('click', (e) => {
    Storage: ONE config document per admin (myTasks_<loginId>). It is read once per session and written only when you change something.
    Reminders are checked in memory every 30 s (no database reads).
    ============================================================ */
-const AST = { rev: new Set(), uid: '', loaded: false, loading: false, items: [], q: '', formOpen: false, showDone: false, doneAll: false, draft: null, editId: '', help: [], busy: false, ringing: false };
+const AST = { rev: new Set(), uid: '', loaded: false, loading: false, items: [], sortBy: 'prio', q: '', formOpen: false, showDone: false, doneAll: false, draft: null, editId: '', help: [], busy: false, ringing: false };
 const astEsc = (t) => String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const astIco = (n) => n === 'rep' ? '<svg class="astI" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 014-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>' : hrSvg(n, 11).replace('<svg ', '<svg class="astI" ');
 const AST_ST = [['pending', 'Pending'], ['working', 'Working'], ['done', 'Done']];
 const astKey = () => 'myTasks_' + (state.user ? state.user.loginId : '');
-const astEmpty = () => ({ title: '', by: '', remind: '', repeat: 0, note: '', helpers: [], hidden: false });
+const astEmpty = () => ({ title: '', by: '', remind: '', repeat: 0, note: '', helpers: [], hidden: false, prio: 0 });
+const AST_PCOL = { 5: '#dc2626', 4: '#ea580c', 3: '#d97706', 2: '#65a30d', 1: '#16a34a' };
+const AST_PTXT = { 5: 'Top priority', 4: 'High', 3: 'Medium', 2: 'Low', 1: 'Relaxed' };
+const astFlame = (n) => `<span class="astPr" style="color:${AST_PCOL[n]}" title="${AST_PTXT[n]} (${n})"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" fill-opacity=".18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.07-2.14-.22-4.05 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.15.43-2.29 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>${n}</span>`;
 const astMasked = (t) => !!t.hidden && !AST.rev.has(t.id);
 const AST_MASK = '••••••••';
 const astEye = (off) => off ? '<svg class="astI" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>' : '<svg class="astI" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
@@ -19671,6 +19682,7 @@ function astRender(){
   const canNote = typeof Notification !== 'undefined' && Notification.permission === 'default';
   b.innerHTML = `<div class="astWrap">${astDueHtml()}
     <div class="astTool"><div class="astSearch">${hrSvg('search', 14)}<input type="text" data-ast-in="q" placeholder="Search my tasks…" value="${astEsc(AST.q || '')}"></div>
+      <button class="astIcon" data-ast="sort" title="${AST.sortBy === 'prio' ? 'Sorted by priority (tap for due date)' : 'Sorted by due date (tap for priority)'}" aria-label="Sort">${AST.sortBy === 'prio' ? '<svg class="astI" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:#dc2626"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.07-2.14-.22-4.05 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.15.43-2.29 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>' : hrSvg('clock', 16)}</button>
       <button class="astIcon pri" data-ast="toggleform" title="${AST.formOpen ? 'Close' : 'New task'}" aria-label="New task">${hrSvg(AST.formOpen ? 'x' : 'plus', 17)}</button>
       ${canNote ? `<button class="astIcon" data-ast="notify" title="Turn on pop-up alerts" aria-label="Alerts">${hrSvg('bell', 16)}</button>` : ''}
       <button class="astIcon" data-ast="dl" title="Download PDF / Excel" aria-label="Download">${hrSvg('down', 16)}</button></div>
@@ -19693,6 +19705,7 @@ function astFormHtml(){
         <div class="astHelpRow"><input type="text" id="astHelp" list="astPpl" data-ast-in="help" placeholder="Pick or type a name — add as many as you need" autocomplete="off"><button type="button" class="astTiny" data-ast="addhelp">+ Add</button></div><datalist id="astPpl">${astPeople().map(n => `<option value="${astEsc(n)}">`).join('')}</datalist></div>
       <label class="field"><span>Note (optional)</span><input type="text" data-ast-in="note" placeholder="Details, deadline…" value="${astEsc(D.note)}"></label>
     </div>
+    <div class="field astPrRow"><span class="astLbl">Priority <em>(5 = most urgent, 1 = relaxed)</em></span><div class="astPrBtns"><button type="button" class="astPrBtn${!D.prio ? ' on' : ''}" data-ast="setprio" data-v="0">None</button>${[1, 2, 3, 4, 5].map(n => `<button type="button" class="astPrBtn${D.prio === n ? ' on' : ''}" data-ast="setprio" data-v="${n}" style="--c:${AST_PCOL[n]}">${astFlame(n)}</button>`).join('')}</div></div>
     <label class="astHid"><input type="checkbox" data-ast-in="hidden" ${D.hidden ? 'checked' : ''}> Keep this task hidden (shows ${AST_MASK} until you tap the eye)</label>
     <div class="astBtns"><button class="pcBtnMain sm" data-ast="save">${AST.editId ? 'Save changes' : 'Add task'}</button><button class="pcBtnSoft sm" data-ast="cancel">Cancel</button></div></div>`;
 }
@@ -19700,7 +19713,7 @@ const AST_DOT = { pending: '#f59e0b', working: '#3b82f6', done: '#22c55e' };
 function astSections(){
   const q = (AST.q || '').trim().toLowerCase(), match = (t) => !q || (!astMasked(t) && [t.title, t.by, t.note, (t.helpers || []).join(' ')].join(' ').toLowerCase().includes(q));
   return AST_ST.map(([st, label]) => {
-    const all = AST.items.filter(t => t.status === st && match(t)).sort((a, b) => st === 'done' ? (b.doneAt || 0) - (a.doneAt || 0) : ((astMs(a.remind) || 9e15) - (astMs(b.remind) || 9e15)) || (b.created - a.created));
+    const all = AST.items.filter(t => t.status === st && match(t)).sort((a, b) => st === 'done' ? (b.doneAt || 0) - (a.doneAt || 0) : (AST.sortBy === 'prio' ? ((b.prio || 0) - (a.prio || 0)) : 0) || ((astMs(a.remind) || 9e15) - (astMs(b.remind) || 9e15)) || (b.created - a.created));
     const isDone = st === 'done', open = !isDone || AST.showDone || !!q, list = isDone && !AST.doneAll ? all.slice(0, 5) : all;
     return `<section class="astSec"><div class="astSecH"><span class="astDot" style="background:${AST_DOT[st]}"></span><b>${label}</b><i>${all.length}</i><span class="grow"></span>${isDone && !q ? `<button class="astLink" data-ast="toggledone">${AST.showDone ? 'Hide' : 'Show'}</button>` : ''}</div>
       ${!open ? '' : list.length ? list.map(astCard).join('') + (isDone && !AST.doneAll && all.length > 5 ? `<button class="astMore" data-ast="doneall">Show all ${all.length} done tasks</button>` : (isDone && AST.doneAll && all.length > 5 ? '<button class="astMore" data-ast="doneall">Show only the latest 5</button>' : '')) : `<div class="astNone">${q ? 'No match' : st === 'pending' ? 'Nothing pending' : st === 'working' ? 'Nothing in progress' : 'No finished tasks yet'}</div>`}</section>`; }).join('');
@@ -19710,7 +19723,7 @@ function astCard(t){
   const meta = m ? [t.status === 'done' && t.doneAt ? 'Done ' + fmtDate(astLocal(t.doneAt).slice(0, 10)) : 'Added ' + fmtDate(astLocal(t.created).slice(0, 10)), when].filter(Boolean).join(' · ')
     : `${t.by ? astEsc(t.by) + ' · ' : ''}${t.status === 'done' && t.doneAt ? 'Done ' + fmtDate(astLocal(t.doneAt).slice(0, 10)) : 'Added ' + fmtDate(astLocal(t.created).slice(0, 10))}${when ? ' · ' + when : ''}${(t.helpers || []).length ? ' · ' + astIco('people') + ' ' + astEsc(t.helpers.join(', ')) : ''}${t.note ? ' · ' + astEsc(t.note) : ''}`;
   const eye = t.hidden ? `<button class="astTiny" data-ast="peek" data-id="${astEsc(t.id)}" title="${m ? 'Show this task' : 'Cover it again'}" aria-label="Show or cover">${astEye(!m)}</button>` : `<button class="astTiny" data-ast="hide" data-id="${astEsc(t.id)}" title="Hide this task" aria-label="Hide">${astEye(true)}</button>`;
-  return `<div class="astCard st-${t.status}${due ? ' due' : ''}${m ? ' masked' : ''}" data-id="${astEsc(t.id)}"><div class="astL"><b>${m ? AST_MASK : astEsc(t.title)}</b>
+  return `<div class="astCard st-${t.status}${due ? ' due' : ''}${m ? ' masked' : ''}" data-id="${astEsc(t.id)}"><div class="astL"><b>${t.prio && t.status !== 'done' ? astFlame(t.prio) : ''}${m ? AST_MASK : astEsc(t.title)}</b>
     <span class="astMeta">${meta}</span></div>
     <div class="astR"><div class="astSeg sm">${AST_ST.map(s => `<button data-ast="st" data-id="${astEsc(t.id)}" data-v="${s[0]}" title="${s[1]}" class="${t.status === s[0] ? 'on st-' + s[0] : ''}">${s[1]}</button>`).join('')}</div>
       ${eye}<button class="astTiny" data-ast="edit" data-id="${astEsc(t.id)}">Edit</button><button class="astTiny dng" data-ast="del" data-id="${astEsc(t.id)}" title="Delete" aria-label="Delete">${hrSvg('trash', 13)}</button></div></div>`;
@@ -19718,7 +19731,7 @@ function astCard(t){
 function astDueHtml(){
   const due = AST.items.filter(astIsDue).sort((a, b) => astMs(a.remind) - astMs(b.remind));
   if(!due.length) return '';
-  return `<div class="astDue"><div class="astDueH">${astIco('clock')} Reminders waiting for you <i>${due.length}</i></div>${due.map(t => `<div class="astDueRow" data-id="${astEsc(t.id)}"><div class="astDueT"><b>${astMasked(t) ? AST_MASK : astEsc(t.title)}</b><span>${astMasked(t) ? '' : (t.by ? 'Given by ' + astEsc(t.by) + ' · ' : '')}was due ${astWhen(t.remind)}${t.repeat ? ' · repeats ' + astRepTxt(t.repeat) : ''}${astMasked(t) ? '' : (t.helpers || []).length ? ' · Helping: ' + astEsc(t.helpers.join(', ')) : ''}</span></div>
+  return `<div class="astDue"><div class="astDueH">${astIco('clock')} Reminders waiting for you <i>${due.length}</i></div>${due.map(t => `<div class="astDueRow" data-id="${astEsc(t.id)}"><div class="astDueT"><b>${t.prio ? astFlame(t.prio) : ''}${astMasked(t) ? AST_MASK : astEsc(t.title)}</b><span>${astMasked(t) ? '' : (t.by ? 'Given by ' + astEsc(t.by) + ' · ' : '')}was due ${astWhen(t.remind)}${t.repeat ? ' · repeats ' + astRepTxt(t.repeat) : ''}${astMasked(t) ? '' : (t.helpers || []).length ? ' · Helping: ' + astEsc(t.helpers.join(', ')) : ''}</span></div>
     <div class="astDueA"><button data-ast="ack" data-id="${astEsc(t.id)}">${t.repeat ? 'Got it — repeats ' + astRepTxt(t.repeat) : 'Got it'}</button><button data-ast="st" data-id="${astEsc(t.id)}" data-v="working">Working</button><button data-ast="st" data-id="${astEsc(t.id)}" data-v="done">Done</button><button data-ast="snz" data-id="${astEsc(t.id)}">+1 hour</button>${t.hidden ? `<button data-ast="peek" data-id="${astEsc(t.id)}" title="Show or cover" aria-label="Show or cover">${astEye(!astMasked(t))}</button>` : ''}</div></div>`).join('')}</div>`;
 }
 const astChips = (h) => (h || []).map((n, i) => `<span class="astChip">${astEsc(n)}<button type="button" data-ast="unhelp" data-i="${i}" aria-label="Remove">×</button></span>`).join('');
@@ -19740,9 +19753,11 @@ async function astClick(e){
       astSetRemind(astLocal(t.getTime())); if(!document.querySelector('[data-ast="q"][data-clear]')) astRender(); break; }
     case 'save': await astSaveTask(); break;
     case 'cancel': AST.editId = ''; AST.formOpen = false; AST.draft = astEmpty(); astRender(); break;
-    case 'edit': { const t = AST.items.find(x => x.id === id); if(!t) break; AST.editId = id; AST.formOpen = true; AST.draft = { title: t.title, by: t.by || '', remind: t.remind || '', repeat: t.repeat || 0, note: t.note || '', helpers: (t.helpers || []).slice(), hidden: !!t.hidden }; AST.rev.add(t.id); astRender(); window.scrollTo({ top: 0, behavior: 'smooth' }); break; }
+    case 'edit': { const t = AST.items.find(x => x.id === id); if(!t) break; AST.editId = id; AST.formOpen = true; AST.draft = { title: t.title, by: t.by || '', remind: t.remind || '', repeat: t.repeat || 0, note: t.note || '', helpers: (t.helpers || []).slice(), hidden: !!t.hidden, prio: t.prio || 0 }; AST.rev.add(t.id); astRender(); window.scrollTo({ top: 0, behavior: 'smooth' }); break; }
     case 'st': await astSetStatus(id, el.dataset.v); break;
     case 'del': { const t = AST.items.find(x => x.id === id); if(t && confirm('Delete this task?\n\n' + t.title)){ AST.items = AST.items.filter(x => x.id !== id); if(AST.editId === id){ AST.editId = ''; AST.draft = astEmpty(); } await astSave(); astRender(); hrRenderTabs(); } break; }
+    case 'sort': AST.sortBy = AST.sortBy === 'prio' ? 'due' : 'prio'; astRender(); break;
+    case 'setprio': AST.draft.prio = +el.dataset.v || 0; document.querySelectorAll('.astPrBtn').forEach(b => b.classList.toggle('on', +b.dataset.v === AST.draft.prio)); break;
     case 'peek': if(AST.rev.has(id)) AST.rev.delete(id); else AST.rev.add(id); astRender(); break;
     case 'hide': { const t = AST.items.find(x => x.id === id); if(t){ t.hidden = true; AST.rev.delete(id); if(await astSave()){ toast('Hidden — tap the eye to see it'); } else t.hidden = false; astRender(); } break; }
     case 'ack': await astAck(id); break;
@@ -19756,8 +19771,8 @@ async function astSaveTask(){
   if(!D.title.trim()) return toast('Write the task first');
   if(AST.busy) return; AST.busy = true;
   try{
-    if(AST.editId){ const t = AST.items.find(x => x.id === AST.editId); if(t){ if(t.remind !== D.remind){ const f = astFired(); delete f[t.id]; astSetFired(f); } Object.assign(t, { title: D.title.trim(), by: D.by.trim(), remind: D.remind, repeat: D.remind ? (+D.repeat || 0) : 0, note: D.note.trim(), helpers: D.helpers.slice(), hidden: !!D.hidden }); } }
-    else AST.items.push({ id: 't' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), title: D.title.trim(), by: D.by.trim(), remind: D.remind, repeat: D.remind ? (+D.repeat || 0) : 0, note: D.note.trim(), helpers: D.helpers.slice(), hidden: !!D.hidden, status: 'pending', created: Date.now(), doneAt: 0 });
+    if(AST.editId){ const t = AST.items.find(x => x.id === AST.editId); if(t){ if(t.remind !== D.remind){ const f = astFired(); delete f[t.id]; astSetFired(f); } Object.assign(t, { title: D.title.trim(), by: D.by.trim(), remind: D.remind, repeat: D.remind ? (+D.repeat || 0) : 0, note: D.note.trim(), helpers: D.helpers.slice(), hidden: !!D.hidden, prio: D.prio || 0 }); } }
+    else AST.items.push({ id: 't' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), title: D.title.trim(), by: D.by.trim(), remind: D.remind, repeat: D.remind ? (+D.repeat || 0) : 0, note: D.note.trim(), helpers: D.helpers.slice(), hidden: !!D.hidden, prio: D.prio || 0, status: 'pending', created: Date.now(), doneAt: 0 });
     const ok = await astSave(); if(!ok) return;
     const by = D.by; AST.editId = ''; AST.formOpen = false; AST.draft = Object.assign(astEmpty(), { by });
     toast(D.remind ? 'Saved — I will remind you' : 'Task saved'); astRender(); hrRenderTabs();
@@ -19811,7 +19826,7 @@ function astCfg(){
     cols: () => [
       { k: 'task', l: 'Task', g: 'Task', get: t => astMasked(t) ? AST_MASK : t.title }, { k: 'status', l: 'Status', g: 'Task', get: st }, { k: 'by', l: 'Given by', g: 'Task', get: t => astMasked(t) ? '' : t.by || '' },
       { k: 'help', l: 'Who helps', g: 'Task', get: t => astMasked(t) ? '' : (t.helpers || []).join(', ') }, { k: 'remind', l: 'Reminder', g: 'Dates', get: t => t.remind ? astWhen(t.remind) : '' },
-      { k: 'rep', l: 'Repeats', g: 'Dates', get: t => astRepTxt(t.repeat) }, { k: 'added', l: 'Added', g: 'Dates', get: t => d(t.created) }, { k: 'done', l: 'Done on', g: 'Dates', get: t => d(t.doneAt) }, { k: 'note', l: 'Note', g: 'Task', get: t => astMasked(t) ? '' : t.note || '' }
+      { k: 'prio', l: 'Priority', g: 'Task', get: t => t.prio ? t.prio + ' - ' + AST_PTXT[t.prio] : '' }, { k: 'rep', l: 'Repeats', g: 'Dates', get: t => astRepTxt(t.repeat) }, { k: 'added', l: 'Added', g: 'Dates', get: t => d(t.created) }, { k: 'done', l: 'Done on', g: 'Dates', get: t => d(t.doneAt) }, { k: 'note', l: 'Note', g: 'Task', get: t => astMasked(t) ? '' : t.note || '' }
     ], sumExtra: (it) => AST_ST.map(s => [s[1], it.filter(t => t.status === s[0]).length]) };
 }
 
