@@ -2792,6 +2792,87 @@ details.acMs > summary::after{ content:''; position:absolute; right:10px; top:13
 .acMsL input{ width:auto; margin:0; }
 .acMsC{ display:block; width:100%; margin-top:4px; border:0; background:var(--panel-2); border-radius:8px; padding:5px; font-size:11px; font-weight:600; color:var(--amber); cursor:pointer; }
 .acRule{ font-size:12px; color:var(--muted); } .acRule .acNum{ width:70px; }
+/* v94 Accounts: three sheets in the same style as the Employees page */
+.a2Box{ padding:14px 16px 16px; }
+.a2Bar{ display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin:0 0 10px; }
+.a2Bar input[type=date], .a2Bar select, .a2Bar .acQ{ height:34px; border-radius:999px; border:1px solid var(--line); background:#fff; padding:0 12px; font:inherit; font-size:12px; width:auto; min-width:0; box-shadow:0 1px 2px rgba(15,23,42,.05); }
+.a2Bar .acQ{ width:180px; } .a2Bar select{ max-width:190px; }
+.a2Month{ min-width:78px; text-align:center; font-size:13px; font-weight:600; color:var(--text-strong); }
+.a2Stat{ font-size:12px; color:var(--muted); margin-left:6px; } .a2Warn{ color:var(--warn,#d97706); font-weight:600; }
+.a2Lbl{ font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; font-weight:600; }
+.a2SetT{ font-size:13px; color:var(--text-strong); margin-left:4px; }
+.a2Tiles{ margin:6px 0 12px; }
+.a2Tile .ic.c-green{ background:#dcfce7; color:#16a34a; } .a2Tile .ic.c-blue{ background:var(--acc-blue-soft); color:var(--acc-blue); } .a2Tile .ic.c-purple{ background:var(--acc-purple-soft); color:var(--acc-purple); } .a2Tile .ic.c-red{ background:var(--danger-soft); color:var(--danger); }
+.a2Tile{ cursor:default; } .a2Tile:hover{ background:var(--panel-2); }
+.a2Empty{ text-align:center; padding:26px 12px; color:var(--muted); } .a2EmptyT{ font-size:14px; font-weight:600; color:var(--text-strong); margin-bottom:6px; } .a2Empty .pillBtn{ margin-top:12px; }
+table.a2T{ font-size:12.5px; } table.a2T th, table.a2T td{ vertical-align:middle; }
+table.a2T th.a2N, table.a2T td.a2N{ text-align:right; } table.a2T td.a2B{ font-weight:600; color:var(--text-strong); }
+table.a2T td{ padding:8px 9px; } table.a2T tr.a2More td{ border-top:1px solid #f1f2f9; padding-top:6px; padding-bottom:6px; }
+table.a2T tr.a2First td{ border-top:1px solid var(--line); } table.a2T tbody tr.a2First:first-child td{ border-top:0; }
+table.a2T tr.a2Tot td{ background:#fff; border-top:2px solid var(--line); border-bottom:0; font-size:12.5px; } table.a2T tfoot td{ position:static; }
+.a2Sh{ font-size:.72em; color:var(--muted); font-weight:600; margin-left:1px; } .a2Sm{ font-size:10px; color:var(--muted); font-weight:500; }
+.a2In{ width:74px; height:28px; border-radius:8px; border:1px solid var(--line); background:#fff; box-shadow:0 1px 2px rgba(15,23,42,.05); padding:0 8px; font:inherit; font-size:12.5px; text-align:right; }
+.a2In.a2Rm{ width:112px; text-align:left; } .a2In::placeholder{ color:#b6bccb; }
+.a2Fx{ display:flex; align-items:center; justify-content:flex-end; gap:4px; font-size:10px; color:var(--muted); text-transform:none; font-weight:500; margin:3px 0 0; } .a2Fx input{ width:auto; margin:0; }
+.a2X{ width:24px; height:24px; border-radius:50%; border:0; background:transparent; color:#b6bccb; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; } .a2X:hover{ color:var(--danger); background:var(--danger-soft); }
+td.a2Rx{ width:30px; padding-left:2px; padding-right:6px; }
+.report-table.a2PdfT td, .report-table.a2PdfT th{ border:1px solid #e2e5ef; } .report-table.a2PdfT th{ background:#fff; color:#64748b; } .report-table.a2PdfT td.a2N, .report-table.a2PdfT th.a2N{ text-align:right; } .report-table.a2PdfT td.a2B{ font-weight:700; }
+.report-table.a2PdfT .a2Sh{ font-size:.72em; color:#64748b; } .report-table.a2PdfT tr.a2Tot td{ border-top:2px solid #cbd5e1; }
+@media (max-width:560px){ .a2Box{ padding:12px 10px; } .a2Bar .acQ{ width:100%; } }
+/* v95: clear row and column lines, fits the page */
+.a2Box .table-scroll{ overflow-x:auto; }
+table.a2T{ width:100%; border-collapse:collapse; table-layout:auto; font-size:12px; }
+table.a2T th, table.a2T td{ border:1px solid #e3e6ef; padding:6px 7px; white-space:nowrap; }
+table.a2T th{ background:#f7f8fc; color:#64748b; font-size:9.5px; white-space:normal; line-height:1.25; vertical-align:middle; text-align:left; position:static; }
+table.a2T th.a2N, table.a2T td.a2N{ text-align:right; } table.a2T th.serial, table.a2T td.serial{ text-align:center; width:28px; padding-left:3px; padding-right:3px; }
+table.a2T tr.a2More td{ border-top:1px solid #eef0f6; padding-top:4px; padding-bottom:4px; }
+table.a2T tr.a2First td{ border-top:1px solid #cdd3e2; }
+table.a2T tbody tr.a2First:first-child td{ border-top:1px solid #e3e6ef; }
+table.a2T tr.a2Tot td{ background:#f7f8fc; border-top:2px solid #cdd3e2; }
+table.a2T tbody tr:hover td{ background:#fafbff; }
+.a2In{ width:100%; min-width:50px; max-width:78px; padding:0 6px; } .a2In.a2Rm{ max-width:none; min-width:80px; width:100%; }
+.a2Pk{ border:0; background:transparent; font:inherit; color:inherit; cursor:pointer; padding:0 2px; border-radius:6px; } .a2Pk:hover{ background:#eef2ff; color:#4f46e5; } .a2Pk.warn{ color:#b45309; background:#fef3c7; font-weight:600; }
+td.a2Rx{ width:26px; padding:2px; text-align:center; }
+.report-table.a2PdfT td, .report-table.a2PdfT th{ border:1px solid #e3e6ef; }
+table.a2T.a2Wide{ font-size:11px; } table.a2T.a2Wide th{ font-size:8.5px; padding:5px 3px; } table.a2T.a2Wide td{ padding:5px 4px; }
+table.a2T.a2Wide .a2In{ min-width:44px; max-width:60px; padding:0 4px; font-size:11.5px; } table.a2T.a2Wide .a2Fx{ font-size:9px; }
+table.a2T.a2Wide th.serial, table.a2T.a2Wide td.serial{ width:20px; padding-left:1px; padding-right:1px; }
+/* PDF: no shaded rows, so a merged cell is never painted over by the row below it */
+.report-table.a2PdfT tr, .report-table.a2PdfT tbody tr:nth-child(even), .report-table.a2PdfT tbody tr:nth-child(odd), .report-table.a2PdfT td{ background:#fff !important; }
+.report-table.a2PdfT td{ vertical-align:middle; }
+.report-table.a2PdfT tr.a2First td{ border-top:1px solid #cdd3e2; } .report-table.a2PdfT tr.a2More td{ border-top:1px solid #eef0f6; }
+.report-table.a2PdfT tr.a2Tot td{ border-top:2px solid #cdd3e2; background:#fff !important; }
+
+.a2One{ flex-wrap:wrap; row-gap:8px; } .a2One input[type=date]{ width:128px; padding:0 8px; } .a2One .a2Stat{ margin-left:2px; white-space:nowrap; } .a2One .pillBtn{ white-space:nowrap; }
+
+.a2TabRow{ display:flex; align-items:center; gap:8px; margin-bottom:10px; } .a2TabRow .hrTabs{ flex:1; margin:0; min-width:0; }
+.a2Top{ display:flex; align-items:center; gap:6px; flex:none; } .a2Fl{ position:relative; }
+.a2FPanel{ position:absolute; top:calc(100% + 6px); right:0; z-index:30; background:#fff; border:1px solid var(--line); border-radius:14px; box-shadow:0 10px 30px rgba(15,23,42,.14); padding:10px; display:flex; flex-direction:column; gap:8px; width:220px; }
+.a2FPanel .acQ, .a2FPanel select{ width:100%; max-width:none; height:34px; border-radius:999px; border:1px solid var(--line); background:#fff; padding:0 12px; font:inherit; font-size:12px; }
+
+.acL2{ font-size:11px; font-weight:700; color:var(--muted); margin:10px 0 6px; text-transform:uppercase; letter-spacing:.04em; }
+.acChips{ display:flex; flex-wrap:wrap; gap:6px; } .acChip{ display:inline-flex; align-items:center; gap:6px; height:28px; padding:0 10px; border-radius:999px; background:#eef0ff; color:#3b3fb5; font:inherit; font-size:12px; font-weight:600; border:1px solid #d9dcff; }
+.acChip button{ border:0; background:transparent; color:inherit; font-size:15px; line-height:1; cursor:pointer; padding:0; } .acChip button:hover{ color:var(--danger); }
+.acFree{ max-height:190px; overflow:auto; padding:2px; } button.acAddM{ background:#fff; color:var(--text); border:1px dashed #b9bfd6; cursor:pointer; } button.acAddM:hover{ border-color:#4f46e5; color:#4f46e5; background:#f6f7ff; }
+
+table.a2T tbody tr.a2G0 td{ background:#fff !important; } table.a2T tbody tr.a2G1 td{ background:#f3f5fb !important; }
+table.a2T tbody tr.a2Gap td{ height:7px; padding:0 !important; border:0 !important; background:#e9ecf6 !important; line-height:0; font-size:0; }
+table.a2T tbody tr.a2Gap + tr.a2First td{ border-top:0 !important; }
+.report-table.a2PdfT tbody tr.a2Gap td{ height:6px; padding:0 !important; border:0 !important; background:#e9ecf6 !important; line-height:0; font-size:0; }
+
+.report-table.ovPdfT.a2PdfT.a2P{ font-size:9.5px; } .report-table.a2PdfT.a2P td, .report-table.a2PdfT.a2P th{ padding:4px 5px; }
+.report-table.a2PdfT tbody tr.a2G0, .report-table.a2PdfT tbody tr.a2G0 td{ background:#fff !important; }
+.report-table.a2PdfT tbody tr.a2G1, .report-table.a2PdfT tbody tr.a2G1 td{ background:#fff !important; }
+.report-table.a2PdfT tbody tr.a2Gap td{ border:0 !important; background:#e3e7f3 !important; }
+.report-table.a2PdfT tr.a2First td{ border-top:0 !important; } .report-table.a2PdfT tr.a2Gap + tr.a2First td{ border-top:0 !important; }
+
+.acSw{ display:inline-flex; align-items:center; gap:10px; cursor:pointer; font-size:13px; } .acSw input{ position:absolute; opacity:0; width:0; height:0; }
+.acSwT{ width:42px; height:24px; border-radius:999px; background:#cbd2e1; position:relative; transition:background .15s; flex:none; }
+.acSwT::after{ content:''; position:absolute; top:3px; left:3px; width:18px; height:18px; border-radius:50%; background:#fff; box-shadow:0 1px 3px rgba(15,23,42,.3); transition:left .15s; }
+.acSw input:checked + .acSwT{ background:#4f46e5; } .acSw input:checked + .acSwT::after{ left:21px; } .acSw input:focus-visible + .acSwT{ outline:2px solid #a5b4fc; outline-offset:2px; }
+
+.report-table.a2PdfT tbody tr.a2G1 td{ background:#f3f5fb !important; } .report-table.a2PdfT tbody tr.a2G1, .report-table.a2PdfT tbody tr.a2G0, .report-table.a2PdfT tbody tr.a2G0 td{ background:transparent !important; }
+.report-table.a2PdfT tbody tr.a2G0 td{ background:#fff !important; }
 
 /* v63 Earned picks */
 .pkxBar{ display:flex; align-items:center; gap:8px; margin-bottom:8px; }
@@ -18307,7 +18388,8 @@ async function dlGo(kind){
   try{
     if(sel.some(c => c.img) && cfg.prepare){ const ok = await cfg.prepare(items); if(ok === false){ DL.busy = false; return; } }
     const sumAoa = [[cfg.title], ['Created', rvfNowText()], [cfg.noun ? cfg.noun[0].toUpperCase() + cfg.noun.slice(1) : 'Rows', items.length], ['Columns', sel.map(c => c.l).join(', ')]].concat(cfg.sumExtra ? cfg.sumExtra(items) : []);
-    await dlExport({ kind, title: cfg.title, file: cfg.file, sheet: cfg.sheet, cols: sel, items, sumAoa, headLines: [items.length + ' ' + (cfg.noun || 'rows') + ' · ' + rvfNowText()].concat(cfg.headLines ? cfg.headLines(items) : []) });
+    const eo = { kind, title: cfg.title, file: cfg.file, sheet: cfg.sheet, cols: sel, items, sumAoa, headLines: [items.length + ' ' + (cfg.noun || 'rows') + ' · ' + rvfNowText()].concat(cfg.headLines ? cfg.headLines(items) : [])};
+    if(cfg.exporter) await cfg.exporter(eo); else await dlExport(eo);
   }catch(err){ console.error(err); toast('Could not make the file'); }
   DL.busy = false;
 }
@@ -19031,6 +19113,18 @@ function acMs(key, list, sel, all){
 document.addEventListener('toggle', (e) => { const d = e.target; if(d && d.classList && d.classList.contains('acMs')){ if(d.open) AC.msOpen = d.dataset.msd; else if(AC.msOpen === d.dataset.msd) AC.msOpen = null; } }, true);
 document.addEventListener('click', (e) => { if(!AC.msOpen || e.target.closest('.acMs')) return; AC.msOpen = null; document.querySelectorAll('details.acMs[open]').forEach(d => { d.open = false; }); });
 
+function acMachHtml(){
+  const T = (AC.td && AC.td.tables) || [], t = AC.te === 'new' ? AC.tn : T[AC.te]; if(!t) return '';
+  t.machines = t.machines || []; const mine = new Set(t.machines.map(String)), used = {};
+  T.forEach((x, j) => { if(AC.te !== j) (x.machines || []).forEach(m => { used[String(m)] = x.name; }); });
+  const all = state.machines || [], sel = all.filter(m => mine.has(String(m.id))), free = all.filter(m => !mine.has(String(m.id)) && !used[String(m.id)]), other = all.filter(m => !mine.has(String(m.id)) && used[String(m.id)]);
+  return `<div class="acL2">In this table (${sel.length})</div>
+    <div class="acChips">${sel.length ? sel.map(m => `<span class="acChip">${acEsc(m.name)}<button type="button" data-ac="s_mdel" data-m="${acEsc(m.id)}" title="Take out of this table">&times;</button></span>`).join('') : '<span class="hrNote" style="margin:0;">None yet. Click a machine below to add it.</span>'}</div>
+    <div class="acL2">Not in any table yet (${free.length}) &mdash; click to add</div>
+    <div class="acChips acFree">${free.length ? free.map(m => `<button type="button" class="acChip acAddM" data-ac="s_madd" data-m="${acEsc(m.id)}">+ ${acEsc(m.name)}</button>`).join('') : '<span class="hrNote" style="margin:0;">Every machine is already in a table.</span>'}</div>
+    ${other.length ? `<div class="hrNote" style="margin-top:6px;">${other.length} machine${other.length > 1 ? 's are' : ' is'} already used by other tables and not shown here.</div>` : ''}`;
+}
+function acRndEx(step, from){ const st = Math.max(1, acNum(step) || 100), fr = acNum(from) || st / 2, lv = (n) => { const b = Math.floor(n / st) * st; return (n - b) >= fr ? b + st : b; }, a = st * 41 + fr, b2 = st * 41 + Math.max(0, fr - 1); return 'Example: <b>' + a.toLocaleString('en-US') + '</b> picks look up the rate for <b>' + lv(a).toLocaleString('en-US') + '</b>, and <b>' + b2.toLocaleString('en-US') + '</b> picks look up <b>' + lv(b2).toLocaleString('en-US') + '</b>.'; }
 /* v60: ACCOUNTS settings - columns, salary structure, extra-money rules, premium rate tables */
 function acParseTable(text){
   const lines = String(text || '').split(/\r?\n/).map(l => l.replace(/\s+$/, '')).filter(l => l.trim());
@@ -19052,6 +19146,7 @@ function acDrawSettings(){
   if(!AC.sd) acCloneSet();
   const S = AC.sd, open = AC.open || (AC.open = { cols: true }), sec = (id, title, inner) => `<details class="acSec" data-sec="${id}" ${open[id] ? 'open' : ''}><summary>${title}</summary><div class="acSecB">${inner}</div></details>`;
   const colRows = S.cols.map((c, i) => { const d = acColDef(c), cu = !d.builtin;
+    if(['picks', 'rate', 'premium'].indexOf(c.id) >= 0) return '';
     return `<div class="acCR"><span class="acArr"><button type="button" class="acMv" data-ac="s_up" data-i="${i}" ${i ? '' : 'disabled'}>&uarr;</button><button type="button" class="acMv" data-ac="s_dn" data-i="${i}" ${i < S.cols.length - 1 ? '' : 'disabled'}>&darr;</button></span>
       <input class="acNm" data-sk="cname" data-i="${i}" value="${acEsc(d.name)}">
       <span class="acBd">${d.builtin ? (d.kind === 'add' ? 'adds' : d.kind === 'deduct' ? 'deducts' : d.kind === 'sum' ? 'total' : 'info') : (d.kind === 'deduct' ? 'deducts' : 'adds')}</span>
@@ -19070,8 +19165,14 @@ function acDrawSettings(){
   const stdHtml = `<div class="acGrid"><label>Basic share %<input class="acNum" data-sk="std_basic" value="${S.std.basic}" inputmode="decimal"></label><label>Housing share %<input class="acNum" data-sk="std_housing" value="${S.std.housing}" inputmode="decimal"></label><label>Transport share %<input class="acNum" data-sk="std_transport" value="${S.std.transport}" inputmode="decimal"></label></div>
     <div class="hrNote">For people with the standard salary the typed Basic is this share of the total, and Housing and Transport are worked out from it. People marked <b>fixed</b> get only what is typed.</div>
     <div class="acGrid"><label>Absent day is paid from<select data-sk="abs_base"><option value="basic" ${S.absent.base === 'basic' ? 'selected' : ''}>Basic</option><option value="gross" ${S.absent.base === 'gross' ? 'selected' : ''}>Basic + Housing + Transport</option></select></label><label>Divided by days<input class="acNum" data-sk="abs_days" value="${S.absent.days}" inputmode="numeric"></label></div>
-    <div class="acGrid"><label>Picks are rounded to the nearest<input class="acNum" data-sk="rnd_step" value="${S.round.step}" inputmode="numeric"></label><label>Rounds up from<input class="acNum" data-sk="rnd_from" value="${S.round.from}" inputmode="numeric"></label></div>
-    <div class="hrNote">With 100 and 50: 4152 is counted as 4200 and 4149 as 4100.</div>`;
+`;
+  const posAll = Array.from(new Set((state.positions || []).concat((state.users || []).filter(u => u.role === 'operator').map(u => ((u.profile || {}).position) || '').filter(Boolean)))).sort(), opPos = Array.isArray(S.opPos) ? S.opPos : [];
+  const whoHtml = `<div class="hrNote" style="margin-bottom:8px;">Tick the positions that are paid on the Operator sheet. People with other positions go to Sponsor or Non Sponsor, by their employment type. If nothing is ticked, every operator is listed.</div><div class="checkbox-grid">${posAll.map(x => `<label><input type="checkbox" data-sk="oppos" value="${acEsc(x)}" ${opPos.some(y => String(y).toLowerCase() === x.toLowerCase()) ? 'checked' : ''}> ${acEsc(x)}</label>`).join('') || '<div class="hrNote">No positions yet.</div>'}</div>`;
+  const dedHtml = `<label class="acSw"><input type="checkbox" data-sk="opded" ${S.opDed ? 'checked' : ''}><span class="acSwT"></span><b>${S.opDed ? 'On' : 'Off'}</b></label><div class="hrNote" style="margin-top:8px;">On: the Operator sheet has a Deduction box on every row for amounts you type yourself (fines, advances). Off: the box is hidden. If a sheet already has a typed deduction, the column stays visible so the amount is never hidden.</div>`;
+  const cutHtml = `<div class="acGrid"><label>Deduct from premium (%)<input class="acNum" data-sk="prem_cut" value="${acEsc(S.premCut == null ? '' : S.premCut)}" inputmode="decimal" placeholder="0"></label></div><div class="hrNote">Leave empty or 0 when nothing is deducted. With 15, the sheet shows the two extra columns (15% less and Net premium) and pays the net premium.</div>`;
+  const rndHtml = `<div class="hrNote" style="margin-bottom:8px;">Before the rate is looked up in the premium table, the operator's total picks are rounded. The total shown on the sheet stays exact.</div>
+    <div class="acGrid"><label>Round to the nearest<input class="acNum" data-sk="rnd_step" value="${S.round.step}" inputmode="numeric"></label><label>Go up when the rest is at least<input class="acNum" data-sk="rnd_from" value="${S.round.from}" inputmode="numeric"></label></div>
+    <div class="hrNote" id="acRndEx" style="margin-top:8px;">${acRndEx(S.round.step, S.round.from)}</div>`;
   const depts = Array.from(new Set((state.departments || []).concat((state.users || []).map(u => u.department).filter(Boolean)))).sort();
   const ruleHtml = `<div class="hrNote" style="margin-bottom:8px;">Example: an operator on 3 machines who reaches 3000 picks gets 200 SAR. Each line is one rule. If more than one fits, the more specific one is used.</div>` + (S.rules.length ? S.rules.map((r, i) => `<div class="acCR acRule"><span>Operators in</span>${acMs('rl' + i, depts, r.depts || [], 'any department')}<span>on</span>
       <select data-sk="rl_mc" data-i="${i}">${[[0, 'any number of machines'], [1, '1 machine'], [2, '2 machines'], [3, '3 machines'], [4, '4 or more machines']].map(m => `<option value="${m[0]}" ${acNum(r.mc) === m[0] ? 'selected' : ''}>${m[1]}</option>`).join('')}</select>
@@ -19087,7 +19188,7 @@ function acDrawSettings(){
     const p = acParseTable(t.text);
     editor = `<div class="acAdd"><b>${AC.te === 'new' ? 'New rate table' : 'Edit rate table'}</b>
       <label class="acL1">1. Name<input class="acNm" data-sk="t_name" value="${acEsc(t.name)}" placeholder="e.g. Group 6"></label>
-      <div class="acL1">2. Machines that use this table</div><div class="checkbox-grid">${(state.machines || []).map(m => `<label><input type="checkbox" data-sk="t_m" value="${acEsc(m.id)}" ${(t.machines || []).map(String).indexOf(String(m.id)) >= 0 ? 'checked' : ''}> ${acEsc(m.name)}${used[String(m.id)] ? `<span class="acSm">in ${acEsc(used[String(m.id)])}</span>` : ''}</label>`).join('')}</div>
+      <div class="acL1">2. Machines that use this table</div><div id="acMachBox">${acMachHtml()}</div>
       <div class="acL1">3. Rate for each picks level &mdash; one line each: the level, then the rate (paste from Excel, or use Quick fill below)</div>
       <textarea id="acTx" class="acTx" data-sk="t_text" rows="8" placeholder="8000&#9;0.35&#10;7900&#9;0.34&#10;7800&#9;0.33">${acEsc(t.text)}</textarea>
       <div class="hrNote" id="acTxInfo">${acTxInfo(p)}</div>
@@ -19099,9 +19200,9 @@ function acDrawSettings(){
       <div class="acRow2"><button type="button" class="pillBtn" data-ac="s_canceltbl">Cancel</button><button type="button" class="pillBtn ok" data-ac="s_savetbl">Save table</button></div></div>`;
   }
   const test = T.length ? `<div class="acAdd" style="margin-top:10px;"><b>Try it</b><div class="acCE" style="padding-left:0;"><input class="acNum" id="acTestP" placeholder="picks" inputmode="numeric" value="4174"><select id="acTestM">${(state.machines || []).filter(m => acTableFor(m.id)).map(m => `<option value="${acEsc(m.id)}">${acEsc(m.name)}</option>`).join('')}</select><span id="acTestR" class="hrNote" style="margin:0;"></span></div></div>` : '';
-  const tblHtml = `<div class="hrNote" style="margin-bottom:8px;">Premium is paid per pick. The person's total picks are rounded (set above) and the rate for that level is multiplied by the total picks. If a person works on machines from different tables, the average of their rates is used.</div>${tblList}${editor || '<button type="button" class="pillBtn" data-ac="s_addtbl" style="margin-top:8px;">Add a rate table</button>'}${test}`;
-  $('acMain').innerHTML = sec('cols', 'Columns', colsHtml) + sec('std', 'Salary structure, attendance and rounding', stdHtml) + sec('rules', 'Extra money (picks targets)', ruleHtml) + sec('tbl', 'Premium rate tables', tblHtml)
-    + `<div class="acRow2"><span class="hrNote" style="margin:0;">Columns, structure and extra-money rules are saved together. Rate tables are saved with their own button.</span><span style="flex:1"></span><button type="button" class="pillBtn ok" data-ac="s_save">Save settings</button></div>`;
+  const tblHtml = `<div class="hrNote" style="margin-bottom:8px;">Premium is paid per pick. The person's total picks are rounded (see Rounding below) and the rate for that level is multiplied by the total picks. If a person works on machines from different tables, the average of their rates is used.</div>${tblList}${editor || '<button type="button" class="pillBtn" data-ac="s_addtbl" style="margin-top:8px;">Add a rate table</button>'}${test}`;
+  const saveRow = `<div class="acRow2"><span class="hrNote" style="margin:0;">${(AC.setSec || 'sponsor') === 'operator' ? 'Rounding and extra-money rules are saved together. Rate tables are saved with their own button.' : 'Columns and salary structure are saved together.'}</span><span style="flex:1"></span><button type="button" class="pillBtn ok" data-ac="s_save">Save settings</button></div>`;
+  $('acMain').innerHTML = (AC.setSec === 'operator' ? sec('who', 'Who is an operator (positions)', whoHtml) + sec('tbl', 'Premium rate tables', tblHtml) + sec('rules', 'Extra money (picks targets)', ruleHtml) + sec('cut', 'Deduction from premium (%)', cutHtml) + sec('ded', 'Deduction box (typed by hand)', dedHtml) + sec('rnd', 'Rounding (to find the rate)', rndHtml) : sec('cols', 'Columns (add, deduct)', colsHtml) + sec('std', 'Salary structure and absence', stdHtml)) + saveRow;
   acTestRun();
 }
 function acTxInfo(p){ return p.rows.length ? `${p.rows.length} levels &middot; ${p.rows[0][0]} down to ${p.rows[p.rows.length - 1][0]} &middot; rate ${p.rows[0][1]} to ${p.rows[p.rows.length - 1][1]}${p.n > 1 ? ' &middot; only the first rate column is used' : ''}${p.bad ? ` &middot; <span style="color:var(--danger)">${p.bad} line(s) have a different number of columns</span>` : ''}` : 'Nothing read yet.'; }
@@ -19122,6 +19223,7 @@ function acSettingsClick(a, t){
   else if(a === 's_delrule'){ S.rules.splice(i, 1); acDrawSettings(); }
   else if(a === 's_save'){ acSaveSettings(); }
   else if(a === 's_addtbl'){ AC.te = 'new'; AC.tn = null; AC.open.tbl = true; acDrawSettings(); }
+  else if(a === 's_madd' || a === 's_mdel'){ const tb = AC.te === 'new' ? AC.tn : AC.td.tables[AC.te]; if(!tb) return; acTxSync(); const m = t.dataset.m; tb.machines = (tb.machines || []).map(String).filter(x => x !== String(m)); if(a === 's_madd') tb.machines.push(String(m)); const bx = $('acMachBox'); if(bx) bx.innerHTML = acMachHtml(); }
   else if(a === 's_edtbl'){ AC.te = i; AC.open.tbl = true; acDrawSettings(); }
   else if(a === 's_canceltbl'){ AC.te = null; AC.tn = null; acDrawSettings(); }
   else if(a === 's_deltbl'){ if(!confirm('Delete the rate table "' + (AC.td.tables[i].name || '') + '"?')) return; AC.td.tables.splice(i, 1); acSaveTables().then(acDrawSettings); }
@@ -19141,7 +19243,7 @@ async function acSaveSettings(){
   if(Math.abs(S.std.basic + S.std.housing + S.std.transport - 100) > 0.01 && !confirm('Basic + Housing + Transport shares add up to ' + (S.std.basic + S.std.housing + S.std.transport) + '%, not 100%. Save anyway?')) return;
   S.absent.days = acNum(S.absent.days) || 30; S.round.step = acNum(S.round.step) || 100; S.round.from = acNum(S.round.from);
   S.rules = S.rules.filter(r => acNum(r.min) > 0 && acNum(r.amount) > 0).map(r => ({ depts: r.depts || [], mc: acNum(r.mc), min: acNum(r.min), amount: acNum(r.amount) }));
-  S.cols.forEach(c => { if(c.pct !== undefined) c.pct = acNum(c.pct); });
+  S.premCut = acNum(S.premCut); S.cols.forEach(c => { if(c.pct !== undefined) c.pct = acNum(c.pct); });
   try{ await window.__db.saveConfigObject('acctSettings', S); AC.set = acNormSettings(JSON.parse(JSON.stringify(S))); acCloneSet(); toast('Settings saved'); acDrawSettings(); }
   catch(err){ console.error(err); toast('Could not save — check your connection'); }
 }
@@ -19156,7 +19258,7 @@ async function acSaveOneTable(){
   if(!(t.name || '').trim()){ toast('Give the table a name'); return; }
   if(!p.rows.length){ toast('Paste the rates first'); return; }
   if(p.bad){ toast('Some lines have a different number of columns'); return; }
-  t.cols = ['Rate']; t.machines = Array.from(document.querySelectorAll('[data-sk="t_m"]:checked')).map(x => x.value);
+  t.cols = ['Rate'];
   if(AC.te === 'new'){ t.id = 't' + (AC.td.next++); AC.td.tables.push(t); }
   if(await acSaveTables()){ AC.te = null; AC.tn = null; acDrawSettings(); }
 }
@@ -19172,7 +19274,10 @@ function acSkChange(t, isChange){
   else if(k === 'cpct'){ S.cols[i].pct = v; }
   else if(k.indexOf('std_') === 0){ S.std[k.slice(4)] = v; }
   else if(k === 'abs_base'){ S.absent.base = v; } else if(k === 'abs_days'){ S.absent.days = v; }
-  else if(k === 'rnd_step'){ S.round.step = v; } else if(k === 'rnd_from'){ S.round.from = v; }
+  else if(k === 'prem_cut'){ S.premCut = v; }
+  else if(k === 'opded'){ S.opDed = !!t.checked; const b = t.parentElement.querySelector('b'); if(b) b.textContent = S.opDed ? 'On' : 'Off'; }
+  else if(k === 'oppos'){ const a = Array.isArray(S.opPos) ? S.opPos.slice() : [], j = a.findIndex(x => String(x).toLowerCase() === v.toLowerCase()); if(t.checked && j < 0) a.push(v); else if(!t.checked && j >= 0) a.splice(j, 1); S.opPos = a; }
+  else if(k === 'rnd_step' || k === 'rnd_from'){ if(k === 'rnd_step') S.round.step = v; else S.round.from = v; const ex = document.getElementById('acRndEx'); if(ex) ex.innerHTML = acRndEx(S.round.step, S.round.from); }
   else if(k.indexOf('rl_') === 0){ S.rules[i][{ rl_mc: 'mc', rl_min: 'min', rl_amt: 'amount' }[k]] = v; }
   else if(k === 't_name'){ const tt = AC.te === 'new' ? AC.tn : AC.td.tables[AC.te]; if(tt) tt.name = v; }
   else if(k === 't_text'){ acTxSync(); }
@@ -19829,6 +19934,534 @@ function astCfg(){
       { k: 'prio', l: 'Priority', g: 'Task', get: t => t.prio ? t.prio + ' - ' + AST_PTXT[t.prio] : '' }, { k: 'rep', l: 'Repeats', g: 'Dates', get: t => astRepTxt(t.repeat) }, { k: 'added', l: 'Added', g: 'Dates', get: t => d(t.created) }, { k: 'done', l: 'Done on', g: 'Dates', get: t => d(t.doneAt) }, { k: 'note', l: 'Note', g: 'Task', get: t => astMasked(t) ? '' : t.note || '' }
     ], sumExtra: (it) => AST_ST.map(s => [s[1], it.filter(t => t.status === s[0]).length]) };
 }
+
+/* ============================================================
+   v94: ACCOUNTS - three salary sheets: Operator, Sponsor, Non Sponsor.
+   - One sheet per month and section. Saved in "config" as salary_YYYY-MM_<section>; a small list of all saved sheets is kept in salaryIndex.
+   - Nothing is read from the daily reports until "Calculate picks" is pressed. A sheet shows what was calculated last time.
+   - Unsaved work is kept in this browser (no database use) until Save is pressed.
+   - Settings (rates, extra-money rules, columns, structure) are still the ones in acctSettings / acctTables.
+   ============================================================ */
+const A2 = { sec: 'operator', view: 'sheet', ym: '', docs: {}, idx: null, q: '', dept: '', shift: '', pos: '', busy: false, t: null };
+const A2_SEC = { operator: { n: 'Operator', ic: '<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>' }, sponsor: { n: 'Sponsor', ic: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/>' }, nonsponsor: { n: 'Non Sponsor', ic: '<path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>' } };
+const A2_IC = { filter: '<polygon points="22 3 2 3 10 12.5 10 19 14 21 14 12.5 22 3"/>', saved: '<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/>', users: '<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/>',
+  pick: '<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>', wallet: '<path d="M20 12V8H6a2 2 0 010-4h12v4"/><path d="M4 6v12a2 2 0 002 2h14v-4"/><path d="M18 12a2 2 0 000 4h4v-4z"/>', minus: '<circle cx="12" cy="12" r="9"/><line x1="8" y1="12" x2="16" y2="12"/>',
+  gear: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/>',
+  plus: '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>', x: '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>', refresh: '<polyline points="23 4 23 10 17 10"/><path d="M20.5 15a9 9 0 11-2.1-9.4L23 10"/>', back: '<polyline points="15 18 9 12 15 6"/>' };
+const a2Svg = (n, s) => `<svg width="${s || 15}" height="${s || 15}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${A2_IC[n] || (A2_SEC[n] || {}).ic || ''}</svg>`;
+const a2I = (x) => (x === '' || x == null || !isFinite(Number(x))) ? '' : Number(x).toLocaleString('en-US', { maximumFractionDigits: 0 });
+const a2R = (x) => { if(x === '' || x == null || !isFinite(Number(x))) return ''; let t = String(Math.round(Number(x) * 10000) / 10000); if(t.indexOf('.') < 0) t += '.00'; else if(t.split('.')[1].length < 2) t += '0'; return t; };
+const a2W = (x) => (x === '' || x == null || !isFinite(Number(x)) || Number(x) === 0) ? '' : Math.round(Number(x)).toLocaleString('en-US');
+const a2M = (x) => (x === '' || x == null || !isFinite(Number(x)) || Number(x) === 0) ? '' : acMoney(x);
+const a2Key = (sec, ym) => (ym || A2.ym) + '_' + (sec || A2.sec);
+const a2Doc = (sec, ym) => A2.docs[a2Key(sec, ym)] || null;
+const a2Sh = (u) => { const s = userShiftOf(u); return s === 'Day' ? 'D' : s === 'Night' ? 'N' : ''; };
+const a2OpPos = () => (AC.set && Array.isArray(AC.set.opPos)) ? AC.set.opPos : [];   // nothing ticked = every operator
+const a2PosOf = (u) => String(((u.profile || {}).position) || '').trim();
+const a2IsOp = (u) => u.role === 'operator' && (!a2OpPos().length || a2OpPos().some(x => String(x).trim().toLowerCase() === a2PosOf(u).toLowerCase()));
+const a2Group = (u) => a2IsOp(u) ? 'operator' : (((u.profile || {}).employmentType) === 'Non-Sponsor' ? 'nonsponsor' : 'sponsor');
+const a2Num = (a, b) => String(a).localeCompare(String(b), undefined, { numeric: true });
+const a2Stamp = (iso) => { try{ return new Date(iso).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }); }catch(e){ return ''; } };
+const a2McName = (m) => { const x = (state.machines || []).find(k => String(k.id) === String(m)); return x ? String(x.name) : String(m); };
+
+/* ---------- people -> rows ---------- */
+function a2NewOp(u){ return { id: u.loginId, name: u.name, dept: u.department || '', pos: a2PosOf(u), sh: a2Sh(u), mc: [], total: 0, avg: '', prem: 0, ax: 0, ex: '', extra: 0, ded: '', rm: '', net: 0 }; }
+function a2OpRates(r){
+  const total = (r.mc || []).reduce((a, m) => a + (Number(m.p) || 0), 0); r.total = acR2(total); r.prem = 0; r.avg = ''; r.ax = 0; r.miss = 0; r.cutPct = acNum(AC.set.premCut); r.cut = 0; r.np = 0;
+  (r.mc || []).forEach(m => { m.r = ''; });
+  if(total > 0){
+    const lv = acLevel(total), rates = [];
+    r.mc.forEach(m => { const t = acTableFor(m.m); if(!t){ r.miss++; return; } const x = acRateAt(t, '', lv); m.r = x || ''; rates.push(x); });
+    if(rates.length){ const avg = Math.round(rates.reduce((a, b) => a + b, 0) / rates.length * 1e6) / 1e6; r.avg = avg || ''; r.prem = Math.round(total * avg); }
+    r.cutPct = acNum(AC.set.premCut); r.cut = Math.round(r.prem * r.cutPct / 100); r.np = r.prem - r.cut;
+    const rule = acRuleFor({ department: r.dept }, total, r.mc.filter(m => m.p > 0).length); if(rule) r.ax = acNum(rule.amount);
+  }
+  a2OpNet(r);
+}
+function a2OpNet(r){ r.extra = r.ax || 0; r.net = Math.round((r.np != null && r.np !== '' ? r.np : (r.prem || 0)) + r.extra - acNum(r.ded)); }
+function a2NewSp(u){
+  const sal = (u.profile && u.profile.salary) || {};
+  const r = { id: u.loginId, name: u.name, dept: u.department || '', basic: sal.basicSalary || '', fixed: sal.salaryType === 'fixed', ot: sal.overtime || '', extra: sal.extraMoney || '', ab: '', pr: '', c: {}, fl: {}, rm: '' };
+  a2SpFromProfile(r, u); a2SpCalc(r); return r;
+}
+function a2SpFromProfile(r, u){
+  const sal = (u.profile && u.profile.salary) || {};
+  r.name = u.name; r.dept = u.department || ''; r.basic = sal.basicSalary || ''; r.fixed = sal.salaryType === 'fixed'; r.ot = sal.overtime || ''; r.extra = sal.extraMoney || '';
+  acCols().filter(c => !c.builtin).forEach(c => { r.fl[c.id] = !!(sal.fl && sal.fl[c.id]); if(c.src === 'profile' && c.calc !== 'pct') r.c[c.id] = (sal.cv && sal.cv[c.id]) || ''; });
+}
+function a2SpCalc(r){
+  const S = AC.set, basic = acNum(r.basic), v = { c: {} };
+  if(!r.fixed && basic){ const G = basic / (acNum(S.std.basic) / 100 || 1); v.housing = acR2(G * acNum(S.std.housing) / 100); v.transport = acR2(G * acNum(S.std.transport) / 100); } else { v.housing = 0; v.transport = 0; }
+  const dayBase = S.absent.base === 'gross' ? (basic + v.housing + v.transport) : basic;
+  v.absentDed = acR2(acNum(r.ab) * dayBase / (acNum(S.absent.days) || 30));
+  let adds = basic + v.housing + v.transport + acNum(r.ot) + acNum(r.extra), deds = v.absentDed; const pct = [];
+  acCols().forEach(c => {
+    if(c.builtin) return;
+    if(c.scope === 'flag' && !(r.fl || {})[c.id]){ v.c[c.id] = ''; return; }
+    if(c.calc === 'pct'){ pct.push(c); return; }
+    const x = acNum((r.c || {})[c.id]); v.c[c.id] = x; if(c.kind === 'deduct') deds += x; else adds += x;
+  });
+  const g0 = adds;
+  pct.forEach(c => { const b = c.of === 'gross' ? g0 : (c.of === 'basicHousing' ? basic + v.housing : basic); const x = acR2(b * c.pct / 100); v.c[c.id] = x; if(c.kind === 'deduct') deds += x; else adds += x; });
+  v.gross = acR2(adds); v.totded = acR2(deds); v.net = acR2(adds - deds); r.v = v;
+}
+function a2NewNs(u){ const sal = (u.profile && u.profile.salary) || {}; const r = { id: u.loginId, name: u.name, dept: u.department || '', fx: sal.basicSalary || '', ded: '', rm: '', net: 0 }; a2NsCalc(r); return r; }
+function a2NsCalc(r){ r.net = acR2(acNum(r.fx) - acNum(r.ded)); }
+function a2Calc(sec, r){ if(sec === 'operator') a2OpNet(r); else if(sec === 'sponsor') a2SpCalc(r); else a2NsCalc(r); }
+function a2NewRow(sec, u){ return sec === 'operator' ? a2NewOp(u) : sec === 'sponsor' ? a2NewSp(u) : a2NewNs(u); }
+function a2People(sec, withExited){ return (state.users || []).filter(u => u.role !== 'pending' && a2Group(u) === sec && (withExited || !isExitedEmployee(u))); }
+
+/* ---------- columns (screen, PDF and Excel all come from this list) ---------- */
+const a2In = (r, k, val, ph, cls) => `<input class="a2In${cls ? ' ' + cls : ''}" data-a2="in" data-id="${acEsc(r.id)}" data-k="${k}" value="${acEsc(val == null ? '' : val)}" inputmode="${cls === 'a2Rm' ? 'text' : 'decimal'}"${ph ? ` placeholder="${acEsc(ph)}"` : ''}>`;
+function a2Common(){
+  return [{ k: 'id', l: 'ID', g: 'Person', def: 1, rep: 1, text: r => r.id, html: r => acEsc(r.id) }, { k: 'name', l: 'Name', g: 'Person', def: 1, rep: 1, text: r => r.name, html: r => acEsc(r.name) }];
+}
+function a2CutPct(){ const d = a2Doc(); const f = d && d.rows.find(r => r.cutPct > 0); return f ? f.cutPct : (acNum(AC.set && AC.set.premCut) || 15); }
+function a2ShowDed(){ const d = a2Doc(); return !!(AC.set && AC.set.opDed) || !!(d && d.rows.some(r => acNum(r.ded))); }
+function a2HasCut(){ const d = a2Doc(); return acNum(AC.set && AC.set.premCut) > 0 || !!(d && d.rows.some(r => r.cutPct > 0)); }
+function a2Warn(p){ let mx = 0; ((AC.tbl && AC.tbl.tables) || []).forEach(t => (t.rows || []).forEach(r => { if(r[0] > mx) mx = r[0]; })); return p > (mx ? mx * 1.25 : 12000); }
+function a2Peek(r, m){ return `<button type="button" class="a2Pk${a2Warn(m.p) ? ' warn' : ''}" data-a2="peek" data-id="${acEsc(r.id)}" data-m="${acEsc(m.m)}" title="${a2Warn(m.p) ? 'Very high for one machine - check the readings. ' : ''}See the days">${a2I(m.p)}</button>`; }
+const a2Screen = (sec) => a2Cols(sec).filter(c => c.def);
+function a2Cols(sec, all){
+  const ed = acCanEdit();
+  if(sec === 'operator'){
+    const c = a2Common(); c[1].l = 'Operator';
+    const ds = (r) => (r.dept || '') + (r.sh ? '/' + r.sh : '');
+    return c.concat([
+      { k: 'ds', l: 'Dept / Shift', g: 'Person', def: 1, rep: 1, text: ds, html: r => (r.dept || r.sh) ? acEsc(r.dept || '') + (r.sh ? `<span class="a2Sh">/${r.sh}</span>` : '') : '' },
+      { k: 'dept', l: 'Department', g: 'Person', rep: 1, text: r => r.dept, html: r => acEsc(r.dept) },
+      { k: 'pos', l: 'Position', g: 'Person', rep: 1, text: r => r.pos || '', html: r => acEsc(r.pos || '') },
+      { k: 'shift', l: 'Shift', g: 'Person', rep: 1, text: r => r.sh === 'D' ? 'Day' : r.sh === 'N' ? 'Night' : '', html: r => r.sh === 'D' ? 'Day' : r.sh === 'N' ? 'Night' : '' },
+      { k: 'mc', l: 'MC', g: 'Machines', def: 1, ml: 1, text: (r, i) => (r.mc[i] || {}).n || '', html: (r, e, i) => acEsc((r.mc[i] || {}).n || '') },
+      { k: 'mcp', l: 'Total by machine', g: 'Machines', def: 1, ml: 1, num: 1, text: (r, i) => a2I((r.mc[i] || {}).p), raw: (r, i) => r.mc[i] ? Math.round(r.mc[i].p) : '', html: (r, e, i) => r.mc[i] ? a2Peek(r, r.mc[i]) : '' },
+      { k: 'total', l: 'Total', g: 'Pay', def: 1, num: 1, bold: 1, sum: 1, calc: 1, text: r => a2I(r.total), raw: r => Math.round(r.total) || '', sv: r => r.total, html: r => a2I(r.total) },
+      { k: 'mcr', l: 'MC rates', g: 'Pay', def: 1, ml: 1, num: 1, text: (r, i) => a2R((r.mc[i] || {}).r), raw: (r, i) => (r.mc[i] || {}).r || '', html: (r, e, i) => a2R((r.mc[i] || {}).r) },
+      { k: 'avg', l: 'Average rate', g: 'Pay', def: 1, num: 1, calc: 1, text: r => a2R(r.avg), raw: r => r.avg, html: r => a2R(r.avg) },
+      { k: 'prem', l: 'Premium', g: 'Pay', def: 1, num: 1, sum: 1, calc: 1, text: r => a2W(r.prem), raw: r => r.prem || '', sv: r => r.prem, html: r => a2W(r.prem) },
+      { k: 'cut', l: a2CutPct() + '% less', g: 'Pay', def: a2HasCut() ? 1 : 0, num: 1, sum: 1, calc: 1, text: r => a2W(r.cut), raw: r => r.cut || '', sv: r => r.cut || 0, html: r => a2W(r.cut) },
+      { k: 'np', l: 'Net premium', g: 'Pay', def: a2HasCut() ? 1 : 0, num: 1, sum: 1, calc: 1, text: r => a2W(r.np != null ? r.np : r.prem), raw: r => (r.np != null ? r.np : r.prem) || '', sv: r => r.np != null ? r.np : (r.prem || 0), html: r => a2W(r.np != null ? r.np : r.prem) },
+      { k: 'extra', l: 'Extra', g: 'Pay', def: 1, num: 1, sum: 1, calc: 1, text: r => a2W(r.extra), raw: r => r.extra || '', sv: r => r.extra, html: r => a2W(r.extra) },
+      { k: 'ded', l: 'Deduction', g: 'Pay', def: a2ShowDed() ? 1 : 0, num: 1, sum: 1, text: r => a2W(acNum(r.ded)), raw: r => acNum(r.ded) || '', sv: r => acNum(r.ded), html: (r, e) => e ? a2In(r, 'ded', r.ded) : a2W(acNum(r.ded)), dedCol: 0 },
+      { k: 'net', l: 'Net pay', g: 'Pay', def: 1, num: 1, bold: 1, sum: 1, calc: 1, text: r => a2W(r.net) || '0', raw: r => r.net, sv: r => r.net, html: r => a2W(r.net) || '0' }
+    ]);
+  }
+  if(sec === 'nonsponsor'){
+    return a2Common().concat([
+      { k: 'dept', l: 'Department', g: 'Person', def: 1, text: r => r.dept, html: r => acEsc(r.dept) },
+      { k: 'fx', l: 'Fixed salary', g: 'Pay', def: 1, num: 1, sum: 1, text: r => a2M(acNum(r.fx)), raw: r => acNum(r.fx) || '', sv: r => acNum(r.fx), html: (r, e) => e ? a2In(r, 'fx', r.fx) : a2M(acNum(r.fx)) },
+      { k: 'ded', l: 'Deduction', g: 'Pay', def: 1, num: 1, sum: 1, text: r => a2M(acNum(r.ded)), raw: r => acNum(r.ded) || '', sv: r => acNum(r.ded), html: (r, e) => e ? a2In(r, 'ded', r.ded) : a2M(acNum(r.ded)), dedCol: 0 },
+      { k: 'net', l: 'Net pay', g: 'Pay', def: 1, num: 1, bold: 1, sum: 1, calc: 1, text: r => a2M(r.net) || '0.00', raw: r => r.net, sv: r => r.net, html: r => a2M(r.net) || '0.00' },
+      { k: 'rm', l: 'Remarks', g: 'Pay', def: 1, text: r => r.rm || '', html: (r, e) => e ? a2In(r, 'rm', r.rm, '', 'a2Rm') : acEsc(r.rm || '') }
+    ]);
+  }
+  // sponsor: the columns chosen in Settings (picks, rate and premium belong to operators only)
+  const out = a2Common().concat([{ k: 'dept', l: 'Department', g: 'Person', def: 1, text: r => r.dept, html: r => acEsc(r.dept) }]);
+  acCols().filter(c => (all || !c.hide) && ['picks', 'rate', 'premium'].indexOf(c.id) < 0).forEach(c => out.push(a2SpCol(c, ed)));
+  return out;
+}
+function a2SpCol(c, ed){
+  const base = { k: c.id, l: c.name, def: c.hide ? 0 : 1, num: 1, sum: 1, dedCol: c.kind === 'deduct' ? 1 : 0, g: ['present', 'absent', 'absentDed'].indexOf(c.id) >= 0 ? 'Attendance' : ['gross', 'totded', 'net'].indexOf(c.id) >= 0 ? 'Totals' : c.builtin ? 'Salary' : (c.kind === 'deduct' ? 'Deductions' : 'Additions') };
+  const n = (x) => (x === '' || x == null) ? '' : acNum(x);
+  const mk = (val, inp) => Object.assign(base, { sv: r => Number(val(r)) || 0, raw: r => val(r) === '' ? '' : val(r), text: r => { const x = val(r); return x === '' ? '' : (x === 0 && !base.zero ? '' : acMoney(x)); }, html: (r, e) => (e && inp) ? inp(r) : (() => { const x = val(r); return x === '' || x === 0 ? '' : acMoney(x); })() });
+  if(c.builtin){
+    switch(c.id){
+      case 'basic': { const o = mk(r => acNum(r.basic) || '', r => a2In(r, 'basic', r.basic) + `<label class="a2Fx"><input type="checkbox" data-a2="chk" data-id="${acEsc(r.id)}" data-k="fixed" ${r.fixed ? 'checked' : ''}> fixed</label>`); o.calc = 0; return o; }
+      case 'housing': { const o = mk(r => r.v.housing || ''); o.calc = 1; return o; }
+      case 'transport': { const o = mk(r => r.v.transport || ''); o.calc = 1; return o; }
+      case 'ot': return mk(r => acNum(r.ot) || '', r => a2In(r, 'ot', r.ot));
+      case 'extra': return mk(r => acNum(r.extra) || '', r => a2In(r, 'extra', r.extra));
+      case 'present': { const o = mk(r => r.pr === '' ? '' : acNum(r.pr), r => a2In(r, 'pr', r.pr)); o.sum = 0; o.text = r => r.pr === '' ? '' : String(acNum(r.pr)); o.html = (r, e) => e ? a2In(r, 'pr', r.pr) : (r.pr === '' ? '' : acNum(r.pr)); return o; }
+      case 'absent': { const o = mk(r => acNum(r.ab) || '', r => a2In(r, 'ab', r.ab)); o.text = r => acNum(r.ab) || ''; o.html = (r, e) => e ? a2In(r, 'ab', r.ab) : (acNum(r.ab) || ''); return o; }
+      case 'absentDed': { const o = mk(r => r.v.absentDed || ''); o.calc = 1; return o; }
+      case 'gross': { const o = mk(r => r.v.gross); o.calc = 1; o.bold = 1; return o; }
+      case 'totded': { const o = mk(r => r.v.totded || ''); o.calc = 1; return o; }
+      case 'net': { const o = mk(r => r.v.net); o.calc = 1; o.bold = 1; o.zero = 1; o.text = r => acMoney(r.v.net); o.html = r => acMoney(r.v.net); return o; }
+      case 'remarks': return Object.assign(base, { num: 0, sum: 0, g: 'Salary', text: r => r.rm || '', html: (r, e) => e ? a2In(r, 'rm', r.rm, '', 'a2Rm') : acEsc(r.rm || '') });
+    }
+  }
+  // your own column
+  const val = (r) => { const x = (r.v.c || {})[c.id]; return x === undefined ? '' : x; };
+  const o = mk(val, r => {
+    const on = (r.fl || {})[c.id], box = c.scope === 'flag' ? `<label class="a2Fx"><input type="checkbox" data-a2="chk" data-id="${acEsc(r.id)}" data-k="fl.${c.id}" ${on ? 'checked' : ''}> applies</label>` : '';
+    if(c.calc === 'pct') return (on || c.scope !== 'flag' ? a2M(val(r)) : '') + box;
+    return (c.scope !== 'flag' || on ? a2In(r, 'c.' + c.id, (r.c || {})[c.id]) : '') + box;
+  });
+  o.calc = c.calc === 'pct' ? 1 : 0; return o;
+}
+
+/* ---------- loading and drafts ---------- */
+async function a2LoadDoc(sec, ym, force){
+  const key = a2Key(sec, ym); if(!force && A2.docs[key]) return A2.docs[key];
+  const s = await window.__db.getConfigObject('salary_' + key, {});
+  const def = acDefaultRange(ym);
+  let d = { ym, sec, from: s.from || def.from, to: s.to || def.to, calcAt: s.calcAt || '', savedAt: s.savedAt || '', savedBy: s.savedBy || '', rows: Array.isArray(s.rows) ? s.rows : [], dirty: false, draft: false };
+  try{
+    const dr = JSON.parse(localStorage.getItem('rvfSal_' + key) || 'null');
+    if(dr && Array.isArray(dr.rows) && (dr.base || '') === (d.savedAt || '')){ d = Object.assign(d, { from: dr.from || d.from, to: dr.to || d.to, calcAt: dr.calcAt || '', rows: dr.rows, dirty: true, draft: true }); }
+  }catch(e){}
+  A2.docs[key] = d; return d;
+}
+function a2Touch(){
+  const d = a2Doc(); if(!d) return; d.dirty = true; clearTimeout(A2.t);
+  A2.t = setTimeout(() => { try{ localStorage.setItem('rvfSal_' + a2Key(d.sec, d.ym), JSON.stringify({ base: d.savedAt || '', from: d.from, to: d.to, calcAt: d.calcAt, rows: d.rows })); }catch(e){} }, 400);
+}
+async function a2Boot(){
+  if(!requireDb()) throw new Error('db');
+  if(!A2.ym) A2.ym = acYmNow();
+  if(!(AC.set && AC.tbl)){
+    const [set, tbl] = await Promise.all([window.__db.getConfigObject('acctSettings', {}).then(acNormSettings), window.__db.getConfigObject('acctTables', { tables: [], next: 1 })]);
+    AC.set = set; AC.tbl = tbl; if(!Array.isArray(AC.tbl.tables)) AC.tbl.tables = []; acTblNormalize();
+  }
+  if(!state.users || !state.users.length) state.users = await window.__db.listUsersOnce();
+  if(A2.view !== 'saved' && A2.view !== 'set') await a2LoadDoc(A2.sec, A2.ym);
+  AC.ready = true;
+}
+async function loadAccountsPage(){
+  const body = $('accountsBody'); if(!body) return;
+  if(!AC.ready) body.innerHTML = '<div class="empty-state">Loading…</div>';
+  if(A2.view === 'set') A2.view = 'sheet';
+  try{ await a2Boot(); a2Draw(); }catch(err){ console.error(err); toast('Could not load'); body.innerHTML = '<div class="empty-state">Could not load. Check your connection and open the page again.</div>'; }
+}
+async function a2LoadIndex(){ if(!A2.idx){ const o = await window.__db.getConfigObject('salaryIndex', { items: {} }); A2.idx = { items: (o && o.items) || {} }; } return A2.idx; }
+
+/* ---------- picks (the only place that reads the daily reports; only when Calculate is pressed) ---------- */
+async function a2Fetch(from, to){
+  const list = await window.__db.loadSummariesInRange(from, to), by = {};
+  list.forEach(s => { if(!s.operatorId) return; ((by[s.operatorId] = by[s.operatorId] || {})[s.date + '|' + s.machine] = { date: s.date, machine: String(s.machine), picks: Number(s.picks) || 0,
+    stopHours: (s.stopBreakdown || []).reduce((a, b) => a + (Number(b.hours) || 0), 0), stopPicks: (s.stopBreakdown || []).reduce((a, b) => a + (Number(b.hours) || 0) * stopReasonRate(b.reason), 0), shiftsSeen: new Set(s.shifts || []) }); });
+  const ops = {};
+  A2.raw = by;
+  Object.keys(by).forEach(op => { try{ applyWeeklyAutoStop(by[op]); }catch(e){} const bm = {}; let total = 0; Object.values(by[op]).forEach(r => { const e = r.picks + r.stopPicks; bm[r.machine] = (bm[r.machine] || 0) + e; total += e; }); ops[op] = { total, bm }; });
+  return { entries: list.length, ops };
+}
+async function a2CalcPicks(){
+  const d = a2Doc(); if(!d || A2.busy || !acCanEdit()) return;
+  if(!d.from || !d.to || d.from > d.to){ toast('Check the dates'); return; }
+  A2.busy = true; a2Draw();
+  try{
+    if(typeof RMN !== 'undefined' && Object.keys(RMN.pend || {}).length && typeof rmnFlush === 'function'){ toast('Updating the machine totals first…'); await rmnFlush(); }   // so the daily totals are up to date
+    const S = await a2Fetch(d.from, d.to), have = {}; d.rows.forEach(r => { have[r.id] = r; });
+    const keep = new Set(); d.sec === 'operator' && (state.users || []).filter(a2IsOp).forEach(u => keep.add(u.loginId));
+    d.rows = d.rows.filter(r => keep.has(r.id)); Object.keys(have).forEach(k => { if(!keep.has(k)) delete have[k]; });
+    (state.users || []).filter(a2IsOp).forEach(u => {
+      const pk = S.ops[u.loginId];
+      if(isExitedEmployee(u) && !(pk && pk.total > 0) && !have[u.loginId]) return;
+      let r = have[u.loginId]; if(!r){ r = a2NewOp(u); d.rows.push(r); }
+      r.name = u.name; r.dept = u.department || ''; r.pos = a2PosOf(u); r.sh = a2Sh(u);
+      r.mc = pk ? Object.keys(pk.bm).filter(m => pk.bm[m] > 0).sort(a2Num).map(m => ({ m, n: a2McName(m), p: acR2(pk.bm[m]) })) : [];
+      a2OpRates(r);
+    });
+    d.calcAt = new Date().toISOString(); a2Touch(); toast('Picks calculated');
+  }catch(err){ console.error(err); toast('Could not calculate - check your connection'); }
+  A2.busy = false; a2Draw();
+}
+function a2DropOthers(){   // people whose position is no longer ticked in Operator settings leave the Operator sheet
+  const d = a2Doc(); if(!d || d.sec !== 'operator') return 0;
+  const ok = new Set(a2People('operator', true).map(u => u.loginId)), known = new Set((state.users || []).map(u => u.loginId)), n = d.rows.length;
+  d.rows = d.rows.filter(r => ok.has(r.id) || !known.has(r.id)); if(d.rows.length !== n) a2Touch(); return n - d.rows.length;
+}
+function a2Apply(){   // settings changed -> the sheet follows by itself (only marks the sheet as changed when something really changed)
+  const d = a2Doc(); if(!d || !acCanEdit()) return false;
+  const before = JSON.stringify(d.rows);
+  d.rows.forEach(r => { if(d.sec === 'operator') a2OpRates(r); else a2Calc(d.sec, r); });
+  if(JSON.stringify(d.rows) === before) return false;
+  a2Touch(); return true;
+}
+function a2Recalc(){   // no database use: the saved picks are kept, rates / structure are applied again
+  const d = a2Doc(); if(!d) return;
+  a2DropOthers();
+  d.rows.forEach(r => { if(d.sec === 'operator') a2OpRates(r); else a2Calc(d.sec, r); });
+  a2Touch(); toast('Settings applied'); a2Draw();
+}
+async function a2Create(){
+  const d = a2Doc(); if(!d || !acCanEdit()) return;
+  d.rows = a2People(d.sec).map(u => a2NewRow(d.sec, u)); a2Touch(); a2Draw();
+}
+async function a2Refresh(){
+  const d = a2Doc(); if(!d || A2.busy || !acCanEdit()) return;
+  if(!confirm(d.sec === 'operator' ? 'Add new operators, take out people who are no longer counted as operators, and update names, departments and shifts from the profiles? Picks and typed amounts stay.' : 'Add new people and bring salary, overtime and the profile amounts again from the profiles? What you typed this month (attendance, deductions, remarks) stays.')) return;
+  A2.busy = true;
+  try{
+    state.users = await window.__db.listUsersOnce();
+    const ok = new Set(a2People(d.sec, true).map(u => u.loginId)); if(d.sec === 'operator') d.rows = d.rows.filter(r => ok.has(r.id));
+    const have = {}; d.rows.forEach(r => { have[r.id] = r; });
+    a2People(d.sec).forEach(u => {
+      const r = have[u.loginId];
+      if(!r){ d.rows.push(a2NewRow(d.sec, u)); return; }
+      if(d.sec === 'operator'){ r.name = u.name; r.dept = u.department || ''; r.pos = a2PosOf(u); r.sh = a2Sh(u); a2OpRates(r); }
+      else if(d.sec === 'sponsor'){ a2SpFromProfile(r, u); a2SpCalc(r); }
+      else { r.name = u.name; r.dept = u.department || ''; r.fx = ((u.profile || {}).salary || {}).basicSalary || ''; a2NsCalc(r); }
+    });
+    a2Touch(); toast('Updated');
+  }catch(err){ console.error(err); toast('Could not update'); }
+  A2.busy = false; a2Draw();
+}
+async function a2Save(){
+  const d = a2Doc(); if(!d || A2.busy || !acCanEdit()) return;
+  A2.busy = true; a2Draw();
+  try{
+    const idx = await a2LoadIndex(), key = a2Key(d.sec, d.ym), now = new Date().toISOString(), by = (state.user && (state.user.name || state.user.loginId)) || '';
+    const out = JSON.parse(JSON.stringify({ ym: d.ym, sec: d.sec, from: d.from || '', to: d.to || '', calcAt: d.calcAt || '', savedAt: now, savedBy: by, rows: d.rows }));
+    await window.__db.saveConfigObject('salary_' + key, out);
+    idx.items[key] = { ym: d.ym, sec: d.sec, savedAt: now, by, count: d.rows.length, total: acR2(d.rows.reduce((a, r) => a + (sec2net(d.sec, r)), 0)) };
+    await window.__db.saveConfigObject('salaryIndex', idx);
+    d.savedAt = now; d.savedBy = by; d.dirty = false; d.draft = false; clearTimeout(A2.t); try{ localStorage.removeItem('rvfSal_' + key); }catch(e){}
+    toast('Saved');
+  }catch(err){ console.error(err); toast('Could not save - nothing is lost, press Save again'); }
+  A2.busy = false; a2Draw();
+}
+function sec2net(sec, r){ return Number(sec === 'sponsor' ? (r.v || {}).net : r.net) || 0; }
+
+/* ---------- screen ---------- */
+function a2Rows(){ const d = a2Doc(); return d ? d.rows.slice().sort((a, b) => a2Num(a.id, b.id)) : []; }
+function a2Filtered(){
+  const q = A2.q.trim().toLowerCase();
+  return a2Rows().filter(r => (!A2.dept || r.dept === A2.dept) && (!A2.shift || r.sh === A2.shift) && (!A2.pos || r.pos === A2.pos) && (!q || (r.id + ' ' + r.name + ' ' + r.dept).toLowerCase().includes(q)));
+}
+function a2Tile(ic, cls, n, l){ return `<div class="hrTile a2Tile"><span class="ic ${cls}">${a2Svg(ic, 16)}</span><span class="tx"><span class="n">${n}</span><span class="l">${l}</span></span></div>`; }
+function a2TilesHtml(){ return '';
+
+  const rows = a2Filtered(), sec = A2.sec, net = rows.reduce((a, r) => a + sec2net(sec, r), 0);
+  const ded = rows.reduce((a, r) => a + (sec === 'sponsor' ? ((r.v || {}).totded || 0) : acNum(r.ded)), 0);
+  const mid = sec === 'operator' ? a2Tile('pick', 'c-blue', a2I(rows.reduce((a, r) => a + (r.total || 0), 0)) || '0', 'Total picks') : a2Tile('minus', 'c-red', acMoney(ded), 'Deductions');
+  return `<div class="hrTiles a2Tiles" id="a2Tiles">${a2Tile('users', 'c-green', rows.length, sec === 'operator' ? 'Operators' : 'People')}${mid}${a2Tile('wallet', 'c-purple', acMoney(net), 'Net payable')}</div>`;
+}
+function a2Draw(){
+  const body = $('accountsBody'); if(!body) return;
+  const tabs = ['operator', 'sponsor', 'nonsponsor'].map(s => `<button type="button" class="${A2.view === 'sheet' || A2.view === 'set' ? (A2.sec === s ? 'active' : '') : ''}" data-a2="sec" data-v="${s}">${a2Svg(s)}<span class="hrLbl">${A2_SEC[s].n}</span></button>`).join('')
+    + `<button type="button" class="${A2.view === 'saved' ? 'active' : ''}" data-a2="saved">${a2Svg('saved')}<span class="hrLbl">Saved</span></button>`;
+  body.innerHTML = `<div class="card hrBox a2Box"><div class="a2TabRow"><div class="hrTabs">${tabs}</div><div class="a2Top" id="a2Top"></div></div><div id="a2Head"></div><div id="acMain"></div></div>`;
+  if(A2.view === 'saved') return a2DrawSaved();
+  if(A2.view === 'set') return a2DrawSet();
+  a2DrawSheet();
+}
+function a2DrawSheet(){
+  const d = a2Doc(), sec = A2.sec, ed = acCanEdit(), rows = d ? d.rows : [], op = sec === 'operator';
+  const status = !d ? '' : (d.dirty ? '<span class="a2Warn">Not saved</span>' : (d.savedAt ? `Saved ${a2Stamp(d.savedAt)}${d.savedBy ? ' &middot; ' + acEsc(d.savedBy) : ''}` : 'Not saved yet'));
+  const calc = op && d ? (d.calcAt ? `Picks calculated ${a2Stamp(d.calcAt)}` : 'Picks not calculated yet') : '';
+  const depts = Array.from(new Set(rows.map(r => r.dept).filter(Boolean))).sort(), poss = Array.from(new Set(rows.map(r => r.pos).filter(Boolean))).sort();
+  const opts = (list, cur, all) => `<option value="">${all}</option>` + list.map(v => `<option value="${acEsc(v[0])}" ${v[0] === cur ? 'selected' : ''}>${acEsc(v[1])}</option>`).join('');
+  const full = !!(d && rows.length), fN = [A2.q, A2.dept, A2.pos, A2.shift].filter(Boolean).length;
+  $('a2Top').innerHTML = `<div class="a2Fl">${full ? `<button type="button" class="pillBtn${fN ? ' ok' : ''}" data-a2="filt" title="Filter the list">${a2Svg('filter', 13)}Filter${fN ? ' ' + fN : ''}</button>` : ''}
+      ${A2.fOpen && full ? `<div class="a2FPanel"><input type="text" id="a2Q" class="acQ" placeholder="Search name or ID" value="${acEsc(A2.q)}">
+      ${depts.length > 1 ? `<select id="a2Dept">${opts(depts.map(x => [x, x]), A2.dept, 'All departments')}</select>` : ''}
+      ${op && poss.length > 1 ? `<select id="a2Pos">${opts(poss.map(x => [x, x]), A2.pos, 'All positions')}</select>` : ''}
+      ${op ? `<select id="a2Shift">${opts([['D', 'Day'], ['N', 'Night']], A2.shift, 'Both shifts')}</select>` : ''}
+      ${fN ? '<button type="button" class="pillBtn" data-a2="fclear">Clear</button>' : ''}</div>` : ''}</div>
+    ${op || sec === 'sponsor' ? `<button type="button" class="iconBtn" data-a2="set" title="Settings" aria-label="Settings">${a2Svg('gear', 15)}</button>` : ''}
+    ${full ? `<button type="button" class="pillBtn" data-a2="dl" title="Download PDF or Excel">${DL_ICON}Download</button>` : ''}`;
+  $('a2Head').innerHTML = `<div class="a2Bar a2One">
+      <button type="button" class="iconBtn" data-a2="prev" title="Previous month">&lsaquo;</button><b class="a2Month">${acYmLabel(A2.ym)}</b><button type="button" class="iconBtn" data-a2="next" title="Next month">&rsaquo;</button>
+      <span class="a2Stat">${status}${calc ? ' &middot; ' + calc.replace('Picks calculated', 'Picks') : ''}</span>
+      ${op ? `<span class="a2Lbl">From</span><input type="date" id="a2From" value="${d ? d.from : ''}" ${ed ? '' : 'disabled'}><span class="a2Lbl">to</span><input type="date" id="a2To" value="${d ? d.to : ''}" ${ed ? '' : 'disabled'}>
+      ${ed ? `<button type="button" class="pillBtn ok" data-a2="calc" ${A2.busy ? 'disabled' : ''}>${A2.busy ? 'Calculating…' : (d && d.calcAt ? 'Recalculate' : 'Calculate picks')}</button>` : ''}` : ''}
+      ${ed && full ? `<button type="button" class="iconBtn" data-a2="refresh" title="${op ? 'Add new operators' : 'Add new people and update from profiles'}">${a2Svg('refresh')}</button>
+      ${op || sec === 'sponsor' ? `<button type="button" class="pillBtn" data-a2="recalc" title="Apply the latest settings to the saved picks and amounts">${op ? 'Update rates' : 'Recalculate'}</button>` : ''}` : ''}
+      <span style="flex:1"></span>${ed && full ? `<button type="button" class="pillBtn ok" data-a2="save" ${d.dirty && !A2.busy ? '' : 'disabled'}>Save sheet</button>` : ''}</div>`;
+  if(!d || !rows.length){
+    $('acMain').innerHTML = `<div class="a2Empty"><div class="a2EmptyT">No ${A2_SEC[sec].n.toLowerCase()} sheet for ${acYmLabel(A2.ym)} yet</div>
+      <div class="hrNote">${op ? 'Press Calculate picks above. It makes the operator list and counts the picks once. Nothing is read until you press it.' : 'Create the sheet to list everyone and start from the profile salary.'}</div>
+      ${ed && !op ? '<button type="button" class="pillBtn ok" data-a2="create">Create sheet</button>' : ''}</div>`;
+    return;
+  }
+  $('acMain').innerHTML = `
+    <div id="a2Tbl"></div>`;
+  a2DrawTable();
+}
+function a2Missing(){ const d = a2Doc(); if(!d) return []; const have = new Set(d.rows.map(r => r.id)); return a2People(A2.sec, true).filter(u => !have.has(u.loginId)).sort((a, b) => a2Num(a.loginId, b.loginId)); }
+const a2GapRow = (cols) => `<tr class="a2Gap"><td colspan="${cols.length + 1}"></td></tr>`;
+function a2TrsOf(cols, r, n, ed, flat){   // flat = no merged cells (the PDF drawing does not merge cells)
+  const L = cols.some(c => c.ml) ? Math.max(1, (r.mc || []).length) : 1, rs = (L > 1 && !flat) ? ` rowspan="${L}"` : '', out = [];
+  for(let i = 0; i < L; i++){
+    let t = '';
+    if(i === 0) t += `<td class="serial"${rs}>${n}</td>`; else if(flat) t += '<td class="serial"></td>';
+    cols.forEach(c => {
+      const cl = (c.num ? 'a2N ' : '') + (c.bold ? 'a2B ' : '') + (c.dedCol ? 'a2D' : '');
+      if(c.ml) t += `<td class="${cl}">${c.html(r, ed, i)}</td>`;
+      else if(i === 0) t += `<td${rs} class="${cl}" data-rid="${acEsc(r.id)}"${c.calc ? ` data-c="${c.k}"` : ''}>${c.html(r, ed, 0)}</td>`;
+      else if(flat) t += `<td class="${cl}"></td>`;
+    });
+    out.push(`<tr class="${i === 0 ? 'a2First' : 'a2More'} a2G${n % 2}">${t}</tr>`);
+  }
+  return out;
+}
+function a2FootHtml(cols, rows, ed){
+  const cells = cols.map(c => { if(c.k === 'name') return `<td><b>Total</b> <span class="a2Sm">${rows.length}</span></td>`; if(!c.sum || c.ml) return '<td></td>'; let t = 0; rows.forEach(r => { t += Number(c.sv(r)) || 0; }); return `<td class="a2N a2B">${c.k === 'total' ? a2I(t) : (A2.sec === 'operator' ? (a2W(t) || '0') : (a2M(t) || '0.00'))}</td>`; }).join('');
+  return `<tr class="a2Tot"><td></td>${cells}</tr>`;
+}
+function a2DrawTable(){
+  const box = $('a2Tbl'); if(!box) return;
+  const cols = a2Screen(A2.sec), rows = a2Filtered(), ed = acCanEdit();
+  const head = `<tr><th class="serial">#</th>${cols.map(c => `<th class="${c.num ? 'a2N' : ''}${c.dedCol ? ' a2D' : ''}">${acEsc(c.l)}</th>`).join('')}</tr>`;
+  let n = 0; const trs = rows.map(r => a2TrsOf(cols, r, ++n, ed).join('')).join('');
+  box.innerHTML = `<div class="table-scroll"><table class="report-table ovTbl a2T${cols.length > 13 ? ' a2Wide' : ''}"><thead>${head}</thead><tbody>${trs || `<tr><td colspan="${cols.length + 2}" class="a2Empty">No one matches.</td></tr>`}</tbody><tfoot>${a2FootHtml(cols, rows, ed)}</tfoot></table></div>
+    <div class="hrNote" style="margin-top:8px;">${A2.sec === 'operator' ? 'Picks are the approved daily totals plus stop-time picks. Click a number to see its days. If they look low, run Refresh All Calculations (Admin, Shift &amp; Timing) first.' : 'Changes here are for this month only. The salary on the profile is not changed.'}</div>`;
+}
+function a2RefreshRow(r){
+  a2Calc(A2.sec, r); const cols = a2Screen(A2.sec), ed = acCanEdit();
+  cols.forEach(c => { if(!c.calc) return; document.querySelectorAll(`#a2Tbl td[data-rid="${CSS.escape(r.id)}"][data-c="${c.k}"]`).forEach(td => { if(!td.querySelector('input')) td.innerHTML = c.html(r, false, 0); }); });
+  const f = document.querySelector('#a2Tbl tfoot'); if(f) f.innerHTML = a2FootHtml(cols, a2Filtered(), ed);
+  const t = $('a2Tiles'); if(t) t.outerHTML = a2TilesHtml();
+}
+function a2DirtyUi(){ const d = a2Doc(); const s = document.querySelector('[data-a2="save"]'); if(s && d) s.disabled = !d.dirty; const st = document.querySelector('.a2Stat'); if(st && d && d.dirty) st.innerHTML = '<span class="a2Warn">Not saved</span>' + (A2.sec === 'operator' ? (d.calcAt ? ' &middot; Picks calculated ' + a2Stamp(d.calcAt) : '') : ''); }
+
+/* ---------- saved list ---------- */
+async function a2DrawSaved(){
+  $('a2Head').innerHTML = ''; $('acMain').innerHTML = '<div class="empty-state">Loading…</div>';
+  try{ await a2LoadIndex(); }catch(err){ console.error(err); $('acMain').innerHTML = '<div class="empty-state">Could not load the list. Check your connection.</div>'; return; }
+  const items = Object.keys(A2.idx.items).map(k => A2.idx.items[k]).sort((a, b) => (b.ym.localeCompare(a.ym)) || a.sec.localeCompare(b.sec));
+  $('acMain').innerHTML = items.length ? `<div class="table-scroll"><table class="report-table ovTbl a2T"><thead><tr><th class="serial">#</th><th>Month</th><th>Section</th><th class="a2N">People</th><th class="a2N">Net payable</th><th>Saved</th><th></th></tr></thead><tbody>${items.map((x, i) => `<tr><td class="serial">${i + 1}</td><td>${acYmLabel(x.ym)}</td><td>${acEsc((A2_SEC[x.sec] || {}).n || x.sec)}</td><td class="a2N">${x.count}</td><td class="a2N a2B">${acMoney(x.total)}</td><td>${a2Stamp(x.savedAt)}${x.by ? ' &middot; ' + acEsc(x.by) : ''}</td><td><button type="button" class="pillBtn" data-a2="open" data-ym="${x.ym}" data-v="${x.sec}">Open</button></td></tr>`).join('')}</tbody></table></div>`
+    : '<div class="a2Empty"><div class="a2EmptyT">No saved salary yet</div><div class="hrNote">When a sheet is saved it appears here. Open it any time to change it and save again.</div></div>';
+}
+
+/* ---------- settings (only what belongs to the section) ---------- */
+function a2DrawSet(){
+  AC.sd = null; AC.te = null; AC.tn = null; AC.setSec = A2.sec; AC.open = { cols: true, std: true, who: true, tbl: true, rules: true, cut: true, rnd: true };
+  $('a2Head').innerHTML = `<div class="a2Bar"><button type="button" class="pillBtn" data-a2="back">${a2Svg('back', 13)}Back to the sheet</button><b class="a2SetT">${A2_SEC[A2.sec].n} settings</b></div>
+    <div class="hrNote" style="margin:0 0 10px;">After saving, press Back to the sheet. The new settings are applied to this month's sheet automatically.</div>`;
+  acDrawSettings();
+}
+
+/* ---------- download (same table, same columns: screen = PDF = Excel) ---------- */
+const a2DlCols = (sec) => a2Cols(sec, true).filter(c => !(sec === 'operator' && c.k === 'ded' && !a2ShowDed()));   // no Deduction box on the sheet = no Deduction column in the PDF / Excel
+function a2DlCfg(){
+  const sec = A2.sec, cols = a2DlCols(sec), all = cols.map(c => ({ k: c.k, l: c.l, g: c.g || 'Pay', get: r => c.text(r, 0) }));
+  return { key: 'acc2_' + sec, title: A2_SEC[sec].n + ' salary - ' + acYmLabel(A2.ym), noun: 'people', file: 'salary-' + sec + '-' + A2.ym, sheet: A2_SEC[sec].n, def: cols.filter(c => c.def).map(c => c.k),
+    items: () => a2Filtered(), id: r => r.id, label: r => r.id + ' · ' + r.name + (r.dept ? ' · ' + r.dept : ''), cols: () => all, exporter: a2Export,
+    sumExtra: (it) => [['Month', acYmLabel(A2.ym)]].concat(sec === 'operator' ? [['Picks counted', (a2Doc().from || '') + ' to ' + (a2Doc().to || '')]] : []).concat([['Net payable', acMoney(it.reduce((a, r) => a + sec2net(sec, r), 0))]]) };
+}
+async function a2Export(o){
+  const sec = A2.sec, all = a2DlCols(sec), cols = o.cols.map(s => all.find(c => c.k === s.k)).filter(Boolean), items = o.items, d = a2Doc();
+  const lines = (r) => cols.some(c => c.ml) ? Math.max(1, (r.mc || []).length) : 1;
+  const tot = (c) => { if(c.k === 'name') return 'Total (' + items.length + ')'; if(!c.sum || c.ml) return ''; let t = 0; items.forEach(r => { t += Number(c.sv(r)) || 0; }); return (c.k === 'total' || sec === 'operator') ? Math.round(t) : acR2(t); };
+  const stamp = rvfDateStamp();
+  if(o.kind === 'xlsx'){
+    try{ await dlLoadExcelJs(); }catch(e){ toast('Could not load the Excel tool - check your connection'); return false; }
+    const wb = new ExcelJS.Workbook(), ws1 = wb.addWorksheet('Summary'), ws = wb.addWorksheet(o.sheet || 'Salary', { views: [{ state: 'frozen', ySplit: 1 }], pageSetup: { orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 0 } });
+    o.sumAoa.forEach(r => ws1.addRow(r)); ws1.getColumn(1).width = 22; ws1.getColumn(2).width = 60; ws1.getRow(1).font = { bold: true, size: 13 };
+    const nc = cols.length + 1, line = { style: 'thin', color: { argb: 'FFCDD3E2' } }, box = { top: line, left: line, bottom: line, right: line };
+    const fmt = (c) => (c.k === 'mcr' || c.k === 'avg') ? '0.00##' : (c.k === 'total' || c.ml || sec === 'operator') ? '#,##0' : '#,##0.00';
+    const hr = ws.addRow(['#'].concat(cols.map(c => c.l)));
+    hr.height = 24; hr.eachCell(cell => { cell.font = { bold: true, size: 10, color: { argb: 'FF475069' } }; cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F3F9' } }; cell.border = box; cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true }; });
+    let n = 0, rowNo = 1;
+    items.forEach(r => {
+      n++; const L = lines(r), top = rowNo + 1;
+      for(let i = 0; i < L; i++){
+        const vals = [i === 0 ? n : null].concat(cols.map(c => c.ml ? (sec === 'operator' && c.k === 'mcp' ? (r.mc[i] ? Number(r.mc[i].p) || 0 : '') : (c.raw ? c.raw(r, i) : c.text(r, i))) : (i === 0 ? (c.raw ? c.raw(r, 0) : c.text(r, 0)) : null)));
+        const row = ws.addRow(vals); rowNo++;
+        row.eachCell({ includeEmpty: true }, (cell, ci) => {
+          cell.border = box; const c = cols[ci - 2];
+          if(ci === 1){ cell.alignment = { horizontal: 'center', vertical: 'middle' }; cell.font = { color: { argb: 'FF8A93A8' } }; return; }
+          const isNum = typeof cell.value === 'number';
+          cell.alignment = { vertical: 'middle', horizontal: isNum ? 'right' : 'left', wrapText: false };
+          if(isNum) cell.numFmt = fmt(c);
+          if(c.bold) cell.font = { bold: true };
+        });
+      }
+      if(n % 2 === 1){ for(let rr = top; rr < top + L; rr++) for(let ci = 1; ci <= nc; ci++) ws.getCell(rr, ci).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF3F5FB' } }; }
+      if(L > 1){ for(let ci = 1; ci <= nc; ci++){ const c = cols[ci - 2]; if(ci === 1 || !c.ml) ws.mergeCells(top, ci, top + L - 1, ci); } }
+      if(sec === 'operator'){   // live formulas: change a number and the sheet recalculates
+        const col = (k) => { const i = cols.findIndex(c => c.k === k); return i < 0 ? 0 : i + 2; }, ltr = (k) => ws.getColumn(col(k)).letter, bot = top + L - 1, cell = (k) => ltr(k) + top, rng = (k) => ltr(k) + top + ':' + ltr(k) + bot;
+        const set = (k, f, res) => { ws.getCell(top, col(k)).value = { formula: f, result: res }; };
+        if(col('mcp') && col('total')) set('total', 'SUM(' + rng('mcp') + ')', r.total);
+        if(col('mcr') && col('avg')) set('avg', 'IFERROR(AVERAGE(' + rng('mcr') + '),"")', r.avg === '' ? '' : r.avg);
+        if(col('total') && col('avg') && col('prem')) set('prem', 'IF(ISNUMBER(' + cell('avg') + '),ROUND(' + cell('total') + '*' + cell('avg') + ',0),0)', r.prem);
+        if(col('prem') && col('cut')) set('cut', 'ROUND(' + cell('prem') + '*' + (r.cutPct || 0) + '/100,0)', r.cut);
+        if(col('prem') && col('cut') && col('np')) set('np', cell('prem') + '-' + cell('cut'), r.np);
+        const base = col('np') ? cell('np') : (col('prem') ? cell('prem') : '');
+        if(base && col('net')) set('net', 'ROUND(N(' + base + ')' + (col('extra') ? '+N(' + cell('extra') + ')' : '') + (col('ded') ? '-N(' + cell('ded') + ')' : '') + ',0)', r.net);
+      }
+    });
+    const tr = ws.addRow([null].concat(cols.map(c => tot(c))));
+    if(sec === 'operator' && rowNo > 1){ cols.forEach((c, i) => { if(c.sum && !c.ml){ const L2 = ws.getColumn(i + 2).letter, cur = tr.getCell(i + 2).value; tr.getCell(i + 2).value = { formula: 'SUM(' + L2 + '2:' + L2 + rowNo + ')', result: typeof cur === 'number' ? cur : 0 }; } }); }
+    tr.eachCell({ includeEmpty: true }, (cell, ci) => { const c = cols[ci - 2]; cell.font = { bold: true }; cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F3F9' } }; cell.border = { top: { style: 'medium', color: { argb: 'FFCDD3E2' } }, left: line, bottom: line, right: line }; if(typeof cell.value === 'number'){ cell.numFmt = fmt(c); cell.alignment = { horizontal: 'right' }; } });
+    ws.getColumn(1).width = 5; cols.forEach((c, i) => { ws.getColumn(i + 2).width = c.k === 'name' ? 26 : c.k === 'rm' ? 24 : c.k === 'ds' ? 12 : 14; });
+    const buf = await wb.xlsx.writeBuffer(); dlSaveBlob(new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), o.file + '-' + stamp + '.xlsx'); toast('Excel file downloaded'); return true;
+  }
+  const land = cols.length > 12, cls = 'ovPdfT a2PdfT' + (land ? (cols.length > 14 ? ' ovW3' : ' ovW2') : ' a2P');
+  const hd = `<tr><th>#</th>${cols.map(c => `<th class="${c.num ? 'a2N' : ''}">${acEsc(c.l)}</th>`).join('')}</tr>`;
+  const groups = []; let n = 0;
+  items.forEach(r => { const rows = a2TrsOf(cols, r, ++n, false, false); groups.push(rows); });
+  const foot = `<tr class="a2Tot"><td></td>${cols.map(c => { const t = tot(c); return `<td class="${c.num ? 'a2N a2B' : ''}">${t === '' ? '' : (typeof t === 'number' ? ((c.k === 'total' || sec === 'operator') ? a2I(t) : acMoney(t)) : '<b>' + acEsc(t) + '</b>')}</td>`; }).join('')}</tr>`;
+  const head0 = rvfPdfHeader(o.title, [o.headLines[0]].concat(sec === 'operator' && d ? ['Picks counted ' + d.from + ' to ' + d.to] : [])), blocks = [head0];
+  const tblHtml = (rowsHtml) => `<div class="table-scroll"><table class="report-table ${cls}"><thead>${hd}</thead><tbody>${rowsHtml}</tbody></table></div>`;
+  // measure every row once (same width and style as the PDF sheet), then fill each page to the bottom
+  let hHead = 40, hFoot = 24, gh = groups.map(g => g.length * 22), headH = 90;
+  try{
+    const wrap = document.createElement('div'); wrap.className = 'pdfSheet'; wrap.style.cssText = 'position:fixed; left:-10000px; top:0; width:760px; background:#fff; padding:0; z-index:-1;';
+    wrap.innerHTML = `<div id="a2MH">${head0}</div>` + tblHtml(groups.map(g => g.join('')).join('') + foot); document.body.appendChild(wrap);
+    const trs = wrap.querySelectorAll('tbody tr'); let k = 0;
+    gh = groups.map(g => { let h = 0; for(let i = 0; i < g.length; i++) h += trs[k++].getBoundingClientRect().height; return h; });
+    hFoot = trs[k] ? trs[k].getBoundingClientRect().height : 24; hHead = wrap.querySelector('thead').getBoundingClientRect().height; headH = wrap.querySelector('#a2MH').getBoundingClientRect().height; wrap.remove();
+  }catch(err){ console.error(err); }
+  const pagePx = land ? 190 / (277 / 760) : 277 / (190 / 760), safe = 14;
+  let cur = [], curH = 0, cap = pagePx - headH - safe - 8;
+  const push = (last) => { blocks.push(tblHtml(cur.join('') + (last ? foot : ''))); cur = []; curH = 0; cap = pagePx - safe - 8; };
+  groups.forEach((g, i) => {
+    let rows = g, h = gh[i];
+    if(!cur.length && rows[0].indexOf('a2Gap') >= 0){ rows = rows.slice(1); h -= 7; }
+    if(cur.length && hHead + curH + h > cap){ push(false); if(rows[0].indexOf('a2Gap') >= 0){ rows = rows.slice(1); h -= 7; } }
+    cur.push(rows.join('')); curH += h;
+  });
+  if(hHead + curH + hFoot > cap && cur.length > 1){ const lastG = cur.pop(); push(false); cur.push(lastG); }
+  push(true);
+  toast('Making the PDF…');
+  return rvfMakePdf(blocks, o.file + '-' + stamp + '.pdf', { landscape: land });
+}
+
+/* ---------- events ---------- */
+document.addEventListener('click', async (e) => {
+  const t = e.target.closest('[data-a2]'); if(!t || !$('accountsBody') || !($('accountsBody').contains(t) || t.dataset.a2 === 'peekx')) return;
+  const a = t.dataset.a2;
+  if(a === 'sec'){ A2.sec = t.dataset.v; A2.view = 'sheet'; A2.q = ''; A2.dept = ''; A2.shift = ''; A2.pos = ''; try{ await a2LoadDoc(A2.sec, A2.ym); a2Draw(); }catch(err){ console.error(err); toast('Could not load'); } }
+  else if(a === 'saved'){ A2.view = 'saved'; a2Draw(); }
+  else if(a === 'prev' || a === 'next'){ A2.ym = acYmShift(A2.ym, a === 'next' ? 1 : -1); try{ await a2LoadDoc(A2.sec, A2.ym); a2Draw(); }catch(err){ console.error(err); toast('Could not load that month'); } }
+  else if(a === 'open'){ A2.sec = t.dataset.v; A2.ym = t.dataset.ym; A2.view = 'sheet'; try{ await a2LoadDoc(A2.sec, A2.ym); a2Draw(); }catch(err){ console.error(err); toast('Could not open'); } }
+  else if(a === 'calc'){ a2CalcPicks(); }
+  else if(a === 'create'){ a2Create(); }
+  else if(a === 'refresh'){ a2Refresh(); }
+  else if(a === 'recalc'){ a2Recalc(); }
+  else if(a === 'save'){ a2Save(); }
+  else if(a === 'set'){ A2.view = 'set'; a2Draw(); }
+  else if(a === 'back'){ A2.view = 'sheet'; const n = a2DropOthers(); if(n) toast(n + ' left the Operator sheet (position not ticked)'); const ch = a2Apply(); if(ch && !n) toast('New settings applied to the sheet'); a2Draw(); }
+  else if(a === 'dl'){ dlOpen(a2DlCfg()); }
+  else if(a === 'peek'){
+    if(!A2.raw){ toast('Press Recalculate picks to see the days'); return; }
+    const rows = Object.values(A2.raw[t.dataset.id] || {}).filter(x => String(x.machine) === String(t.dataset.m)).sort((x, y) => x.date.localeCompare(y.date)), u = (state.users || []).find(x => x.loginId === t.dataset.id);
+    const tp = rows.reduce((a, x) => a + x.picks, 0), ts = rows.reduce((a, x) => a + x.stopPicks, 0);
+    let ov = document.getElementById('dlOv'); if(ov) ov.remove(); ov = document.createElement('div'); ov.id = 'dlOv'; ov.className = 'dlOv'; document.body.appendChild(ov);
+    ov.innerHTML = `<div class="dlCard"><div class="dlHead"><b>${acEsc(u ? u.name : t.dataset.id)} &middot; ${acEsc(a2McName(t.dataset.m))}</b><button type="button" class="dlX" data-a2="peekx" aria-label="Close">&times;</button></div>
+      <div class="hrNote" style="margin:6px 0 10px;">${rows.length} days &middot; picks ${a2I(tp)} + stop time ${a2I(ts)} = <b>${a2I(tp + ts)}</b></div>
+      <div class="table-scroll"><table class="report-table a2T"><thead><tr><th class="serial">#</th><th>Date</th><th class="a2N">Picks</th><th class="a2N">Stop picks</th><th class="a2N">Total</th></tr></thead><tbody>${rows.map((x, i) => `<tr><td class="serial">${i + 1}</td><td>${x.date}</td><td class="a2N">${a2I(x.picks)}</td><td class="a2N">${a2I(x.stopPicks) || ''}</td><td class="a2N a2B">${a2I(x.picks + x.stopPicks)}</td></tr>`).join('') || '<tr><td colspan="5" class="a2Empty">No days.</td></tr>'}</tbody></table></div></div>`;
+  }
+  else if(a === 'peekx'){ const ov = document.getElementById('dlOv'); if(ov) ov.remove(); }
+  else if(a === 'filt'){ A2.fOpen = !A2.fOpen; a2DrawSheet(); }
+  else if(a === 'fclear'){ A2.q = A2.dept = A2.pos = A2.shift = ''; a2DrawSheet(); }
+  else if(a === 'del'){ const d = a2Doc(), r = d && d.rows.find(x => x.id === t.dataset.id); if(!r || !confirm('Take ' + r.name + ' out of this month\'s sheet? Their profile is not changed.')) return; d.rows = d.rows.filter(x => x.id !== r.id); a2Touch(); a2DrawSheet(); }
+});
+document.addEventListener('mousedown', (e) => { if(A2.fOpen && !e.target.closest('.a2Fl') && document.getElementById('a2Top')){ A2.fOpen = false; if(A2.view === 'sheet') a2DrawSheet(); } });
+document.addEventListener('input', (e) => {
+  const t = e.target; if(!$('accountsBody') || !$('accountsBody').contains(t)) return;
+  if(t.id === 'a2Q'){ A2.q = t.value; a2DrawTable(); const t2 = $('a2Tiles'); if(t2) t2.outerHTML = a2TilesHtml(); const q = $('a2Q'); if(q){ q.focus(); q.setSelectionRange(q.value.length, q.value.length); } return; }
+  if(t.dataset.a2 === 'in'){
+    const d = a2Doc(), r = d && d.rows.find(x => x.id === t.dataset.id); if(!r) return; const k = t.dataset.k, v = t.value.trim();
+    if(k.indexOf('c.') === 0){ r.c = r.c || {}; r.c[k.slice(2)] = v; } else r[k] = v;
+    a2Touch(); a2RefreshRow(r); a2DirtyUi();
+  }
+});
+document.addEventListener('change', async (e) => {
+  const t = e.target; if(!$('accountsBody') || !$('accountsBody').contains(t)) return;
+  if(t.id === 'a2From' || t.id === 'a2To'){ const d = a2Doc(); if(d){ d.from = $('a2From').value || d.from; d.to = $('a2To').value || d.to; a2Touch(); a2DirtyUi(); } return; }
+  if(t.id === 'a2Dept'){ A2.dept = t.value; a2DrawSheet(); return; }
+  if(t.id === 'a2Pos'){ A2.pos = t.value; a2DrawSheet(); return; }
+  if(t.id === 'a2Shift'){ A2.shift = t.value; a2DrawSheet(); return; }
+  if(t.id === 'a2Add'){ const u = (state.users || []).find(x => x.loginId === t.value), d = a2Doc(); if(u && d){ d.rows.push(a2NewRow(d.sec, u)); a2Touch(); a2DrawSheet(); } return; }
+  if(t.dataset.a2 === 'chk'){
+    const d = a2Doc(), r = d && d.rows.find(x => x.id === t.dataset.id); if(!r) return; const k = t.dataset.k;
+    if(k === 'fixed') r.fixed = t.checked; else if(k.indexOf('fl.') === 0){ r.fl = r.fl || {}; r.fl[k.slice(3)] = t.checked; }
+    a2Touch(); a2Calc(d.sec, r); a2DrawTable(); const t2 = $('a2Tiles'); if(t2) t2.outerHTML = a2TilesHtml(); a2DirtyUi();
+  }
+});
 
 (function(){
   const b=$('bkOpenBtn'); if(b) b.addEventListener('click', () => bkOpen());
