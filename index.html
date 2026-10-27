@@ -2874,6 +2874,31 @@ table.a2T tbody tr.a2Gap + tr.a2First td{ border-top:0 !important; }
 .report-table.a2PdfT tbody tr.a2G1 td{ background:#f3f5fb !important; } .report-table.a2PdfT tbody tr.a2G1, .report-table.a2PdfT tbody tr.a2G0, .report-table.a2PdfT tbody tr.a2G0 td{ background:transparent !important; }
 .report-table.a2PdfT tbody tr.a2G0 td{ background:#fff !important; }
 
+.acGrp{ flex-wrap:wrap; gap:8px; align-items:center; } .acL2{ font-size:11px; font-weight:700; color:var(--muted); margin:12px 0 6px; text-transform:uppercase; letter-spacing:.04em; }
+.acLadW{ overflow:auto; margin-top:6px; } table.acLadT{ border-collapse:collapse; font-size:12.5px; min-width:420px; } .acLadT th{ text-align:left; font-size:11px; color:var(--muted); font-weight:700; padding:6px 8px; text-transform:uppercase; letter-spacing:.03em; }
+.acLadT td{ padding:4px 6px; border-top:1px solid #eef0f6; } .acLadT td input.acNum{ width:90px; } .acLadE td{ background:#f6f7fc; font-size:12px; color:var(--muted); }
+.acPaste{ margin:8px 0; padding:10px; border-radius:12px; background:#f6f7fc; } .acRow2{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:8px; }
+
+.mStar{ display:inline-flex; vertical-align:-1px; margin-left:5px; color:var(--accent,#4f46e5); } .mStar svg{ display:block; }
+.mVip{ display:inline-flex; align-items:center; gap:3px; margin-left:4px; padding:1px 7px 1px 5px; border-radius:999px; background:#eef0ff; color:var(--accent,#4f46e5); font-size:10px; font-weight:700; letter-spacing:.04em; vertical-align:1px; }
+
+.mVipT{ font-size:.78em; font-weight:700; color:#4f46e5; letter-spacing:.03em; }
+
+button.a2NameB{ border:0; background:transparent; padding:0; font:inherit; color:inherit; text-align:left; cursor:pointer; } button.a2NameB:hover{ color:var(--accent,#4f46e5); text-decoration:underline; text-decoration-style:dotted; }
+.mGrp{ display:inline-block; margin-left:6px; padding:1px 7px; border-radius:999px; background:#eef0ff; color:var(--accent,#4f46e5); font-size:10px; font-weight:700; letter-spacing:.03em; vertical-align:1px; white-space:nowrap; } .mGrp.man{ background:#fff; border:1px dashed var(--accent,#4f46e5); padding:0 6px; }
+.a2Rad{ display:flex; align-items:flex-start; gap:10px; padding:9px 10px; border:1px solid var(--line); border-radius:12px; margin-bottom:6px; cursor:pointer; font-size:13px; } .a2Rad small{ display:block; font-size:11px; color:var(--muted); font-weight:400; margin-top:2px; } .a2Rad.on{ border-color:var(--accent,#4f46e5); background:#f6f7ff; } .a2Rad input{ margin-top:3px; }
+
+.acGrp{ flex-wrap:wrap; gap:6px 8px; } .acGrp > span{ font-size:12px; color:var(--muted); white-space:nowrap; } .acGrp select{ height:34px; font-size:12px; max-width:150px; } .acGrp details.acMs > summary{ max-width:130px; }
+
+.report-table.a2PdfT.a2Fit{ table-layout:fixed; width:100%; font-size:8.5px; } .report-table.a2PdfT.a2Fit td, .report-table.a2PdfT.a2Fit th{ padding:3px 3px; overflow:hidden; line-height:1.25; }
+.report-table.a2PdfT.a2Fit td:nth-child(3){ white-space:normal; word-break:break-word; } .report-table.a2PdfT.a2Fit th{ white-space:normal; font-size:8px; }
+
+button.a2NameB{ display:block; max-width:150px; white-space:normal; line-height:1.25; font-size:12px; }
+table.a2T th:nth-child(3){ width:1%; min-width:130px; }
+
+.a2DetL{ display:flex; align-items:center; gap:6px; font-size:12px; white-space:nowrap; padding:2px 2px; cursor:pointer; }
+.a2DetL{ justify-content:flex-start !important; margin:4px 0 0 !important; font-size:12px !important; color:var(--text,#222) !important; }
+
 /* v63 Earned picks */
 .pkxBar{ display:flex; align-items:center; gap:8px; margin-bottom:8px; }
 table.pkxTbl th, table.pkxTbl td{ padding:7px 7px; font-size:12px; white-space:nowrap; }
@@ -3351,6 +3376,10 @@ table.pkPdf tr.tot td{ background:#eef2ff !important; border-top:1px solid #c7d2
         <div class="grid-2">
           <div class="field"><label for="newMachinePicks">Picks / cm</label><input type="text" id="newMachinePicks" placeholder="e.g. 18"></div>
           <div class="field"><label for="newMachineCart">Cart Picks</label><input type="text" id="newMachineCart" placeholder="e.g. 4"></div>
+        </div>
+        <div class="field">
+          <label for="newMachineVip">Machine type</label>
+          <select id="newMachineVip"><option value="">Normal</option><option value="1">VIP</option></select>
         </div>
         <div class="grid-2">
           <div class="field"><label for="newMachineBaseline">Current Reading <span style="text-transform:none; font-weight:400; color:var(--muted);">(what the counter shows now)</span></label><input type="text" inputmode="numeric" id="newMachineBaseline" placeholder="e.g. 128400"></div>
@@ -5633,7 +5662,7 @@ function renderMachinesList(){
     row.innerHTML = `
       <div style="display:flex; align-items:center; gap:8px; width:100%;">
         <div style="flex:1;">
-          <b>${m.id}</b> &middot; ${m.name} ${statusBadge}
+          <b>${m.id}</b> &middot; ${m.name} ${machineVipTag(m.id)} ${statusBadge}
           <div style="font-size:11px; color:var(--muted); margin-top:2px;">
             ${m.department ? 'Dept: ' + m.department + ' &middot; ' : ''}${(m.shiftRun && m.shiftRun !== 'Both') ? m.shiftRun + ' Only &middot; ' : ''}${m.widthCm ? 'Width ' + m.widthCm+'cm &middot; ' : ''}${m.speed ? 'Speed '+m.speed+' &middot; ' : ''}${m.picksPerCm ? m.picksPerCm+' picks/cm' : ''}
           </div>
@@ -5694,6 +5723,14 @@ function toggleMachineEditPanel(id){
       </div>
       <div class="hint" style="text-align:left; margin-left:0;">Changing this resets where picks are counted from — future readings diff against this value and date instead of the reading history before it.</div>
       <div class="em-baseline-preview hint" style="text-align:left; margin-left:0; margin-top:6px;"></div>
+    </div>
+    <div class="field">
+      <label>Machine type</label>
+      <select class="em-vip">
+        <option value="" ${!m.vip?'selected':''}>Normal</option>
+        <option value="1" ${m.vip?'selected':''}>VIP</option>
+      </select>
+      <div class="hint" style="text-align:left; margin-left:0;">A VIP machine shows a small star everywhere, and Accounts uses it for the VIP extra-money and premium groups.</div>
     </div>
     <div class="row-2">
       <button class="btn btn-ghost btn-sm em-cancel">Cancel</button>
@@ -5778,6 +5815,7 @@ async function saveMachineEdit(id, panel){
     shiftRun: panel.querySelector('.em-shiftrun').value,
     picksPerCm: panel.querySelector('.em-picks').value.trim(),
     cartPicks: panel.querySelector('.em-cart').value.trim(),
+    vip: panel.querySelector('.em-vip').value === '1',
     baselineReading: baselineReading || null,
     baselineDate
   };
@@ -5966,12 +6004,12 @@ $('addMachineBtn').addEventListener('click', async () => {
   if(!id || !name){ toast('Enter both machine ID and name'); return; }
   if(!requireDb()) return;
   if(state.machines.some(m => String(m.id) === id)){ toast('That machine ID already exists'); return; }
-  const list = state.machines.concat([{ id, name, department, widthCm, speed, shiftRun, picksPerCm, cartPicks, status: 'running', baselineReading: baselineReading || null, baselineDate: baselineReading ? baselineDate : null }]);
+  const list = state.machines.concat([{ id, name, department, widthCm, speed, shiftRun, picksPerCm, cartPicks, vip: $('newMachineVip').value === '1', status: 'running', baselineReading: baselineReading || null, baselineDate: baselineReading ? baselineDate : null }]);
   try{
     await window.__db.saveMachines(list);
     setMachinesSorted(list);
     $('newMachineId').value = ''; $('newMachineName').value = '';
-    $('newMachineWidth').value = ''; $('newMachineSpeed').value = ''; $('newMachineShiftRun').value = 'Both';
+    $('newMachineWidth').value = ''; $('newMachineSpeed').value = ''; $('newMachineShiftRun').value = 'Both'; $('newMachineVip').value = '';
     $('newMachinePicks').value = ''; $('newMachineCart').value = '';
     $('newMachineBaseline').value = ''; $('newMachineBaselineDate').value = '';
     renderMachinesList();
@@ -8079,7 +8117,7 @@ async function loadApprovals(){
       item.dataset.id = r._id;
       item.innerHTML = `
         <div class="top">
-          <div class="mc">${machineName(r.machine) || r.machineName}</div>
+          <div class="mc">${machineName(r.machine) || r.machineName}${machineStar(r.machine)}</div>
           <span class="badge ${delayed ? 'badge-rejected' : 'badge-pending'}">${delayed ? 'Delayed' : 'Pending'}</span>
           ${loggedLate ? '<span class="badge badge-rejected" title="Operator submitted this after their own logging deadline">Logged Late</span>' : ''}
         </div>
@@ -9722,7 +9760,7 @@ function renderPicksRowsTable(containerId, rows, onPageChange){
   let rowsHtml = '';
   pageRows.forEach((row, ix) => {
     const dayTotal = row.picks + row.stopPicks;
-    rowsHtml += `<tr><td>${(page - 1) * perPage + ix + 1}</td><td>${fmtDate(row.date)}</td><td>${machineName(row.machine)}</td><td>${row.picks.toLocaleString()}</td><td>${row.stopHours.toFixed(1)}</td><td>${Math.round(row.stopPicks).toLocaleString()}</td><td>${Math.round(dayTotal).toLocaleString()}</td></tr>`;
+    rowsHtml += `<tr><td>${(page - 1) * perPage + ix + 1}</td><td>${fmtDate(row.date)}</td><td>${machineName(row.machine)}${machineStar(row.machine)}</td><td>${row.picks.toLocaleString()}</td><td>${row.stopHours.toFixed(1)}</td><td>${Math.round(row.stopPicks).toLocaleString()}</td><td>${Math.round(dayTotal).toLocaleString()}</td></tr>`;
   });
   box.innerHTML = `<div class="table-scroll"><table class="report-table"><thead><tr><th>#</th><th>Date</th><th>Machine</th><th>Machine Reading</th><th>Stopped Time</th><th>Earned Picks from Stop</th><th>Total</th></tr></thead><tbody>${rowsHtml}</tbody></table></div>
     <div class="card row" style="margin-top:10px;"><span class="k">Total Picks (selected range)</span><span><b>${Math.round(running).toLocaleString()}</b></span></div>`;
@@ -9942,7 +9980,7 @@ async function loadMyStatus(){
       item.className = 'approve-item';
       item.innerHTML = `
         <div class="top">
-          <div class="mc">${machineName(r.machine) || r.machineName}</div>
+          <div class="mc">${machineName(r.machine) || r.machineName}${machineStar(r.machine)}</div>
           <span class="badge ${statusBadge}">${r.status}</span>
         </div>
         <div class="meta">
@@ -9976,7 +10014,7 @@ function renderMyRejectedEntries(rejected, targetUser, viewingOther){
   box.innerHTML = `<h2 style="margin-top:0;">${viewingOther ? 'Rejected — needs their fix' : 'Needs Your Fix'}</h2>` + rejected.map(r => {
     if(resubmitEditingId === r._id){
       return `<div class="approve-item" style="border-color:var(--danger);">
-        <div class="top"><div class="mc">${machineName(r.machine) || r.machineName}</div><span class="badge badge-rejected">Rejected</span></div>
+        <div class="top"><div class="mc">${machineName(r.machine) || r.machineName}${machineStar(r.machine)}</div><span class="badge badge-rejected">Rejected</span></div>
         ${r.supervisorRemarks ? `<div class="meta" style="margin-bottom:10px;">Supervisor note: <b>${r.supervisorRemarks}</b></div>` : ''}
         ${r.photoDataUrl ? `<img src="${r.photoDataUrl}" class="approve-photo resubmitPhoto" data-full="${r.photoDataUrl}">` : ''}
         <div class="approve-key-info">
@@ -10011,7 +10049,7 @@ function renderMyRejectedEntries(rejected, targetUser, viewingOther){
       </div>`;
     }
     return `<div class="approve-item" style="border-color:var(--danger);">
-      <div class="top"><div class="mc">${machineName(r.machine) || r.machineName}</div><span class="badge badge-rejected">Rejected</span></div>
+      <div class="top"><div class="mc">${machineName(r.machine) || r.machineName}${machineStar(r.machine)}</div><span class="badge badge-rejected">Rejected</span></div>
       <div class="meta">
         Date: <b>${fmtDate(r.date)}</b> &middot; Shift: <b>${r.shift}</b> &middot; ${r.photoType==='start'?'Starting':'Ending'} Photo &middot; Reading: <b>${r.reading}</b><br>
         Stop Time: <b>${r.stopTime}</b> &middot; Reason: <b>${r.reason}</b><br>
@@ -10464,7 +10502,7 @@ function renderAssignSummary(mountId, key, staged){
   const covered = D.machines.filter(x => !x.gap).length, uncovered = D.machines.length - covered;
   const noAppr = D.ops.filter(o => !o.sup).length;
   const dayOps = D.ops.filter(o => o.shift === 'Day').length, nightOps = D.ops.filter(o => o.shift === 'Night').length, bothOps = D.ops.length - dayOps - nightOps;
-  const chip = (mid) => `<span class="asumChip">${esc(machineName(mid))}</span>`;
+  const chip = (mid) => `<span class="asumChip">${esc(machineName(mid))}${machineStar(mid)}</span>`;
   const chips = (arr) => arr.length ? arr.map(chip).join('') : '<span style="color:var(--muted);">—</span>';
   const shiftTag = (s) => s === 'Day' ? 'Day' : s === 'Night' ? 'Night' : 'Both';
   const idTag = (t) => `<span style="color:var(--muted); font-size:11px;">${esc(t)}</span>`;
@@ -18767,6 +18805,7 @@ function acNormSettings(s){
   const d = acDefaults(); s = Object.assign({}, d, s || {});
   s.std = Object.assign({}, d.std, s.std || {}); s.absent = Object.assign({}, d.absent, s.absent || {}); s.round = Object.assign({}, d.round, s.round || {});
   s.cols = Array.isArray(s.cols) ? s.cols.slice() : d.cols; s.rules = (Array.isArray(s.rules) ? s.rules : []).map(r => Object.assign({}, r, { depts: Array.isArray(r.depts) ? r.depts : (r.dept ? [r.dept] : []) }));
+  s.ladders = Object.assign({ grace: 0, every: 500, groups: [], rows: [] }, s.ladders || {}); s.ladders.groups = Array.isArray(s.ladders.groups) ? s.ladders.groups : []; s.ladders.rows = Array.isArray(s.ladders.rows) ? s.ladders.rows : [];
   Object.keys(AC_BUILTIN).forEach(id => { if(!s.cols.some(c => c.id === id)) s.cols.push({ id }); });
   return s;
 }
@@ -18847,6 +18886,36 @@ function acRateAt(t, colName, level){
   if(level >= rows[0][0]) return acNum(rows[0][ci + 1]);
   const hit = rows.find(r => r[0] <= level);
   return hit ? acNum(hit[ci + 1]) : 0;
+}
+/* extra money ladder: groups (department and/or machine list) + one table of picks steps */
+const acGroupMode = (g) => g.mode || ((g.machines || []).length ? 'list' : 'any');
+const acGroupMachines = (g) => { const m = acGroupMode(g); return m === 'vip' ? (state.machines || []).filter(x => x.vip).map(x => String(x.id)) : (m === 'list' ? (g.machines || []).map(String) : []); };
+/* share of the operator's picks that came from the group's machines (0-100) and how many of those machines he ran */
+function acGroupShare(g, mc){
+  const lst = acGroupMachines(g), run = (mc || []).filter(m => (Number(m.p) || 0) > 0), tot = run.reduce((a, m) => a + Number(m.p), 0), inn = run.filter(m => lst.indexOf(String(m.m)) >= 0);
+  return { n: inn.length, picks: inn.reduce((a, m) => a + Number(m.p), 0), total: tot, pct: tot > 0 ? inn.reduce((a, m) => a + Number(m.p), 0) / tot * 100 : 0 };
+}
+function acGroupFits(g, dept, mc){
+  if((g.depts || []).length && g.depts.indexOf(dept || '') < 0) return false;
+  if(acGroupMode(g) === 'any') return true;
+  const sh = acGroupShare(g, mc), need = g.share == null || g.share === '' ? 50 : acNum(g.share);
+  return sh.n >= Math.max(1, acNum(g.min) || 1) && sh.pct >= need;
+}
+function acLadderGroup(dept, mc, gid){
+  const L = AC.set && AC.set.ladders; if(!L || !L.groups.length) return null;
+  if(gid){ const m = L.groups.find(g => g.id === gid); if(m) return m; }   // chosen by hand for this month
+  const score = (g) => (acGroupMode(g) !== 'any' ? 2 : 0) + ((g.depts || []).length ? 1 : 0);
+  let best = null; L.groups.filter(g => acGroupFits(g, dept, mc)).forEach(g => { if(!best || score(g) > score(best)) best = g; });
+  return best;
+}
+function acLadderExtra(g, total){
+  const L = AC.set.ladders, grace = acNum(L.grace);
+  const steps = L.rows.map(r => ({ p: acNum(r.p), raw: (r.v || {})[g.id] })).filter(x => x.p > 0 && String(x.raw == null ? '' : x.raw).trim() !== '').map(x => ({ p: x.p, a: acNum(x.raw) })).sort((x, y) => x.p - y.p);
+  let best = null; steps.forEach(x => { if(total + grace >= x.p) best = x; });
+  if(!best) return 0;
+  let amt = best.a; const every = acNum(L.every), add = acNum(g.add);
+  if(best === steps[steps.length - 1] && every > 0 && add > 0) amt += Math.floor((total + grace - best.p) / every) * add;
+  return amt;
 }
 function acRuleFor(u, total, mcCount){
   const ok = (AC.set.rules || []).filter(r => total >= acNum(r.min) && (!(r.depts || []).length || r.depts.indexOf(u.department || '') >= 0) && (!r.mc || (acNum(r.mc) >= 4 ? mcCount >= 4 : mcCount === acNum(r.mc))));
@@ -19174,6 +19243,27 @@ function acDrawSettings(){
     <div class="acGrid"><label>Round to the nearest<input class="acNum" data-sk="rnd_step" value="${S.round.step}" inputmode="numeric"></label><label>Go up when the rest is at least<input class="acNum" data-sk="rnd_from" value="${S.round.from}" inputmode="numeric"></label></div>
     <div class="hrNote" id="acRndEx" style="margin-top:8px;">${acRndEx(S.round.step, S.round.from)}</div>`;
   const depts = Array.from(new Set((state.departments || []).concat((state.users || []).map(u => u.department).filter(Boolean)))).sort();
+  const LD = S.ladders = Object.assign({ grace: 0, every: 500, groups: [], rows: [] }, S.ladders || {});
+  const mList = (state.machines || []).slice().sort((x, y) => String(x.name).localeCompare(String(y.name), undefined, { numeric: true })).map(m => ({ v: String(m.id), l: String(m.name) }));
+  const acMsX = (key, items, sel, all) => { const names = items.filter(x => sel.indexOf(x.v) >= 0).map(x => x.l), label = names.length ? (names.length <= 3 ? names.join(', ') : names.length + ' machines') : all;
+    return `<details class="acMs" data-msd="${key}" ${AC.msOpen === key ? 'open' : ''}><summary>${acEsc(label)}</summary><div class="acMsL">${items.map(x => `<label><input type="checkbox" data-ms="${key}" value="${acEsc(x.v)}" ${sel.indexOf(x.v) >= 0 ? 'checked' : ''}> ${acEsc(x.l)}</label>`).join('')}</div></details>`; };
+  const grpHtml = LD.groups.map((g, i) => `<div class="acCR acGrp"><input class="acNm" data-sk="lg_name" data-i="${i}" value="${acEsc(g.name)}" placeholder="Group name" style="width:130px;">
+      <span>Dept</span>${acMs('lgd' + i, depts, g.depts || [], 'Any')}
+      <span>Machines</span><select data-sk="lg_mode" data-i="${i}" title="${acGroupMode(g) === 'vip' ? (state.machines || []).filter(x => x.vip).length + ' machines are marked VIP in Machine settings' : ''}">${[['any', 'Any'], ['vip', 'VIP machines'], ['list', 'Chosen machines']].map(m => `<option value="${m[0]}" ${acGroupMode(g) === m[0] ? 'selected' : ''}>${m[1]}</option>`).join('')}</select>
+      ${acGroupMode(g) === 'list' ? acMsX('lgm' + i, mList, (g.machines || []).map(String), 'Choose') : ''}
+      ${acGroupMode(g) !== 'any' ? `<span>at least</span><input class="acNum" data-sk="lg_min" data-i="${i}" value="${acEsc(g.min == null || g.min === '' ? 1 : g.min)}" inputmode="numeric" style="width:44px;"><span>machines and</span><input class="acNum" data-sk="lg_share" data-i="${i}" value="${acEsc(g.share == null || g.share === '' ? 50 : g.share)}" inputmode="numeric" style="width:44px;"><span>% of picks</span>` : ''}
+      ${acGroupMode(g) === 'vip' && !(state.machines || []).some(x => x.vip) ? '<span style="color:var(--danger);">no machine marked VIP yet</span>' : ''}
+      <button type="button" class="acX" data-ac="s_delgroup" data-i="${i}">&times;</button></div>`).join('') || '<div class="hrNote">No groups yet. Press "Fill with my proposal" to start, or add a group.</div>';
+  const gcols = LD.groups.map(g => `<th>${acEsc(g.name || 'Group')}</th>`).join('');
+  const lrows = LD.rows.map((r, i) => `<tr><td><input class="acNum" data-sk="ld_p" data-i="${i}" value="${acEsc(r.p)}" inputmode="numeric"></td>${LD.groups.map(g => `<td><input class="acNum" data-sk="ld_v" data-i="${i}" data-g="${acEsc(g.id)}" value="${acEsc((r.v || {})[g.id] == null ? '' : (r.v || {})[g.id])}" inputmode="decimal" placeholder="&mdash;"></td>`).join('')}<td><button type="button" class="acX" data-ac="s_delstep" data-i="${i}">&times;</button></td></tr>`).join('');
+  const ladGrid = LD.groups.length ? `<div class="acLadW"><table class="acLadT"><thead><tr><th>Picks reached</th>${gcols}<th></th></tr></thead><tbody>${lrows}
+      <tr class="acLadE"><td>Every further <input class="acNum" data-sk="ld_every" value="${acEsc(LD.every)}" inputmode="numeric" style="width:60px;"> picks, add</td>${LD.groups.map((g, i) => `<td><input class="acNum" data-sk="lg_add" data-i="${i}" value="${acEsc(g.add == null ? '' : g.add)}" inputmode="decimal" placeholder="&mdash;"></td>`).join('')}<td></td></tr></tbody></table></div>
+    <div class="acRow2"><button type="button" class="pillBtn" data-ac="s_addstep">Add a step</button><span class="hrNote" style="margin:0 0 0 8px;">A step counts when the operator is within</span><input class="acNum" data-sk="ld_grace" value="${acEsc(LD.grace)}" inputmode="numeric" style="width:60px;"><span class="hrNote" style="margin:0;">picks of it.</span></div>` : '';
+  const pasteBox = AC.ladPaste ? `<div class="acPaste"><div class="hrNote" style="margin-bottom:6px;">Copy the table from Excel or Word and paste it here. First column: picks. Then one column per group, in the same order as the groups above. A dash means nothing. "300 + P" is read as 300. A line starting with "Every" sets the repeat step.</div><textarea id="acLadTx" class="acTx" rows="9" placeholder="2000&#9;&mdash;&#9;200&#9;&mdash;&#10;2500&#9;100&#9;300&#9;&mdash;"></textarea><div class="acRow2"><button type="button" class="pillBtn ok" data-ac="s_ladapply">Use this table</button><button type="button" class="pillBtn" data-ac="s_ladpaste">Cancel</button></div></div>` : '';
+  const oldRules = (!LD.groups.length && S.rules.length) ? `<div class="hrNote" style="margin-top:10px;">Your old rules below still work until you create groups.</div>` : '';
+  const ladHtml = `<div class="hrNote" style="margin-bottom:8px;">Extra money is one table: the picks the operator reached, and what each group gets. The app picks the operator's group first, then reads the table. A group can be limited to a department and/or to some machines (for example VIP = machines 1, 3, 5, 8, 10, 12, 19, 20, needs at least 2 of them). If more than one group fits, the one with the machine list wins. The premium (P) is not here: it comes from the Premium rate tables, so leave the levels below its start without a rate.</div>
+    <div class="acL2">1. Groups</div>${grpHtml}<div class="acRow2"><button type="button" class="pillBtn" data-ac="s_addgroup">Add a group</button><button type="button" class="pillBtn" data-ac="s_ladfill">Fill with my proposal</button>${LD.groups.length ? '<button type="button" class="pillBtn" data-ac="s_ladpaste">Paste a table</button>' : ''}</div>
+    ${pasteBox}${LD.groups.length ? '<div class="acL2">2. Extra money for each step</div>' : ''}${ladGrid}${oldRules}`;
   const ruleHtml = `<div class="hrNote" style="margin-bottom:8px;">Example: an operator on 3 machines who reaches 3000 picks gets 200 SAR. Each line is one rule. If more than one fits, the more specific one is used.</div>` + (S.rules.length ? S.rules.map((r, i) => `<div class="acCR acRule"><span>Operators in</span>${acMs('rl' + i, depts, r.depts || [], 'any department')}<span>on</span>
       <select data-sk="rl_mc" data-i="${i}">${[[0, 'any number of machines'], [1, '1 machine'], [2, '2 machines'], [3, '3 machines'], [4, '4 or more machines']].map(m => `<option value="${m[0]}" ${acNum(r.mc) === m[0] ? 'selected' : ''}>${m[1]}</option>`).join('')}</select>
       <span>who reach</span><input class="acNum" data-sk="rl_min" data-i="${i}" value="${acEsc(r.min)}" inputmode="numeric"><span>picks get</span><input class="acNum" data-sk="rl_amt" data-i="${i}" value="${acEsc(r.amount)}" inputmode="decimal"><span>SAR</span><button type="button" class="acX" data-ac="s_delrule" data-i="${i}">&times;</button></div>`).join('') : '<div class="hrNote">No rules yet.</div>')
@@ -19202,7 +19292,7 @@ function acDrawSettings(){
   const test = T.length ? `<div class="acAdd" style="margin-top:10px;"><b>Try it</b><div class="acCE" style="padding-left:0;"><input class="acNum" id="acTestP" placeholder="picks" inputmode="numeric" value="4174"><select id="acTestM">${(state.machines || []).filter(m => acTableFor(m.id)).map(m => `<option value="${acEsc(m.id)}">${acEsc(m.name)}</option>`).join('')}</select><span id="acTestR" class="hrNote" style="margin:0;"></span></div></div>` : '';
   const tblHtml = `<div class="hrNote" style="margin-bottom:8px;">Premium is paid per pick. The person's total picks are rounded (see Rounding below) and the rate for that level is multiplied by the total picks. If a person works on machines from different tables, the average of their rates is used.</div>${tblList}${editor || '<button type="button" class="pillBtn" data-ac="s_addtbl" style="margin-top:8px;">Add a rate table</button>'}${test}`;
   const saveRow = `<div class="acRow2"><span class="hrNote" style="margin:0;">${(AC.setSec || 'sponsor') === 'operator' ? 'Rounding and extra-money rules are saved together. Rate tables are saved with their own button.' : 'Columns and salary structure are saved together.'}</span><span style="flex:1"></span><button type="button" class="pillBtn ok" data-ac="s_save">Save settings</button></div>`;
-  $('acMain').innerHTML = (AC.setSec === 'operator' ? sec('who', 'Who is an operator (positions)', whoHtml) + sec('tbl', 'Premium rate tables', tblHtml) + sec('rules', 'Extra money (picks targets)', ruleHtml) + sec('cut', 'Deduction from premium (%)', cutHtml) + sec('ded', 'Deduction box (typed by hand)', dedHtml) + sec('rnd', 'Rounding (to find the rate)', rndHtml) : sec('cols', 'Columns (add, deduct)', colsHtml) + sec('std', 'Salary structure and absence', stdHtml)) + saveRow;
+  $('acMain').innerHTML = (AC.setSec === 'operator' ? sec('who', 'Who is an operator (positions)', whoHtml) + sec('tbl', 'Premium rate tables', tblHtml) + sec('rules', 'Extra money (ladder)', ladHtml + (!LD.groups.length && S.rules.length ? ruleHtml : '')) + sec('cut', 'Deduction from premium (%)', cutHtml) + sec('ded', 'Deduction box (typed by hand)', dedHtml) + sec('rnd', 'Rounding (to find the rate)', rndHtml) : sec('cols', 'Columns (add, deduct)', colsHtml) + sec('std', 'Salary structure and absence', stdHtml)) + saveRow;
   acTestRun();
 }
 function acTxInfo(p){ return p.rows.length ? `${p.rows.length} levels &middot; ${p.rows[0][0]} down to ${p.rows[p.rows.length - 1][0]} &middot; rate ${p.rows[0][1]} to ${p.rows[p.rows.length - 1][1]}${p.n > 1 ? ' &middot; only the first rate column is used' : ''}${p.bad ? ` &middot; <span style="color:var(--danger)">${p.bad} line(s) have a different number of columns</span>` : ''}` : 'Nothing read yet.'; }
@@ -19219,6 +19309,13 @@ function acSettingsClick(a, t){
     if(calc === 'pct' && !c.pct){ toast('Type the percentage'); return; }
     const k = S.cols.findIndex(x => x.id === (c.kind === 'deduct' ? 'totded' : 'gross')); S.cols.splice(k >= 0 ? k : S.cols.length, 0, c); acDrawSettings();
   }
+  else if(a === 's_addgroup'){ S.ladders.groups.push({ id: 'g' + Date.now().toString(36), name: '', depts: [], machines: [], min: 1, add: '' }); acDrawSettings(); }
+  else if(a === 's_delgroup'){ const g = S.ladders.groups[i]; if(!g || !confirm('Delete the group "' + (g.name || '') + '" and its amounts?')) return; S.ladders.groups.splice(i, 1); S.ladders.rows.forEach(r => { if(r.v) delete r.v[g.id]; }); acDrawSettings(); }
+  else if(a === 's_addstep'){ S.ladders.rows.push({ p: '', v: {} }); acDrawSettings(); }
+  else if(a === 's_delstep'){ S.ladders.rows.splice(i, 1); acDrawSettings(); }
+  else if(a === 's_ladpaste'){ AC.ladPaste = !AC.ladPaste; acDrawSettings(); }
+  else if(a === 's_ladapply'){ acLadApply($('acLadTx').value); }
+  else if(a === 's_ladfill'){ if(S.ladders.groups.length && !confirm('Replace the groups and amounts with the proposal?')) return; acLadProposal(); }
   else if(a === 's_addrule'){ S.rules.push({ depts: [], mc: 0, min: '', amount: '' }); acDrawSettings(); }
   else if(a === 's_delrule'){ S.rules.splice(i, 1); acDrawSettings(); }
   else if(a === 's_save'){ acSaveSettings(); }
@@ -19243,6 +19340,9 @@ async function acSaveSettings(){
   if(Math.abs(S.std.basic + S.std.housing + S.std.transport - 100) > 0.01 && !confirm('Basic + Housing + Transport shares add up to ' + (S.std.basic + S.std.housing + S.std.transport) + '%, not 100%. Save anyway?')) return;
   S.absent.days = acNum(S.absent.days) || 30; S.round.step = acNum(S.round.step) || 100; S.round.from = acNum(S.round.from);
   S.rules = S.rules.filter(r => acNum(r.min) > 0 && acNum(r.amount) > 0).map(r => ({ depts: r.depts || [], mc: acNum(r.mc), min: acNum(r.min), amount: acNum(r.amount) }));
+  { const L = S.ladders; L.groups = L.groups.filter(g => String(g.name || '').trim()); const ids = new Set(L.groups.map(g => g.id));
+    L.rows = L.rows.filter(r => acNum(r.p) > 0).map(r => { const v = {}; Object.keys(r.v || {}).forEach(k => { if(ids.has(k) && String(r.v[k]).trim() !== '') v[k] = acNum(r.v[k]); }); return { p: acNum(r.p), v }; }).sort((x, y) => x.p - y.p);
+    L.groups.forEach(g => { g.name = String(g.name).trim(); g.add = String(g.add == null ? '' : g.add).trim() === '' ? '' : acNum(g.add); g.min = Math.max(1, acNum(g.min) || 1); g.share = String(g.share == null ? '' : g.share).trim() === '' ? 50 : acNum(g.share); }); L.every = acNum(L.every) || 500; L.grace = acNum(L.grace); }
   S.premCut = acNum(S.premCut); S.cols.forEach(c => { if(c.pct !== undefined) c.pct = acNum(c.pct); });
   try{ await window.__db.saveConfigObject('acctSettings', S); AC.set = acNormSettings(JSON.parse(JSON.stringify(S))); acCloneSet(); toast('Settings saved'); acDrawSettings(); }
   catch(err){ console.error(err); toast('Could not save — check your connection'); }
@@ -19275,6 +19375,15 @@ function acSkChange(t, isChange){
   else if(k.indexOf('std_') === 0){ S.std[k.slice(4)] = v; }
   else if(k === 'abs_base'){ S.absent.base = v; } else if(k === 'abs_days'){ S.absent.days = v; }
   else if(k === 'prem_cut'){ S.premCut = v; }
+  else if(k === 'lg_name'){ S.ladders.groups[i].name = v; if(isChange) acDrawSettings(); }
+  else if(k === 'lg_mode'){ S.ladders.groups[i].mode = v; if(isChange) acDrawSettings(); }
+  else if(k === 'lg_share'){ S.ladders.groups[i].share = v; }
+  else if(k === 'lg_min'){ S.ladders.groups[i].min = v; }
+  else if(k === 'lg_add'){ S.ladders.groups[i].add = v; }
+  else if(k === 'ld_p'){ S.ladders.rows[i].p = v; }
+  else if(k === 'ld_v'){ const r = S.ladders.rows[i]; r.v = r.v || {}; r.v[t.dataset.g] = v; }
+  else if(k === 'ld_every'){ S.ladders.every = v; }
+  else if(k === 'ld_grace'){ S.ladders.grace = v; }
   else if(k === 'opded'){ S.opDed = !!t.checked; const b = t.parentElement.querySelector('b'); if(b) b.textContent = S.opDed ? 'On' : 'Off'; }
   else if(k === 'oppos'){ const a = Array.isArray(S.opPos) ? S.opPos.slice() : [], j = a.findIndex(x => String(x).toLowerCase() === v.toLowerCase()); if(t.checked && j < 0) a.push(v); else if(!t.checked && j >= 0) a.splice(j, 1); S.opPos = a; }
   else if(k === 'rnd_step' || k === 'rnd_from'){ if(k === 'rnd_step') S.round.step = v; else S.round.from = v; const ex = document.getElementById('acRndEx'); if(ex) ex.innerHTML = acRndEx(S.round.step, S.round.from); }
@@ -19285,10 +19394,36 @@ function acSkChange(t, isChange){
 
 document.addEventListener('change', (e) => {
   const t = e.target; if(!$('accountsBody') || !$('accountsBody').contains(t) || !AC.sd) return;
+  if(t.dataset.ms && /^lg[dm]\d+$/.test(t.dataset.ms)){ const i = Number(t.dataset.ms.slice(3)), g = AC.sd.ladders.groups[i], f = t.dataset.ms[2] === 'd' ? 'depts' : 'machines', a = g[f] = g[f] || [], k = a.indexOf(t.value); if(t.checked && k < 0) a.push(t.value); else if(!t.checked && k >= 0) a.splice(k, 1); AC.msOpen = t.dataset.ms; acDrawSettings(); }
   if(t.dataset.ms && /^rl\d+$/.test(t.dataset.ms)){ const i = Number(t.dataset.ms.slice(2)), a = AC.sd.rules[i].depts = AC.sd.rules[i].depts || [], k = a.indexOf(t.value); if(t.checked && k < 0) a.push(t.value); else if(!t.checked && k >= 0) a.splice(k, 1); AC.msOpen = t.dataset.ms; acDrawSettings(); }
   if(t.id === 'acTestM') acTestRun();
 });
 document.addEventListener('input', (e) => { if(e.target.id === 'acTestP') acTestRun(); });
+
+function acLadProposal(){
+  const S = AC.sd, byName = (n) => { const m = (state.machines || []).find(x => String(x.name).replace(/\s+/g, ' ').trim().toLowerCase() === n.toLowerCase()); return m ? String(m.id) : null; };
+  const vip = [1, 3, 5, 8, 10, 12, 19, 20].map(n => byName('RVF ' + n)).filter(Boolean);
+  const gR = { id: 'g_rvf', name: 'RVF', depts: ['RVF'], mode: 'any', machines: [], min: 1, add: 50 }, gV = { id: 'g_vip', name: 'VIP', depts: ['RVF'], mode: 'vip', machines: [], min: 2, share: 50, add: 100 }, gS = { id: 'g_sstm', name: 'SSTM', depts: ['SSTM'], mode: 'any', machines: [], min: 1, add: 50 };
+  const T = [[2000, '', 200, ''], [2500, 100, 300, ''], [3000, 200, 400, 200], [3500, 250, 500, 225], [4000, 300, 600, 250], [4500, 350, 700, 275], [5000, 400, 800, 300], [5500, 450, 900, 350]];
+  S.ladders = { grace: 50, every: 500, groups: [gR, gV, gS], rows: T.map(t => ({ p: t[0], v: { g_rvf: t[1], g_vip: t[2], g_sstm: t[3] } })) };
+  if(!(state.machines || []).some(x => x.vip)) toast('No machine is marked VIP yet. Open Admin, Machines, Edit, and set Machine type to VIP.');
+  acDrawSettings();
+}
+function acLadApply(text){
+  const S = AC.sd, L = S.ladders, G = L.groups; if(!G.length){ toast('Add the groups first'); return; }
+  const num = (c) => { const m = String(c == null ? '' : c).match(/-?\d{1,3}(?:,\d{3})+(?:\.\d+)?|-?\d+(?:[.,]\d+)?/); return m ? (/^-?\d{1,3}(?:,\d{3})+/.test(m[0]) ? m[0].replace(/,/g, '') : m[0].replace(',', '.')) : ''; };
+  const rows = []; let every = null;
+  String(text || '').split(/\r?\n/).forEach(line => {
+    if(!line.trim()) return; const c = line.indexOf('\t') >= 0 ? line.split('\t') : line.trim().split(/\s{2,}/);
+    if(/^\s*every/i.test(c[0])){ every = { per: num(c[0]), adds: c.slice(1).map(num) }; return; }
+    const p = num(c[0]); if(!p || !/^\s*[\d,\.]+\s*$/.test(c[0])) return;
+    const v = {}; G.forEach((g, j) => { const x = c[j + 1] == null ? '' : String(c[j + 1]).trim(); v[g.id] = /^[—–\-−]*$/.test(x) ? '' : num(x); });
+    rows.push({ p, v });
+  });
+  if(!rows.length){ toast('No picks lines found. The first column must be the picks number'); return; }
+  L.rows = rows; if(every){ if(every.per) L.every = every.per; G.forEach((g, j) => { if(every.adds[j] !== undefined) g.add = every.adds[j]; }); }
+  AC.ladPaste = false; acDrawSettings(); toast(rows.length + ' steps read');
+}
 
 /* v60: Profile > Salary Info follows the Accounts sheet: same values, and a box for every column that is kept on the profile */
 async function acEnsureLoaded(){
@@ -19450,7 +19585,7 @@ function pkxDraw(id){
   let body = '', lastDate = '';
   pageRows.forEach((r, ix) => {
     const day = r.picks + r.stopPicks;
-    body += `<tr><td>${(page - 1) * perPage + ix + 1}</td><td>${pkxShortDate(r.date)}</td><td title="${acEsc(machineName(r.machine))}">${acEsc(machineName(r.machine))}</td><td class="pkS" data-k="${acEsc(r.date + '|' + r.machine)}"></td><td class="pkE" data-k="${acEsc(r.date + '|' + r.machine)}"></td><td><b>${r.picks.toLocaleString()}</b></td><td>${r.stopHours.toFixed(1)}</td><td>${pkxFmt(r.stopPicks)}</td><td><b>${pkxFmt(day)}</b></td></tr>`;
+    body += `<tr><td>${(page - 1) * perPage + ix + 1}</td><td>${pkxShortDate(r.date)}</td><td title="${acEsc(machineName(r.machine))}">${acEsc(machineName(r.machine))}${machineStar(r.machine)}</td><td class="pkS" data-k="${acEsc(r.date + '|' + r.machine)}"></td><td class="pkE" data-k="${acEsc(r.date + '|' + r.machine)}"></td><td><b>${r.picks.toLocaleString()}</b></td><td>${r.stopHours.toFixed(1)}</td><td>${pkxFmt(r.stopPicks)}</td><td><b>${pkxFmt(day)}</b></td></tr>`;
   });
   let effHtml = '';
   if(id === 'picksBody' && all.length){
@@ -19935,6 +20070,12 @@ function astCfg(){
     ], sumExtra: (it) => AST_ST.map(s => [s[1], it.filter(t => t.status === s[0]).length]) };
 }
 
+/* VIP (2-loom) machines: one flag on the machine, shown as a small star wherever a machine name is drawn */
+function machineIsVip(id){ const m = (state.machines || []).find(x => String(x.id) === String(id)); return !!(m && m.vip); }
+const MVIP_SVG = '<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2.5 15.1 8.8 22 9.8 17 14.7 18.2 21.5 12 18.2 5.8 21.5 7 14.7 2 9.8 8.9 8.8"/></svg>';
+function machineStar(id){ return machineIsVip(id) ? `<span class="mStar" title="VIP machine">${MVIP_SVG}</span>` : ''; }
+function machineVipTag(id){ return machineIsVip(id) ? `<span class="mVip" title="VIP machine">${MVIP_SVG}VIP</span>` : ''; }
+
 /* ============================================================
    v94: ACCOUNTS - three salary sheets: Operator, Sponsor, Non Sponsor.
    - One sheet per month and section. Saved in "config" as salary_YYYY-MM_<section>; a small list of all saved sheets is kept in salaryIndex.
@@ -19967,18 +20108,23 @@ const a2McName = (m) => { const x = (state.machines || []).find(k => String(k.id
 /* ---------- people -> rows ---------- */
 function a2NewOp(u){ return { id: u.loginId, name: u.name, dept: u.department || '', pos: a2PosOf(u), sh: a2Sh(u), mc: [], total: 0, avg: '', prem: 0, ax: 0, ex: '', extra: 0, ded: '', rm: '', net: 0 }; }
 function a2OpRates(r){
-  const total = (r.mc || []).reduce((a, m) => a + (Number(m.p) || 0), 0); r.total = acR2(total); r.prem = 0; r.avg = ''; r.ax = 0; r.miss = 0; r.cutPct = acNum(AC.set.premCut); r.cut = 0; r.np = 0;
+  const total = (r.mc || []).reduce((a, m) => a + (Number(m.p) || 0), 0); r.total = acR2(total); r.prem = 0; r.avg = ''; r.ax = 0; r.miss = 0; r.cutPct = acNum(AC.set.premCut); r.cut = 0; r.np = 0; r.grp = ''; r.gm = '';
+  { const u = (state.users || []).find(x => x.loginId === r.id), sl = (u && u.profile && u.profile.salary) || {}; r.bs = acNum(sl.basicSalary) || ''; r.otm = acNum(sl.overtime) || ''; }
   (r.mc || []).forEach(m => { m.r = ''; });
   if(total > 0){
-    const lv = acLevel(total), rates = [];
-    r.mc.forEach(m => { const t = acTableFor(m.m); if(!t){ r.miss++; return; } const x = acRateAt(t, '', lv); m.r = x || ''; rates.push(x); });
+    const lv = acLevel(total), rates = [], lad0 = AC.set.ladders, run = r.mc.filter(m => m.p > 0);
+    const g0 = lad0 && lad0.groups.length ? acLadderGroup(r.dept, run, r.gid) : null; let grpTbl = null;
+    if(g0 && acGroupMode(g0) !== 'any'){ const lst = acGroupMachines(g0), f = run.find(m => lst.indexOf(String(m.m)) >= 0); if(f) grpTbl = acTableFor(f.m); }   // VIP group: all his machines use the VIP premium table
+    r.mc.forEach(m => { const t = grpTbl || acTableFor(m.m); if(!t){ r.miss++; return; } const x = acRateAt(t, '', lv); m.r = x || ''; rates.push(x); });
     if(rates.length){ const avg = Math.round(rates.reduce((a, b) => a + b, 0) / rates.length * 1e6) / 1e6; r.avg = avg || ''; r.prem = Math.round(total * avg); }
     r.cutPct = acNum(AC.set.premCut); r.cut = Math.round(r.prem * r.cutPct / 100); r.np = r.prem - r.cut;
-    const rule = acRuleFor({ department: r.dept }, total, r.mc.filter(m => m.p > 0).length); if(rule) r.ax = acNum(rule.amount);
+    if(g0){ r.grp = g0.name; r.gm = acGroupMode(g0); r.ax = acLadderExtra(g0, total); }
+    else if(lad0 && lad0.groups.length){ r.grp = ''; r.ax = 0; }
+    else { const rule = acRuleFor({ department: r.dept }, total, r.mc.filter(m => m.p > 0).length); if(rule) r.ax = acNum(rule.amount); }
   }
   a2OpNet(r);
 }
-function a2OpNet(r){ r.extra = r.ax || 0; r.net = Math.round((r.np != null && r.np !== '' ? r.np : (r.prem || 0)) + r.extra - acNum(r.ded)); }
+function a2OpNet(r){ r.extra = r.ax || 0; r.net = Math.round(acNum(r.bs) + acNum(r.otm) + (r.np != null && r.np !== '' ? r.np : (r.prem || 0)) + r.extra - acNum(r.ded)); }
 function a2NewSp(u){
   const sal = (u.profile && u.profile.salary) || {};
   const r = { id: u.loginId, name: u.name, dept: u.department || '', basic: sal.basicSalary || '', fixed: sal.salaryType === 'fixed', ot: sal.overtime || '', extra: sal.extraMoney || '', ab: '', pr: '', c: {}, fl: {}, rm: '' };
@@ -20026,20 +20172,26 @@ function a2Cols(sec, all){
   const ed = acCanEdit();
   if(sec === 'operator'){
     const c = a2Common(); c[1].l = 'Operator';
+    c[1].html = (r, e) => { const nm = acEsc(r.name); if(A2.pdf) return nm + (r.gm && r.gm !== 'any' ? ` <span class="mVipT">${acEsc(r.grp)}</span>` : '');
+      const pill = r.gid ? `<span class="mGrp${r.gid ? ' man' : ''}" title="${r.gid ? 'Group chosen by hand for this month' : 'Group found from the picks'}">${acEsc(r.grp || 'No group')}</span>` : '';
+      return `<button type="button" class="a2NameB" data-a2="grp" data-id="${acEsc(r.id)}" title="Pay group for this month">${nm}</button>${pill}`; };
     const ds = (r) => (r.dept || '') + (r.sh ? '/' + r.sh : '');
     return c.concat([
-      { k: 'ds', l: 'Dept / Shift', g: 'Person', def: 1, rep: 1, text: ds, html: r => (r.dept || r.sh) ? acEsc(r.dept || '') + (r.sh ? `<span class="a2Sh">/${r.sh}</span>` : '') : '' },
+      { k: 'ds', l: 'Dept', g: 'Person', def: 1, rep: 1, text: ds, html: r => (r.dept || r.sh) ? acEsc(r.dept || '') + (r.sh ? `<span class="a2Sh">/${r.sh}</span>` : '') : '' },
+      { k: 'bs', l: 'Basic', g: 'Salary', def: 1, num: 1, sum: 1, sv: r => acNum(r.bs), text: r => a2I(r.bs), raw: r => r.bs || '', html: r => a2I(r.bs) },
+      { k: 'otm', l: 'Overtime', g: 'Salary', def: 1, num: 1, sum: 1, sv: r => acNum(r.otm), text: r => a2I(r.otm), raw: r => r.otm || '', html: r => a2I(r.otm) },
       { k: 'dept', l: 'Department', g: 'Person', rep: 1, text: r => r.dept, html: r => acEsc(r.dept) },
       { k: 'pos', l: 'Position', g: 'Person', rep: 1, text: r => r.pos || '', html: r => acEsc(r.pos || '') },
       { k: 'shift', l: 'Shift', g: 'Person', rep: 1, text: r => r.sh === 'D' ? 'Day' : r.sh === 'N' ? 'Night' : '', html: r => r.sh === 'D' ? 'Day' : r.sh === 'N' ? 'Night' : '' },
-      { k: 'mc', l: 'MC', g: 'Machines', def: 1, ml: 1, text: (r, i) => (r.mc[i] || {}).n || '', html: (r, e, i) => acEsc((r.mc[i] || {}).n || '') },
-      { k: 'mcp', l: 'Total by machine', g: 'Machines', def: 1, ml: 1, num: 1, text: (r, i) => a2I((r.mc[i] || {}).p), raw: (r, i) => r.mc[i] ? Math.round(r.mc[i].p) : '', html: (r, e, i) => r.mc[i] ? a2Peek(r, r.mc[i]) : '' },
-      { k: 'total', l: 'Total', g: 'Pay', def: 1, num: 1, bold: 1, sum: 1, calc: 1, text: r => a2I(r.total), raw: r => Math.round(r.total) || '', sv: r => r.total, html: r => a2I(r.total) },
-      { k: 'mcr', l: 'MC rates', g: 'Pay', def: 1, ml: 1, num: 1, text: (r, i) => a2R((r.mc[i] || {}).r), raw: (r, i) => (r.mc[i] || {}).r || '', html: (r, e, i) => a2R((r.mc[i] || {}).r) },
-      { k: 'avg', l: 'Average rate', g: 'Pay', def: 1, num: 1, calc: 1, text: r => a2R(r.avg), raw: r => r.avg, html: r => a2R(r.avg) },
+      { k: 'grp', l: 'Extra group', g: 'Person', rep: 1, text: r => r.grp || '', html: r => acEsc(r.grp || '') },
+      { k: 'mc', l: 'MC', g: 'Machines', def: A2.det !== false ? 1 : 0, ml: 1, text: (r, i) => ((r.mc[i] || {}).n || '') + ((r.mc[i] && machineIsVip(r.mc[i].m)) ? ' (VIP)' : ''), html: (r, e, i) => acEsc((r.mc[i] || {}).n || '') + ((r.mc[i] && machineIsVip(r.mc[i].m)) ? (A2.pdf ? ' <span class="mVipT">VIP</span>' : machineStar(r.mc[i].m)) : '') },
+      { k: 'mcp', l: 'Picks', g: 'Machines', def: A2.det !== false ? 1 : 0, ml: 1, num: 1, text: (r, i) => a2I((r.mc[i] || {}).p), raw: (r, i) => r.mc[i] ? Math.round(r.mc[i].p) : '', html: (r, e, i) => r.mc[i] ? a2Peek(r, r.mc[i]) : '' },
+      { k: 'total', l: 'Total picks', g: 'Pay', def: 1, num: 1, bold: 1, sum: 1, calc: 1, text: r => a2I(r.total), raw: r => Math.round(r.total) || '', sv: r => r.total, html: r => a2I(r.total) },
+      { k: 'mcr', l: 'Rate', g: 'Pay', def: A2.det !== false ? 1 : 0, ml: 1, num: 1, text: (r, i) => a2R((r.mc[i] || {}).r), raw: (r, i) => (r.mc[i] || {}).r || '', html: (r, e, i) => a2R((r.mc[i] || {}).r) },
+      { k: 'avg', l: 'Avg rate', g: 'Pay', def: 1, num: 1, calc: 1, text: r => a2R(r.avg), raw: r => r.avg, html: r => a2R(r.avg) },
       { k: 'prem', l: 'Premium', g: 'Pay', def: 1, num: 1, sum: 1, calc: 1, text: r => a2W(r.prem), raw: r => r.prem || '', sv: r => r.prem, html: r => a2W(r.prem) },
       { k: 'cut', l: a2CutPct() + '% less', g: 'Pay', def: a2HasCut() ? 1 : 0, num: 1, sum: 1, calc: 1, text: r => a2W(r.cut), raw: r => r.cut || '', sv: r => r.cut || 0, html: r => a2W(r.cut) },
-      { k: 'np', l: 'Net premium', g: 'Pay', def: a2HasCut() ? 1 : 0, num: 1, sum: 1, calc: 1, text: r => a2W(r.np != null ? r.np : r.prem), raw: r => (r.np != null ? r.np : r.prem) || '', sv: r => r.np != null ? r.np : (r.prem || 0), html: r => a2W(r.np != null ? r.np : r.prem) },
+      { k: 'np', l: 'Net prem.', g: 'Pay', def: a2HasCut() ? 1 : 0, num: 1, sum: 1, calc: 1, text: r => a2W(r.np != null ? r.np : r.prem), raw: r => (r.np != null ? r.np : r.prem) || '', sv: r => r.np != null ? r.np : (r.prem || 0), html: r => a2W(r.np != null ? r.np : r.prem) },
       { k: 'extra', l: 'Extra', g: 'Pay', def: 1, num: 1, sum: 1, calc: 1, text: r => a2W(r.extra), raw: r => r.extra || '', sv: r => r.extra, html: r => a2W(r.extra) },
       { k: 'ded', l: 'Deduction', g: 'Pay', def: a2ShowDed() ? 1 : 0, num: 1, sum: 1, text: r => a2W(acNum(r.ded)), raw: r => acNum(r.ded) || '', sv: r => acNum(r.ded), html: (r, e) => e ? a2In(r, 'ded', r.ded) : a2W(acNum(r.ded)), dedCol: 0 },
       { k: 'net', l: 'Net pay', g: 'Pay', def: 1, num: 1, bold: 1, sum: 1, calc: 1, text: r => a2W(r.net) || '0', raw: r => r.net, sv: r => r.net, html: r => a2W(r.net) || '0' }
@@ -20237,7 +20389,7 @@ function a2Draw(){
 }
 function a2DrawSheet(){
   const d = a2Doc(), sec = A2.sec, ed = acCanEdit(), rows = d ? d.rows : [], op = sec === 'operator';
-  const status = !d ? '' : (d.dirty ? '<span class="a2Warn">Not saved</span>' : (d.savedAt ? `Saved ${a2Stamp(d.savedAt)}${d.savedBy ? ' &middot; ' + acEsc(d.savedBy) : ''}` : 'Not saved yet'));
+  const status = !d ? '' : (d.dirty ? '<span class="a2Warn">Not saved</span>' : (d.savedAt ? `Saved ${a2Stamp(d.savedAt)}` : 'Not saved yet'));
   const calc = op && d ? (d.calcAt ? `Picks calculated ${a2Stamp(d.calcAt)}` : 'Picks not calculated yet') : '';
   const depts = Array.from(new Set(rows.map(r => r.dept).filter(Boolean))).sort(), poss = Array.from(new Set(rows.map(r => r.pos).filter(Boolean))).sort();
   const opts = (list, cur, all) => `<option value="">${all}</option>` + list.map(v => `<option value="${acEsc(v[0])}" ${v[0] === cur ? 'selected' : ''}>${acEsc(v[1])}</option>`).join('');
@@ -20247,12 +20399,13 @@ function a2DrawSheet(){
       ${depts.length > 1 ? `<select id="a2Dept">${opts(depts.map(x => [x, x]), A2.dept, 'All departments')}</select>` : ''}
       ${op && poss.length > 1 ? `<select id="a2Pos">${opts(poss.map(x => [x, x]), A2.pos, 'All positions')}</select>` : ''}
       ${op ? `<select id="a2Shift">${opts([['D', 'Day'], ['N', 'Night']], A2.shift, 'Both shifts')}</select>` : ''}
+      ${op ? `<label class="a2Fx a2DetL"><input type="checkbox" id="a2Det" ${A2.det !== false ? 'checked' : ''}> Show machine details (MC, Picks, Rate)</label>` : ''}
       ${fN ? '<button type="button" class="pillBtn" data-a2="fclear">Clear</button>' : ''}</div>` : ''}</div>
     ${op || sec === 'sponsor' ? `<button type="button" class="iconBtn" data-a2="set" title="Settings" aria-label="Settings">${a2Svg('gear', 15)}</button>` : ''}
     ${full ? `<button type="button" class="pillBtn" data-a2="dl" title="Download PDF or Excel">${DL_ICON}Download</button>` : ''}`;
   $('a2Head').innerHTML = `<div class="a2Bar a2One">
       <button type="button" class="iconBtn" data-a2="prev" title="Previous month">&lsaquo;</button><b class="a2Month">${acYmLabel(A2.ym)}</b><button type="button" class="iconBtn" data-a2="next" title="Next month">&rsaquo;</button>
-      <span class="a2Stat">${status}${calc ? ' &middot; ' + calc.replace('Picks calculated', 'Picks') : ''}</span>
+      <span class="a2Stat">${status}${calc && !(d && !d.dirty && d.savedAt) ? ' &middot; ' + calc.replace('Picks calculated', 'Picks') : ''}</span>
       ${op ? `<span class="a2Lbl">From</span><input type="date" id="a2From" value="${d ? d.from : ''}" ${ed ? '' : 'disabled'}><span class="a2Lbl">to</span><input type="date" id="a2To" value="${d ? d.to : ''}" ${ed ? '' : 'disabled'}>
       ${ed ? `<button type="button" class="pillBtn ok" data-a2="calc" ${A2.busy ? 'disabled' : ''}>${A2.busy ? 'Calculating…' : (d && d.calcAt ? 'Recalculate' : 'Calculate picks')}</button>` : ''}` : ''}
       ${ed && full ? `<button type="button" class="iconBtn" data-a2="refresh" title="${op ? 'Add new operators' : 'Add new people and update from profiles'}">${a2Svg('refresh')}</button>
@@ -20288,6 +20441,18 @@ function a2TrsOf(cols, r, n, ed, flat){   // flat = no merged cells (the PDF dra
 function a2FootHtml(cols, rows, ed){
   const cells = cols.map(c => { if(c.k === 'name') return `<td><b>Total</b> <span class="a2Sm">${rows.length}</span></td>`; if(!c.sum || c.ml) return '<td></td>'; let t = 0; rows.forEach(r => { t += Number(c.sv(r)) || 0; }); return `<td class="a2N a2B">${c.k === 'total' ? a2I(t) : (A2.sec === 'operator' ? (a2W(t) || '0') : (a2M(t) || '0.00'))}</td>`; }).join('');
   return `<tr class="a2Tot"><td></td>${cells}</tr>`;
+}
+function a2GroupPop(){
+  const d = a2Doc(), r = d && d.rows.find(x => x.id === A2.popId), L = AC.set.ladders; if(!r || !L || !L.groups.length){ toast('Make the extra-money groups first (Settings)'); return; }
+  const auto = acLadderGroup(r.dept, r.mc.filter(m => m.p > 0), ''), cur = r.gid || '';
+  const info = L.groups.filter(g => acGroupMode(g) !== 'any').map(g => { const sh = acGroupShare(g, r.mc); return `${acEsc(g.name)}: ${sh.n} machine${sh.n === 1 ? '' : 's'}, ${a2I(sh.picks)} of ${a2I(sh.total)} picks (${Math.round(sh.pct)}%)`; }).join('<br>');
+  let ov = document.getElementById('dlOv'); if(ov) ov.remove(); ov = document.createElement('div'); ov.id = 'dlOv'; ov.className = 'dlOv'; document.body.appendChild(ov);
+  const opt = (id, label, sub) => `<label class="a2Rad ${cur === id ? 'on' : ''}"><input type="radio" name="a2g" ${cur === id ? 'checked' : ''} data-a2="grpset" data-g="${acEsc(id)}"><span><b>${label}</b>${sub ? `<small>${sub}</small>` : ''}</span></label>`;
+  ov.innerHTML = `<div class="dlCard" style="max-width:460px;"><div class="dlHead"><b>${acEsc(r.name)} &middot; pay group</b><button type="button" class="dlX" data-a2="grpx" aria-label="Close">&times;</button></div>
+    <div class="hrNote" style="margin:6px 0 10px;">Decides which extra-money ladder is used for this month. Saved with this month's sheet.</div>
+    ${info ? `<div class="hrNote" style="margin:0 0 10px;">${info}</div>` : ''}
+    ${opt('', 'Automatic', 'now: ' + acEsc(auto ? auto.name : 'no group') + ' (from the picks)')}${L.groups.map(g => opt(g.id, acEsc(g.name), '')).join('')}
+    <div style="margin-top:12px;display:flex;justify-content:flex-end;"><button type="button" class="pillBtn ok" data-a2="grpx">Done</button></div></div>`;
 }
 function a2DrawTable(){
   const box = $('a2Tbl'); if(!box) return;
@@ -20326,7 +20491,7 @@ function a2DrawSet(){
 const a2DlCols = (sec) => a2Cols(sec, true).filter(c => !(sec === 'operator' && c.k === 'ded' && !a2ShowDed()));   // no Deduction box on the sheet = no Deduction column in the PDF / Excel
 function a2DlCfg(){
   const sec = A2.sec, cols = a2DlCols(sec), all = cols.map(c => ({ k: c.k, l: c.l, g: c.g || 'Pay', get: r => c.text(r, 0) }));
-  return { key: 'acc2_' + sec, title: A2_SEC[sec].n + ' salary - ' + acYmLabel(A2.ym), noun: 'people', file: 'salary-' + sec + '-' + A2.ym, sheet: A2_SEC[sec].n, def: cols.filter(c => c.def).map(c => c.k),
+  return { key: 'acc3_' + sec + (sec === 'operator' && A2.det === false ? '_nd' : ''), title: A2_SEC[sec].n + ' salary - ' + acYmLabel(A2.ym), noun: 'people', file: 'salary-' + sec + '-' + A2.ym, sheet: A2_SEC[sec].n, def: cols.filter(c => c.def).map(c => c.k),
     items: () => a2Filtered(), id: r => r.id, label: r => r.id + ' · ' + r.name + (r.dept ? ' · ' + r.dept : ''), cols: () => all, exporter: a2Export,
     sumExtra: (it) => [['Month', acYmLabel(A2.ym)]].concat(sec === 'operator' ? [['Picks counted', (a2Doc().from || '') + ' to ' + (a2Doc().to || '')]] : []).concat([['Net payable', acMoney(it.reduce((a, r) => a + sec2net(sec, r), 0))]]) };
 }
@@ -20337,7 +20502,7 @@ async function a2Export(o){
   const stamp = rvfDateStamp();
   if(o.kind === 'xlsx'){
     try{ await dlLoadExcelJs(); }catch(e){ toast('Could not load the Excel tool - check your connection'); return false; }
-    const wb = new ExcelJS.Workbook(), ws1 = wb.addWorksheet('Summary'), ws = wb.addWorksheet(o.sheet || 'Salary', { views: [{ state: 'frozen', ySplit: 1 }], pageSetup: { orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 0 } });
+    const wb = new ExcelJS.Workbook(), ws1 = wb.addWorksheet('Summary'), ws = wb.addWorksheet(o.sheet || 'Salary', { views: [{ state: 'frozen', ySplit: 1 }], pageSetup: { orientation: 'portrait', fitToPage: true, fitToWidth: 1, fitToHeight: 0 } });
     o.sumAoa.forEach(r => ws1.addRow(r)); ws1.getColumn(1).width = 22; ws1.getColumn(2).width = 60; ws1.getRow(1).font = { bold: true, size: 13 };
     const nc = cols.length + 1, line = { style: 'thin', color: { argb: 'FFCDD3E2' } }, box = { top: line, left: line, bottom: line, right: line };
     const fmt = (c) => (c.k === 'mcr' || c.k === 'avg') ? '0.00##' : (c.k === 'total' || c.ml || sec === 'operator') ? '#,##0' : '#,##0.00';
@@ -20369,22 +20534,24 @@ async function a2Export(o){
         if(col('prem') && col('cut')) set('cut', 'ROUND(' + cell('prem') + '*' + (r.cutPct || 0) + '/100,0)', r.cut);
         if(col('prem') && col('cut') && col('np')) set('np', cell('prem') + '-' + cell('cut'), r.np);
         const base = col('np') ? cell('np') : (col('prem') ? cell('prem') : '');
-        if(base && col('net')) set('net', 'ROUND(N(' + base + ')' + (col('extra') ? '+N(' + cell('extra') + ')' : '') + (col('ded') ? '-N(' + cell('ded') + ')' : '') + ',0)', r.net);
+        if(base && col('net')) set('net', 'ROUND(' + (col('bs') ? 'N(' + cell('bs') + ')+' : '') + (col('otm') ? 'N(' + cell('otm') + ')+' : '') + 'N(' + base + ')' + (col('extra') ? '+N(' + cell('extra') + ')' : '') + (col('ded') ? '-N(' + cell('ded') + ')' : '') + ',0)', r.net);
       }
     });
     const tr = ws.addRow([null].concat(cols.map(c => tot(c))));
     if(sec === 'operator' && rowNo > 1){ cols.forEach((c, i) => { if(c.sum && !c.ml){ const L2 = ws.getColumn(i + 2).letter, cur = tr.getCell(i + 2).value; tr.getCell(i + 2).value = { formula: 'SUM(' + L2 + '2:' + L2 + rowNo + ')', result: typeof cur === 'number' ? cur : 0 }; } }); }
     tr.eachCell({ includeEmpty: true }, (cell, ci) => { const c = cols[ci - 2]; cell.font = { bold: true }; cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F3F9' } }; cell.border = { top: { style: 'medium', color: { argb: 'FFCDD3E2' } }, left: line, bottom: line, right: line }; if(typeof cell.value === 'number'){ cell.numFmt = fmt(c); cell.alignment = { horizontal: 'right' }; } });
-    ws.getColumn(1).width = 5; cols.forEach((c, i) => { ws.getColumn(i + 2).width = c.k === 'name' ? 26 : c.k === 'rm' ? 24 : c.k === 'ds' ? 12 : 14; });
+    ws.getColumn(1).width = 5; cols.forEach((c, i) => { ws.getColumn(i + 2).width = ({ id: 6, name: 22, ds: 8, bs: 8, otm: 9, mc: 10, mcp: 7, total: 8, mcr: 6, avg: 8, prem: 9, cut: 8, np: 9, extra: 8, ded: 9, net: 9, rm: 24 })[c.k] || 10; });
     const buf = await wb.xlsx.writeBuffer(); dlSaveBlob(new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), o.file + '-' + stamp + '.xlsx'); toast('Excel file downloaded'); return true;
   }
-  const land = cols.length > 12, cls = 'ovPdfT a2PdfT' + (land ? (cols.length > 14 ? ' ovW3' : ' ovW2') : ' a2P');
+  const land = sec !== 'operator' && cols.length > 12, cls = 'ovPdfT a2PdfT' + (land ? (cols.length > 14 ? ' ovW3' : ' ovW2') : (sec === 'operator' ? ' a2P a2Fit' : ' a2P'));
   const hd = `<tr><th>#</th>${cols.map(c => `<th class="${c.num ? 'a2N' : ''}">${acEsc(c.l)}</th>`).join('')}</tr>`;
-  const groups = []; let n = 0;
+  const groups = []; let n = 0; A2.pdf = true;
   items.forEach(r => { const rows = a2TrsOf(cols, r, ++n, false, false); groups.push(rows); });
   const foot = `<tr class="a2Tot"><td></td>${cols.map(c => { const t = tot(c); return `<td class="${c.num ? 'a2N a2B' : ''}">${t === '' ? '' : (typeof t === 'number' ? ((c.k === 'total' || sec === 'operator') ? a2I(t) : acMoney(t)) : '<b>' + acEsc(t) + '</b>')}</td>`; }).join('')}</tr>`;
   const head0 = rvfPdfHeader(o.title, [o.headLines[0]].concat(sec === 'operator' && d ? ['Picks counted ' + d.from + ' to ' + d.to] : [])), blocks = [head0];
-  const tblHtml = (rowsHtml) => `<div class="table-scroll"><table class="report-table ${cls}"><thead>${hd}</thead><tbody>${rowsHtml}</tbody></table></div>`;
+  const WPC = { id: 5, name: 15, ds: 6, bs: 6, otm: 6.5, mc: 8, mcp: 6.5, total: 7, mcr: 5.5, avg: 6.5, prem: 7, cut: 6.5, np: 7, extra: 6.5, ded: 7, net: 7.5 };
+  const cg = sec === 'operator' ? (() => { const w = [3].concat(cols.map(c => WPC[c.k] || 8)), t = w.reduce((a, b) => a + b, 0); return '<colgroup>' + w.map(x => `<col style="width:${(x / t * 100).toFixed(2)}%">`).join('') + '</colgroup>'; })() : '';
+  const tblHtml = (rowsHtml) => `<div class="table-scroll"><table class="report-table ${cls}">${cg}<thead>${hd}</thead><tbody>${rowsHtml}</tbody></table></div>`;
   // measure every row once (same width and style as the PDF sheet), then fill each page to the bottom
   let hHead = 40, hFoot = 24, gh = groups.map(g => g.length * 22), headH = 90;
   try{
@@ -20405,13 +20572,13 @@ async function a2Export(o){
   });
   if(hHead + curH + hFoot > cap && cur.length > 1){ const lastG = cur.pop(); push(false); cur.push(lastG); }
   push(true);
-  toast('Making the PDF…');
+  A2.pdf = false; toast('Making the PDF…');
   return rvfMakePdf(blocks, o.file + '-' + stamp + '.pdf', { landscape: land });
 }
 
 /* ---------- events ---------- */
 document.addEventListener('click', async (e) => {
-  const t = e.target.closest('[data-a2]'); if(!t || !$('accountsBody') || !($('accountsBody').contains(t) || t.dataset.a2 === 'peekx')) return;
+  const t = e.target.closest('[data-a2]'); if(!t || !$('accountsBody') || !($('accountsBody').contains(t) || t.dataset.a2 === 'peekx' || t.dataset.a2 === 'grpx' || t.dataset.a2 === 'grpset')) return;
   const a = t.dataset.a2;
   if(a === 'sec'){ A2.sec = t.dataset.v; A2.view = 'sheet'; A2.q = ''; A2.dept = ''; A2.shift = ''; A2.pos = ''; try{ await a2LoadDoc(A2.sec, A2.ym); a2Draw(); }catch(err){ console.error(err); toast('Could not load'); } }
   else if(a === 'saved'){ A2.view = 'saved'; a2Draw(); }
@@ -20434,6 +20601,9 @@ document.addEventListener('click', async (e) => {
       <div class="hrNote" style="margin:6px 0 10px;">${rows.length} days &middot; picks ${a2I(tp)} + stop time ${a2I(ts)} = <b>${a2I(tp + ts)}</b></div>
       <div class="table-scroll"><table class="report-table a2T"><thead><tr><th class="serial">#</th><th>Date</th><th class="a2N">Picks</th><th class="a2N">Stop picks</th><th class="a2N">Total</th></tr></thead><tbody>${rows.map((x, i) => `<tr><td class="serial">${i + 1}</td><td>${x.date}</td><td class="a2N">${a2I(x.picks)}</td><td class="a2N">${a2I(x.stopPicks) || ''}</td><td class="a2N a2B">${a2I(x.picks + x.stopPicks)}</td></tr>`).join('') || '<tr><td colspan="5" class="a2Empty">No days.</td></tr>'}</tbody></table></div></div>`;
   }
+  else if(a === 'grp'){ A2.popId = t.dataset.id; a2GroupPop(); }
+  else if(a === 'grpx'){ const ov = document.getElementById('dlOv'); if(ov) ov.remove(); A2.popId = null; }
+  else if(a === 'grpset'){ const d = a2Doc(), r = d && d.rows.find(x => x.id === A2.popId); if(!r) return; r.gid = t.dataset.g || ''; a2OpRates(r); a2Touch(); a2DrawTable(); a2DirtyUi(); a2GroupPop(); }
   else if(a === 'peekx'){ const ov = document.getElementById('dlOv'); if(ov) ov.remove(); }
   else if(a === 'filt'){ A2.fOpen = !A2.fOpen; a2DrawSheet(); }
   else if(a === 'fclear'){ A2.q = A2.dept = A2.pos = A2.shift = ''; a2DrawSheet(); }
@@ -20452,6 +20622,7 @@ document.addEventListener('input', (e) => {
 document.addEventListener('change', async (e) => {
   const t = e.target; if(!$('accountsBody') || !$('accountsBody').contains(t)) return;
   if(t.id === 'a2From' || t.id === 'a2To'){ const d = a2Doc(); if(d){ d.from = $('a2From').value || d.from; d.to = $('a2To').value || d.to; a2Touch(); a2DirtyUi(); } return; }
+  if(t.id === 'a2Det'){ A2.det = t.checked; a2DrawSheet(); return; }
   if(t.id === 'a2Dept'){ A2.dept = t.value; a2DrawSheet(); return; }
   if(t.id === 'a2Pos'){ A2.pos = t.value; a2DrawSheet(); return; }
   if(t.id === 'a2Shift'){ A2.shift = t.value; a2DrawSheet(); return; }
