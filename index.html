@@ -15486,7 +15486,7 @@ function pcBlankItem(){ return { lp: 0, ld: 0, lc: '', n: '', d: '', b: '', q: 1
 function pcNewForm0(){ return { docId: '', back: false, backDate: '', backOrdered: false, cur: 'SAR', priority: 'regular', dept: '', reqBy: { id: '', name: '' }, note: '', items: [pcBlankItem()], recPhotos: [] }; }
 function pcFormFromOrder0(o, asCopy){
   return { docId: asCopy ? '' : o.docId, cur: o.cur || 'SAR', priority: o.priority, dept: o.dept, reqBy: Object.assign({}, o.reqBy), note: o.note || '', recPhotos: asCopy ? [] : (o.recPhotos || []).slice(),
-    items: o.items.map(i => ({ lp: (i.lq > 0 && i.lp > 0) ? Math.round(i.lp * i.lq * 100) / 100 : (i.lp || 0), lq: i.lq || 0, ld: i.ld || 0, lc: i.lc || '', n: i.n, d: i.d || '', b: i.b || '', q: i.q, u: i.u, p: i.p || '', phys: !!i.phys, link: i.link || '', photos: (i.photos || []).slice(), note: i.note || '', more: !!(i.b || i.p || i.note || i.phys || i.link || (i.photos || []).length) })) };
+    items: o.items.map(i => ({ lp: (i.lp > 0 && Number(i.q) > 0) ? Math.round(i.lp * Number(i.q) * 100) / 100 : (i.lp || 0), lu: i.lp || 0, ld: i.ld || 0, lc: i.lc || '', n: i.n, d: i.d || '', b: i.b || '', q: i.q, u: i.u, p: i.p || '', phys: !!i.phys, link: i.link || '', photos: (i.photos || []).slice(), note: i.note || '', more: !!(i.b || i.p || i.note || i.phys || i.link || (i.photos || []).length) })) };
 }
 function pcFormHtml0(){
   const F = pc.ui.form, S = pc.settings, depts = pcDepts();
@@ -15592,7 +15592,7 @@ async function pcSaveForm(){
   const F = pc.ui.form;
   if(pc.ui.busy) return;
   const cat = (pc.catalog && pc.catalog.items) || {};
-  const items = F.items.filter(i => i.n.trim()).map(i => ({ lp: Number(i.lp) > 0 ? (Number(i.lq) > 0 ? Math.round(Number(i.lp) / Number(i.lq) * 10000) / 10000 : Number(i.lp)) : 0, lq: Number(i.lp) > 0 && Number(i.lq) > 0 ? Number(i.lq) : 0, ld: Number(i.lp) > 0 ? (i.ld || Date.now()) : 0, lc: Number(i.lp) > 0 ? (i.lpm ? (F.cur || 'SAR') : (i.lc || 'SAR')) : '', lpm: !!i.lpm, cd: i.cd || '', ino: i.ino || '', sq: i.sq || '', dd: i.dd || '', n: i.n.trim(), d: (i.d || '').trim(), b: (i.b || '').trim(), q: Number(i.q), u: i.u, p: Number(i.p) > 0 ? Number(i.p) : 0, phys: !!i.phys, link: pcSafeUrl(i.link), photos: i.photos.slice(0, 3), note: (i.note || '').trim() }));
+  const items = F.items.filter(i => i.n.trim()).map(i => ({ lp: Number(i.lp) > 0 ? (Number(i.lu) > 0 ? Number(i.lu) : (Number(i.q) > 0 ? Math.round(Number(i.lp) / Number(i.q) * 10000) / 10000 : Number(i.lp))) : 0, lq: 0, ld: Number(i.lp) > 0 ? (i.ld || Date.now()) : 0, lc: Number(i.lp) > 0 ? (i.lpm ? (F.cur || 'SAR') : (i.lc || 'SAR')) : '', lpm: !!i.lpm, cd: i.cd || '', ino: i.ino || '', sq: i.sq || '', dd: i.dd || '', n: i.n.trim(), d: (i.d || '').trim(), b: (i.b || '').trim(), q: Number(i.q), u: i.u, p: Number(i.p) > 0 ? Number(i.p) : 0, phys: !!i.phys, link: pcSafeUrl(i.link), photos: i.photos.slice(0, 3), note: (i.note || '').trim() }));
   const srcIdx = F.items.filter(i => i.n.trim()).map(i => i.src);
   const forCatalog = items.map(i => Object.assign({}, i)); items.forEach(i => { delete i.lpm; });
   if(!F.dept) return toast('Choose the department');
@@ -23012,14 +23012,11 @@ function pcLqOf(e){
   if(top && top.q > 0) return Number(top.q);
   return Number(e.lq) || 0;
 }
-function pcLastIn(it, c){   // c = remembered product: bring in the last total, its quantity and date
-  const q = pcLqOf(c.h ? c : (typeof phLookup === 'function' ? phLookup({ n: c.n, d: c.d, cd: c.cd }) : null) || c);
-  it.lq = q > 0 ? q : 0; it.lp = q > 0 ? pcLpR2(c.lp * q) : c.lp; it.ld = c.ld || 0; it.lc = c.lc || 'SAR';
+function pcLastIn(it, c){   // c = remembered product: its last price is per piece; the box shows it for the quantity typed
+  it.lu = Number(c.lp) || 0; it.lp = it.lu > 0 ? pcLpR2(it.lu * (Number(it.q) > 0 ? Number(it.q) : 1)) : 0; it.ld = c.ld || 0; it.lc = c.lc || 'SAR';
 }
 function pcLpTotalize(it, c){   // after pcFillFromCat: it.lp is still the per-piece price
-  it.lq = 0; if(!(it.lp > 0)) return;
-  const e = c && c.h ? c : (typeof phLookup === 'function' ? phLookup({ n: c.n, d: c.d, cd: c.cd }) : null), q = pcLqOf(e);
-  if(q > 0){ it.lq = q; it.lp = pcLpR2(it.lp * q); }
+  it.lu = Number(it.lp) || 0; if(it.lu > 0) it.lp = pcLpR2(it.lu * (Number(it.q) > 0 ? Number(it.q) : 1));
 }
 function pcLpHintText(tot, lq, qty, unit){
   tot = Number(tot) || 0; lq = Number(lq) || 0; qty = Number(qty) || 0;
@@ -23044,11 +23041,10 @@ function pcLpHint(i){
 }
 document.addEventListener('input', (e) => {
   const el = e.target, a = el && el.dataset && el.dataset.pc; if(!a || !pc.ui || !pc.ui.form) return;
-  const i = Number(el.dataset.i);
-  if(a === 'ilq'){ const it = pc.ui.form.items[i]; if(it){ it.lq = Number(el.value) > 0 ? Number(el.value) : 0; it.lpm = true; } pcLpHint(i); }
-  else if(a === 'ilp' || a === 'iqty' || a === 'iunit') setTimeout(() => pcLpHint(i), 0);
+  const i = Number(el.dataset.i), it = pc.ui.form.items[i]; if(!it) return;
+  if(a === 'iqty'){ setTimeout(() => { const q = Number(it.q); if(it.lu > 0 && q > 0){ it.lp = pcLpR2(it.lu * q); const b = $('pcLp' + i); if(b) b.value = it.lp; } }, 0); }
+  else if(a === 'ilp'){ setTimeout(() => { const t = Number(it.lp), q = Number(it.q); it.lu = t > 0 ? (q > 0 ? t / q : t) : 0; }, 0); }
 });
-
 (function(){ let t = 0; const fit = () => { t = 0; document.querySelectorAll('.pcFR textarea.pcNote').forEach(el => { el.style.height = 'auto'; el.style.height = Math.max(36, el.scrollHeight + 2) + 'px'; }); };
   new MutationObserver(() => { if(!t) t = requestAnimationFrame(fit); }).observe(document.body, { childList: true, subtree: true }); window.addEventListener('resize', () => { if(!t) t = requestAnimationFrame(fit); }); })();
 document.addEventListener('keydown', (e) => { const t = e.target; if(e.key === 'Enter' && t && t.matches && t.matches('textarea.pcNote[data-pc="iname"],textarea.pcNote[data-pc="idesc"]')) e.preventDefault(); });
