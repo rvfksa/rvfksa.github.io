@@ -1188,6 +1188,17 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
     async listLeaveRequests() {
       return leaveRequestsCache.get();
     },
+    // Only this person's own requests, the ones waiting for them as 1st/2nd approver, and (for Admin) requests with no approver set.
+    async listLeaveScope(loginId, isAdmin) {
+      if (!dbReady) throw new Error('NOT_CONFIGURED');
+      const c = collection(db, "leaveRequests");
+      const qs = [query(c, where('employeeId', '==', loginId)), query(c, where('approver1.loginId', '==', loginId)), query(c, where('approver2.loginId', '==', loginId))];
+      if (isAdmin) qs.push(query(c, where('approver1', '==', null)));
+      const snaps = await Promise.all(qs.map(q => getDocs(q)));
+      const map = new Map();
+      snaps.forEach(sn => sn.forEach(d => map.set(d.id, Object.assign({ _id: d.id }, d.data()))));
+      return Array.from(map.values());
+    },
 
     // Kicks off the background listeners at once (called right after
     // login) so their data is usually already sitting in memory by the time
@@ -12640,9 +12651,19 @@ async function saveSalaryInfo(){
    ============================================================ */
 let leaveCache = { mine: [], forMeToApprove: [] };
 
+const leaveIsSingle = (t) => /exit/i.test(String(t || ''));
+const leaveRange = (r) => (r.from === r.to || !r.to) ? fmtDate(r.from) : fmtDate(r.from) + ' \u2192 ' + fmtDate(r.to);
+function leaveSyncType(){
+  const one = leaveIsSingle($('leaveTypeSelect').value), tf = $('leaveToDate').closest('.field');
+  if(tf) tf.style.display = one ? 'none' : '';
+  const lb = document.querySelector('label[for="leaveFromDate"]'); if(lb) lb.textContent = one ? 'Exit date' : 'From';
+  const row = $('leaveFromDate').closest('.row-2'); if(row) row.style.gridTemplateColumns = one ? '1fr' : '';
+}
+$('leaveTypeSelect').addEventListener('change', leaveSyncType);
 $('applyLeaveBtn').addEventListener('click', () => {
   $('leaveTypeSelect').innerHTML = state.leaveTypes.map(t => `<option>${t}</option>`).join('');
   $('leaveApplyForm').style.display = 'block';
+  leaveSyncType();
 });
 $('cancelLeaveApplyBtn').addEventListener('click', () => { $('leaveApplyForm').style.display = 'none'; });
 $('refreshLeaveBtn').addEventListener('click', () => { loadLeavePage(); toast('Refreshed'); });
@@ -12650,9 +12671,9 @@ $('refreshLeaveBtn').addEventListener('click', () => { loadLeavePage(); toast('R
 $('submitLeaveBtn').addEventListener('click', async () => {
   const type = $('leaveTypeSelect').value;
   const from = $('leaveFromDate').value;
-  const to = $('leaveToDate').value;
+  const to = leaveIsSingle(type) ? from : $('leaveToDate').value;
   const reason = $('leaveReasonInput').value.trim();
-  if(!from || !to){ toast('Pick both From and To dates'); return; }
+  if(!from || !to){ toast(leaveIsSingle(type) ? 'Pick the exit date' : 'Pick both From and To dates'); return; }
   if(!requireDb()) return;
   const approvers = (state.user.profile && state.user.profile.approvers) || [];
   const record = {
@@ -12664,12 +12685,13 @@ $('submitLeaveBtn').addEventListener('click', async () => {
     timestamp: Date.now()
   };
   try{
-    await window.__db.saveLeaveRequest(record);
+    const newId = await window.__db.saveLeaveRequest(record);
+    leaveCache.mine = (leaveCache.mine || []).concat([Object.assign({ _id: newId }, record)]); try{ renderMyLeaveList('all'); }catch(e){}   // visible straight away, before the list is reloaded
     toast(approvers.length ? 'Submitted — awaiting your 1st approver' : 'Submitted — no approver is set on your profile yet, ask Admin to add one');
     $('leaveApplyForm').style.display = 'none';
     $('leaveFromDate').value=''; $('leaveToDate').value=''; $('leaveReasonInput').value='';
     loadLeavePage();
-  }catch(err){ console.error(err); toast('Could not submit — check your connection'); }
+  }catch(err){ console.error(err); toast('Could not submit (' + String((err && (err.code || err.message)) || 'unknown') + ')'); }
 });
 
 async function loadLeavePage(){
@@ -12679,18 +12701,19 @@ async function loadLeavePage(){
   renderViewAsBanner('leaveViewAsBanner', viewingOther, targetId, 'Leave & Requests');
   $('applyLeaveBtn').style.display = viewingOther ? 'none' : '';
   try{
-    const all = await window.__db.listLeaveRequests();
+    const all = await window.__db.listLeaveScope(viewingOther ? targetId : state.user.loginId, !viewingOther && state.user.role === 'admin');
     leaveCache.mine = all.filter(r => r.employeeId === targetId);
     leaveCache.forMeToApprove = viewingOther ? [] : all.filter(r =>
       (r.status === 'pending_1st' && r.approver1 && r.approver1.loginId === state.user.loginId) ||
-      (r.status === 'pending_2nd' && r.approver2 && r.approver2.loginId === state.user.loginId)
+      (r.status === 'pending_2nd' && r.approver2 && r.approver2.loginId === state.user.loginId) ||
+      (state.user.role === 'admin' && r.status === 'pending_1st' && !r.approver1 && r.employeeId !== state.user.loginId)   // nobody is set as this person's approver: Admin can decide
     );
     // The whole people list is only needed to name/describe the requester on requests waiting for YOUR approval, or when an
     // admin views someone else. An ordinary employee used to read every person here (one read each) for nothing.
     if((viewingOther || leaveCache.forMeToApprove.length) && (!state.users || state.users.length === 0)) state.users = await window.__db.listUsersOnce();
     renderLeaveApprovalsForMe();
     renderMyLeaveList('all');
-  }catch(err){ console.error(err); toast('Could not load leave requests'); }
+  }catch(err){ console.error(err); toast('Could not load leave requests'); const lb = $('myLeaveBody'); if(lb) lb.innerHTML = '<div class="empty-state">Could not load your requests (' + String((err && (err.code || err.message)) || 'unknown') + '). Check your connection and press Refresh.</div>'; }
 }
 
 // Shared read-only "viewing someone else" banner for Leave & My Status, used
@@ -12725,7 +12748,7 @@ function renderLeaveApprovalsForMe(){
     <div class="approve-item">
       <div class="top"><div class="mc">${r.employeeName}</div><span class="badge badge-pending">${r.type}</span></div>
       <div class="meta-small">ID: ${r.employeeId} &middot; ${dept} &middot; ${position}</div>
-      <div class="meta">Dates: <b>${fmtDate(r.from)} \u2192 ${fmtDate(r.to)}</b><br>Reason: <b>${r.reason || '—'}</b></div>
+      <div class="meta">Dates: <b>${leaveRange(r)}</b><br>Reason: <b>${r.reason || '—'}</b></div>
       <div class="approve-actions">
         <button class="btn btn-approve btn-sm leaveApproveBtn" data-id="${r._id}">Approve</button>
         <button class="btn btn-danger btn-sm leaveRejectBtn" data-id="${r._id}">Reject</button>
@@ -12779,7 +12802,7 @@ function renderMyLeaveList(filter){
     const badgeClass = r.status === 'approved' ? 'badge-approved' : r.status === 'rejected' ? 'badge-rejected' : 'badge-pending';
     return `<div class="approve-item">
       <div class="top"><div class="mc">${r.type}</div><span class="badge ${badgeClass}">${statusLabel}</span></div>
-      <div class="meta">Dates: <b>${fmtDate(r.from)} \u2192 ${fmtDate(r.to)}</b><br>Reason: <b>${r.reason||'—'}</b><br>Submitted: <b>${fmtTs(r.timestamp)}</b></div>
+      <div class="meta">Dates: <b>${leaveRange(r)}</b><br>Reason: <b>${r.reason||'—'}</b><br>Submitted: <b>${fmtTs(r.timestamp)}</b></div>
     </div>`;
   }).join('');
   renderPaginationControls('myLeaveBodyPagination', list.length, perPage, (p) => {
