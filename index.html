@@ -15408,13 +15408,14 @@ function pcRemarks(it, docId, i){
   (it.photos || []).forEach((p, k) => tags.push(`<a class="pcTag" href="#" data-pc="photo" data-id="${pcEsc(docId)}" data-i="${i}" data-k="${k}">${pcSvg('cam', 11)}Photo ${k + 1}</a>`));
   return tags.join('') + (it.note ? `<span class="pcItNote">${pcEsc(it.note)}</span>` : '');
 }
-const pcLastP = (it, cur) => it.lp ? (it.lc && it.lc !== (cur || 'SAR') ? it.lc + ' ' : '') + pcMoney(it.lp) : '\u2013';
+const pcLastU = (it, cur) => it.lp ? (it.lc && it.lc !== (cur || 'SAR') ? it.lc + ' ' : '') + pcMoney(it.lp) : '\u2013';
+const pcLastP = (it, cur) => it.lp ? (it.lc && it.lc !== (cur || 'SAR') ? it.lc + ' ' : '') + pcMoney(Math.round(it.lp * (Number(it.q) > 0 ? Number(it.q) : 1) * 100) / 100) : '\u2013';
 const pcLastD = (it) => it.lp && it.ld ? fmtDate(pcDateStr(it.ld)) : '';
 const pcLast = (it, cur) => it.lp ? pcLastP(it, cur) + (it.ld ? ' \u00B7 ' + fmtDate(pcDateStr(it.ld)).slice(0, 6) : '') : '\u2013';
 // Items: one line per item, columns side by side (same layout as the printed paper)
 function pcItemsTable(o, rec){
   const showRec = rec !== false && (['ordered', 'approved', 'received'].includes(o.status) || pcStatusKey(o) === 'partial'), canRec = pcCanReceive(o), cur = pcCur(o), canAct = pcCanActual(o);
-  let h = `<div class="pcIts"><div class="pcItsH pcItG"><span>#</span><span>Item name</span><span>Description</span><span class="r">Qty</span><span>Unit</span><span class="r">Price${cur !== 'SAR' ? ' (' + cur + ')' : ''}</span><span class="r">Last bought</span><span class="r">Last date</span><span class="r">Total</span><span>Remarks</span></div>`;
+  let h = `<div class="pcIts"><div class="pcItsH pcItG"><span>#</span><span>Item name</span><span>Description</span><span class="r">Qty</span><span>Unit</span><span class="r">Price${cur !== 'SAR' ? ' (' + cur + ')' : ''}</span><span class="r">Last bought (total)</span><span class="r">Last date</span><span class="r">Total</span><span>Remarks</span></div>`;
   o.items.forEach((it, i) => {
     const left = Math.max(0, it.q - (it.rec || 0)), desc = [it.d, it.b].filter(Boolean).map(pcEsc).join(', ');
     let strip = '';
@@ -15721,7 +15722,7 @@ function pcOpenOrdered(o){
   const who = (o.proc && o.proc.approverName) || o.approvedByName || names[0] || '';
   pcModalOpen(pcModalHead('Mark ' + o.id + ' as ordered', 'Check the prices, then confirm. Reminders continue until everything is received.') + `
     <div class="pcSection" style="margin-top:0">Unit prices (${pcCur(o)})</div>
-    ${o.items.map((it, i) => `<div class="pcPriceRow"><div class="pcPriceName"><b>${pcEsc(it.n)}</b><span class="hrNote">${it.q} ${pcEsc(it.u || '')}${it.d ? ' \u00B7 ' + pcEsc(it.d) : ''}${it.lp ? ' \u00B7 last bought ' + pcLastP(it, pcCur(o)) : ''}</span></div><input type="number" min="0" step="any" id="pcmP_${i}" data-pc="pcmprice" value="${it.p || ''}" placeholder="${it.lp > 0 ? pcMoney(it.lp) : '0.00'}"></div>`).join('')}
+    ${o.items.map((it, i) => `<div class="pcPriceRow"><div class="pcPriceName"><b>${pcEsc(it.n)}</b><span class="hrNote">${it.q} ${pcEsc(it.u || '')}${it.d ? ' \u00B7 ' + pcEsc(it.d) : ''}${it.lp ? ' \u00B7 last bought ' + pcLastU(it, pcCur(o)) + ' each' : ''}</span></div><input type="number" min="0" step="any" id="pcmP_${i}" data-pc="pcmprice" value="${it.p || ''}" placeholder="${it.lp > 0 ? pcMoney(it.lp) : '0.00'}"></div>`).join('')}
     <div class="pcPriceTot">Total <b id="pcmTot">${pcCur(o)} ${pcMoney(pcTotal(o))}</b></div>
     <div class="hrForm"><div class="field"><label>Supplier</label><input type="text" id="pcmSup" value="${pcEsc(o.proc && o.proc.supplier || '')}"></div>
     <div class="field"><label>Expected delivery (optional)</label><input type="date" id="pcmExp" value="${pcEsc(o.expected || '')}"></div>
@@ -15892,7 +15893,7 @@ function pcPdfBlocks(o, kind, T, L){
     ${intro ? `<div style="font-size:11.5px;color:#334155;margin-top:10px;line-height:1.5;white-space:pre-line">${esc(intro)}</div>` : ''}</div>`);
   const withP = isPO && o.items.some(it => it.p > 0);
   const W = withP ? [4, 14, 19, 9, 9, 10, 11, 9, 15] : [4, 17, 25, 10, 12, 13, 19];
-  const heads = withP ? ['#', 'Item name', 'Description', 'Qty', 'Price', 'Last price', 'Last date', 'Total', 'Remarks'] : ['#', 'Item name', 'Description', 'Qty', 'Last price', 'Last date', 'Remarks'];
+  const heads = withP ? ['#', 'Item name', 'Description', 'Qty', 'Price', 'Last price (total)', 'Last date', 'Total', 'Remarks'] : ['#', 'Item name', 'Description', 'Qty', 'Last price (total)', 'Last date', 'Remarks'];
   const th = heads.map((h, i) => `<th style="width:${W[i]}%;${/Qty|price|Last|Total/.test(h) ? 'text-align:right' : ''}">${h}</th>`).join('');
   const remarks = (it) => [it.phys ? ((it.link || (it.photos || []).length) ? 'Physical sample' : 'PHYSICAL SAMPLE ONLY \u2014 take it when buying') : '', it.link ? 'Link: ' + pcShortUrl(it.link) : '', (it.photos || []).length ? 'Photo(s) in the app' : '', it.note].filter(Boolean).join(' \u00B7 ') || '';
   const rows = o.items.map((it, i) => {
@@ -15919,7 +15920,7 @@ function pcPdfModel0(o, kind, T, L){
   const remarks = (it) => [it.phys ? ((it.link || (it.photos || []).length) ? 'Physical sample' : 'PHYSICAL SAMPLE ONLY - take it when buying') : '', it.link ? 'Link: ' + pcShortUrl(it.link) : '', (it.photos || []).length ? 'Photo(s) in the app' : '', it.note].filter(Boolean).join(' | ');
   const cur = pcCur(o), sd = (t) => { if(!t) return ''; const d = new Date(t); return d.getDate() + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getMonth()] + ' ' + String(d.getFullYear()).slice(2); };
   const hasP = o.items.some(it => it.p > 0), withP = isPO && hasP;
-  const head = withP ? ['#', 'Item name', 'Description', 'Qty', 'Unit', 'Price', 'Last price', 'Last date', 'Total', 'Remarks'] : ['#', 'Item name', 'Description', 'Qty', 'Unit', 'Last price', 'Last date', 'Remarks'];
+  const head = withP ? ['#', 'Item name', 'Description', 'Qty', 'Unit', 'Price', 'Last price (total)', 'Last date', 'Total', 'Remarks'] : ['#', 'Item name', 'Description', 'Qty', 'Unit', 'Last price (total)', 'Last date', 'Remarks'];
   const w = withP ? [6, 16, 21, 8, 8, 11, 13, 14, 11, 22] : [6, 17, 24, 8, 8, 12, 14, 26];
   const right = withP ? [3, 5, 6, 8] : [3, 5];
   const rows = o.items.map((it, i) => { const d = [it.d, it.b].filter(Boolean).join(', '), lpv = it.lp > 0 ? pcLastP(it, cur) : '', ldv = it.lp > 0 && it.ld ? pcLastD(it) : '';
@@ -19117,7 +19118,7 @@ function poRcvLocal(o, L){
   const info = [[['Order No.', o.id], ['Order date', poSd(o.createdAt)], ['Type', PO_LABEL.local], ['Department', o.dept], ['Priority', o.priority === 'urgent' ? 'URGENT' : 'Regular']],
     [['Supplier', supN], ['Invoice number', c.inv], ['Invoice date', c.invd ? fmtDate(c.invd) : ''], ['Status', o.status === 'received' ? 'Complete' : 'Partly received']]];
   return { kind: 'rcv', title: 'Goods Receiving Report', barTop: o.id, info, eq: true,
-    head: ['#', 'Item name', 'Description', 'Unit', 'Ordered Qty', 'Last price', 'Last date', 'Receiving Date', 'Received Qty', 'Actual Price', 'Total Price', 'Remarks'],
+    head: ['#', 'Item name', 'Description', 'Unit', 'Ordered Qty', 'Last price (total)', 'Last date', 'Receiving Date', 'Received Qty', 'Actual Price', 'Total Price', 'Remarks'],
     w: [4, 12.5, 15, 6, 9, 9, 10.5, 13, 9.5, 10, 10, 13], right: [4, 5, 8, 9, 10], rows, total: tot, ti: 10, bc: 1, cur, L, intro: '', closing: '',
     signers: [{ name: c.rcv || '', title: 'Received By' }, { name: c.chk || '', title: 'Checked By' }] };
 }
