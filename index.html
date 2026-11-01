@@ -3597,6 +3597,13 @@ details.admD{margin:0 0 10px;}
 .pcFR .pcLpH{ font-size:11.5px; color:var(--muted); line-height:1.3; }
 .pcFR .c-name textarea.pcNote, .pcFR .c-desc textarea.pcNote{ min-height:36px; }
 .pcFRow > .c-name, .pcFRow > .c-desc, .pcFRow > .c-rem{ align-items:flex-start; }
+.pcFR .pcFRow > *:not(.c-no){ align-items:flex-start; }
+.pcFR .c-lp{ gap:0; }
+.pcFR .pcLpN{ display:flex; align-items:center; flex-wrap:wrap; gap:6px; padding:2px 8px 10px 34px; font-size:12px; color:var(--muted); }
+.pcFR .pcLpN input{ width:64px; height:30px; padding:4px 8px; font-size:12.5px; }
+.pcFR .pcLpN b{ font-weight:500; color:var(--text); margin-left:6px; }
+.pcFR textarea.pcNote::placeholder{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.pcFR textarea.pcNote{ box-sizing:border-box; }
 
 </style>
 </head>
@@ -18919,9 +18926,9 @@ function pcItemHtml(it, i, units){
   let h = pcItemHtml0(it, i, units); const t = (pc.ui.form && pc.ui.form.type) || 'local';
   const cut = (c) => { h = h.replace(new RegExp('<div class="' + c + '">[\\s\\S]*?<\\/div>'), ''); };
   h = h.replace(/<input type="text" data-pc="inote"([^>]*)>/, (m, a) => { const v = (a.match(/value="([^"]*)"/) || [0, ''])[1]; return '<textarea rows="' + Math.min(4, Math.max(1, Math.ceil(v.length / 26))) + '" class="pcNote" data-pc="inote"' + a.replace(/\s*value="[^"]*"/, '') + '>' + v + '</textarea>'; });
-  h = h.replace(/<input type="text" data-pc="(iname|idesc)"([^>]*)>/g, (m, k, a) => { const v = (a.match(/value="([^"]*)"/) || [0, ''])[1]; return '<textarea rows="' + Math.min(5, Math.max(1, Math.ceil(v.length / 20))) + '" class="pcNote" data-pc="' + k + '"' + a.replace(/\s*value="[^"]*"/, '') + '>' + v + '</textarea>'; });
+  h = h.replace(/<input type="text" data-pc="(iname|idesc)"([^>]*)>/g, (m, k, a) => { const v = (a.match(/value="([^"]*)"/) || [0, ''])[1]; return '<textarea rows="' + Math.min(5, Math.max(1, Math.ceil(v.length / 22))) + '" class="pcNote" data-pc="' + k + '"' + a.replace(/\s*value="[^"]*"/, '') + '>' + v + '</textarea>'; });
   if(t === 'local') h = h.replace(/<div class="c-lp">[\s\S]*?<\/div>/, pcLpCell(it, i));
-  if(t === 'local'){ cut('c-price'); return h; }
+  if(t === 'local'){ cut('c-price'); { const nt = pcLpNote(it, i), k0 = h.indexOf('<div class="pcItemMore'); h = k0 >= 0 ? h.slice(0, k0) + nt + h.slice(k0) : h.slice(0, h.lastIndexOf('</div>')) + nt + '</div>'; } return h; }
   if(t === 'international') cut('c-price');
   cut('c-lp'); cut('c-ld');
   const x = (f, l, ty) => `<input type="${ty || 'text'}" data-po="ix" data-f="${f}" data-i="${i}" placeholder="${l}" title="${l}" value="${pcEsc(it[f] || '')}">`;
@@ -23022,18 +23029,18 @@ function pcLpHintText(tot, lq, qty, unit){
   return pcMoney(each) + ' each' + (qty > 0 ? ' · ' + qty + ' = ' + pcMoney(each * qty) : '');
 }
 function pcLpCell(it, i){
-  return `<div class="c-lp"><span class="fl">Last price (total)</span><input type="number" min="0" step="any" data-pc="ilp" data-i="${i}" id="pcLp${i}" placeholder="0.00" value="${it.lp > 0 ? it.lp : ''}">
-    <div class="pcLpQ"><span>for</span><input type="number" min="0" step="any" data-pc="ilq" data-i="${i}" id="pcLq${i}" placeholder="qty" value="${it.lq > 0 ? it.lq : ''}"><span>${pcEsc(it.u || '')}</span></div>
-    <div class="pcLpH" id="pcLpH${i}">${pcEsc(pcLpHintText(it.lp, it.lq, it.q, it.u))}</div></div>`;
+  return `<div class="c-lp"><span class="fl">Last price (total)</span><input type="number" min="0" step="any" data-pc="ilp" data-i="${i}" id="pcLp${i}" placeholder="0.00" value="${it.lp > 0 ? it.lp : ''}"></div>`;
 }
-function pcLpSync(i){   // refresh the quantity box and the hint of one row (no redraw)
+function pcLpNote(it, i){ return ''; }
+function pcLpSync(i){
   const F = pc.ui.form, it = F && F.items[i]; if(!it) return;
   const q = $('pcLq' + i); if(q) q.value = it.lq > 0 ? it.lq : '';
   pcLpHint(i);
 }
 function pcLpHint(i){
   const F = pc.ui.form, it = F && F.items[i], h = $('pcLpH' + i); if(!it || !h) return;
-  h.textContent = pcLpHintText(($('pcLp' + i) || {}).value, ($('pcLq' + i) || {}).value, it.q, it.u);
+  const t = ($('pcLp' + i) || {}).value, n = $('pcLpN' + i); if(n) n.style.display = Number(t) > 0 ? '' : 'none';
+  h.textContent = pcLpHintText(t, ($('pcLq' + i) || {}).value, it.q, it.u);
 }
 document.addEventListener('input', (e) => {
   const el = e.target, a = el && el.dataset && el.dataset.pc; if(!a || !pc.ui || !pc.ui.form) return;
@@ -23041,6 +23048,9 @@ document.addEventListener('input', (e) => {
   if(a === 'ilq'){ const it = pc.ui.form.items[i]; if(it){ it.lq = Number(el.value) > 0 ? Number(el.value) : 0; it.lpm = true; } pcLpHint(i); }
   else if(a === 'ilp' || a === 'iqty' || a === 'iunit') setTimeout(() => pcLpHint(i), 0);
 });
+
+(function(){ let t = 0; const fit = () => { t = 0; document.querySelectorAll('.pcFR textarea.pcNote').forEach(el => { el.style.height = 'auto'; el.style.height = Math.max(36, el.scrollHeight + 2) + 'px'; }); };
+  new MutationObserver(() => { if(!t) t = requestAnimationFrame(fit); }).observe(document.body, { childList: true, subtree: true }); window.addEventListener('resize', () => { if(!t) t = requestAnimationFrame(fit); }); })();
 document.addEventListener('keydown', (e) => { const t = e.target; if(e.key === 'Enter' && t && t.matches && t.matches('textarea.pcNote[data-pc="iname"],textarea.pcNote[data-pc="idesc"]')) e.preventDefault(); });
 document.addEventListener('focusin', (e) => { const el = e.target; if(el && el.classList && el.classList.contains('pcNote')){ el.style.height = 'auto'; el.style.height = Math.max(36, el.scrollHeight + 2) + 'px'; } });
 </script>
