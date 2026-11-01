@@ -3589,6 +3589,15 @@ details.admD{margin:0 0 10px;}
 .auth-tabs .auth-tab{border-radius:9999px;}
 @media(max-width:640px){.auth-tabs.wrap-tabs{border-radius:22px;}.auth-tabs.wrap-tabs .auth-tab{border-radius:18px;}}
 
+/* Purchase form: last price total + taller text boxes */
+#purchaseMount .pcLoc .pcFRow{ grid-template-columns:26px minmax(0,1.2fr) minmax(0,1.4fr) 86px 78px 136px 136px minmax(0,1.3fr) 64px; }
+.pcFR .c-lp{ flex-direction:column; align-items:stretch; justify-content:flex-start; gap:4px; }
+.pcFR .pcLpQ{ display:flex; align-items:center; gap:4px; font-size:11.5px; color:var(--muted); }
+.pcFR .pcLpQ input{ flex:1; min-width:0; width:100%; }
+.pcFR .pcLpH{ font-size:11.5px; color:var(--muted); line-height:1.3; }
+.pcFR .c-name textarea.pcNote, .pcFR .c-desc textarea.pcNote{ min-height:36px; }
+.pcFRow > .c-name, .pcFRow > .c-desc, .pcFRow > .c-rem{ align-items:flex-start; }
+
 </style>
 </head>
 <body>
@@ -15470,7 +15479,7 @@ function pcBlankItem(){ return { lp: 0, ld: 0, lc: '', n: '', d: '', b: '', q: 1
 function pcNewForm0(){ return { docId: '', back: false, backDate: '', backOrdered: false, cur: 'SAR', priority: 'regular', dept: '', reqBy: { id: '', name: '' }, note: '', items: [pcBlankItem()], recPhotos: [] }; }
 function pcFormFromOrder0(o, asCopy){
   return { docId: asCopy ? '' : o.docId, cur: o.cur || 'SAR', priority: o.priority, dept: o.dept, reqBy: Object.assign({}, o.reqBy), note: o.note || '', recPhotos: asCopy ? [] : (o.recPhotos || []).slice(),
-    items: o.items.map(i => ({ lp: i.lp || 0, ld: i.ld || 0, lc: i.lc || '', n: i.n, d: i.d || '', b: i.b || '', q: i.q, u: i.u, p: i.p || '', phys: !!i.phys, link: i.link || '', photos: (i.photos || []).slice(), note: i.note || '', more: !!(i.b || i.p || i.note || i.phys || i.link || (i.photos || []).length) })) };
+    items: o.items.map(i => ({ lp: (i.lq > 0 && i.lp > 0) ? Math.round(i.lp * i.lq * 100) / 100 : (i.lp || 0), lq: i.lq || 0, ld: i.ld || 0, lc: i.lc || '', n: i.n, d: i.d || '', b: i.b || '', q: i.q, u: i.u, p: i.p || '', phys: !!i.phys, link: i.link || '', photos: (i.photos || []).slice(), note: i.note || '', more: !!(i.b || i.p || i.note || i.phys || i.link || (i.photos || []).length) })) };
 }
 function pcFormHtml0(){
   const F = pc.ui.form, S = pc.settings, depts = pcDepts();
@@ -15556,7 +15565,7 @@ async function pcItemSuggest(el, i){
   if(!pc.ui.form || !F.items[i] || el.value !== (F.items[i].n || '')) return;
   const it = F.items[i], ex = pcCatByName(el.value);
   // a name that is remembered with ONE description: show its last price at once
-  if(ex.length === 1 && ex[0].lp && !it.lpm && !(it.d || '').trim()){ it.lp = ex[0].lp; it.ld = ex[0].ld || 0; it.lc = ex[0].lc || 'SAR'; const a1 = $('pcLp' + i), a2 = $('pcLd' + i); if(a1) a1.value = it.lp; if(a2) a2.value = it.ld ? pcDateStr(it.ld) : ''; }
+  if(ex.length === 1 && ex[0].lp && !it.lpm && !(it.d || '').trim()){ pcLastIn(it, ex[0]); const a1 = $('pcLp' + i), a2 = $('pcLd' + i); if(a1) a1.value = it.lp; pcLpSync(i); if(a2) a2.value = it.ld ? pcDateStr(it.ld) : ''; }
   pcShowSug($('pcItSug' + i), pcCatalogMatches(el.value, true).map(c => ({ label: c.n, sub: [c.cd, c.d, c.b, c.u, c.lp ? 'last ' + (c.lc && c.lc !== 'SAR' ? c.lc + ' ' : '') + pcMoney(c.lp) : ''].filter(Boolean).join(' \u00B7 '), c })), 'sugitem', i);
 }
 // show the values of a row that was filled from memory (without redrawing, so the cursor stays)
@@ -15576,7 +15585,7 @@ async function pcSaveForm(){
   const F = pc.ui.form;
   if(pc.ui.busy) return;
   const cat = (pc.catalog && pc.catalog.items) || {};
-  const items = F.items.filter(i => i.n.trim()).map(i => ({ lp: Number(i.lp) > 0 ? Number(i.lp) : 0, ld: Number(i.lp) > 0 ? (i.ld || Date.now()) : 0, lc: Number(i.lp) > 0 ? (i.lpm ? (F.cur || 'SAR') : (i.lc || 'SAR')) : '', lpm: !!i.lpm, cd: i.cd || '', ino: i.ino || '', sq: i.sq || '', dd: i.dd || '', n: i.n.trim(), d: (i.d || '').trim(), b: (i.b || '').trim(), q: Number(i.q), u: i.u, p: Number(i.p) > 0 ? Number(i.p) : 0, phys: !!i.phys, link: pcSafeUrl(i.link), photos: i.photos.slice(0, 3), note: (i.note || '').trim() }));
+  const items = F.items.filter(i => i.n.trim()).map(i => ({ lp: Number(i.lp) > 0 ? (Number(i.lq) > 0 ? Math.round(Number(i.lp) / Number(i.lq) * 10000) / 10000 : Number(i.lp)) : 0, lq: Number(i.lp) > 0 && Number(i.lq) > 0 ? Number(i.lq) : 0, ld: Number(i.lp) > 0 ? (i.ld || Date.now()) : 0, lc: Number(i.lp) > 0 ? (i.lpm ? (F.cur || 'SAR') : (i.lc || 'SAR')) : '', lpm: !!i.lpm, cd: i.cd || '', ino: i.ino || '', sq: i.sq || '', dd: i.dd || '', n: i.n.trim(), d: (i.d || '').trim(), b: (i.b || '').trim(), q: Number(i.q), u: i.u, p: Number(i.p) > 0 ? Number(i.p) : 0, phys: !!i.phys, link: pcSafeUrl(i.link), photos: i.photos.slice(0, 3), note: (i.note || '').trim() }));
   const srcIdx = F.items.filter(i => i.n.trim()).map(i => i.src);
   const forCatalog = items.map(i => Object.assign({}, i)); items.forEach(i => { delete i.lpm; });
   if(!F.dept) return toast('Choose the department');
@@ -15626,9 +15635,9 @@ async function pcSaveCatalog0(items, edit){
   const cat = await pcLoadCatalog(), now = Date.now();
   items.forEach(i => {
     const k = pcCatKey(cat.items, i.n, i.d), old = cat.items[k];
-    cat.items[k] = { n: i.n, d: i.d || '', b: i.b || (old && old.b) || '', u: i.u, p: i.p || (old && old.p) || 0, link: i.link || (old && old.link) || '', phys: i.phys, note: i.note || '', lp: (old && old.lp) || 0, ld: (old && old.ld) || 0, lc: (old && old.lc) || '', uses: ((old && old.uses) || 0) + (edit ? 0 : 1), last: now };
+    cat.items[k] = { n: i.n, d: i.d || '', b: i.b || (old && old.b) || '', u: i.u, p: i.p || (old && old.p) || 0, link: i.link || (old && old.link) || '', phys: i.phys, note: i.note || '', lp: (old && old.lp) || 0, ld: (old && old.ld) || 0, lc: (old && old.lc) || '', lq: (old && old.lq) || 0, uses: ((old && old.uses) || 0) + (edit ? 0 : 1), last: now };
     // a last-bought price typed by hand becomes the product's history (so it shows by itself next time)
-    if(i.lp > 0 && (i.lpm || !(old && old.lp))){ const e = cat.items[k]; e.lp = i.lp; e.ld = i.ld || now; e.lc = i.lc || 'SAR'; }
+    if(i.lp > 0 && (i.lpm || !(old && old.lp))){ const e = cat.items[k]; e.lp = i.lp; e.ld = i.ld || now; e.lc = i.lc || 'SAR'; e.lq = i.lq || 0; }
   });
   await pcWriteCatalog(cat);
 }
@@ -16174,7 +16183,7 @@ function pcOnInput(e){
       break; }
     case 'iname': { F.items[i].n = el.value; pcItemSuggest(el, i); break; }
     case 'idesc': { const it = F.items[i]; it.d = el.value; const c = pc.catalog && pc.catalog.items[pcCatKey(pc.catalog.items, it.n, it.d)];
-      if(c && pcLc(c.n) === pcLc(it.n) && pcLc(c.d) === pcLc(it.d) && c.lp && !it.lpm){ it.lp = c.lp; it.ld = c.ld || 0; it.lc = c.lc || 'SAR'; const a1 = $('pcLp' + i), a2 = $('pcLd' + i); if(a1) a1.value = it.lp; if(a2) a2.value = it.ld ? pcDateStr(it.ld) : ''; } break; }
+      if(c && pcLc(c.n) === pcLc(it.n) && pcLc(c.d) === pcLc(it.d) && c.lp && !it.lpm){ pcLastIn(it, c); const a1 = $('pcLp' + i), a2 = $('pcLd' + i); if(a1) a1.value = it.lp; pcLpSync(i); if(a2) a2.value = it.ld ? pcDateStr(it.ld) : ''; } break; }
     case 'ilp': F.items[i].lp = el.value; F.items[i].lpm = true; if(Number(el.value) > 0 && !F.items[i].ld){ F.items[i].ld = Date.now(); const d = $('pcLd' + i); if(d) d.value = pcDateStr(F.items[i].ld); } break;
     case 'ild': F.items[i].ld = el.value ? new Date(el.value + 'T12:00:00').getTime() : 0; F.items[i].lpm = true; break;
     case 'iqty': F.items[i].q = el.value; break;
@@ -18810,7 +18819,7 @@ function pcFillFromCat(it, c){
   if(!(it.lp > 0)){ const b = phLookup({ n: c.n, d: c.d, cd: c.cd }); if(b){ it.lp = b.lp; it.ld = b.ld; it.lc = b.lc || ''; } }
   let cd = c.cd || '';
   if(!cd && pp.loaded){ const p = pp.items.find(x => ppLc(x.n) === ppLc(c.n) && ppLc(x.d) === ppLc(c.d)); if(p) cd = p.c || ''; }
-  it.cd = cd;
+  it.cd = cd; pcLpTotalize(it, c);
 }
 async function pcSaveCatalog(items, edit){ const r = await pcSaveCatalog0(items, edit); try{ await pcpAddFromOrder(items); }catch(e){ console.error(e); } return r; }
 // the item-name suggestions close as soon as the cursor leaves the box (so they never sit on top of the buttons below)
@@ -18897,7 +18906,7 @@ function pcFormHtml(){
   h = h.replace(first, '<div class="hrForm">' + sel + '<div class="field"><label>Priority</label>');
   h = h.replace('Prices in (change only for international buying)', 'Prices in').replace('<label>Requested by department</label>', '<label>Department</label>').replace('Requested by person (search or type)', 'Requested by');
   { const ty = F.type || 'local', pr = /<span>Price \([^)]*\)<\/span>/, lp = '<span>Last price</span><span>Last date</span>';
-    if(ty === 'local') h = h.replace(pr, '').replace('<div class="pcFT">', '<div class="pcFT pcLoc">');
+    if(ty === 'local') h = h.replace(pr, '').replace('<span>Last price</span>', '<span>Last price (total)</span>').replace('<div class="pcFT">', '<div class="pcFT pcLoc">');
     else if(ty === 'international') h = h.replace(pr, '').replace(lp, '').replace('<div class="pcFT">', '<div class="pcFT pcInt">');
     else h = h.replace(lp, '').replace('<div class="pcFT">', '<div class="pcFT pcPack">'); }
   const mark = '<div class="pcSection" style="margin-top:6px">Items</div>';
@@ -18910,6 +18919,8 @@ function pcItemHtml(it, i, units){
   let h = pcItemHtml0(it, i, units); const t = (pc.ui.form && pc.ui.form.type) || 'local';
   const cut = (c) => { h = h.replace(new RegExp('<div class="' + c + '">[\\s\\S]*?<\\/div>'), ''); };
   h = h.replace(/<input type="text" data-pc="inote"([^>]*)>/, (m, a) => { const v = (a.match(/value="([^"]*)"/) || [0, ''])[1]; return '<textarea rows="' + Math.min(4, Math.max(1, Math.ceil(v.length / 26))) + '" class="pcNote" data-pc="inote"' + a.replace(/\s*value="[^"]*"/, '') + '>' + v + '</textarea>'; });
+  h = h.replace(/<input type="text" data-pc="(iname|idesc)"([^>]*)>/g, (m, k, a) => { const v = (a.match(/value="([^"]*)"/) || [0, ''])[1]; return '<textarea rows="' + Math.min(5, Math.max(1, Math.ceil(v.length / 20))) + '" class="pcNote" data-pc="' + k + '"' + a.replace(/\s*value="[^"]*"/, '') + '>' + v + '</textarea>'; });
+  if(t === 'local') h = h.replace(/<div class="c-lp">[\s\S]*?<\/div>/, pcLpCell(it, i));
   if(t === 'local'){ cut('c-price'); return h; }
   if(t === 'international') cut('c-price');
   cut('c-lp'); cut('c-ld');
@@ -22985,6 +22996,53 @@ async function asgAssignView(){
 }
 
 
+
+/* ---- Purchase: last price = total paid for the quantity bought last time ---- */
+const pcLpR2 = (x) => Math.round(Number(x) * 100) / 100;
+function pcLqOf(e){
+  if(!e) return 0;
+  const rows = (e.h || []).filter(x => !x.e), top = rows.find(x => x.t === e.ld) || (!e.lq ? rows[0] : null);
+  if(top && top.q > 0) return Number(top.q);
+  return Number(e.lq) || 0;
+}
+function pcLastIn(it, c){   // c = remembered product: bring in the last total, its quantity and date
+  const q = pcLqOf(c.h ? c : (typeof phLookup === 'function' ? phLookup({ n: c.n, d: c.d, cd: c.cd }) : null) || c);
+  it.lq = q > 0 ? q : 0; it.lp = q > 0 ? pcLpR2(c.lp * q) : c.lp; it.ld = c.ld || 0; it.lc = c.lc || 'SAR';
+}
+function pcLpTotalize(it, c){   // after pcFillFromCat: it.lp is still the per-piece price
+  it.lq = 0; if(!(it.lp > 0)) return;
+  const e = c && c.h ? c : (typeof phLookup === 'function' ? phLookup({ n: c.n, d: c.d, cd: c.cd }) : null), q = pcLqOf(e);
+  if(q > 0){ it.lq = q; it.lp = pcLpR2(it.lp * q); }
+}
+function pcLpHintText(tot, lq, qty, unit){
+  tot = Number(tot) || 0; lq = Number(lq) || 0; qty = Number(qty) || 0;
+  if(!(tot > 0)) return '';
+  if(!(lq > 0)) return 'Write the quantity it was bought for';
+  const each = tot / lq;
+  return pcMoney(each) + ' each' + (qty > 0 ? ' · ' + qty + ' = ' + pcMoney(each * qty) : '');
+}
+function pcLpCell(it, i){
+  return `<div class="c-lp"><span class="fl">Last price (total)</span><input type="number" min="0" step="any" data-pc="ilp" data-i="${i}" id="pcLp${i}" placeholder="0.00" value="${it.lp > 0 ? it.lp : ''}">
+    <div class="pcLpQ"><span>for</span><input type="number" min="0" step="any" data-pc="ilq" data-i="${i}" id="pcLq${i}" placeholder="qty" value="${it.lq > 0 ? it.lq : ''}"><span>${pcEsc(it.u || '')}</span></div>
+    <div class="pcLpH" id="pcLpH${i}">${pcEsc(pcLpHintText(it.lp, it.lq, it.q, it.u))}</div></div>`;
+}
+function pcLpSync(i){   // refresh the quantity box and the hint of one row (no redraw)
+  const F = pc.ui.form, it = F && F.items[i]; if(!it) return;
+  const q = $('pcLq' + i); if(q) q.value = it.lq > 0 ? it.lq : '';
+  pcLpHint(i);
+}
+function pcLpHint(i){
+  const F = pc.ui.form, it = F && F.items[i], h = $('pcLpH' + i); if(!it || !h) return;
+  h.textContent = pcLpHintText(($('pcLp' + i) || {}).value, ($('pcLq' + i) || {}).value, it.q, it.u);
+}
+document.addEventListener('input', (e) => {
+  const el = e.target, a = el && el.dataset && el.dataset.pc; if(!a || !pc.ui || !pc.ui.form) return;
+  const i = Number(el.dataset.i);
+  if(a === 'ilq'){ const it = pc.ui.form.items[i]; if(it){ it.lq = Number(el.value) > 0 ? Number(el.value) : 0; it.lpm = true; } pcLpHint(i); }
+  else if(a === 'ilp' || a === 'iqty' || a === 'iunit') setTimeout(() => pcLpHint(i), 0);
+});
+document.addEventListener('keydown', (e) => { const t = e.target; if(e.key === 'Enter' && t && t.matches && t.matches('textarea.pcNote[data-pc="iname"],textarea.pcNote[data-pc="idesc"]')) e.preventDefault(); });
+document.addEventListener('focusin', (e) => { const el = e.target; if(el && el.classList && el.classList.contains('pcNote')){ el.style.height = 'auto'; el.style.height = Math.max(36, el.scrollHeight + 2) + 'px'; } });
 </script>
 </body>
 </html>
