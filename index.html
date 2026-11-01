@@ -22034,9 +22034,9 @@ async function a2CalcPicks(){
   }catch(err){ console.error(err); toast('Could not calculate - check your connection'); }
   A2.busy = false; a2Draw();
 }
-function a2DropOthers(){   // people whose position is no longer ticked in Operator settings leave the Operator sheet
-  const d = a2Doc(); if(!d || d.sec !== 'operator') return 0;
-  const ok = new Set(a2People('operator', true).map(u => u.loginId)), known = new Set((state.users || []).map(u => u.loginId)), n = d.rows.length;
+function a2DropOthers(){   // a person now counted in another sheet (position ticked / unticked, employment type) leaves this one: each person is paid in one sheet only
+  const d = a2Doc(); if(!d || !(state.users && state.users.length)) return 0;
+  const ok = new Set(a2People(d.sec, true).map(u => u.loginId)), known = new Set((state.users || []).map(u => u.loginId)), n = d.rows.length;
   d.rows = d.rows.filter(r => ok.has(r.id) || !known.has(r.id)); if(d.rows.length !== n) a2Touch(); return n - d.rows.length;
 }
 function a2Apply(){   // settings changed -> the sheet follows by itself (only marks the sheet as changed when something really changed)
@@ -22062,7 +22062,7 @@ async function a2Refresh(){
   A2.busy = true;
   try{
     state.users = await window.__db.listUsersOnce();
-    const ok = new Set(a2People(d.sec, true).map(u => u.loginId)); if(d.sec === 'operator') d.rows = d.rows.filter(r => ok.has(r.id));
+    const ok = new Set(a2People(d.sec, true).map(u => u.loginId)); d.rows = d.rows.filter(r => ok.has(r.id) || !(state.users || []).some(u => u.loginId === r.id));
     const have = {}; d.rows.forEach(r => { have[r.id] = r; });
     a2People(d.sec).forEach(u => {
       const r = have[u.loginId];
@@ -22116,6 +22116,7 @@ function a2Draw(){
   a2DrawSheet();
 }
 function a2DrawSheet(){
+  { const gone = a2DropOthers(); if(gone) toast(gone + (gone === 1 ? ' person is' : ' people are') + ' now counted in another sheet and left this one'); }
   const d = a2Doc(), sec = A2.sec, ed = acCanEdit(), rows = d ? d.rows : [], op = sec === 'operator';
   const status = !d ? '' : (d.dirty ? '<span class="a2Warn">Not saved</span>' : (d.savedAt ? `Saved ${a2Stamp(d.savedAt)}` : 'Not saved yet'));
   const calc = op && d ? (d.calcAt ? `Picks calculated ${a2Stamp(d.calcAt)}` : 'Picks not calculated yet') : '';
@@ -22333,7 +22334,7 @@ document.addEventListener('click', async (e) => {
   else if(a === 'recalc'){ a2Recalc(); }
   else if(a === 'save'){ a2Save(); }
   else if(a === 'set'){ A2.view = 'set'; a2Draw(); }
-  else if(a === 'back'){ A2.view = 'sheet'; const n = a2DropOthers(); if(n) toast(n + ' left the Operator sheet (position not ticked)'); const ch = a2Apply(); if(ch && !n) toast('New settings applied to the sheet'); a2Draw(); }
+  else if(a === 'back'){ A2.view = 'sheet'; const n = a2DropOthers(); if(n) toast(n + ' left this sheet (counted in another sheet now)'); const ch = a2Apply(); if(ch && !n) toast('New settings applied to the sheet'); a2Draw(); }
   else if(a === 'dl'){ dlOpen(a2DlCfg()); }
   else if(a === 'peek'){
     if(!A2.raw){ toast('Press Recalculate picks to see the days'); return; }
