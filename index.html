@@ -3400,6 +3400,183 @@ table.pkPdf tr.tot td{ background:#eef2ff !important; border-top:1px solid #c7d2
 .a2MoH{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px;margin-bottom:8px;}
 .a2MoT{font-size:13px;color:var(--muted);}
 .a2MoT b{color:var(--text);font-weight:500;}
+.field .salTick{text-transform:none;font-weight:500;letter-spacing:0;font-size:13px;color:var(--text);}
+.field .salTick .salTickN{font-weight:400;color:var(--muted);}
+#admGrp{margin-bottom:14px;}
+#admGrp .admRow1{margin-bottom:8px;}
+.admRow2{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 6px;}
+.admSub{border:1px solid var(--line);background:transparent;color:var(--muted);border-radius:9999px;padding:6px 14px;font-size:13px;font-weight:500;cursor:pointer;}
+.admSub:hover{color:var(--text);}
+.admSub.active{background:var(--accent,#4f46e5);border-color:var(--accent,#4f46e5);color:#fff;}
+/* v103 admin compact */
+#screen-admin .btn:not(.btn-sm):not(.lc-full){width:auto;padding:9px 18px;font-size:12.5px;display:inline-flex;}
+#screen-admin .card{padding:12px 14px;}
+#screen-admin .field{margin-bottom:8px;}
+#screen-admin h2{font-size:18px;margin:14px 0 4px;}
+#screen-admin p.sub{font-size:12.5px;margin:2px 0 8px;}
+#screen-admin .hint{font-size:11.5px;margin:2px 0 8px;}
+#screen-admin .grid-2,#screen-admin .grid-3{grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px 12px;}
+#screen-admin input[type=time]{width:100%;font:inherit;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--panel-2);color:var(--text);}
+details.admD{margin:0 0 10px;}
+.admForm{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:0 14px;align-items:end;}
+.admForm > *{grid-column:1/-1;}
+.admForm .grid-2,.admForm .grid-3{display:contents;}
+.admForm > .field,.admForm .field{grid-column:auto;margin-bottom:8px;}
+.admForm > .card{display:contents;}
+.admForm .card > .sub,.admForm .card > p,.admForm .card > button,.admForm .card > div[id],.admForm > button,.admForm .hint,.admForm .sub{grid-column:1/-1;}
+.admForm .card > *:not(.field):not(.grid-2):not(.grid-3){grid-column:1/-1;}
+.admForm .card > .field{grid-column:auto;}
+.admCols{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;margin-bottom:14px;}
+.admCols .card{margin:0 !important;}
+.admForm .field{margin-bottom:8px !important;}
+.admForm{align-items:start;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));}
+.admForm > .card,.acSecB > .card{box-shadow:none;border:0;padding:0 !important;background:transparent;margin:0 !important;}
+.admForm .field{display:block;min-width:0;}
+.admForm .field input,.admForm .field select{width:100%;}
+.admForm > button,.admForm .card > button{justify-self:start;}
+.admForm .field select{min-height:46px;}
+#graceFieldsContainer{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:10px 12px;}
+#graceFieldsContainer > *{margin:0 !important;}
+/* v103b: strict, even form grid */
+.admForm{grid-template-columns:repeat(4,minmax(0,1fr));gap:2px 14px;align-items:start;}
+.admForm .field label{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;line-height:1.3;margin-bottom:5px;}
+.admForm .field input,.admForm .field select{height:44px;box-sizing:border-box;}
+.admForm .field select{padding-top:0;padding-bottom:0;}
+.admGT{grid-column:1/-1;font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;margin:12px 0 6px;padding-bottom:4px;border-bottom:1px solid var(--line);}
+.admGT:first-child{margin-top:2px;}
+.admBtnCell .btn{width:100%;height:44px;padding:0 12px;}
+@media (max-width:760px){.admForm{grid-template-columns:repeat(2,minmax(0,1fr));}}
+@media (max-width:420px){.admForm{grid-template-columns:1fr;}}
+.admForm .field select{font-size:15px;}
+#graceFieldsContainer{grid-template-columns:repeat(2,minmax(0,1fr));}
+@media (max-width:700px){#graceFieldsContainer{grid-template-columns:1fr;}}
+.admNote{grid-column:span 3;align-self:end;margin:0 0 12px !important;}
+.admNote4{grid-column:1/-1;margin:2px 0 6px !important;}
+#graceFieldsContainer{display:grid !important;grid-template-columns:minmax(170px,1.4fr) 1fr 1fr 1.3fr !important;gap:8px 14px !important;align-items:center;grid-column:1/-1;}
+#graceFieldsContainer .gH{font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);}
+#graceFieldsContainer .gWho{font-size:13px;font-weight:500;}
+#graceFieldsContainer .gCell{display:flex;align-items:center;gap:8px;min-width:0;}
+#graceFieldsContainer .gCell input[type=radio]{width:auto;flex:none;margin:0;}
+#graceFieldsContainer .gCell input[type=number],#graceFieldsContainer .gCell input[type=time]{flex:1;min-width:0;height:44px;box-sizing:border-box;}
+#graceFieldsContainer .gChk{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:400;text-transform:none;letter-spacing:0;color:var(--text);cursor:pointer;margin:0;}
+#graceFieldsContainer .gChk input{width:auto;}
+#graceFieldsContainer .gNote{font-size:12px;color:var(--muted);}
+@media (max-width:760px){#graceFieldsContainer{grid-template-columns:1fr 1fr !important;}#graceFieldsContainer .gH{display:none;}#graceFieldsContainer .gWho{grid-column:1/-1;margin-top:8px;font-weight:600;}}
+.admForm .hint,.admNote,.admNote4{text-align:left !important;margin-left:0 !important;}
+#admin-shifttime #machineCooldownMinutes{max-width:220px;}
+.admSec{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin:0 0 14px;}
+.admSecH{margin-bottom:10px;}
+.admSecH h3{margin:0 0 2px;font-size:15px;font-weight:600;color:var(--text);}
+.admSecH p{margin:0 !important;font-size:12.5px;color:var(--muted);}
+.admSec details.admD{margin:10px 0 0;border:1px dashed var(--line);box-shadow:none;}
+.admSec details.admD[open]{border-style:solid;}
+.admInline{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;}
+.admInline .field{margin:0 !important;width:220px;}
+.admInline .btn{height:44px;}
+#admin-purchase .hrForm{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:8px 14px;}
+#admin-purchase .hrForm .field.wide{grid-column:auto;}
+#admin-purchase .hrForm textarea{min-height:64px;}
+#admin-purchase .pcActs{margin-top:12px;display:flex;flex-wrap:wrap;gap:8px;}
+
+/* ===== Admin > Assign redesign ===== */
+.asgTabs{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 12px;}
+.asgFindRow input{width:100%;height:44px;border:1px solid var(--line);border-radius:10px;background:#fff;padding:0 14px;font-size:14px;}
+.asgFindBox{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px;margin:10px 0 4px;}
+.asgFindC{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 14px;}
+.asgFindT{font-size:14px;font-weight:600;color:var(--text);margin-bottom:8px;}
+.asgFindG{display:grid;grid-template-columns:1fr 1fr;gap:8px 14px;font-size:13px;color:var(--text);}
+.asgFindG span{display:block;font-size:11px;color:var(--muted);margin-bottom:1px;}
+.asgFindG .asgWide{grid-column:1/-1;}
+.asgFindA{margin-top:8px;font-size:12.5px;}
+.asgMute{color:var(--muted);font-size:12px;font-weight:400;}
+.asgWrap{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:14px;align-items:start;}
+@media(max-width:900px){.asgWrap{grid-template-columns:1fr;}}
+.asgFilters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;}
+.asgFilters input,.asgFilters select{height:40px;border:1px solid var(--line);border-radius:10px;background:#fff;padding:0 10px;font-size:13px;min-width:0;}
+.asgFilters input{flex:1;min-width:140px;}
+.asgList{max-height:560px;overflow:auto;border:1px solid var(--line);border-radius:12px;}
+.asgList table{margin:0;}
+.asgRow{cursor:pointer;}
+.asgRow:hover{background:#f8fafc;}
+.asgRow.sel{background:#eef2ff;}
+.asgRow.chg td:nth-child(3){border-left:3px solid var(--accent,#4f46e5);}
+.asgBulk{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:10px;}
+.asgBulk select{height:36px;border:1px solid var(--line);border-radius:10px;background:#fff;padding:0 8px;font-size:13px;}
+.asgRight{position:sticky;top:12px;}
+.asgEmpty{border:1px dashed var(--line);border-radius:14px;padding:26px 18px;color:var(--muted);font-size:13.5px;text-align:center;background:#fff;}
+.asgEd{margin:0;}
+.asgEdH{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:12px;}
+.asgEdH h3{margin:0;font-size:16px;font-weight:600;color:var(--text);}
+.asgEdH p{margin:2px 0 0;font-size:12px;color:var(--muted);}
+.asgEdG{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:14px;}
+@media(max-width:1200px){.asgEdG{grid-template-columns:1fr 1fr;}}
+@media(max-width:560px){.asgEdG{grid-template-columns:1fr;}}
+.asgEdG .field{margin:0;}
+.asgEdG label{display:block;font-size:11.5px;color:var(--muted);margin-bottom:4px;font-weight:500;}
+.asgEdG select,.asgMore select,#asgPickSel{width:100%;height:42px;border:1px solid var(--line);border-radius:10px;background:#fff;padding:0 10px;font-size:13.5px;}
+.asgWas{font-size:11px;color:#b45309;margin-top:3px;}
+.asgBlk{margin-top:12px;}
+.asgBlkT{font-size:12.5px;font-weight:600;color:var(--text);margin-bottom:6px;}
+.asgChips{display:flex;flex-wrap:wrap;gap:6px;}
+.asgChip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:#fff;border-radius:9999px;padding:5px 10px;font-size:12.5px;color:var(--text);font-weight:400;}
+.asgChip i{font-style:normal;color:var(--muted);font-size:11px;}
+.asgChip.new{border-color:var(--accent,#4f46e5);background:#eef2ff;}
+.asgChip button{border:0;background:transparent;color:var(--muted);font-size:15px;line-height:1;cursor:pointer;padding:0 0 0 2px;}
+.asgChip button:hover{color:#b91c1c;}
+.asgChip.add{cursor:pointer;border-style:dashed;color:var(--accent,#4f46e5);}
+.asgChip.add:hover,.asgChip.add.on{background:var(--accent,#4f46e5);color:#fff;border-style:solid;}
+.asgWarn{font-size:10.5px;color:#b45309;background:#fef3c7;border-radius:6px;padding:1px 6px;}
+.asgMore{margin-top:8px;}
+.asgFreeGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;}
+.asgFree{border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:#fff;}
+.asgFree.ok{background:#f8fafc;}
+.asgFreeH{display:flex;justify-content:space-between;gap:8px;margin-bottom:8px;font-size:13px;}
+.asgFreeH span{color:var(--muted);font-size:12px;}
+.asgPick{display:flex;flex-wrap:wrap;align-items:center;gap:8px;border:1px solid var(--accent,#4f46e5);background:#eef2ff;border-radius:12px;padding:10px 12px;margin-bottom:12px;font-size:13px;}
+.asgPick select{flex:1;min-width:200px;}
+.asgMemBar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin:4px 0 12px;}
+.asgMemBar .asgMute{flex:1;min-width:240px;}
+.asgSave{position:sticky;bottom:10px;margin-top:12px;background:#fff;border:1px solid var(--accent,#4f46e5);border-radius:14px;padding:12px 14px;box-shadow:0 6px 24px rgba(15,23,42,.12);z-index:5;}
+.asgSaveT{font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px;}
+.asgSaveL{font-size:12.5px;color:var(--muted);margin:3px 0;}
+.asgSaveB{display:flex;gap:8px;margin-top:10px;}
+#assignDetails{margin-bottom:12px;}
+#screen-admin .asgFilters select{width:auto;flex:1 1 130px;}
+#screen-admin .asgFilters input{width:auto;flex:2 1 160px;}
+#screen-admin .asgBulk select{width:auto;flex:1 1 160px;}
+#screen-admin .asgFilters .btn{flex:0 0 auto;}
+/* Assign: look-up in the sub-menu row, tabs, folded history */
+#admin-assign{position:relative;}
+#assignFind{position:absolute;top:-47px;right:0;width:min(400px,42%);z-index:30;margin:0 !important;}
+#assignFind .asgFindRow input{height:36px;font-size:13px;border-radius:9999px;padding:0 16px;}
+#asgFindOut{position:absolute;right:0;top:42px;width:min(760px,92vw);background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 12px 36px rgba(15,23,42,.16);padding:0 10px;}
+#asgFindOut:empty{display:none;}
+@media(max-width:900px){#assignFind{position:static;width:auto;margin:0 0 12px !important;}#asgFindOut{position:static;width:auto;box-shadow:none;border:0;padding:0;}}
+.asgTabs2{display:flex;gap:22px;border-bottom:1px solid var(--line);margin:14px 0 14px;}
+.asgTab{border:0;background:transparent;padding:8px 2px 10px;font-size:14px;font-weight:500;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;}
+.asgTab.active{color:var(--accent,#4f46e5);border-bottom-color:var(--accent,#4f46e5);}
+#assignChecks > .card{border:0;box-shadow:none;padding:0;background:transparent;}
+#assignChecks > .card > .sub{display:none;}
+.asgSumH{font-size:13px;font-weight:600;color:var(--text);margin:14px 0 8px;}
+.asgBadge{margin-left:8px;background:#fef3c7;color:#92400e;border-radius:9999px;padding:2px 10px;font-size:11.5px;font-weight:500;}
+.asgOk{margin-left:8px;color:var(--muted);font-size:12px;font-weight:400;}
+/* Assign v2: top row (tabs + look-up), alert only on problems, free machines always visible */
+#admin-assign{position:relative;}
+.asgTop{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;border-bottom:1px solid var(--line);margin:4px 0 14px;position:relative;}
+.asgTop .asgTabs2{border:0;margin:0;}
+#assignFind{position:static !important;width:min(380px,100%) !important;margin:0 0 8px !important;}
+#asgFindOut{position:absolute !important;right:0;top:100% !important;z-index:30;}
+@media(max-width:900px){#asgFindOut{position:static !important;}}
+.asgAlert{border-color:#fcd34d !important;background:#fffbeb !important;margin-bottom:12px;}
+.asgAlert summary{color:#92400e !important;font-weight:600;}
+.asgWrapM{grid-template-columns:minmax(250px,.8fr) minmax(0,2fr);}
+@media(max-width:900px){.asgWrapM{grid-template-columns:1fr;}}
+.asgWrapM .asgFreeGrid,.asgRight .asgFreeGrid{grid-template-columns:1fr;}
+.asgBulk{margin:0 0 10px;padding:10px 12px;background:#eef2ff;border:1px solid var(--accent,#4f46e5);border-radius:12px;}
+/* tab bars: the outer shape and the selected pill use the same round shape */
+.auth-tabs,.auth-tabs.wrap-tabs{border-radius:9999px;padding:4px;gap:4px;}
+.auth-tabs .auth-tab{border-radius:9999px;}
+@media(max-width:640px){.auth-tabs.wrap-tabs{border-radius:22px;}.auth-tabs.wrap-tabs .auth-tab{border-radius:18px;}}
 
 </style>
 </head>
@@ -3629,7 +3806,8 @@ table.pkPdf tr.tot td{ background:#eef2ff !important; border-top:1px solid #c7d2
       <h1>Manage Users &amp; Machines</h1>
       <p class="sub">Decide who is a Supervisor and who is an Operator, assign machines and pages, and manage HR profiles.</p>
 
-      <div class="auth-tabs wrap-tabs">
+      <div id="admGrp"></div>
+      <div class="auth-tabs wrap-tabs" id="admTabsOrig" style="display:none;">
         <div class="auth-tab active" data-admintab="users">Users</div>
         <div class="auth-tab" data-admintab="assign">Assign</div>
         <div class="auth-tab" data-admintab="machines">Machines</div>
@@ -3641,6 +3819,7 @@ table.pkPdf tr.tot td{ background:#eef2ff !important; border-top:1px solid #c7d2
         <div class="auth-tab" data-admintab="purchase">Purchase</div>
         <div class="auth-tab" data-admintab="letterhead">Letterhead</div>
         <div class="auth-tab" data-admintab="ai">AI &amp; Letters</div>
+        <div class="auth-tab" data-admintab="maint">Maintenance</div>
       </div>
 
       <div class="auth-pane active" id="admin-users">
@@ -3689,132 +3868,70 @@ table.pkPdf tr.tot td{ background:#eef2ff !important; border-top:1px solid #c7d2
       </div>
 
       <div class="auth-pane" id="admin-assign">
-        <div id="assignChecks"></div>
-        <h2 style="margin-top:16px;">Summary: who runs what</h2>
-        <div class="card" style="margin-bottom:0;"><div id="assignSummary"></div></div>
-        <div id="assignViewBar" style="display:flex; gap:8px; margin:12px 0;"></div>
+        <div class="asgTop"><div id="assignViewBar" class="asgTabs2"></div><div id="assignFind"></div></div>
+        <details class="acSec admD asgAlert" id="assignDetails" style="display:none"><summary id="assignDetSum">Checks</summary><div class="acSecB"><div id="assignChecks"></div></div></details>
         <div id="assignBody"></div>
         <div id="assignSaveBar"></div>
+        <details class="acSec admD" id="assignHist" style="margin-top:14px;"><summary>Change history &amp; reports</summary><div class="acSecB" id="assignHistBody"></div></details>
       </div>
 
       <div class="auth-pane" id="admin-machines">
-        <div class="card" style="margin-bottom:16px;">
-          <b>Restore Machines</b>
-          <p class="sub" style="margin-top:6px; margin-bottom:10px;">Every time your machine list is saved, a backup copy is kept automatically — no need to remember to download anything. If your machine list is ever showing wrong or blank details, restore it here.</p>
-          <div style="display:flex; gap:8px; flex-wrap:wrap;">
-            <button class="btn btn-primary" id="restoreAutoBackupBtn" style="font-size:13px; padding:8px 14px;">Restore From Latest Auto-Backup</button>
-            <button class="btn btn-ghost" id="downloadMachinesBackupBtn" style="font-size:13px; padding:8px 14px;">Download Backup To My Computer</button>
-            <label class="btn btn-ghost" for="restoreMachinesFileInput" style="font-size:13px; padding:8px 14px; margin:0; cursor:pointer;">Restore From My Own Backup File</label>
-            <input type="file" id="restoreMachinesFileInput" accept="application/json" style="display:none;">
-          </div>
-          <button class="btn btn-ghost" id="useSeptemberBackupLink" style="font-size:12px; padding:6px 12px; margin-top:10px;">Or Use The Original September 2026 Snapshot Instead</button>
-        </div>
-        <div id="restoreMissingResult"></div>
-        <div class="grid-2">
-          <div class="field"><label for="newMachineId">New Machine ID</label><input type="text" id="newMachineId" placeholder="e.g. 21"></div>
-          <div class="field"><label for="newMachineName">New Machine Name</label><input type="text" id="newMachineName" placeholder="e.g. MACHINE - 21"></div>
-        </div>
-        <div class="grid-2">
-          <div class="field">
-            <label for="newMachineDept">Department</label>
-            <select id="newMachineDept"><option value="">— Select —</option></select>
-          </div>
+        
+<details class="acSec admD" id="admMachD"><summary>Add a machine</summary><div class="acSecB admForm">
+          <div class="admGT">1. Which machine</div>
+          <div class="field"><label for="newMachineId">Machine ID</label><input type="text" id="newMachineId" placeholder="e.g. 21"></div>
+          <div class="field"><label for="newMachineName">Machine name</label><input type="text" id="newMachineName" placeholder="e.g. MACHINE - 21"></div>
+          <div class="field"><label for="newMachineDept">Department</label><select id="newMachineDept"><option value="">— Select —</option></select></div>
+          <div class="field"><label for="newMachineShiftRun">Runs shift</label><select id="newMachineShiftRun"><option value="Both" selected>Both (Day &amp; Night)</option><option value="Day">Day only</option><option value="Night">Night only</option></select></div>
+          <div class="admGT">2. Specification</div>
           <div class="field"><label for="newMachineWidth">Width (cm)</label><input type="text" id="newMachineWidth" placeholder="e.g. 190"></div>
-        </div>
-        <div class="field"><label for="newMachineSpeed">Speed</label><input type="text" id="newMachineSpeed" placeholder="e.g. 450"></div>
-        <div class="field">
-          <label for="newMachineShiftRun">Runs Shift</label>
-          <select id="newMachineShiftRun">
-            <option value="Both" selected>Both (Day &amp; Night)</option>
-            <option value="Day">Day Only</option>
-            <option value="Night">Night Only</option>
-          </select>
-        </div>
-        <div class="grid-2">
+          <div class="field"><label for="newMachineSpeed">Speed</label><input type="text" id="newMachineSpeed" placeholder="e.g. 450"></div>
           <div class="field"><label for="newMachinePicks">Picks / cm</label><input type="text" id="newMachinePicks" placeholder="e.g. 18"></div>
-          <div class="field"><label for="newMachineCart">Cart Picks</label><input type="text" id="newMachineCart" placeholder="e.g. 4"></div>
-        </div>
-        <div class="field">
-          <label for="newMachineVip">Machine type</label>
-          <select id="newMachineVip"><option value="">Normal</option><option value="1">VIP</option></select>
-        </div>
-        <div class="grid-2">
-          <div class="field"><label for="newMachineBaseline">Current Reading <span style="text-transform:none; font-weight:400; color:var(--muted);">(what the counter shows now)</span></label><input type="text" inputmode="numeric" id="newMachineBaseline" placeholder="e.g. 128400"></div>
-          <div class="field"><label for="newMachineBaselineDate">As Of Date</label><input type="date" id="newMachineBaselineDate"></div>
-        </div>
-        <button class="btn btn-primary" id="addMachineBtn" style="margin-bottom:18px;">Add Machine</button>
+          <div class="field"><label for="newMachineCart">Cart picks</label><input type="text" id="newMachineCart" placeholder="e.g. 4"></div>
+          <div class="admGT">3. Type and starting counter</div>
+          <div class="field"><label for="newMachineVip">Machine type</label><select id="newMachineVip"><option value="">Normal</option><option value="1">VIP</option></select></div>
+          <div class="field"><label for="newMachineBaseline">Current reading</label><input type="text" inputmode="numeric" id="newMachineBaseline" placeholder="what the counter shows now"></div>
+          <div class="field"><label for="newMachineBaselineDate">As of date</label><input type="date" id="newMachineBaselineDate"></div>
+          <div class="field admBtnCell"><label>&nbsp;</label><button class="btn btn-primary" id="addMachineBtn">Add machine</button></div>
+</div></details>
         <div id="machinesBody"></div>
       </div>
 
       <div class="auth-pane" id="admin-shifttime">
-        <h2 style="margin-top:0;">Shift &amp; Timing</h2>
-        <p class="sub">Set Day and Night shift hours — they no longer have to mirror each other — and how long after each shift ends an Operator can still log a reading or a Supervisor can still approve one before it's marked Delayed / Logged Late and locked to Admin only. Every change takes effect from a date you choose, so readings from before that date keep being judged by whatever was actually running back then, and don't get re-graded after the fact.</p>
-
-        <div class="card" style="margin-bottom:16px;">
+        <div class="admSec">
+          <div class="admSecH"><h3>Shift rules</h3><p>The rule marked &ldquo;Active now&rdquo; is the one in use. Every change starts from the date you choose, so older readings keep the rule that was running then.</p></div>
+          <div id="shiftRuleList"></div>
+          <details class="acSec admD" id="admShiftD"><summary>Add or edit a shift rule</summary><div class="acSecB admForm"><div class="card" style="margin-bottom:16px;">
           <div class="sub" style="margin-top:0; font-weight:600; color:var(--text); text-transform:none;" id="shiftRuleFormTitle">Add a New Rule</div>
-
-          <div class="field">
-            <label for="shiftEffectiveDate">Effective From</label>
-            <input type="date" id="shiftEffectiveDate">
-          </div>
-          <p class="hint" style="text-align:left; margin-left:0;">Readings dated on or after this date use this rule. Set it to a future date to line up a change (e.g. the first day of Ramadan) ahead of time.</p>
-
-          <div class="grid-2">
-            <div class="field"><label for="shiftDayStart">Day Shift Start</label><input type="time" id="shiftDayStart"></div>
-            <div class="field"><label for="shiftDayEnd">Day Shift End</label><input type="time" id="shiftDayEnd"></div>
-          </div>
-          <div class="grid-2" style="margin-bottom:16px;">
-            <div class="field" style="margin-bottom:0;"><label for="shiftNightStart">Night Shift Start</label><input type="time" id="shiftNightStart"></div>
-            <div class="field" style="margin-bottom:0;"><label for="shiftNightEnd">Night Shift End</label><input type="time" id="shiftNightEnd"></div>
-          </div>
-
-          <div class="sub" style="font-weight:600; color:var(--text); text-transform:none; margin-bottom:8px;">Starting vs. Ending Photo Cutover</div>
-          <p class="hint" style="text-align:left; margin-left:0;">This is what decides whether a reading is automatically saved as a "Starting" or "Ending" photo, since Operators and Supervisors no longer pick it themselves. Before this clock time = Starting, from this time on = Ending. Defaults to the middle of each shift, but set it explicitly here if you ever need to.</p>
-          <div class="grid-2" style="margin-bottom:16px;">
-            <div class="field" style="margin-bottom:0;"><label for="shiftDayCutover">Day: Starting/Ending Cutover</label><input type="time" id="shiftDayCutover"></div>
-            <div class="field" style="margin-bottom:0;"><label for="shiftNightCutover">Night: Starting/Ending Cutover</label><input type="time" id="shiftNightCutover"></div>
-          </div>
-
-          <div class="sub" style="font-weight:600; color:var(--text); text-transform:none; margin-bottom:8px;">Machine Working Hours</div>
-          <p class="hint" style="text-align:left; margin-left:0;">Separate from the Day/Night Start-End times above — those set the full shift (e.g. 6:30 to 6:30 = 12 hours, for attendance). This is the shorter number production, machine, and Total Picks efficiency math actually runs on (e.g. 11.5 hours, accounting for an untracked break). Changing the shift length above does NOT change this — set it here directly.</p>
-          <div class="grid-2" style="margin-bottom:16px;">
-            <div class="field" style="margin-bottom:0;"><label for="shiftDayMachineHours">Day: Machine Hours</label><input type="number" id="shiftDayMachineHours" min="0" step="0.25" placeholder="e.g. 11.5"></div>
-            <div class="field" style="margin-bottom:0;"><label for="shiftNightMachineHours">Night: Machine Hours</label><input type="number" id="shiftNightMachineHours" min="0" step="0.25" placeholder="e.g. 11.5"></div>
-          </div>
-
-          <div class="sub" style="font-weight:600; color:var(--text); text-transform:none; margin-bottom:8px;">Grace Period — When Each Locks</div>
-          <p class="hint" style="text-align:left; margin-left:0;">For each one, choose either a number of minutes after that shift ends, or a fixed clock time.</p>
+          <div class="admGT">1. Starts from</div>
+          <div class="field"><label for="shiftEffectiveDate">Effective from</label><input type="date" id="shiftEffectiveDate"></div>
+          <p class="hint admNote">Readings dated on or after this date use this rule. Use a future date to prepare a change ahead of time (for example the first day of Ramadan).</p>
+          <div class="admGT">2. Shift hours</div>
+          <div class="field"><label for="shiftDayStart">Day shift start</label><input type="time" id="shiftDayStart"></div>
+          <div class="field"><label for="shiftDayEnd">Day shift end</label><input type="time" id="shiftDayEnd"></div>
+          <div class="field"><label for="shiftNightStart">Night shift start</label><input type="time" id="shiftNightStart"></div>
+          <div class="field"><label for="shiftNightEnd">Night shift end</label><input type="time" id="shiftNightEnd"></div>
+          <div class="admGT">3. Machine hours and photo cutover</div>
+          <div class="field"><label for="shiftDayMachineHours">Day machine hours</label><input type="number" id="shiftDayMachineHours" min="0" step="0.25" placeholder="e.g. 11.5"></div>
+          <div class="field"><label for="shiftNightMachineHours">Night machine hours</label><input type="number" id="shiftNightMachineHours" min="0" step="0.25" placeholder="e.g. 11.5"></div>
+          <div class="field"><label for="shiftDayCutover">Day cutover</label><input type="time" id="shiftDayCutover"></div>
+          <div class="field"><label for="shiftNightCutover">Night cutover</label><input type="time" id="shiftNightCutover"></div>
+          <p class="hint admNote4"><b>Machine hours:</b> the shorter number that production and efficiency use (for example 11.5), separate from the full shift length above. <b>Cutover:</b> a reading before this clock time is saved as a Starting photo, from this time on as an Ending photo.</p>
+          <div class="admGT">4. When each one locks (grace period)</div>
           <div id="graceFieldsContainer"></div>
 
           <button class="btn btn-primary" id="saveShiftRuleBtn" style="margin-top:6px;">Save Rule</button>
           <button class="btn btn-ghost" id="cancelShiftRuleEditBtn" style="margin-top:6px; display:none;">Cancel Edit</button>
+        </div></div></details>
         </div>
-
-        <div class="sub" style="margin-top:0; font-weight:600; color:var(--text); text-transform:none;">Rule History</div>
-        <div id="shiftRuleList"></div>
-
-        <div class="sub" style="margin-top:24px; font-weight:600; color:var(--text); text-transform:none;">Machine Re-entry Cooldown</div>
-        <p class="sub" style="margin-top:0;">A machine an Operator or Supervisor just logged a reading for disappears from their machine list for a while — this is what stops an accidental duplicate entry on the same machine. It comes back on its own once the cooldown passes.</p>
-        <div class="card">
-          <div class="field" style="margin-bottom:0;">
-            <label for="machineCooldownMinutes">Cooldown Length (minutes)</label>
-            <input type="number" id="machineCooldownMinutes" min="0" step="5" placeholder="e.g. 30">
-          </div>
-        </div>
-        <button class="btn btn-primary" id="saveMachineCooldownBtn" style="margin-top:12px;">Save</button>
-
-        <div class="sub" style="margin-top:24px; font-weight:600; color:var(--text); text-transform:none;">Weekly Automatic Stop &amp; Machine Hours</div>
-        <p class="sub" style="margin-top:0;">For one day of the week (e.g. every Thursday), automatically apply a fixed cleaning stop to every running machine and reduce that day's Machine Working Hours to match — Operators still get picks for that time if the reason has a picks/hour rate set, but it isn't held against their efficiency (Machine Working Hours already accounts for it).</p>
-        <div class="card" style="margin-bottom:16px;">
+        <div class="admSec">
+          <div class="admSecH"><h3>Weekly automatic stop</h3><p>For one weekday (for example every Thursday) a fixed cleaning stop is applied to every running machine and that day&rsquo;s machine hours are reduced to match.</p></div>
+          <div id="weekdayAutoStopList"></div>
+          <details class="acSec admD" id="admWasD"><summary>Add or edit a weekly stop rule</summary><div class="acSecB admForm"><div class="card" style="margin-bottom:16px;">
           <div class="sub" style="margin-top:0; font-weight:600; color:var(--text); text-transform:none;" id="weekdayAutoStopFormTitle">Add a Rule</div>
-          <div class="field">
-            <label for="wasEffectiveDate">Effective From</label>
-            <input type="date" id="wasEffectiveDate">
-          </div>
-          <p class="hint" style="text-align:left; margin-left:0;">Applies to this weekday on or after this date — earlier dates (including any you've already corrected by hand) are left exactly as they are.</p>
-          <div class="grid-2">
-            <div class="field"><label for="wasWeekday">Day of Week</label>
-              <select id="wasWeekday">
+          <div class="admGT">1. Which day</div>
+          <div class="field"><label for="wasEffectiveDate">Effective from</label><input type="date" id="wasEffectiveDate"></div>
+          <div class="field"><label for="wasWeekday">Day of week</label><select id="wasWeekday">
                 <option value="0">Sunday</option>
                 <option value="1">Monday</option>
                 <option value="2">Tuesday</option>
@@ -3822,49 +3939,25 @@ table.pkPdf tr.tot td{ background:#eef2ff !important; border-top:1px solid #c7d2
                 <option value="4" selected>Thursday</option>
                 <option value="5">Friday</option>
                 <option value="6">Saturday</option>
-              </select>
-            </div>
-            <div class="field"><label for="wasReason">Stop Reason</label><select id="wasReason"></select></div>
-          </div>
-          <div class="grid-2">
-            <div class="field"><label for="wasDayHours">Day: Auto-Stop Hours</label><input type="number" id="wasDayHours" min="0" step="0.25" placeholder="e.g. 3"></div>
-            <div class="field"><label for="wasDayMachineHours">Day: Machine Hours (that day)</label><input type="number" id="wasDayMachineHours" min="0" step="0.25" placeholder="e.g. 8.5"></div>
-          </div>
-          <div class="grid-2" style="margin-bottom:16px;">
-            <div class="field" style="margin-bottom:0;"><label for="wasNightHours">Night: Auto-Stop Hours</label><input type="number" id="wasNightHours" min="0" step="0.25" placeholder="e.g. 2"></div>
-            <div class="field" style="margin-bottom:0;"><label for="wasNightMachineHours">Night: Machine Hours (that day)</label><input type="number" id="wasNightMachineHours" min="0" step="0.25" placeholder="e.g. 9.5"></div>
-          </div>
+              </select></div>
+          <div class="field"><label for="wasReason">Stop reason</label><select id="wasReason"></select></div>
+          <p class="hint admNote" style="grid-column:span 1;">Applies to this weekday from the date on. Earlier dates stay as they are.</p>
+          <div class="admGT">2. Hours on that day</div>
+          <div class="field"><label for="wasDayHours">Day auto-stop hours</label><input type="number" id="wasDayHours" min="0" step="0.25" placeholder="e.g. 3"></div>
+          <div class="field"><label for="wasDayMachineHours">Day machine hours</label><input type="number" id="wasDayMachineHours" min="0" step="0.25" placeholder="e.g. 8.5"></div>
+          <div class="field"><label for="wasNightHours">Night auto-stop hours</label><input type="number" id="wasNightHours" min="0" step="0.25" placeholder="e.g. 2"></div>
+          <div class="field"><label for="wasNightMachineHours">Night machine hours</label><input type="number" id="wasNightMachineHours" min="0" step="0.25" placeholder="e.g. 9.5"></div>
           <button class="btn btn-primary" id="saveWeekdayAutoStopBtn" style="margin-top:6px;">Save Rule</button>
           <button class="btn btn-ghost" id="cancelWeekdayAutoStopEditBtn" style="margin-top:6px; display:none;">Cancel Edit</button>
+        </div></div></details>
         </div>
-        <div id="weekdayAutoStopList"></div>
-
-        <div class="sub" style="margin-top:24px; font-weight:600; color:var(--text); text-transform:none;">Salary Cycle (Earned Picks default range)</div>
-        <p class="sub" style="margin-top:0;">My Status defaults its Earned Picks range to the current salary cycle instead of showing every pick ever earned — so an Operator sees exactly what counts toward their next payment, without needing to know how to use the date filter themselves. This only sets the DEFAULT dates shown; anyone can still pick a different range manually.</p>
-        <div class="card">
-          <div class="field" style="margin-bottom:0;">
-            <label for="salaryCycleStartDay">Cycle Start Day (of the month)</label>
-            <input type="number" id="salaryCycleStartDay" min="1" max="31" step="1" placeholder="e.g. 26">
-          </div>
-          <p class="hint" style="text-align:left; margin-left:0;">e.g. 26 means each cycle runs the 26th of one month through the 25th of the next.</p>
-        </div>
-        <button class="btn btn-primary" id="saveSalaryCycleBtn" style="margin-top:12px;">Save</button>
-
-        <div class="sub" style="margin-top:24px; font-weight:600; color:var(--text); text-transform:none;">Clean Up Old Reading Photos</div>
-        <p class="sub" style="margin-top:0;">Removes the PHOTO from readings in the date range below — the date, shift, reading value, diff, stop time, and everything else about the entry stays exactly as it is, permanently, for your records. Only the photo itself is deleted, to free up space once entries are old enough that nobody needs to look at the photo anymore. <b style="color:var(--danger);">This cannot be undone</b> — once a photo is deleted here, it's gone.</p>
-        <div class="card">
-          <div class="row-2">
-            <div class="field" style="margin-bottom:0;"><label for="cleanupFromDate">From</label><input type="date" id="cleanupFromDate"></div>
-            <div class="field" style="margin-bottom:0;"><label for="cleanupToDate">To</label><input type="date" id="cleanupToDate"></div>
+        <div class="admSec">
+          <div class="admSecH"><h3>Machine re-entry cooldown</h3><p>After a reading is logged, that machine leaves the list for this long. It stops an accidental second entry, then comes back by itself.</p></div>
+          <div class="admInline">
+            <div class="field"><label for="machineCooldownMinutes">Cooldown (minutes)</label><input type="number" id="machineCooldownMinutes" min="0" step="5" placeholder="e.g. 30"></div>
+            <button class="btn btn-primary" id="saveMachineCooldownBtn">Save</button>
           </div>
         </div>
-        <button class="btn btn-ghost" id="previewCleanupBtn" style="margin-top:12px;">Preview</button>
-        <div id="cleanupPreviewResult" style="margin-top:10px;"></div>
-
-        <div class="sub" style="margin-top:24px; font-weight:600; color:var(--text); text-transform:none;">Refresh All Calculations</div>
-        <p class="sub" style="margin-top:0;">Every edit already updates the affected machine automatically. Press this if a number in an operator's profile, the Dashboard or Approvals ever looks wrong, or after making a lot of edits &mdash; it re-checks every machine's approved readings and corrects any saved total that doesn't match. It only changes what is actually wrong, so it is safe to press as often as you like, and it tells you exactly what it fixed.</p>
-        <button class="btn btn-primary" id="runDiffMigrationBtn">Refresh All Calculations</button>
-        <div id="diffMigrationProgress" class="hint" style="text-align:left; margin-left:0; margin-top:8px;"></div>
       </div>
 
       <div class="auth-pane" id="admin-execaccess">
@@ -3913,10 +4006,20 @@ table.pkPdf tr.tot td{ background:#eef2ff !important; border-top:1px solid #c7d2
       </div>
 
       <div class="auth-pane" id="admin-holidays">
+        <div class="card" style="margin-bottom:22px;">
+          <div class="sub" style="margin-top:0; font-weight:600; color:var(--text); text-transform:none;">Salary Month</div>
+          <p class="sub" style="margin-top:0;">Where a salary month starts and ends. Accounts, Employee Overview, My Status (Earned Picks) and every &ldquo;this month / last month&rdquo; filter use it.</p>
+          <div class="field" style="margin-bottom:6px; max-width:260px;">
+            <label for="salaryCycleStartDay">Starts on day</label>
+            <input type="number" id="salaryCycleStartDay" min="1" max="31" step="1" placeholder="e.g. 26">
+          </div>
+          <p class="hint" id="salaryCyclePrev" style="text-align:left; margin-left:0;"></p>
+          <button class="btn btn-primary" id="saveSalaryCycleBtn" style="margin-top:6px;">Save</button>
+        </div>
         <h2 style="margin-top:0;">Working Days &amp; Holidays</h2>
         <p class="sub">Marking a day as a Holiday only affects the expected working-hours calculation on the Dashboard's Machine &amp; Production section — it doesn't lock anyone out or stop them logging readings on that day. If part of the factory genuinely runs on a Friday, that's fine; that day's real production still shows up as normal, it just won't count as an "expected" working day when totalling hours.</p>
 
-        <div class="card" style="margin-bottom:16px;">
+        <div class="admCols"><div class="card" style="margin-bottom:16px;">
           <div class="sub" style="margin-top:0; font-weight:600; color:var(--text); text-transform:none;">Quick Setup — Mark Every Friday</div>
           <p class="hint" style="text-align:left; margin-left:0;">The usual weekly off day. Do this once per year instead of one Friday at a time.</p>
           <div class="row-2">
@@ -3935,11 +4038,43 @@ table.pkPdf tr.tot td{ background:#eef2ff !important; border-top:1px solid #c7d2
           <button class="btn btn-primary btn-sm" id="addHolidayBtn" style="margin-top:12px;">Add Holiday</button>
         </div>
 
+        </div>
         <div class="sub" style="margin-top:0; font-weight:600; color:var(--text); text-transform:none;">Marked Holidays</div>
         <div class="field" style="margin-bottom:12px;">
           <select id="holidayYearFilter"></select>
         </div>
         <div id="holidayList"></div>
+      </div>
+
+      <div class="auth-pane" id="admin-maint">
+        <h2 style="margin-top:0;">Clean Up &amp; Refresh</h2>
+<details class="acSec admD"><summary>Backup &amp; restore machines</summary><div class="acSecB"><div class="card" style="margin-bottom:16px;">
+          <b>Restore Machines</b>
+          <p class="sub" style="margin-top:6px; margin-bottom:10px;">Every time your machine list is saved, a backup copy is kept automatically — no need to remember to download anything. If your machine list is ever showing wrong or blank details, restore it here.</p>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button class="btn btn-primary" id="restoreAutoBackupBtn" style="font-size:13px; padding:8px 14px;">Restore From Latest Auto-Backup</button>
+            <button class="btn btn-ghost" id="downloadMachinesBackupBtn" style="font-size:13px; padding:8px 14px;">Download Backup To My Computer</button>
+            <label class="btn btn-ghost" for="restoreMachinesFileInput" style="font-size:13px; padding:8px 14px; margin:0; cursor:pointer;">Restore From My Own Backup File</label>
+            <input type="file" id="restoreMachinesFileInput" accept="application/json" style="display:none;">
+          </div>
+          <button class="btn btn-ghost" id="useSeptemberBackupLink" style="font-size:12px; padding:6px 12px; margin-top:10px;">Or Use The Original September 2026 Snapshot Instead</button>
+        </div>
+        </div></details><div id="restoreMissingResult"></div>
+        <div class="sub" style="margin-top:24px; font-weight:600; color:var(--text); text-transform:none;">Clean Up Old Reading Photos</div>
+        <p class="sub" style="margin-top:0;">Removes the PHOTO from readings in the date range below — the date, shift, reading value, diff, stop time, and everything else about the entry stays exactly as it is, permanently, for your records. Only the photo itself is deleted, to free up space once entries are old enough that nobody needs to look at the photo anymore. <b style="color:var(--danger);">This cannot be undone</b> — once a photo is deleted here, it's gone.</p>
+        <div class="card">
+          <div class="row-2">
+            <div class="field" style="margin-bottom:0;"><label for="cleanupFromDate">From</label><input type="date" id="cleanupFromDate"></div>
+            <div class="field" style="margin-bottom:0;"><label for="cleanupToDate">To</label><input type="date" id="cleanupToDate"></div>
+          </div>
+        </div>
+        <button class="btn btn-ghost" id="previewCleanupBtn" style="margin-top:12px;">Preview</button>
+        <div id="cleanupPreviewResult" style="margin-top:10px;"></div>
+
+        <div class="sub" style="margin-top:24px; font-weight:600; color:var(--text); text-transform:none;">Refresh All Calculations</div>
+        <p class="sub" style="margin-top:0;">Every edit already updates the affected machine automatically. Press this if a number in an operator's profile, the Dashboard or Approvals ever looks wrong, or after making a lot of edits &mdash; it re-checks every machine's approved readings and corrects any saved total that doesn't match. It only changes what is actually wrong, so it is safe to press as often as you like, and it tells you exactly what it fixed.</p>
+        <button class="btn btn-primary" id="runDiffMigrationBtn">Refresh All Calculations</button>
+        <div id="diffMigrationProgress" class="hint" style="text-align:left; margin-left:0; margin-top:8px;"></div>
       </div>
 
       <div class="auth-pane" id="admin-purchase"></div>
@@ -3949,40 +4084,44 @@ table.pkPdf tr.tot td{ background:#eef2ff !important; border-top:1px solid #c7d2
       <div class="auth-pane" id="admin-ai"></div>
 
       <div class="auth-pane" id="admin-config">
-        <h2 style="margin-top:0;">Departments</h2>
+        <details class="acSec admD"><summary>Departments</summary><div class="acSecB">
         <p class="sub">Used across machines, employees, and the CEO Dashboard filters.</p>
         <div class="row-2" style="margin-bottom:12px;">
           <input type="text" id="newDeptInput" placeholder="e.g. Weaving">
           <button class="btn btn-primary btn-sm" id="addDeptBtn">Add</button>
         </div>
-        <div id="deptChips" style="margin-bottom:22px;"></div>
+        <div id="deptChips" style="margin-bottom:22px;"></div></div></details>
 
-        <h2>Positions</h2>
+
+        <details class="acSec admD"><summary>Positions</summary><div class="acSecB">
         <p class="sub">Shown as a dropdown on every employee's profile.</p>
         <div class="row-2" style="margin-bottom:12px;">
           <input type="text" id="newPositionInput" placeholder="e.g. Instructor">
           <button class="btn btn-primary btn-sm" id="addPositionBtn">Add</button>
         </div>
-        <div id="positionChips" style="margin-bottom:22px;"></div>
+        <div id="positionChips" style="margin-bottom:22px;"></div></div></details>
 
-        <h2>Leave / Request Types</h2>
+
+        <details class="acSec admD"><summary>Leave / Request Types</summary><div class="acSecB">
         <p class="sub">Shown as a dropdown when an employee applies for leave. Changes case to case, so keep this up to date.</p>
         <div class="row-2" style="margin-bottom:12px;">
           <input type="text" id="newLeaveTypeInput" placeholder="e.g. Sick, Umrah, Annual...">
           <button class="btn btn-primary btn-sm" id="addLeaveTypeBtn">Add</button>
         </div>
-        <div id="leaveTypeChips" style="margin-bottom:22px;"></div>
+        <div id="leaveTypeChips" style="margin-bottom:22px;"></div></div></details>
 
-        <h2>Stop Reasons</h2>
+
+        <details class="acSec admD"><summary>Stop Reasons</summary><div class="acSecB">
         <p class="sub">Shown as a numbered dropdown when logging a machine stop. The Report page shows just the number, so reordering changes the number for new entries only. Picks/Hour is what an operator earns for each hour stopped for that reason — leave it 0 if that reason shouldn't earn picks at all.</p>
         <div class="grid-3" style="align-items:end; margin-bottom:12px;">
           <div class="field" style="margin-bottom:0; grid-column: span 2;"><label>Reason</label><input type="text" id="newStopReasonInput" placeholder="e.g. NO WARP"></div>
           <div class="field" style="margin-bottom:0;"><label>Picks/Hour</label><input type="text" inputmode="numeric" id="newStopReasonPicks" placeholder="0"></div>
         </div>
         <button class="btn btn-primary btn-sm" id="addStopReasonBtn" style="margin-bottom:12px; width:auto;">Add</button>
-        <div id="stopReasonChips" style="margin-bottom:22px;"></div>
+        <div id="stopReasonChips" style="margin-bottom:22px;"></div></div></details>
 
-        <h2>Salary Components</h2>
+
+        <details class="acSec admD"><summary>Salary Components</summary><div class="acSecB">
         <p class="sub">Extra pay line items admin can add beyond Basic Salary / Extra Money / Premium Money — shown on every employee's Salary Info tab.</p>
         <div class="row-2" style="margin-bottom:12px;">
           <input type="text" id="newSalaryCompInput" placeholder="e.g. Housing Allowance">
@@ -3990,7 +4129,8 @@ table.pkPdf tr.tot td{ background:#eef2ff !important; border-top:1px solid #c7d2
         </div>
         <div id="salaryCompChips" style="margin-bottom:22px;"></div>
 
-        <h2>Premium Money — Pay-Per-Pick Tiers</h2>
+</div></details>
+<div style="display:none;" id="admPremOld">        <h2>Premium Money — Pay-Per-Pick Tiers</h2>
         <p class="sub">Applies only to employees marked "Eligible for Premium Money" on their Salary Info tab. Different machines can pay different amounts for the same pick range — assign specific machines to a tier, or leave it blank to apply to every machine.</p>
         <div id="premiumTiersList" style="max-height:320px; overflow-y:auto; margin-bottom:14px; border:1px solid var(--line); border-radius:var(--radius); padding:10px; background:var(--panel-2);"></div>
         <div class="card">
@@ -4006,7 +4146,7 @@ table.pkPdf tr.tot td{ background:#eef2ff !important; border-top:1px solid #c7d2
           </div>
           <button class="btn btn-primary btn-sm" id="addPremiumTierBtn" style="margin-top:12px; width:auto;">Add Tier</button>
           <button class="btn btn-ghost btn-sm" id="cancelTierEditBtn" style="margin-top:12px; width:auto; display:none;">Cancel Edit</button>
-        </div>
+        </div></div>
       </div>
     </section>
 
@@ -4048,6 +4188,7 @@ table.pkPdf tr.tot td{ background:#eef2ff !important; border-top:1px solid #c7d2
         <div class="fGrid">
           <div class="fItem" id="rfWDept"><label><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 22v-4h6v4M8 6h.01M12 6h.01M16 6h.01M8 10h.01M12 10h.01M16 10h.01M8 14h.01M12 14h.01M16 14h.01"/></svg>Department</label><select id="rfDept"></select></div>
           <div class="fItem"><label><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>Shift</label><select id="rfShift"></select></div>
+          <div class="fItem"><label><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z"/></svg>Machine type</label><select id="rfVip"></select></div>
           <div class="fItem" id="rfWSup"><label><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><polyline points="16 11 18 13 22 9"/></svg>Supervisor</label><select id="rfSup"></select></div>
           <div class="fItem" id="rfWOp"><label><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Operator</label><select id="rfOp"></select></div>
           <div class="fItem"><label><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 14h3M1 9h3M1 14h3"/></svg>Machine</label><select id="rfMach"></select><div class="rfMachChips" id="rfMachChips"></div></div>
@@ -6536,28 +6677,13 @@ function graceFieldIds(role, shift){
   return { mode: base + '_mode', minutes: base + '_minutes', clock: base + '_clock' };
 }
 function renderGraceFieldsHtml(){
-  return GRACE_COMBOS.map(c => {
+  const head = '<div class="gH">Who</div><div class="gH">Minutes after the shift ends</div><div class="gH">Or a fixed clock time</div><div class="gH">Late entries</div>';
+  return head + GRACE_COMBOS.map(c => {
     const ids = graceFieldIds(c.role, c.shift);
-    return `<div class="card" style="margin-bottom:10px; padding:12px;">
-      <div style="font-weight:600; font-size:12.5px; margin-bottom:8px;">${c.label}</div>
-      <div class="row-2" style="margin-bottom:8px;">
-        <label style="display:flex; align-items:center; gap:6px; font-weight:400; text-transform:none; font-size:13px; cursor:pointer;">
-          <input type="radio" name="${ids.mode}" value="after" style="width:auto;"> Minutes after shift end
-        </label>
-        <label style="display:flex; align-items:center; gap:6px; font-weight:400; text-transform:none; font-size:13px; cursor:pointer;">
-          <input type="radio" name="${ids.mode}" value="clock" style="width:auto;"> Fixed clock time
-        </label>
-      </div>
-      <div class="grid-2">
-        <div class="field" style="margin-bottom:0;"><input type="number" id="${ids.minutes}" min="0" step="5" placeholder="e.g. 60"></div>
-        <div class="field" style="margin-bottom:0;"><input type="time" id="${ids.clock}"></div>
-      </div>
-      ${c.role === 'operator' ? `
-      <label style="display:flex; align-items:center; gap:8px; font-weight:400; text-transform:none; font-size:13px; cursor:pointer; margin-top:10px;">
-        <input type="checkbox" id="${ids.mode}_block" style="width:auto;">
-        Actually stop late submissions (not just label them "Logged Late")
-      </label>` : ''}
-    </div>`;
+    return `<div class="gWho">${c.label}</div>
+      <div class="gCell"><input type="radio" name="${ids.mode}" value="after" aria-label="Use minutes after shift end"><input type="number" id="${ids.minutes}" min="0" step="5" placeholder="e.g. 60"></div>
+      <div class="gCell"><input type="radio" name="${ids.mode}" value="clock" aria-label="Use a fixed clock time"><input type="time" id="${ids.clock}"></div>
+      <div class="gCell">${c.role === 'operator' ? `<label class="gChk"><input type="checkbox" id="${ids.mode}_block"> Stop them (not just label &ldquo;Logged Late&rdquo;)</label>` : '<span class="gNote">Approval only</span>'}</div>`;
   }).join('');
 }
 function updateGraceModeUI(role, shift){
@@ -9242,18 +9368,19 @@ function combineReportRows(rows){
   return out;
 }
 function reportDisplayRows(rows){ return (reportView === 'combined' && !reportReview) ? combineReportRows(rows) : rows; }
-const reportFilter = { dept:'', shift:'', sup:'', op:'', mach:[] };
-function reportFilterActive(){ return !!(reportFilter.dept || reportFilter.shift || reportFilter.sup || reportFilter.op || reportFilter.mach.length); }
+const reportFilter = { dept:'', shift:'', vip:'', sup:'', op:'', mach:[] };
+function reportFilterActive(){ return !!(reportFilter.dept || reportFilter.shift || reportFilter.vip || reportFilter.sup || reportFilter.op || reportFilter.mach.length); }
 function reportOperatorsOf(supId){
   const set = new Set();
   (state.users || []).forEach(u => { const a = u.profile && u.profile.directSupervisor; if(a && a.loginId === supId) set.add(u.loginId); });
   return set;
 }
 function reportMachineDept(mid){ const m = state.machines.find(x => String(x.id) === String(mid)); return (m && m.department) || ''; }
+function reportVipOk(mid){ return !reportFilter.vip || (reportFilter.vip === 'vip' ? machineIsVip(mid) : !machineIsVip(mid)); }
 function applyReportFilter(rows){
   const ops = reportFilter.sup ? reportOperatorsOf(reportFilter.sup) : null;
   return rows.filter(r => (!reportFilter.op || r.enteredById === reportFilter.op) && (!reportFilter.mach.length || reportFilter.mach.includes(String(r.machineId))) && (!ops || ops.has(r.enteredById)) &&
-    (!reportFilter.shift || r.shift === reportFilter.shift) && (!reportFilter.dept || reportMachineDept(r.machineId) === reportFilter.dept));
+    (!reportFilter.shift || r.shift === reportFilter.shift) && (!reportFilter.dept || reportMachineDept(r.machineId) === reportFilter.dept) && reportVipOk(r.machineId));
 }
 function drawReportFiltered(rows){
   drawReportTable(reportDisplayRows(rows));
@@ -9263,6 +9390,7 @@ function reportFilterLabels(){
   const out = [];
   if(reportFilter.dept) out.push(['dept', 'Dept: ' + reportFilter.dept]);
   if(reportFilter.shift) out.push(['shift', reportFilter.shift + ' shift']);
+  if(reportFilter.vip) out.push(['vip', reportFilter.vip === 'vip' ? 'VIP machines' : 'Normal machines']);
   if(reportFilter.sup){ const u = (state.users || []).find(x => x.loginId === reportFilter.sup); out.push(['sup', 'Supervisor: ' + (u ? u.name : reportFilter.sup)]); }
   if(reportFilter.op){ const r = reportAllRows.find(x => x.enteredById === reportFilter.op); out.push(['op', 'Operator: ' + (r ? r.enteredBy : reportFilter.op)]); }
   reportFilter.mach.forEach(id => out.push(['mach:' + id, 'Machine: ' + machineName(id)]));
@@ -9274,9 +9402,9 @@ function renderReportFilterBox(){
   const box = $('reportFilterBox'), tg = $('rfToggle'); if(!box || !tg) return;
   if(reportReview || !reportAllRows.length){ box.style.display = 'none'; tg.style.display = 'none'; $('rfActive').innerHTML = ''; return; }
   const esc = assignEsc, isOperator = state.user && state.user.role === 'operator';
-  const opMap = {}; reportAllRows.forEach(r => { if(r.enteredById && r.enteredById !== '—') opMap[r.enteredById] = r.enteredBy; });
+  const opMap = {}; reportAllRows.forEach(r => { if(r.enteredById && r.enteredById !== '—' && reportVipOk(r.machineId)) opMap[r.enteredById] = r.enteredBy; });
   const opIds = Object.keys(opMap).sort((a, b) => opMap[a].localeCompare(opMap[b]));
-  const machMap = {}; reportAllRows.forEach(r => { machMap[r.machineId] = r.machine; });
+  const machMap = {}; reportAllRows.forEach(r => { if(reportVipOk(r.machineId)) machMap[r.machineId] = r.machine; });
   const machIds = Object.keys(machMap).sort((a, b) => (Number(a) || 0) - (Number(b) || 0));
   const deptList = Array.from(new Set(machIds.map(reportMachineDept).filter(Boolean))).sort();
   const usersReady = !!(state.users && state.users.length);
@@ -9287,6 +9415,7 @@ function renderReportFilterBox(){
   if(reportFilter.dept && !deptList.includes(reportFilter.dept)) reportFilter.dept = '';
   if(reportFilter.sup && usersReady && !supList.some(sp => sp.loginId === reportFilter.sup)) reportFilter.sup = '';
   $('rfDept').innerHTML = '<option value="">All departments</option>' + deptList.map(d => `<option value="${esc(d)}" ${reportFilter.dept === d ? 'selected' : ''}>${esc(d)}</option>`).join('');
+  $('rfVip').innerHTML = `<option value="">All machines</option><option value="vip" ${reportFilter.vip === 'vip' ? 'selected' : ''}>VIP machines only</option><option value="normal" ${reportFilter.vip === 'normal' ? 'selected' : ''}>Normal machines only</option>`;
   $('rfShift').innerHTML = `<option value="">Day &amp; Night</option><option value="Day" ${reportFilter.shift === 'Day' ? 'selected' : ''}>Day</option><option value="Night" ${reportFilter.shift === 'Night' ? 'selected' : ''}>Night</option>`;
   $('rfSup').innerHTML = `<option value="">${usersReady ? 'All supervisors' : 'Supervisors loading…'}</option>` + supList.map(sp => `<option value="${esc(sp.loginId)}" ${reportFilter.sup === sp.loginId ? 'selected' : ''}>${esc(sp.name)}</option>`).join('');
   $('rfOp').innerHTML = '<option value="">All operators</option>' + opIds.map(id => `<option value="${esc(id)}" ${reportFilter.op === id ? 'selected' : ''}>${esc(opMap[id])}</option>`).join('');
@@ -9318,12 +9447,12 @@ function applyReportFilterNow(){
   renderReportFilterBox();
 }
 function onReportFilterChange(){
-  reportFilter.dept = $('rfDept').value; reportFilter.shift = $('rfShift').value; reportFilter.sup = $('rfSup').value; reportFilter.op = $('rfOp').value;
+  reportFilter.dept = $('rfDept').value; reportFilter.shift = $('rfShift').value; reportFilter.vip = $('rfVip').value; reportFilter.sup = $('rfSup').value; reportFilter.op = $('rfOp').value;
   const addM = $('rfMach').value; if(addM && !reportFilter.mach.includes(addM)) reportFilter.mach.push(addM);
   applyReportFilterNow();
 }
-['rfDept', 'rfShift', 'rfSup', 'rfOp', 'rfMach'].forEach(id => $(id).addEventListener('change', onReportFilterChange));
-$('rfClear').addEventListener('click', () => { reportFilter.dept = reportFilter.shift = reportFilter.sup = reportFilter.op = ''; reportFilter.mach = []; setReportView('separate'); applyReportFilterNow(); });
+['rfDept', 'rfShift', 'rfVip', 'rfSup', 'rfOp', 'rfMach'].forEach(id => $(id).addEventListener('change', onReportFilterChange));
+$('rfClear').addEventListener('click', () => { reportFilter.dept = reportFilter.shift = reportFilter.vip = reportFilter.sup = reportFilter.op = ''; reportFilter.mach = []; setReportView('separate'); applyReportFilterNow(); });
 $('rfView').querySelectorAll('button').forEach(bt => bt.addEventListener('click', () => { setReportView(bt.dataset.v); applyReportFilterNow(); }));
 $('rfToggle').addEventListener('click', () => { reportFilterOpen = !reportFilterOpen; renderReportFilterBox(); });
 
@@ -10597,8 +10726,8 @@ function assignSlots(){
   const day = {}, night = {};
   assignOperators().forEach(u => {
     assignMachinesOf(u).forEach(mid => {
-      if(u.assignedShift === 'Night') (night[mid] = night[mid] || []).push(u);
-      else if(u.assignedShift === 'Day') (day[mid] = day[mid] || []).push(u);
+      if(asgShiftOf(u) === 'Night') (night[mid] = night[mid] || []).push(u);
+      else if(asgShiftOf(u) === 'Day') (day[mid] = day[mid] || []).push(u);
       else if(!(day[mid] || []).length) (day[mid] = day[mid] || []).push(u);
       else (night[mid] = night[mid] || []).push(u);
     });
@@ -10622,7 +10751,7 @@ function assignSupOptions(op, selectedId){
   return html;
 }
 function assignOpOptions(machine, slot, selectedId){
-  const ops = assignOperators().filter(o => o.assignedShift === slot).sort(assignByName);
+  const ops = assignOperators().filter(o => asgShiftOf(o) === slot).sort(assignByName);
   const same = ops.filter(o => o.department === machine.department), other = ops.filter(o => o.department !== machine.department);
   const opt = (o) => `<option value="${assignEsc(o.loginId)}" ${o.loginId === selectedId ? 'selected' : ''}>${assignEsc(o.name)} (${assignEsc(o.loginId)})</option>`;
   let html = '<option value="">— nobody —</option>';
@@ -10641,14 +10770,14 @@ function assignShortList(names, max){ return names.length <= max ? names.join(',
    On the Dashboard it shows what is saved. On Admin > Assign it also counts the changes waiting to be saved, so it
    updates the moment something is picked, and shows the saved numbers again after Save changes. */
 const asumState = {};
-function asumGet(key){ return asumState[key] || (asumState[key] = { view:'supervisor', fDept:'', fShift:'', fSup:'', fOp:'', fMach:'', gap:false, panel:false, open:new Set() }); }
+function asumGet(key){ return asumState[key] || (asumState[key] = { view:'supervisor', fDept:'', fShift:'', fVip:'', fSup:'', fOp:'', fMach:'', gap:false, panel:false, open:new Set() }); }
 function asumBuild(staged){
   const machinesOf = (u) => staged ? assignMachinesOf(u) : new Set(u.assignedMachines || []);
   const approverOf = (u) => staged ? assignApproverOf(u) : assignOriginalApprover(u);
   const known = new Set(state.machines.map(m => String(m.id)));
   const ops = assignOperators().map(u => {
     const a = approverOf(u), sp = a ? assignUserById(a.loginId) : null;
-    return { id:u.loginId, name:u.name || u.loginId, dept:u.department || '', shift:(u.assignedShift === 'Day' || u.assignedShift === 'Night') ? u.assignedShift : 'Both',
+    return { id:u.loginId, name:u.name || u.loginId, dept:staged ? asgDeptOf(u) : (u.department || ''), shift:staged ? asgShiftOf(u) : ((u.assignedShift === 'Day' || u.assignedShift === 'Night') ? u.assignedShift : 'Both'),
       machines:Array.from(machinesOf(u)).filter(mid => known.has(String(mid))).sort((x, y) => (Number(x) || 0) - (Number(y) || 0)),
       sup: a ? { id:a.loginId, name:(sp && sp.name) || a.name || a.loginId, current: !!(sp && sp.role === 'supervisor' && !isExitedEmployee(sp)) } : null };
   }).sort((a, b) => a.name.localeCompare(b.name));
@@ -10693,6 +10822,7 @@ function asumFilterText(st, D){
   const bits = [];
   if(st.fDept) bits.push('Department: ' + st.fDept);
   if(st.fShift) bits.push(st.fShift + ' shift');
+  if(st.fVip) bits.push(st.fVip === 'vip' ? 'VIP machines only' : 'Normal machines only');
   if(st.fSup) bits.push('Supervisor: ' + (st.fSup === '__none__' ? 'none assigned' : ((D.sups.find(x => x.id === st.fSup) || {}).name || st.fSup)));
   if(st.fOp) bits.push('Operator: ' + ((D.ops.find(x => x.id === st.fOp) || {}).name || st.fOp));
   if(st.fMach) bits.push('Machine: ' + machineName(st.fMach));
@@ -10837,10 +10967,12 @@ const ASUM_ICON_DOWNLOAD = '<svg width="13" height="13" viewBox="0 0 24 24" fill
 // The department and shift filters set the "scope" of the whole section: every number, list and download inside it follows.
 function asumScope(D, st){
   const dOk = (v) => !st.fDept || v === st.fDept;
-  const ops = D.ops.filter(o => dOk(o.dept) && (!st.fShift || o.shift === 'Both' || o.shift === st.fShift));
-  const scoped = !!(st.fDept || st.fShift);
+  const vipOk = (mid) => !st.fVip || (st.fVip === 'vip' ? machineIsVip(mid) : !machineIsVip(mid));
+  let ops = D.ops.filter(o => dOk(o.dept) && (!st.fShift || o.shift === 'Both' || o.shift === st.fShift));
+  if(st.fVip) ops = ops.map(o => Object.assign({}, o, { machines: o.machines.filter(vipOk) })).filter(o => o.machines.length);   // only people who run that kind of machine, and only those machines are listed
+  const scoped = !!(st.fDept || st.fShift || st.fVip);
   const sups = D.sups.filter(s => (dOk(s.dept) && (!st.fShift || !s.shift || s.shift === 'Both' || s.shift === st.fShift)) || (scoped && ops.some(o => o.sup && o.sup.id === s.id)));
-  const machines = D.machines.filter(x => dOk(x.m.department || '') && (!st.fShift || machineRunsShift(x.m, st.fShift)))
+  const machines = D.machines.filter(x => dOk(x.m.department || '') && vipOk(x.m.id) && (!st.fShift || machineRunsShift(x.m, st.fShift)))
     .map(x => Object.assign({}, x, { gap: st.fShift === 'Day' ? x.gapDay : st.fShift === 'Night' ? x.gapNight : x.gap }));
   return Object.assign({}, D, { ops, sups, machines });
 }
@@ -10856,7 +10988,7 @@ function renderAssignSummary(mountId, key, staged){
 
   const opOk = asumFilterFn(st);
   const anyNarrow = !!(st.fOp || st.fMach || st.fSup || st.gap);
-  const activeCount = (st.fDept ? 1 : 0) + (st.fShift ? 1 : 0) + (st.fSup ? 1 : 0) + (st.fOp ? 1 : 0) + (st.fMach ? 1 : 0) + (st.gap ? 1 : 0);
+  const activeCount = (st.fDept ? 1 : 0) + (st.fShift ? 1 : 0) + (st.fVip ? 1 : 0) + (st.fSup ? 1 : 0) + (st.fOp ? 1 : 0) + (st.fMach ? 1 : 0) + (st.gap ? 1 : 0);
   const covered = D.machines.filter(x => !x.gap).length, uncovered = D.machines.length - covered;
   const noAppr = D.ops.filter(o => !o.sup).length;
   const dayOps = D.ops.filter(o => o.shift === 'Day').length, nightOps = D.ops.filter(o => o.shift === 'Night').length, bothOps = D.ops.length - dayOps - nightOps;
@@ -10869,6 +11001,7 @@ function renderAssignSummary(mountId, key, staged){
   const labels = [];
   if(st.fDept) labels.push(['fDept', 'Dept: ' + st.fDept]);
   if(st.fShift) labels.push(['fShift', st.fShift + ' shift']);
+  if(st.fVip) labels.push(['fVip', st.fVip === 'vip' ? 'VIP machines' : 'Normal machines']);
   if(st.fSup) labels.push(['fSup', 'Supervisor: ' + (st.fSup === '__none__' ? 'none' : ((D0.sups.find(x => x.id === st.fSup) || {}).name || st.fSup))]);
   if(st.fOp) labels.push(['fOp', 'Operator: ' + ((D0.ops.find(x => x.id === st.fOp) || {}).name || st.fOp)]);
   if(st.fMach) labels.push(['fMach', 'Machine: ' + machineName(st.fMach)]);
@@ -10891,11 +11024,12 @@ function renderAssignSummary(mountId, key, staged){
       <div class="fGrid">
       ${sel('fDept', '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 22v-4h6v4M8 6h.01M12 6h.01M16 6h.01M8 10h.01M12 10h.01M16 10h.01M8 14h.01M12 14h.01M16 14h.01"/></svg>', 'Department', '<option value="">All departments</option>' + allDepts.map(d => `<option value="${esc(d)}" ${st.fDept === d ? 'selected' : ''}>${esc(d)}</option>`).join(''))}
       ${sel('fShift', '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>', 'Shift', `<option value="">Day &amp; Night</option><option value="Day" ${st.fShift === 'Day' ? 'selected' : ''}>Day</option><option value="Night" ${st.fShift === 'Night' ? 'selected' : ''}>Night</option>`)}
+      ${sel('fVip', '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z"/></svg>', 'Machine type', `<option value="">All machines</option><option value="vip" ${st.fVip === 'vip' ? 'selected' : ''}>VIP machines only</option><option value="normal" ${st.fVip === 'normal' ? 'selected' : ''}>Normal machines only</option>`)}
       ${sel('fSup', '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><polyline points="16 11 18 13 22 9"/></svg>', 'Supervisor', `<option value="">All supervisors</option><option value="__none__" ${st.fSup === '__none__' ? 'selected' : ''}>No supervisor</option>` + D.sups.map(s => `<option value="${esc(s.id)}" ${st.fSup === s.id ? 'selected' : ''}>${esc(s.name)}</option>`).join(''))}
       ${sel('fOp', '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>', 'Operator', '<option value="">All operators</option>' + D.ops.map(o => `<option value="${esc(o.id)}" ${st.fOp === o.id ? 'selected' : ''}>${esc(o.name)}</option>`).join(''))}
       ${sel('fMach', '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 14h3M1 9h3M1 14h3"/></svg>', 'Machine', '<option value="">All machines</option>' + D.machines.map(x => `<option value="${esc(x.m.id)}" ${st.fMach === String(x.m.id) ? 'selected' : ''}>${esc(x.m.name)}</option>`).join(''))}
       </div>
-      <div class="fHint">Department and Shift change every number below. Supervisor, Operator and Machine narrow the lists.</div>
+      <div class="fHint">Department, Shift and Machine type change every number below. Supervisor, Operator and Machine narrow the lists.</div>
     </div>` : '';
 
   // Same calm look as the HR Assistant: grey tiles, the open list is soft-highlighted, red number only for real gaps.
@@ -10972,7 +11106,7 @@ function renderAssignSummary(mountId, key, staged){
   root.querySelectorAll('.asumChipX').forEach(x => x.addEventListener('click', () => { if(x.dataset.f === 'gap') st.gap = false; else st[x.dataset.f] = ''; redraw(); }));
   root.querySelector('.asumPdf').addEventListener('click', () => asumDownloadPdf(mountId, key, staged));
   root.querySelector('.asumXls').addEventListener('click', () => asumDownloadExcel(key, staged));
-  const clr = root.querySelector('.asumClear'); if(clr) clr.addEventListener('click', () => { st.fDept = ''; st.fShift = ''; clearNarrow(); redraw(); });
+  const clr = root.querySelector('.asumClear'); if(clr) clr.addEventListener('click', () => { st.fDept = ''; st.fShift = ''; st.fVip = ''; clearNarrow(); redraw(); });
   root.querySelectorAll('details.asumSup').forEach(d => d.addEventListener('toggle', () => { if(anyNarrow) return; if(d.open) st.open.add(d.dataset.id); else st.open.delete(d.dataset.id); }));
 }
 
@@ -11092,7 +11226,7 @@ function renderAssignMachinesTable(){
   const list = state.machines.filter(m => (!assignUI.machDept || m.department === assignUI.machDept) && (!q || (m.name || '').toLowerCase().includes(q) || String(m.id).toLowerCase().includes(q)));
   if(!list.length){ box.innerHTML = '<div class="empty-state">No machines match.</div>'; return; }
   const slots = assignSlots();
-  const orig = (() => { const keep = [assignUI.stagedAdd, assignUI.stagedRemove]; assignUI.stagedAdd = {}; assignUI.stagedRemove = {}; const s = assignSlots(); assignUI.stagedAdd = keep[0]; assignUI.stagedRemove = keep[1]; return s; })();
+  const orig = (() => { const keep = [assignUI.stagedAdd, assignUI.stagedRemove, assignUI.stagedShift]; assignUI.stagedAdd = {}; assignUI.stagedRemove = {}; assignUI.stagedShift = {}; const s = assignSlots(); assignUI.stagedAdd = keep[0]; assignUI.stagedRemove = keep[1]; assignUI.stagedShift = keep[2]; return s; })();
   const cell = (m, slot) => {
     const held = (slot === 'Night' ? slots.night : slots.day)[m.id] || [], was = (slot === 'Night' ? orig.night : orig.day)[m.id] || [];
     const changed = held.map(h => h.loginId).join() !== was.map(h => h.loginId).join();
@@ -12464,7 +12598,6 @@ function renderSalaryTab(){
   if(!canEdit){
     el.innerHTML = `<div class="card">
       ${fieldRow('Basic Salary', s.basicSalary)}
-      ${fieldRow('Extra Money', s.extraMoney)}
       ${fieldRow('Eligible for Premium Money', s.premiumEligible ? 'Yes' : 'No')}
       ${extraComponents.map(c => fieldRow(c, (s.components||{})[c])).join('')}
     </div>
@@ -12492,7 +12625,7 @@ async function saveSalaryInfo(){
   document.querySelectorAll('.sal-comp').forEach(inp => { components[inp.dataset.comp] = inp.value.trim(); });
   const salary = {
     basicSalary: $('sal-basic').value.trim(),
-    extraMoney: $('sal-extra').value.trim(),
+    extraMoney: old.extraMoney || '',
     premiumEligible: $('sal-premium').checked,
     components
   };
@@ -15737,7 +15870,7 @@ function pcPdfBlocks(o, kind, T, L){
     blocks.push(`${css}<table class="pcPdfT"><thead><tr>${th}</tr></thead><tbody>${rows.slice(i, i + per).join('')}${foot}</tbody></table>`);
   }
   blocks.push(`<div style="${F};padding-top:12px">${closing ? `<div style="font-size:11.5px;color:#334155;line-height:1.5;margin-bottom:20px;white-space:pre-line">${esc(closing)}</div>` : '<div style="height:10px"></div>'}
-    <div style="display:flex;flex-wrap:wrap;gap:18px;align-items:flex-end;justify-content:flex-end">${(sign.length ? sign : [{ name: '', title: 'Authorised signature' }]).map(x => `<div style="flex:0 0 30%;min-width:0;text-align:center"><div style="height:96px"></div><div style="border-top:1px solid #0f172a;padding-top:6px;font-size:12.5px;font-weight:700;color:#0f172a">${esc(x.name || '\u00A0')}</div><div style="font-size:11px;color:#475569">${esc(x.title || '')}</div><div style="font-size:10px;color:#94a3b8;margin-top:4px">Signature / date</div></div>`).join('')}${isPO && L.stamp ? '<div style="width:90px;height:90px;border:1.5px dashed #cbd5e1;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:10px;text-align:center">Company<br>stamp</div>' : ''}</div>
+    <div style="display:flex;flex-wrap:wrap;gap:18px;align-items:flex-end;justify-content:flex-end">${(sign.length ? sign : [{ name: '', title: 'Authorised signature' }]).map(x => `<div style="flex:0 0 30%;min-width:0;text-align:center"><div style="height:96px"></div><div style="border-top:1px solid #0f172a;padding-top:6px;font-size:12.5px;font-weight:700;color:#0f172a">${esc(x.name || '\u00A0')}</div><div style="font-size:11px;color:#475569">${esc(x.title || '')}</div><div style="font-size:10px;color:#94a3b8;margin-top:4px"></div></div>`).join('')}${isPO && L.stamp ? '<div style="width:90px;height:90px;border:1.5px dashed #cbd5e1;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:10px;text-align:center">Company<br>stamp</div>' : ''}</div>
     ${L.footer ? `<div style="margin-top:22px;padding-top:8px;border-top:1px solid #e2e8f0;font-size:10.5px;color:#64748b;text-align:center">${esc(L.footer)}</div>` : ''}</div>`);
   return blocks;
 }
@@ -15871,7 +16004,7 @@ async function pcTextPdf1(m, filename, ctx){
   sg.forEach(x => { const cx = sx + bw / 2; pdf.line(sx, y + 22, sx + bw, y + 22);
     pdf.setFont('helvetica', 'bold'); pdf.setFontSize(10); pdf.setTextColor(15, 23, 42); txt(wrap(x.name || ' ', bw)[0], cx, y + 26.5, { align: 'center' });
     pdf.setFont('helvetica', 'normal'); pdf.setFontSize(8.5); pdf.setTextColor(71, 85, 105); txt(wrap(x.title || '', bw)[0], cx, y + 30.5, { align: 'center' });
-    pdf.setFontSize(7); pdf.setTextColor(148, 163, 184); txt('Signature / date', cx, y + 34, { align: 'center' }); sx += bw + 6; });
+     sx += bw + 6; });
   if(m.kind === 'po' && L.stamp){ pdf.setDrawColor(203, 213, 225); pdf.setLineDashPattern([1, 1], 0); pdf.circle(M + 14, y + 16, 12); pdf.setLineDashPattern([], 0); pdf.setFontSize(7); pdf.setTextColor(148, 163, 184); txt('Company stamp', M + 14, y + 16.5, { align: 'center' }); }
   // footer + page numbers on every page
   const np = pdf.getNumberOfPages(), nPg = np - fp + 1;
@@ -16081,21 +16214,20 @@ async function pcRenderAdmin0(){
         <div class="sub" style="margin-top:0;font-weight:600;color:var(--text);text-transform:none">Add Someone</div>
         <div class="grid-2"><div class="field"><label>Employee</label><select id="pcAddUser">${pcAdmUsers.map(u => `<option value="${pcEsc(u.loginId)}">${pcEsc(u.name)} (${pcEsc(u.loginId)})</option>`).join('')}</select></div>
         <div class="field"><label>Role</label><select id="pcAddRole"><option value="requesters">Creates orders (e.g. Storekeeper)</option><option value="procurement">Procurement officer</option><option value="approvers">Approver</option></select></div></div>
-        <p class="hint" style="text-align:left;margin-left:0">Creates orders: writes the order after taking the requisition. Procurement officer: receives every order, adds prices, sends it for approval and places the order. Approver: approves on the CEO Dashboard — if nobody is added, any Executive can approve. One person can have more than one role.</p>
+        <p class="hint" style="text-align:left;margin-left:0"><b>Creates orders:</b> writes the order. <b>Procurement officer:</b> adds prices and places it. <b>Approver:</b> approves on the CEO Dashboard (if nobody is added, any Executive can). One person can have several roles.</p>
         <button class="btn btn-primary btn-sm" data-pc="admadd">Add</button></div>
       <div id="pcPeople"></div>
-      <div class="card" style="margin-top:16px"><div class="sub" style="margin-top:0;font-weight:600;color:var(--text);text-transform:none">Reminders &amp; wording</div>
-        <p class="hrNote" style="margin:0 0 10px">The letterhead (logo, address, colour, footer) is the same one used for HR letters — change it in Admin → Letterhead.</p>
-        <div class="hrForm"><div class="field"><label>Remind the creator every (days) \u2014 normal is 7</label><input type="number" min="1" max="90" id="pcaDays" value="${S.remindDays}"></div>${inp('pcaUnits', 'Units in the item list (comma separated)', S.units.join(', '))}
-        ${ta('pcaWa', 'WhatsApp message (you can use {po} {dept} {person} {status} {pending} {days})', S.waMessage)}
-        ${inp('pcaPoT', 'Purchase Order title', T.poTitle)}${inp('pcaRqT', 'Requisition title', T.reqTitle)}
-        ${ta('pcaPoI', 'Purchase Order — starting text', T.poIntro)}${ta('pcaPoC', 'Purchase Order — ending text', T.poClosing)}
-        ${ta('pcaRqI', 'Requisition — starting text', T.reqIntro)}${ta('pcaRqC', 'Requisition — ending text', T.reqClosing)}
-</div>
-        <div class="sub" style="font-weight:600;color:var(--text);text-transform:none;margin:14px 0 4px">Who signs the printed papers</div>
-        <p class="hrNote" style="margin:0 0 10px">Each person added here gets a signature space with their name and designation. If nobody is added, the paper has one blank "Authorised signature" space.</p>
-        <div class="hrForm"><div class="field"><label>Requisition \u2014 signer</label><div style="display:flex;gap:8px"><select id="pcSigSel_req" style="flex:1">${pcSigOptions()}</select><button class="btn btn-primary btn-sm" data-pc="admsigadd" data-k="req">Add</button></div><div id="pcSigList_req" style="margin-top:8px"></div></div>
-        <div class="field"><label>Purchase Order \u2014 signer</label><div style="display:flex;gap:8px"><select id="pcSigSel_po" style="flex:1">${pcSigOptions()}</select><button class="btn btn-primary btn-sm" data-pc="admsigadd" data-k="po">Add</button></div><div id="pcSigList_po" style="margin-top:8px"></div></div></div>
+      <div class="admSec" style="margin-top:16px"><div class="admSecH"><h3>Order list and reminders</h3><p>The letterhead (logo, address, colour, footer) is the one set in Admin &rarr; Letterhead.</p></div>
+        <div class="hrForm"><div class="field"><label>Remind the creator every (days)</label><input type="number" min="1" max="90" id="pcaDays" value="${S.remindDays}"></div>${inp('pcaUnits', 'Units in the item list (comma separated)', S.units.join(', '))}</div>
+        <details class="acSec admD"><summary>WhatsApp reminder message</summary><div class="acSecB">${ta('pcaWa', 'You can use {po} {dept} {person} {status} {pending} {days}', S.waMessage)}</div></details></div>
+      <div class="admSec"><div class="admSecH"><h3>Printed papers</h3><p>Who signs the requisition and the purchase order. If nobody is added, the paper has one blank &ldquo;Authorised signature&rdquo; space.</p></div>
+        <div class="hrForm"><div class="field"><label>Requisition &mdash; signer</label><div style="display:flex;gap:8px"><select id="pcSigSel_req" style="flex:1">${pcSigOptions()}</select><button class="btn btn-primary btn-sm" data-pc="admsigadd" data-k="req">Add</button></div><div id="pcSigList_req" style="margin-top:8px"></div></div>
+        <div class="field"><label>Purchase Order &mdash; signer</label><div style="display:flex;gap:8px"><select id="pcSigSel_po" style="flex:1">${pcSigOptions()}</select><button class="btn btn-primary btn-sm" data-pc="admsigadd" data-k="po">Add</button></div><div id="pcSigList_po" style="margin-top:8px"></div></div></div>
+        <details class="acSec admD"><summary>Wording of the printed papers (titles, starting and ending text)</summary><div class="acSecB"><div class="hrForm">
+          ${inp('pcaRqT', 'Requisition title', T.reqTitle)}${inp('pcaPoT', 'Purchase Order title', T.poTitle)}
+          ${ta('pcaRqI', 'Requisition — starting text', T.reqIntro)}${ta('pcaPoI', 'Purchase Order — starting text', T.poIntro)}
+          ${ta('pcaRqC', 'Requisition — ending text', T.reqClosing)}${ta('pcaPoC', 'Purchase Order — ending text', T.poClosing)}
+        </div></div></details>
         <div class="pcActs"><button class="btn btn-primary btn-sm" data-pc="admsave">Save</button><button class="pcBtnSoft" data-pc="admprev" data-v="req">${pcSvg('file', 14)}Preview requisition</button><button class="pcBtnSoft" data-pc="admprev" data-v="po">${pcSvg('file', 14)}Preview purchase order</button></div></div></div>`;
     pcAdmPeople(); pcAdmSigList('req'); pcAdmSigList('po');
   }catch(err){ console.error(err); root.innerHTML = '<div class="hrEmpty">Could not load. Open this tab again.</div>'; }
@@ -19044,7 +19176,7 @@ function poDrawSign(pdf, m, M, CW, BOT, y, txt, wrap){
   const slot = (x, w, name, title, yy) => { pdf.setDrawColor(15, 23, 42); pdf.setLineWidth(0.3); pdf.line(x, yy + H, x + w, yy + H); const cx = x + w / 2;
     pdf.setFont('helvetica', 'bold'); pdf.setFontSize(10); pdf.setTextColor(15, 23, 42); const nl = wrap(name || ' ', w).slice(0, 2); nl.forEach((ln, k) => txt(ln, cx, yy + H + 5 + k * 4.4, { align: 'center' })); const o2 = (nl.length - 1) * 4.4;
     pdf.setFont('helvetica', 'normal'); pdf.setFontSize(8.5); pdf.setTextColor(71, 85, 105); txt(wrap(title || '', w)[0], cx, yy + H + 9 + o2, { align: 'center' });
-    pdf.setFontSize(7); pdf.setTextColor(148, 163, 184); txt('Signature / date', cx, yy + H + 12.5 + o2, { align: 'center' }); };
+     };
   pdf.setFont('helvetica', 'bold'); pdf.setFontSize(8.5); pdf.setTextColor(100, 116, 139);
   if(hasOb){
     txt('ORDERED BY', M, y); let yy = y + 3; const gap = 6, w = (wL - gap * (per - 1)) / per;
@@ -20385,7 +20517,7 @@ function acDrawSettings(){
   const test = T.length ? `<div class="acAdd" style="margin-top:10px;"><b>Try it</b><div class="acCE" style="padding-left:0;"><input class="acNum" id="acTestP" placeholder="picks" inputmode="numeric" value="4174"><select id="acTestM">${(state.machines || []).filter(m => acTableFor(m.id)).map(m => `<option value="${acEsc(m.id)}">${acEsc(m.name)}</option>`).join('')}</select><span id="acTestR" class="hrNote" style="margin:0;"></span></div></div>` : '';
   const tblHtml = `<div class="hrNote" style="margin-bottom:8px;">Premium is paid per pick. The person's total picks are rounded (see Rounding below) and the rate for that level is multiplied by the total picks. If a person works on machines from different tables, the average of their rates is used.</div>${tblList}${editor || '<button type="button" class="pillBtn" data-ac="s_addtbl" style="margin-top:8px;">Add a rate table</button>'}${test}`;
   const saveRow = `<div class="acRow2"><span class="hrNote" style="margin:0;">${AC.setSec === 'nonsponsor' ? 'One list of reasons is shared by every sheet (Operator, Sponsor, Non Sponsor).' : (AC.setSec || 'sponsor') === 'operator' ? 'Rounding and extra-money rules are saved together. Rate tables are saved with their own button.' : 'Deduction reasons are one shared list for every sheet. Press Save settings after changing a value.'}</span><span style="flex:1"></span><button type="button" class="pillBtn ok" data-ac="s_save">Save settings</button></div>`;
-  $('acMain').innerHTML = (AC.setSec === 'nonsponsor' ? sec('ded', 'Deduction reasons', dedHtml) : AC.setSec === 'operator' ? sec('who', 'Who is an operator (positions)', whoHtml) + sec('tbl', 'Premium rate tables', tblHtml) + sec('rules', 'Extra money (ladder)', ladHtml + (!LD.groups.length && S.rules.length ? ruleHtml : '')) + sec('ded', 'Deduction reasons', dedHtml) + sec('rnd', 'Rounding (to find the rate)', rndHtml) : sec('ot', 'Overtime by hours', otHtml) + sec('ty', 'Beaming / Tying commission', tyHtml) + sec('ded', 'Deduction reasons', dedHtml)) + saveRow;
+  $('acMain').innerHTML = (AC.setSec === 'nonsponsor' ? sec('ded', 'Deduction reasons', dedHtml) : AC.setSec === 'operator' ? sec('who', 'Who is an operator (positions)', whoHtml) + sec('tbl', 'Premium rate tables', tblHtml) + sec('rules', 'Extra money (ladder)', ladHtml + (!LD.groups.length && S.rules.length ? ruleHtml : '')) + sec('ded', 'Deduction reasons', dedHtml) + sec('rnd', 'Rounding (to find the rate)', rndHtml) : sec('ty', 'Beaming / Tying commission', tyHtml) + sec('ded', 'Deduction reasons', dedHtml)) + saveRow;
   acTestRun();
 }
 function acTxInfo(p){ return p.rows.length ? `${p.rows.length} levels &middot; ${p.rows[0][0]} down to ${p.rows[p.rows.length - 1][0]} &middot; rate ${p.rows[0][1]} to ${p.rows[p.rows.length - 1][1]}${p.n > 1 ? ' &middot; only the first rate column is used' : ''}${p.bad ? ` &middot; <span style="color:var(--danger)">${p.bad} line(s) have a different number of columns</span>` : ''}` : 'Nothing read yet.'; }
@@ -20547,15 +20679,11 @@ function renderSalaryTab(){
   if(!canEdit){
     el.innerHTML = `<div class="card">
       ${fieldRow('Basic Salary', s.basicSalary)}
-      ${fieldRow('Salary type', s.salaryType === 'fixed' ? 'Fixed amount' : 'Standard (housing and transport added)')}
       ${fieldRow('Overtime (fixed)', s.overtime)}
-      ${fieldRow('Extra Money', s.extraMoney)}
       ${s.noSalary ? fieldRow('Salary sheets', 'Left out (not listed or counted)') : ''}
-      ${s.otHours ? fieldRow('Overtime', 'Depends on hours worked') : ''}
+      ${s.otHours ? fieldRow('Overtime hours per working day', s.otPerDay || '-') : ''}
       ${s.tying ? fieldRow('Beaming / Tying commission', 'Yes') : ''}
       ${fieldRow('Premium &amp; extra money', (s.premiumEligible || (profileCache.user && profileCache.user.role === 'operator')) ? 'Yes' : 'No')}
-      ${profCols.map(c => fieldRow(c.name, cv[c.id])).join('')}
-      ${flagCols.map(c => fieldRow(c.name + ' applies', fl[c.id] ? 'Yes' : 'No')).join('')}
       ${extraComponents.map(c => fieldRow(c, (s.components||{})[c])).join('')}
     </div>
     ${s.premiumEligible ? '<div class="hint">Premium Money is worked out in Accounts from the earned picks and the rate tables.</div>' : ''}`;
@@ -20565,8 +20693,6 @@ function renderSalaryTab(){
       <div class="field"><label>Basic Salary</label><input type="text" inputmode="decimal" id="sal-basic" value="${s.basicSalary||''}"></div>
       <div class="field"><label>Overtime (fixed)</label><input type="text" inputmode="decimal" id="sal-ot" value="${s.overtime||''}"></div>
     </div>
-    <div class="field"><label>Salary type</label><select id="sal-type"><option value="">Standard (housing and transport added to the basic)</option><option value="fixed" ${s.salaryType === 'fixed' ? 'selected' : ''}>Fixed amount (basic is the whole salary)</option></select></div>
-    <div class="field"><label>Extra Money <span style="text-transform:none; font-weight:400; color:var(--muted);">(only used when no picks target pays them)</span></label><input type="text" inputmode="decimal" id="sal-extra" value="${s.extraMoney||''}"></div>
     <div class="field">
       <label style="display:flex; align-items:center; gap:8px; text-transform:none; font-weight:600; color:var(--text); cursor:pointer;">
         <input type="checkbox" id="sal-premium" style="width:auto;" ${s.premiumEligible?'checked':''}>
@@ -20575,11 +20701,10 @@ function renderSalaryTab(){
     </div>
     <div class="field salTicks">
       <label class="salTick"><input type="checkbox" id="sal-skip" style="width:auto;" ${s.noSalary ? 'checked' : ''}> Leave out of all salary sheets <span class="salTickN">(backup or unpaid profile &mdash; not listed or counted in Accounts)</span></label>
-      <label class="salTick"><input type="checkbox" id="sal-oth" style="width:auto;" ${s.otHours ? 'checked' : ''}> Overtime depends on hours worked <span class="salTickN">(hours are typed on the Sponsor sheet each month)</span></label>
+      <label class="salTick"><input type="checkbox" id="sal-oth" style="width:auto;" ${s.otHours ? 'checked' : ''} onchange="document.getElementById('salOthBox').style.display = this.checked ? 'block' : 'none'"> Gets overtime <span class="salTickN">(hours per working day are different for each person)</span></label>
+      <div id="salOthBox" style="display:${s.otHours ? 'block' : 'none'};max-width:260px;"><label>Overtime hours per working day</label><input type="text" inputmode="decimal" id="sal-othd" placeholder="e.g. 1.5" value="${acEsc(s.otPerDay || '')}"></div>
       <label class="salTick"><input type="checkbox" id="sal-tying" style="width:auto;" ${s.tying ? 'checked' : ''}> Gets Beaming / Tying commission <span class="salTickN">(shared by the supervisors of the same department)</span></label>
     </div>
-    ${profCols.length ? `<div class="grid-2">${profCols.map(c => `<div class="field"><label>${acEsc(c.name)}</label><input type="text" inputmode="decimal" class="sal-cv" data-id="${c.id}" value="${acEsc(cv[c.id] || '')}"></div>`).join('')}</div>` : ''}
-    ${flagCols.length ? `<div class="field">${flagCols.map(c => `<label style="display:flex; align-items:center; gap:8px; text-transform:none; font-weight:600; color:var(--text); cursor:pointer; margin-bottom:6px;"><input type="checkbox" class="sal-fl" data-id="${c.id}" style="width:auto;" ${fl[c.id] ? 'checked' : ''}> ${acEsc(c.name)} applies to this person</label>`).join('')}</div>` : ''}
     ${extraComponents.length ? `<div class="grid-2">${extraComponents.map(c => `<div class="field"><label>${c}</label><input type="text" inputmode="decimal" class="sal-comp" data-comp="${c}" value="${(s.components||{})[c]||''}"></div>`).join('')}</div>` : ''}
     <button class="btn btn-primary" id="saveSalaryBtn">Save Salary Info</button>`;
   $('saveSalaryBtn').addEventListener('click', saveSalaryInfo);
@@ -20593,10 +20718,10 @@ async function saveSalaryInfo(){
   document.querySelectorAll('.sal-fl').forEach(inp => { fl[inp.dataset.id] = inp.checked; });
   const salary = Object.assign({}, old, {
     basicSalary: $('sal-basic').value.trim(),
-    extraMoney: $('sal-extra').value.trim(),
+    extraMoney: old.extraMoney || '',
     premiumEligible: $('sal-premium').checked,
-    noSalary: $('sal-skip').checked, otHours: $('sal-oth').checked, tying: $('sal-tying').checked,
-    overtime: $('sal-ot').value.trim(), salaryType: $('sal-type').value,
+    noSalary: $('sal-skip').checked, otHours: $('sal-oth').checked, otPerDay: $('sal-oth').checked ? $('sal-othd').value.trim() : '', tying: $('sal-tying').checked,
+    overtime: $('sal-ot').value.trim(),
     components, cv, fl
   });
   try{
@@ -21798,15 +21923,13 @@ function a2Cols(sec, all){
     ]);
   }
   // sponsor: Sl, ID, Name, Department, Position, Basic salary, Overtime, Extra, Total salary, Deduction, Net payment, Remarks
-  const dd = a2Doc(), anyOt = !!(dd && dd.rows.some(r => r.othf));
-  const money = (k, l, val, o) => Object.assign({ k, l, g: 'Pay', def: 1, num: 1, sum: 1, calc: 1, text: r => a2M(val(r)), raw: r => val(r) || '', sv: r => Number(val(r)) || 0, html: r => a2M(val(r)) }, o || {});
+    const money = (k, l, val, o) => Object.assign({ k, l, g: 'Pay', def: 1, num: 1, sum: 1, calc: 1, text: r => a2M(val(r)), raw: r => val(r) || '', sv: r => Number(val(r)) || 0, html: r => a2M(val(r)) }, o || {});
   return a2Common().concat([
     { k: 'dept', l: 'Department', g: 'Person', def: 1, rep: 1, text: r => r.dept, html: r => acEsc(r.dept) },
     { k: 'pos', l: 'Position', g: 'Person', def: 1, rep: 1, text: r => a2PosNs(r), html: r => acEsc(a2PosNs(r)) },
     { k: 'nat', l: 'Nationality', g: 'Person', def: 0, rep: 1, text: r => a2NatOf(r), html: r => acEsc(a2NatOf(r)) },
     money('basic', 'Basic Salary', r => acNum(r.basic)),
-    { k: 'oth', l: 'OT hours', g: 'Pay', def: A2.oth ? 1 : 0, num: 1, text: r => r.othf ? String(acNum(r.oth) || '') : '', raw: r => r.othf ? (acNum(r.oth) || '') : '', html: (r, e) => r.othf ? (e ? a2In(r, 'oth', r.oth, 'hours') : (acNum(r.oth) || '')) : '' },
-    money('otv', 'Overtime', r => (r.v || {}).otAmt),
+    money('otv', 'Overtime', r => (r.v || {}).otAmt, { html: r => { const x = a2M((r.v || {}).otAmt); return (r.othf && x && !A2.pdf) ? `<span title="${acEsc(acNum(r.otd) + ' h x ' + a2WorkDays() + ' working days')}">${x}</span>` : x; } }),
     money('exv', 'Extra', r => (r.v || {}).exAmt),
     money('tot', 'Total salary', r => (r.v || {}).gross, { bold: 1 }),
     money('ded', 'Deduction', r => acNum(r.ded), { dedCol: 0 }),
@@ -22003,7 +22126,6 @@ function a2DrawSheet(){
       ${A2.fOpen && full ? `<div class="a2FPanel"><input type="text" id="a2Q" class="acQ" placeholder="Search name or ID" value="${acEsc(A2.q)}">
       ${depts.length > 1 ? `<select id="a2Dept">${opts(depts.map(x => [x, x]), A2.dept, 'All departments')}</select>` : ''}
       ${poss.length > 1 ? `<select id="a2Pos">${opts(poss.map(x => [x, x]), A2.pos, 'All positions')}</select>` : ''}
-      ${sec === 'sponsor' && rows.some(r => r.othf) ? `<label class="a2Fx a2DetL"><input type="checkbox" id="a2Oth" ${A2.oth ? 'checked' : ''}><span>Show overtime hours (to type them)</span></label>` : ''}
       ${!op && nats.length > 1 ? `<select id="a2Nat">${opts(nats.map(x => [x, x]), A2.nat, 'All nationalities')}</select>` : ''}
       ${op ? `<select id="a2Shift">${opts([['D', 'Day'], ['N', 'Night']], A2.shift, 'Both shifts')}</select>` : ''}
       ${op ? `<div class="a2FCols"><span class="a2FT">Columns to show</span><label class="a2Fx a2DetL"><input type="checkbox" id="a2Det" ${A2.det !== false ? 'checked' : ''}><span>Machine details (MC, Picks, Rate)</span></label><label class="a2Fx a2DetL"><input type="checkbox" id="a2Tp" ${A2.tp !== false ? 'checked' : ''}><span>Total picks</span></label><label class="a2Fx a2DetL"><input type="checkbox" id="a2Av" ${A2.av !== false ? 'checked' : ''}><span>Avg rate</span></label></div>` : ''}
@@ -22248,7 +22370,6 @@ document.addEventListener('change', async (e) => {
   if(t.id === 'a2Av'){ A2.av = t.checked; a2DrawSheet(); return; }
   if(t.id === 'a2Dept'){ A2.dept = t.value; a2DrawSheet(); return; }
   if(t.id === 'a2Pos'){ A2.pos = t.value; a2DrawSheet(); return; }
-  if(t.id === 'a2Oth'){ A2.oth = t.checked; a2DrawSheet(); return; }
   if(t.id === 'a2Nat'){ A2.nat = t.value; a2DrawSheet(); return; }
   if(t.id === 'a2Shift'){ A2.shift = t.value; a2DrawSheet(); return; }
   if(t.id === 'a2Add'){ const u = (state.users || []).find(x => x.loginId === t.value), d = a2Doc(); if(u && d){ d.rows.push(a2NewRow(d.sec, u)); a2Touch(); a2DrawSheet(); } return; }
@@ -22331,17 +22452,18 @@ document.addEventListener('change', (e) => { const t = e.target; if(!t.dataset |
 
 /* ---------- v101: Sponsor sheet ---------- */
 function a2NatOf(r){ if(r.nat) return r.nat; const u = (state.users || []).find(x => x.loginId === r.id); return u ? String(((u.profile || {}).homeCountry) || '').trim() : ''; }
-function a2OtRate(r){ const x = acNum(AC.set && AC.set.otRate); return x > 0 ? x : acNum(r.basic) / 30 / 8 * 1.5; }
+function a2OtRate(r){ return acNum(r.basic) / 30 / 8 * 1.5; }
+function a2WorkDays(){ const d = a2Doc(); const n = d ? countWorkingDays(d.from, d.to) : 0; return n > 0 ? n : 30; }
 function a2TyRate(){ const x = acNum(AC.set && AC.set.tyRate); return x > 0 ? x : 25; }
 function a2SpFromProfile(r, u){
   const p = u.profile || {}, sal = p.salary || {};
   r.name = u.name; r.dept = u.department || ''; r.pos = a2PosOf(u); r.nat = String(p.homeCountry || '').trim();
-  r.basic = sal.basicSalary || ''; r.ot = sal.overtime || ''; r.extra = sal.extraMoney || '';
-  r.othf = !!sal.otHours; r.tyf = !!sal.tying; if(!r.othf) r.oth = ''; if(!r.tyf) r.ty = '';
+  r.basic = sal.basicSalary || ''; r.ot = sal.overtime || ''; r.extra = '';
+  r.othf = !!sal.otHours; r.otd = r.othf ? (sal.otPerDay || '') : ''; r.tyf = !!sal.tying; if(!r.tyf) r.ty = '';
 }
 function a2NewSp(u){ const r = { id: u.loginId, name: u.name, dept: u.department || '', basic: '', ot: '', extra: '', oth: '', ty: '', ded: '', rm: '' }; a2SpFromProfile(r, u); a2SpCalc(r); return r; }
 function a2SpCalc(r){
-  const basic = acNum(r.basic), ot = r.othf ? acR2(acNum(r.oth) * a2OtRate(r)) : acNum(r.ot), ex = acR2(acNum(r.extra) + acNum(r.ty));
+  const basic = acNum(r.basic), ot = r.othf ? acR2(acNum(r.otd) * a2WorkDays() * a2OtRate(r)) : acNum(r.ot), ex = acR2(acNum(r.extra) + acNum(r.ty));
   const gross = acR2(basic + ot + ex), ded = acNum(r.ded);
   r.v = { gross, totded: ded, net: acR2(gross - ded), otAmt: ot, exAmt: ex, housing: 0, transport: 0, absentDed: 0, c: {} };
 }
@@ -22371,6 +22493,474 @@ document.addEventListener('input', (e) => {
   const by = a2TyGroups(), k = t.dataset.dept, tot = acNum(t.value) * a2TyRate(), q = (a) => document.querySelector(`[${a}="${CSS.escape(k)}"]`);
   const x = q('data-tyt'), y = q('data-tye'); if(x) x.textContent = acMoney(tot) || '0.00'; if(y && by[k]) y.textContent = acMoney(acR2(tot / by[k].length)) || '0.00';
 });
+
+/* ---------- v102: grouped Admin menu ---------- */
+const ADM_G = [
+  { n: 'People', t: [['users', 'Users'], ['execaccess', 'Executive Access'], ['passportaccess', 'Passport Access']] },
+  { n: 'Team', t: [['assign', 'Operators & machines']] },
+  { n: 'Factory', t: [['machines', 'Machines'], ['shifttime', 'Shift & Timing'], ['holidays', 'Calendar']] },
+  { n: 'Lists', t: [['config', 'Dropdowns']] },
+  { n: 'Documents', t: [['purchase', 'Purchase'], ['letterhead', 'Letterhead'], ['ai', 'AI & Letters']] },
+  { n: 'Maintenance', t: [['maint', 'Clean up & refresh']] }
+];
+function admDraw(cur){
+  const box = document.getElementById('admGrp'); if(!box) return;
+  cur = cur || ((document.querySelector('#admTabsOrig .auth-tab.active') || {}).dataset || {}).admintab || 'users';
+  const g = ADM_G.find(x => x.t.some(t => t[0] === cur)) || ADM_G[0];
+  box.innerHTML = `<div class="auth-tabs wrap-tabs admRow1">${ADM_G.map(x => `<div class="auth-tab${x === g ? ' active' : ''}" data-adm="${x.t[0][0]}" data-g="${x.n}">${x.n}</div>`).join('')}</div>`
+    + (g.t.length > 1 ? `<div class="admRow2">${g.t.map(t => `<button type="button" class="admSub${t[0] === cur ? ' active' : ''}" data-adm="${t[0]}">${t[1]}</button>`).join('')}</div>` : '');
+}
+document.addEventListener('click', (e) => {
+  const a = e.target.closest && e.target.closest('[data-adm]');
+  if(a){ const real = document.querySelector(`#admTabsOrig .auth-tab[data-admintab="${a.dataset.adm}"]`); if(real) real.click(); return; }
+  const o = e.target.closest && e.target.closest('#admTabsOrig .auth-tab[data-admintab]'); if(o){ admDraw(o.dataset.admintab); admCyclePrev(); }
+});
+function admCyclePrev(){
+  const el = document.getElementById('salaryCyclePrev'), n = Number((document.getElementById('salaryCycleStartDay') || {}).value); if(!el) return;
+  el.textContent = n >= 1 && n <= 31 ? (n === 1 ? 'Each salary month is the whole calendar month: from the 1st to the last day.' : `Each salary month runs from the ${n}th of one month to the ${n - 1}th of the next.`) : '';
+}
+document.addEventListener('input', (e) => { if(e.target && e.target.id === 'salaryCycleStartDay') admCyclePrev(); });
+admDraw('users');
+
+/* ---------- v103: folded admin forms open by themselves when you edit ---------- */
+(function(){
+  [['shiftRuleFormTitle', 'admShiftD'], ['weekdayAutoStopFormTitle', 'admWasD']].forEach(p => {
+    const t = document.getElementById(p[0]), d = document.getElementById(p[1]); if(!t || !d) return;
+    new MutationObserver(() => { if(/Edit/.test(t.textContent)){ d.open = true; try{ d.scrollIntoView({ block: 'start', behavior: 'smooth' }); }catch(e){} } }).observe(t, { childList: true, characterData: true, subtree: true });
+  });
+})();
+
+/* ============================================================
+   Admin > Assign — one place to change an operator's department, shift, machines and approver,
+   a "free machines" board, a saved change history (per month) and machine stop/run history with a manual picks summary.
+   Reads/writes: nothing extra on screen; one read + one write per Save (monthly log); the picks summary is manual.
+   ============================================================ */
+assignUI.stagedShift = assignUI.stagedShift || {};
+assignUI.stagedDept = assignUI.stagedDept || {};
+assignUI.tab = assignUI.tab || 'people';
+assignUI.edit = assignUI.edit || '';
+assignUI.pick = null;
+assignUI.find = '';
+const asgH = { mode:'assign', ym:'', type:'', q:'', mdept:'', mq:'', err:'' };
+const asgLogCache = {}, asgMemCache = {};
+const asgHas = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
+const asgFmt = (t) => new Date(t).toLocaleString('en-GB', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
+const asgFmtD = (t) => new Date(t).toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' });
+function asgYm(d){ d = d || new Date(); return d.getFullYear() + '-' + pad(d.getMonth() + 1); }
+function asgYmLabel(ym){ const p = ym.split('-'); return new Date(Number(p[0]), Number(p[1]) - 1, 1).toLocaleDateString('en-GB', { month:'long', year:'numeric' }); }
+function asgMonths(){ const out = []; const d = new Date(); d.setDate(1); for(let i = 0; i < 18; i++){ out.push(asgYm(d)); d.setMonth(d.getMonth() - 1); } return out; }
+asgH.ym = asgYm();
+
+/* ----- what a person looks like once the waiting changes are applied ----- */
+function asgShiftOrig(u){ return (u.assignedShift === 'Day' || u.assignedShift === 'Night') ? u.assignedShift : 'Both'; }
+function asgShiftOf(u){ const s = asgHas(assignUI.stagedShift, u.loginId) ? assignUI.stagedShift[u.loginId] : u.assignedShift; return (s === 'Day' || s === 'Night') ? s : 'Both'; }
+function asgDeptOf(u){ return asgHas(assignUI.stagedDept, u.loginId) ? assignUI.stagedDept[u.loginId] : (u.department || ''); }
+function asgStageShift(id, val){ const u = assignUserById(id); if(!u) return; if(val === asgShiftOrig(u)) delete assignUI.stagedShift[id]; else assignUI.stagedShift[id] = val; }
+function asgStageDept(id, val){ const u = assignUserById(id); if(!u) return; if(val === (u.department || '')) delete assignUI.stagedDept[id]; else assignUI.stagedDept[id] = val; }
+function asgClearStaged(){ assignUI.stagedApprover = {}; assignUI.stagedAdd = {}; assignUI.stagedRemove = {}; assignUI.stagedShift = {}; assignUI.stagedDept = {}; assignUI.selected = new Set(); }
+function asgDepts(){ const s = new Set(); (state.machines || []).forEach(m => m.department && s.add(m.department)); assignOperators().forEach(u => u.department && s.add(u.department)); return Array.from(s).sort(); }
+function asgMach(mid){ return (state.machines || []).find(x => String(x.id) === String(mid)); }
+function asgUserName(id){ const u = assignUserById(id); return u ? (u.name || id) : id; }
+
+/* ----- free machines: running on that shift, in that department, and nobody holds them on that shift ----- */
+function asgFree(shift, dept){
+  const slots = assignSlots(), map = shift === 'Night' ? slots.night : slots.day;
+  return state.machines.filter(m => !(m.status === 'stopped' && m.stopType === 'permanent') && (m.department || '') === dept && machineRunsShift(m, shift) && !(map[m.id] || []).length)
+    .sort((a, b) => (Number(a.id) || 0) - (Number(b.id) || 0));
+}
+
+/* ----- everything waiting to be saved (approver, department, shift, machines) ----- */
+function assignBuildChanges(){
+  const ids = new Set([].concat(Object.keys(assignUI.stagedApprover), Object.keys(assignUI.stagedAdd), Object.keys(assignUI.stagedRemove), Object.keys(assignUI.stagedShift), Object.keys(assignUI.stagedDept)));
+  const out = [];
+  ids.forEach(id => {
+    const u = assignUserById(id); if(!u) return;
+    const fields = {}, lines = [], log = [], change = { loginId: id, fields, lines, log };
+    if(asgHas(assignUI.stagedApprover, id)){
+      const next = assignUI.stagedApprover[id], was = assignOriginalApprover(u);
+      const wn = was ? ((assignUserById(was.loginId) || was).name || was.loginId) : 'None';
+      fields['profile.directSupervisor'] = next; change.approver = next;
+      lines.push('approver: ' + wn + ' → ' + (next ? next.name : 'none'));
+      log.push({ k:'sup', f:wn, to:next ? next.name : 'None' });
+    }
+    if(asgHas(assignUI.stagedDept, id)){
+      const next = assignUI.stagedDept[id]; fields.department = next; change.dept = next;
+      lines.push('department: ' + (u.department || 'none') + ' → ' + (next || 'none'));
+      log.push({ k:'dept', f:u.department || 'None', to:next || 'None' });
+    }
+    if(asgHas(assignUI.stagedShift, id)){
+      const next = assignUI.stagedShift[id]; fields.assignedShift = next; fields['profile.shiftPref'] = (next === 'Day' || next === 'Night') ? next : ''; change.shift = next;
+      lines.push('shift: ' + asgShiftOrig(u) + ' → ' + next);
+      log.push({ k:'shift', f:asgShiftOrig(u), to:next });
+    }
+    const add = assignUI.stagedAdd[id], rem = assignUI.stagedRemove[id];
+    if((add && add.size) || (rem && rem.size)){
+      const cur = new Set(u.assignedMachines || []);
+      (rem || new Set()).forEach(m => cur.delete(m)); (add || new Set()).forEach(m => cur.add(m));
+      const known = state.machines.filter(m => cur.has(m.id)).map(m => m.id);
+      const unknown = Array.from(cur).filter(m => !state.machines.some(x => x.id === m));   // never silently drop a machine the list no longer knows
+      fields.assignedMachines = known.concat(unknown); change.machines = fields.assignedMachines;
+      const bits = [];
+      if(add && add.size){ bits.push('+ ' + Array.from(add).map(machineName).join(', ')); add.forEach(m => log.push({ k:'madd', m:String(m), mn:machineName(m) })); }
+      if(rem && rem.size){ bits.push('− ' + Array.from(rem).map(machineName).join(', ')); rem.forEach(m => log.push({ k:'mrem', m:String(m), mn:machineName(m) })); }
+      lines.push('machines: ' + bits.join(' '));
+    }
+    if(Object.keys(fields).length) out.push(change);
+  });
+  return out.sort((a, b) => (assignUserById(a.loginId).name || '').localeCompare(assignUserById(b.loginId).name || ''));
+}
+
+/* ----- the monthly change log: one small document per month ----- */
+async function asgLogLoad(ym, force){
+  if(asgLogCache[ym] && !force) return asgLogCache[ym];
+  const o = await window.__db.getConfigObject('assignLog_' + ym, { list: [] });
+  asgLogCache[ym] = Array.isArray(o.list) ? o.list : [];
+  return asgLogCache[ym];
+}
+async function asgLogAppend(items){
+  if(!items.length) return;
+  const ym = asgYm();
+  const cur = await asgLogLoad(ym, true);   // fresh read, so another admin's entries are never overwritten
+  const next = cur.concat(items);
+  await window.__db.saveConfigObject('assignLog_' + ym, { list: next });
+  asgLogCache[ym] = next;
+}
+async function saveAssignChanges(){
+  if(!requireDb()) return;
+  const changes = assignBuildChanges(); if(!changes.length) return;
+  const by = (state.user && (state.user.name || state.user.loginId)) || '';
+  const now = Date.now();
+  try{
+    await window.__db.updateUsersBatch(changes.map(c => ({ loginId: c.loginId, fields: c.fields })));
+  }catch(err){ console.error(err); toast('Could not save — check your connection'); return; }
+  const entries = [];
+  changes.forEach(c => {
+    const u = assignUserById(c.loginId); if(!u) return;
+    if(c.machines) u.assignedMachines = c.machines;
+    if(asgHas(c, 'approver')) u.profile = Object.assign({}, u.profile || {}, { directSupervisor: c.approver });
+    if(asgHas(c, 'dept')) u.department = c.dept;
+    if(asgHas(c, 'shift')){ u.assignedShift = c.shift; u.profile = Object.assign({}, u.profile || {}, { shiftPref: (c.shift === 'Day' || c.shift === 'Night') ? c.shift : '' }); }
+    delete u._machinePicks;   // the Users edit panel must pick up the new machine list
+    c.log.forEach(l => entries.push(Object.assign({ t: now, by, o: c.loginId, on: u.name || c.loginId }, l)));
+  });
+  asgClearStaged();
+  let logged = true;
+  try{ await asgLogAppend(entries); }catch(err){ console.error(err); logged = false; }
+  toast((changes.length === 1 ? 'Saved 1 person' : 'Saved ' + changes.length + ' people') + (logged ? '' : ' (history could not be written)'));
+  if($('usersBody')) renderUsersList();
+  renderAssignBoard();
+}
+
+/* ----- save bar (same behaviour, now also lists department and shift) ----- */
+function renderAssignSaveBar(){
+  const bar = $('assignSaveBar'); if(!bar) return;
+  const changes = assignBuildChanges();
+  if(!changes.length){ bar.innerHTML = ''; return; }
+  bar.innerHTML = `<div class="asgSave">
+    <div class="asgSaveT">${changes.length} ${changes.length === 1 ? 'person' : 'people'} will change. Nothing is saved until you press Save changes.</div>
+    ${changes.map(c => `<div class="asgSaveL"><b>${assignEsc(assignUserById(c.loginId).name)}</b> &middot; ${assignEsc(c.lines.join(' · '))}</div>`).join('')}
+    <div class="asgSaveB"><button class="btn btn-ghost" id="assignDiscardBtn">Discard</button><button class="btn" id="assignSaveBtn">Save changes</button></div>
+  </div>`;
+  $('assignDiscardBtn').addEventListener('click', () => { asgClearStaged(); assignUI.pick = null; renderAssignBoard(); });
+  $('assignSaveBtn').addEventListener('click', saveAssignChanges);
+}
+
+/* ----- page frame ----- */
+function renderAssignViewBar(){
+  const bar = $('assignViewBar'); if(!bar) return;
+  if(assignUI.tab !== 'machines') assignUI.tab = 'people';
+  const t = (v, label) => `<button class="asgTab ${assignUI.tab === v ? 'active' : ''}" data-tab="${v}">${label}</button>`;
+  bar.className = 'asgTabs2';
+  bar.innerHTML = t('people', 'By operator') + t('machines', 'By machine');
+  bar.querySelectorAll('[data-tab]').forEach(b => b.addEventListener('click', () => { assignUI.tab = b.dataset.tab; assignUI.pick = null; renderAssignBoard(); }));
+}
+function asgCheckStatus(){
+  const sum = $('assignDetSum'), det = $('assignDetails'); if(!sum || !det) return;
+  const n = Array.from(document.querySelectorAll('#assignChecks .hint')).filter(h => h.textContent.indexOf('\u26A0') >= 0).length;
+  det.style.display = n ? '' : 'none';
+  sum.innerHTML = `&#9888; ${n} thing${n === 1 ? '' : 's'} to look at <span class="asgOk">click to see</span>`;
+}
+async function renderAssignBoard(){
+  const body = $('assignBody'); if(!body) return;
+  if(!state.users || !state.users.length){
+    body.innerHTML = '<div class="empty-state">Loading\u2026</div>';
+    try{ state.users = await window.__db.listUsers(); }catch(err){ console.error(err); body.innerHTML = '<div class="empty-state">Could not load people.</div>'; return; }
+  }
+  renderAssignChecks(); try{ renderAssignSummary('assignSummary', 'adm', true); }catch(err){ console.error(err); }
+  asgCheckStatus(); asgRenderFind(); renderAssignViewBar();
+  if(assignUI.tab === 'machines') asgRenderMachines(body); else asgRenderPeople(body);
+  const h = $('assignHist'); if(h && h.open && !h.dataset.busy) asgRenderHistory($('assignHistBody'));
+  renderAssignSaveBar();
+}
+function asgHistInit(){
+  const h = $('assignHist'); if(!h || h.dataset.init) return; h.dataset.init = '1';
+  h.addEventListener('toggle', () => { if(h.open) asgRenderHistory($('assignHistBody')); });
+}
+asgHistInit();
+
+/* ----- quick look-up: type a machine, operator or supervisor; everything about it in one box (no database reads) ----- */
+function asgRenderFind(){
+  const box = $('assignFind'); if(!box) return;
+  if(!box.dataset.ready){
+    box.dataset.ready = '1';
+    box.innerHTML = `<div class="asgFindRow"><input type="text" id="asgFindQ" placeholder="Look up a machine, operator or supervisor — type a name or number" autocomplete="off"></div><div id="asgFindOut"></div>`;
+    $('asgFindQ').addEventListener('input', () => { assignUI.find = $('asgFindQ').value; asgFindDraw(); });
+  }
+  asgFindDraw();
+}
+function asgOpsOnMachine(mid){ const s = assignSlots(); return { d:(s.day[mid] || []), n:(s.night[mid] || []) }; }
+function asgFindDraw(){
+  const out = $('asgFindOut'); if(!out) return;
+  const q = (assignUI.find || '').trim().toLowerCase();
+  if(!q){ out.innerHTML = ''; return; }
+  const ym = asgYm(), log = asgLogCache[ym];
+  const nm = (u) => u ? assignEsc(u.name || u.loginId) : 'Nobody';
+  const names = (arr) => arr.length ? arr.map(nm).join(', ') : '<span class="asgMute">Nobody</span>';
+  const supOf = (u) => { const a = assignApproverOf(u); return a ? assignEsc(asgUserName(a.loginId)) : '<span class="asgMute">None</span>'; };
+  const cards = [];
+  state.machines.filter(m => String(m.id).toLowerCase().includes(q) || (m.name || '').toLowerCase().includes(q)).slice(0, 4).forEach(m => {
+    const o = asgOpsOnMachine(m.id);
+    const sups = Array.from(new Set(o.d.concat(o.n).map(u => (assignApproverOf(u) || {}).loginId).filter(Boolean))).map(asgUserName);
+    const ch = log ? log.filter(e => String(e.m) === String(m.id)) : null;
+    cards.push(`<div class="asgFindC"><div class="asgFindT">Machine &middot; ${assignEsc(m.name)} <span class="asgMute">${assignEsc(m.department || '')}</span></div>
+      <div class="asgFindG"><div><span>Status</span>${m.status === 'stopped' ? 'Stopped' + (m.stopSince ? ' since ' + assignEsc(m.stopSince) : '') + (m.stopReason ? ' (' + assignEsc(m.stopReason) + ')' : '') : 'Running'}</div>
+      <div><span>Day operator</span>${names(o.d)}</div><div><span>Night operator</span>${names(o.n)}</div>
+      <div><span>Supervisor</span>${sups.length ? sups.map(assignEsc).join(', ') : '<span class="asgMute">None</span>'}</div>
+      <div><span>Changes this month</span>${ch ? ch.length : '<a href="#" data-loadlog="1">Show</a>'}</div></div></div>`);
+  });
+  assignOperators().concat(assignSupervisors()).filter(u => (u.name || '').toLowerCase().includes(q) || (u.loginId || '').toLowerCase().includes(q)).slice(0, 5).forEach(u => {
+    if(u.role === 'supervisor'){
+      const team = assignOperators().filter(o => { const a = assignApproverOf(o); return a && a.loginId === u.loginId; });
+      cards.push(`<div class="asgFindC"><div class="asgFindT">Supervisor &middot; ${nm(u)} <span class="asgMute">${assignEsc(u.department || '')}</span></div>
+        <div class="asgFindG"><div><span>Operators</span>${team.length}</div><div class="asgWide"><span>Team</span>${team.length ? team.map(o => assignEsc(o.name) + ' <i>(' + assignEsc(asgDeptOf(o)) + ' ' + asgShiftOf(o) + ')</i>').join(', ') : '<span class="asgMute">Nobody</span>'}</div></div></div>`);
+    }else{
+      const ms = Array.from(assignMachinesOf(u)).map(machineName).join(', ');
+      const ch = log ? log.filter(e => e.o === u.loginId) : null;
+      cards.push(`<div class="asgFindC"><div class="asgFindT">Operator &middot; ${nm(u)} <span class="asgMute">${assignEsc(u.loginId)}</span></div>
+        <div class="asgFindG"><div><span>Department</span>${assignEsc(asgDeptOf(u) || '—')}</div><div><span>Shift</span>${asgShiftOf(u)}</div><div><span>Supervisor</span>${supOf(u)}</div>
+        <div class="asgWide"><span>Machines</span>${ms ? assignEsc(ms) : '<span class="asgMute">None</span>'}</div>
+        <div><span>Picks this month</span>${pk ? 'Day ' + (pk.pd || 0).toLocaleString() + ' &middot; Night ' + (pk.pn || 0).toLocaleString() : '<span class="asgMute">Not updated yet</span>'}</div>
+        <div><span>Changes this month</span>${ch ? ch.length : '<a href="#" data-loadlog="1">Show</a>'}</div></div>
+        <div class="asgFindA"><a href="#" data-edit="${assignEsc(u.loginId)}">Edit this operator</a></div></div>`);
+    }
+  });
+  out.innerHTML = cards.length ? `<div class="asgFindBox">${cards.join('')}</div>` : '<div class="asgMute" style="padding:8px 2px;">Nothing found.</div>';
+  out.querySelectorAll('[data-loadlog]').forEach(a => a.addEventListener('click', async (e) => { e.preventDefault(); try{ await asgLogLoad(asgYm()); }catch(err){ console.error(err); toast('Could not load the history'); } asgFindDraw(); }));
+  out.querySelectorAll('[data-edit]').forEach(a => a.addEventListener('click', (e) => { e.preventDefault(); assignUI.tab = 'people'; assignUI.edit = a.dataset.edit; renderAssignBoard(); }));
+}
+
+/* ----- OPERATORS tab: list on the left, one editor on the right ----- */
+function asgFilteredOps(){
+  const q = assignUI.q.trim().toLowerCase();
+  return assignOperators().filter(o =>
+    (!assignUI.dept || asgDeptOf(o) === assignUI.dept) && (!assignUI.shift || asgShiftOf(o) === assignUI.shift) &&
+    (!q || (o.name || '').toLowerCase().includes(q) || (o.loginId || '').toLowerCase().includes(q)) &&
+    (assignUI.appr === '' || (assignUI.appr === '__none__' ? !assignApproverOf(o) : (assignApproverOf(o) || {}).loginId === assignUI.appr))
+  ).sort((a, b) => asgDeptOf(a).localeCompare(asgDeptOf(b)) || asgShiftOf(a).localeCompare(asgShiftOf(b)) || assignByName(a, b));
+}
+function asgRenderPeople(box){
+  const ops = assignOperators(), sups = assignSupervisors().slice().sort(assignByName), depts = asgDepts();
+  box.innerHTML = `<div class="asgWrap">
+    <div class="asgLeft">
+      <div class="asgFilters">
+        <input type="text" id="assignQ" placeholder="Search operator..." value="${assignEsc(assignUI.q)}">
+        <select id="assignDept"><option value="">All departments</option>${depts.map(d => `<option value="${assignEsc(d)}" ${assignUI.dept === d ? 'selected' : ''}>${assignEsc(d)}</option>`).join('')}</select>
+        <select id="assignShift"><option value="">Any shift</option><option value="Day" ${assignUI.shift === 'Day' ? 'selected' : ''}>Day</option><option value="Night" ${assignUI.shift === 'Night' ? 'selected' : ''}>Night</option><option value="Both" ${assignUI.shift === 'Both' ? 'selected' : ''}>Both</option></select>
+        <select id="assignAppr"><option value="">Any approver</option><option value="__none__" ${assignUI.appr === '__none__' ? 'selected' : ''}>No approver (${ops.filter(o => !assignApproverOf(o)).length})</option>${sups.map(s => `<option value="${assignEsc(s.loginId)}" ${assignUI.appr === s.loginId ? 'selected' : ''}>${assignEsc(s.name)}</option>`).join('')}</select>
+      </div>
+      <div id="assignTable"></div>
+    </div>
+    <div class="asgRight" id="asgEditor"></div>
+  </div>`;
+  const redraw = () => asgPeopleList();
+  $('assignQ').addEventListener('input', () => { assignUI.q = $('assignQ').value; redraw(); });
+  [['assignDept', 'dept'], ['assignShift', 'shift'], ['assignAppr', 'appr']].forEach(p => $(p[0]).addEventListener('change', () => { assignUI[p[1]] = $(p[0]).value; redraw(); }));
+  asgPeopleList(); asgEditorDraw();
+}
+function asgPeopleList(){
+  const box = $('assignTable'); if(!box) return;
+  const rows = asgFilteredOps(), sups = assignSupervisors().slice().sort(assignByName);
+  if(!rows.length){ box.innerHTML = '<div class="empty-state">No operators match.</div>'; return; }
+  const allTicked = rows.every(o => assignUI.selected.has(o.loginId));
+  const changedIds = new Set(assignBuildChanges().map(c => c.loginId));
+  const bulk = assignUI.selected.size ? `<div class="asgBulk"><b>${assignUI.selected.size} selected</b><span class="asgMute">Set approver to</span>
+      <select id="assignBulkSel"><option value="">— none —</option>${sups.map(s => `<option value="${assignEsc(s.loginId)}">${assignEsc(s.name)}</option>`).join('')}</select>
+      <button class="btn btn-sm" id="assignBulkBtn">Apply</button><button class="btn btn-ghost btn-sm" id="assignBulkClr">Clear</button></div>` : '';
+  box.innerHTML = bulk + `<div class="table-scroll asgList"><table class="report-table"><thead><tr><th style="width:26px"><input type="checkbox" id="assignAll" ${allTicked ? 'checked' : ''}></th><th style="width:30px">#</th><th>Operator</th><th>Dept &middot; shift</th><th>Approver</th></tr></thead><tbody>${rows.map((o, ix) => {
+      const a = assignApproverOf(o);
+      return `<tr class="asgRow ${assignUI.edit === o.loginId ? 'sel' : ''} ${changedIds.has(o.loginId) ? 'chg' : ''}" data-id="${assignEsc(o.loginId)}">
+        <td><input type="checkbox" class="assignTick" data-id="${assignEsc(o.loginId)}" ${assignUI.selected.has(o.loginId) ? 'checked' : ''}></td>
+        <td>${ix + 1}</td>
+        <td>${assignEsc(o.name)}<div class="asgMute">${assignEsc(o.loginId)} &middot; ${assignMachinesOf(o).size} machines</div></td>
+        <td>${assignEsc(asgDeptOf(o) || '—')} &middot; ${asgShiftOf(o)}</td>
+        <td>${a ? assignEsc(asgUserName(a.loginId)) : '<span class="asgMute">None</span>'}</td></tr>`;
+    }).join('')}</tbody></table></div>`;
+  box.querySelectorAll('.asgRow').forEach(tr => tr.addEventListener('click', (e) => { if(e.target.closest('input')) return; assignUI.edit = tr.dataset.id; asgPeopleList(); asgEditorDraw(); const ed = $('asgEditor'); if(ed && window.innerWidth < 900) ed.scrollIntoView({ behavior:'smooth', block:'start' }); }));
+  box.querySelectorAll('.assignTick').forEach(cb => cb.addEventListener('change', () => { if(cb.checked) assignUI.selected.add(cb.dataset.id); else assignUI.selected.delete(cb.dataset.id); asgPeopleList(); }));
+  $('assignAll').addEventListener('change', (e) => { rows.forEach(o => { if(e.target.checked) assignUI.selected.add(o.loginId); else assignUI.selected.delete(o.loginId); }); asgPeopleList(); });
+  if($('assignBulkClr')) $('assignBulkClr').addEventListener('click', () => { assignUI.selected = new Set(); asgPeopleList(); });
+  if($('assignBulkBtn')) $('assignBulkBtn').addEventListener('click', () => {
+    if(!assignUI.selected.size){ toast('Tick the operators first'); return; }
+    const sid = $('assignBulkSel').value;
+    assignUI.selected.forEach(id => assignStageApprover(id, sid));
+    assignUI.selected = new Set();
+    renderAssignBoard();
+  });
+}
+function asgEditorDraw(){
+  const box = $('asgEditor'); if(!box) return;
+  const u = assignUserById(assignUI.edit);
+  if(!u){ box.innerHTML = '<div class="admSec asgEd"><div class="admSecH"><h3>Free machines</h3><p>Click a name on the left to edit that operator, or click a free machine here to give it to someone.</p></div>' + asgFreeHtml() + '</div>'; asgFreeWire(box); return; }
+  const id = u.loginId, sh = asgShiftOf(u), dp = asgDeptOf(u), cur = assignApproverOf(u);
+  const origDp = u.department || '', origSh = asgShiftOrig(u), origA = assignOriginalApprover(u);
+  const aChanged = asgHas(assignUI.stagedApprover, id);
+  const was = (c, t) => c ? `<div class="asgWas">was ${assignEsc(t)}</div>` : '';
+  const depts = asgDepts(); if(dp && !depts.includes(dp)) depts.push(dp);
+  const mine = Array.from(assignMachinesOf(u)), slots = assignSlots();
+  const added = assignUI.stagedAdd[id] || new Set();
+  const chip = (mid) => {
+    const m = asgMach(mid);
+    const others = (slots.day[mid] || []).concat(slots.night[mid] || []).filter(h => h.loginId !== id && (asgShiftOf(h) === sh || asgShiftOf(h) === 'Both' || sh === 'Both'));
+    const warn = others.length ? `<span class="asgWarn" title="${assignEsc(others.map(h => h.name).join(', '))} also run${others.length === 1 ? 's' : ''} this machine on this shift">also ${assignEsc(others.map(h => (h.name || '').split(' ')[0]).join(', '))}</span>` : '';
+    const off = m && !machineRunsShift(m, sh === 'Both' ? 'Day' : sh) && sh !== 'Both' ? '<span class="asgWarn">not run on this shift</span>' : '';
+    return `<span class="asgChip ${added.has(mid) ? 'new' : ''}">${assignEsc(m ? m.name : mid)}${m && m.status === 'stopped' ? ' <i>stopped</i>' : ''}${warn}${off}<button type="button" data-rm="${assignEsc(mid)}" title="Remove from this operator">&times;</button></span>`;
+  };
+  const shifts = sh === 'Both' ? ['Day', 'Night'] : [sh];
+  const freeIds = new Set(); let free = [];
+  shifts.forEach(s => asgFree(s, dp).forEach(m => { if(!freeIds.has(String(m.id)) && !mine.map(String).includes(String(m.id))){ freeIds.add(String(m.id)); free.push(m); } }));
+  const others = state.machines.filter(m => !mine.map(String).includes(String(m.id)) && !freeIds.has(String(m.id)) && !(m.status === 'stopped' && m.stopType === 'permanent'));
+  const odepts = Array.from(new Set(others.map(m => m.department || ''))).sort();
+  box.innerHTML = `<div class="admSec asgEd">
+    <div class="asgEdH"><div><h3>${assignEsc(u.name)}</h3><p>${assignEsc(id)}</p></div><button class="btn btn-ghost btn-sm" id="asgEdClose">Close</button></div>
+    <div class="asgEdG">
+      <div class="field"><label>Department</label><select id="asgEdDept">${depts.map(d => `<option value="${assignEsc(d)}" ${d === dp ? 'selected' : ''}>${assignEsc(d)}</option>`).join('')}${dp ? '' : '<option value="" selected>— none —</option>'}</select>${was(dp !== origDp, origDp || 'none')}</div>
+      <div class="field"><label>Shift</label><select id="asgEdShift"><option value="Day" ${sh === 'Day' ? 'selected' : ''}>Day</option><option value="Night" ${sh === 'Night' ? 'selected' : ''}>Night</option><option value="Both" ${sh === 'Both' ? 'selected' : ''}>Both</option></select>${was(sh !== origSh, origSh)}</div>
+      <div class="field"><label>Approver (supervisor)</label><select id="asgEdAppr">${assignSupOptions(Object.assign({}, u, { department: dp, assignedShift: sh }), cur ? cur.loginId : '')}</select>${was(aChanged, origA ? asgUserName(origA.loginId) : 'no approver')}</div>
+    </div>
+    <div class="asgBlk"><div class="asgBlkT">Machines of this operator <span class="asgMute">${mine.length}</span></div>
+      <div class="asgChips">${mine.length ? mine.map(chip).join('') : '<span class="asgMute">No machines yet.</span>'}</div></div>
+    <div class="asgBlk"><div class="asgBlkT">Free machines &mdash; ${assignEsc(dp || 'no department')} &middot; ${sh === 'Both' ? 'Day or Night' : sh} <span class="asgMute">click to add</span></div>
+      <div class="asgChips">${free.length ? free.map(m => `<button type="button" class="asgChip add" data-add="${assignEsc(m.id)}">+ ${assignEsc(m.name)}${m.status === 'stopped' ? ' <i>stopped</i>' : ''}</button>`).join('') : '<span class="asgMute">Every machine in this department and shift already has an operator.</span>'}</div>
+      <div class="asgMore"><select id="asgEdMore"><option value="">Add a machine from another department or already taken…</option>${odepts.map(d => `<optgroup label="${assignEsc(d || 'No department')}">${others.filter(m => (m.department || '') === d).map(m => `<option value="${assignEsc(m.id)}">${assignEsc(m.name)}</option>`).join('')}</optgroup>`).join('')}</select></div></div>
+  </div>`;
+  const redo = () => { asgPeopleList(); asgEditorDraw(); renderAssignSaveBar(); try{ renderAssignSummary('assignSummary', 'adm', true); }catch(e){} };
+  $('asgEdClose').addEventListener('click', () => { assignUI.edit = ''; asgPeopleList(); asgEditorDraw(); });
+  $('asgEdDept').addEventListener('change', (e) => { asgStageDept(id, e.target.value); redo(); });
+  $('asgEdShift').addEventListener('change', (e) => { asgStageShift(id, e.target.value); redo(); });
+  $('asgEdAppr').addEventListener('change', (e) => { assignStageApprover(id, e.target.value); redo(); });
+  $('asgEdMore').addEventListener('change', (e) => { if(e.target.value){ assignStageMachine(id, e.target.value, true); redo(); } });
+  box.querySelectorAll('[data-rm]').forEach(b => b.addEventListener('click', () => { assignStageMachine(id, b.dataset.rm, false); redo(); }));
+  box.querySelectorAll('[data-add]').forEach(b => b.addEventListener('click', () => { assignStageMachine(id, b.dataset.add, true); redo(); }));
+}
+
+/* ----- MACHINES tab: free machines by shift and department, then who runs what ----- */
+function asgFreeHtml(){
+  const depts = asgDepts().filter(d => state.machines.some(m => (m.department || '') === d));
+  const tiles = [];
+  ['Day', 'Night'].forEach(s => depts.forEach(d => {
+    const f = asgFree(s, d), all = state.machines.filter(m => (m.department || '') === d && machineRunsShift(m, s) && !(m.status === 'stopped' && m.stopType === 'permanent')).length;
+    tiles.push(`<div class="asgFree ${f.length ? '' : 'ok'}"><div class="asgFreeH"><b>${s} &middot; ${assignEsc(d)}</b><span>${f.length ? f.length + ' free of ' + all : 'all ' + all + ' covered'}</span></div>
+      <div class="asgChips">${f.length ? f.map(m => `<button type="button" class="asgChip add ${assignUI.pick && assignUI.pick.mid === String(m.id) && assignUI.pick.slot === s ? 'on' : ''}" data-m="${assignEsc(m.id)}" data-s="${s}">${assignEsc(m.name)}${m.status === 'stopped' ? ' <i>stopped</i>' : ''}</button>`).join('') : '<span class="asgMute">Nobody needed here.</span>'}</div></div>`);
+  }));
+  return `<div id="asgPickBar"></div><div class="asgFreeGrid">${tiles.join('') || '<span class="asgMute">No machines found.</span>'}</div>`;
+}
+function asgFreeWire(box){
+  box.querySelectorAll('.asgChip[data-m]').forEach(b => b.addEventListener('click', () => { assignUI.pick = { mid:b.dataset.m, slot:b.dataset.s }; renderAssignBoard(); }));
+  asgPickBar();
+}
+function asgRenderMachines(box){
+  box.innerHTML = `<div class="asgWrap asgWrapM">
+    <div class="asgRight"><div class="admSec"><div class="admSecH"><h3>Free machines</h3><p>No operator yet. Click one to give it to an operator.</p></div>${asgFreeHtml()}</div></div>
+    <div><div class="admSec" style="margin:0"><div class="admSecH"><h3>Who runs which machine</h3><p>Change the Day or Night operator of any machine.</p></div><div id="asgMachAll"></div></div></div></div>`;
+  asgFreeWire(box);
+  renderAssignMachines($('asgMachAll'));
+}
+function asgPickBar(){
+  const bar = $('asgPickBar'); if(!bar) return;
+  const p = assignUI.pick; if(!p){ bar.innerHTML = ''; return; }
+  const m = asgMach(p.mid); if(!m){ assignUI.pick = null; bar.innerHTML = ''; return; }
+  bar.innerHTML = `<div class="asgPick"><span><b>${assignEsc(m.name)}</b> &middot; ${p.slot} shift &rarr; give to</span><select id="asgPickSel">${assignOpOptions(m, p.slot, '')}</select><button class="btn btn-sm" id="asgPickOk">Assign</button><button class="btn btn-ghost btn-sm" id="asgPickNo">Cancel</button></div>`;
+  $('asgPickNo').addEventListener('click', () => { assignUI.pick = null; renderAssignBoard(); });
+  $('asgPickOk').addEventListener('click', () => { const v = $('asgPickSel').value; if(!v){ toast('Choose an operator'); return; } assignSetSlot(p.mid, p.slot, v); assignUI.pick = null; renderAssignBoard(); });
+}
+
+/* ----- HISTORY tab: periods follow the app's salary month (e.g. 26 Sep - 25 Oct) or any custom dates ----- */
+const ASG_KIND = { sup:'Approver', dept:'Department', shift:'Shift', madd:'Machine added', mrem:'Machine removed' };
+asgH.period = '0'; asgH.from = ''; asgH.to = '';
+function asgPeriod(){
+  if(asgH.period === 'custom'){
+    const f = asgH.from || rvfCycleAt(0).start, t = asgH.to || rvfCycleAt(0).end;
+    return { from: f <= t ? f : t, to: f <= t ? t : f, key: '', label: asgFmtD(f + 'T00:00:00') + ' – ' + asgFmtD(t + 'T00:00:00'), custom: true };
+  }
+  const c = rvfCycleAt(Number(asgH.period) || 0);
+  return { from: c.start, to: c.end, key: c.end.slice(0, 7), label: c.label + (c.sub ? ' (' + c.sub + ')' : ''), custom: false };
+}
+const asgPKey = (p) => p.key || ('c_' + p.from + '_' + p.to);
+const asgT0 = (d) => new Date(d + 'T00:00:00').getTime();
+const asgT1 = (d) => new Date(d + 'T00:00:00').getTime() + 86400000;
+function asgRenderHistory(box){
+  const p = asgPeriod();
+  const opts = []; for(let i = 0; i < 24; i++){ const c = rvfCycleAt(i); opts.push(`<option value="${i}" ${String(i) === asgH.period ? 'selected' : ''}>${assignEsc(c.label + (c.sub ? '  \u00B7  ' + c.sub : ''))}</option>`); }
+  box.innerHTML = `<div class="asgMute" style="margin:0 0 10px;">Every saved change of department, shift, machines or approver, by salary month. Pick the period, filter, then download if needed.</div>
+    <div class="asgFilters"><select id="asgHm">${opts.join('')}<option value="custom" ${asgH.period === 'custom' ? 'selected' : ''}>Custom dates\u2026</option></select>
+      ${asgH.period === 'custom' ? `<input type="date" id="asgHfrom" value="${p.from}" style="flex:0 1 150px"><input type="date" id="asgHto" value="${p.to}" style="flex:0 1 150px">` : ''}
+      <span id="asgHf" style="display:contents"></span></div>
+    <div class="asgMute" style="margin:-2px 0 10px;">Showing <b>${assignEsc(p.label)}</b> &middot; ${asgFmtD(p.from + 'T00:00:00')} to ${asgFmtD(p.to + 'T00:00:00')}</div>
+    <div id="asgHb"><div class="empty-state">Loading\u2026</div></div>`;
+  $('asgHm').addEventListener('change', () => { asgH.period = $('asgHm').value; asgRenderHistory(box); });
+  if($('asgHfrom')){ const chg = () => { asgH.from = $('asgHfrom').value; asgH.to = $('asgHto').value; asgRenderHistory(box); }; $('asgHfrom').addEventListener('change', chg); $('asgHto').addEventListener('change', chg); asgH.from = asgH.from || p.from; asgH.to = asgH.to || p.to; }
+  asgAssignView();
+}
+
+/* operator & machine changes */
+async function asgLogRange(p){
+  const yms = []; const d = new Date(p.from + 'T00:00:00'); d.setDate(1); const end = new Date(p.to + 'T00:00:00');
+  while(d <= end && yms.length < 30){ yms.push(asgYm(d)); d.setMonth(d.getMonth() + 1); }
+  const lists = await Promise.all(yms.map(y => asgLogLoad(y)));
+  const t0 = asgT0(p.from), t1 = asgT1(p.to);
+  return [].concat.apply([], lists).filter(e => e.t >= t0 && e.t < t1);
+}
+function asgAssignRows(list){
+  const q = asgH.q.trim().toLowerCase();
+  return list.filter(e => (!asgH.type || e.k === asgH.type) && (!q || [e.on, e.o, e.f, e.to, e.mn, e.m, e.by].join(' ').toLowerCase().includes(q))).slice().sort((a, b) => b.t - a.t);
+}
+function asgChangeParts(e){   // what changed / from / to, in plain words
+  if(e.k === 'madd') return { what:'Machine added', from:'', to:e.mn || e.m };
+  if(e.k === 'mrem') return { what:'Machine removed', from:e.mn || e.m, to:'' };
+  return { what:ASG_KIND[e.k] || e.k, from:e.f || '—', to:e.to || '—' };
+}
+async function asgAssignView(){
+  const p = asgPeriod(), fl = $('asgHf'), hb = $('asgHb'); if(!hb) return;
+  fl.innerHTML = `<select id="asgHt"><option value="">All changes</option>${Object.keys(ASG_KIND).map(k => `<option value="${k}" ${asgH.type === k ? 'selected' : ''}>${ASG_KIND[k]}</option>`).join('')}</select>
+    <input type="text" id="asgHq" placeholder="Person or machine..." value="${assignEsc(asgH.q)}">
+    <button class="btn btn-ghost btn-sm" id="asgHpdf">Download PDF</button><button class="btn btn-ghost btn-sm" id="asgHxls">Download Excel</button>`;
+  let list;
+  try{ list = await asgLogRange(p); }catch(err){ console.error(err); hb.innerHTML = '<div class="empty-state">Could not load the history — check your connection.</div>'; return; }
+  const head = '<tr><th>#</th><th>Date</th><th>Operator</th><th>What changed</th><th>From</th><th>To</th><th>Changed by</th></tr>';
+  const rowHtml = (r, i) => { const c = asgChangeParts(r); return `<tr><td>${i + 1}</td><td style="white-space:nowrap">${asgFmt(r.t)}</td><td>${assignEsc(r.on)}<div class="asgMute">${assignEsc(r.o)}</div></td><td>${c.what}</td><td>${assignEsc(c.from)}</td><td>${assignEsc(c.to)}</td><td>${assignEsc(r.by || '')}</td></tr>`; };
+  const draw = () => {
+    const rows = asgAssignRows(list), people = new Set(rows.map(r => r.o)).size;
+    if(!list.length){ hb.innerHTML = `<div class="empty-state">No changes were saved in this period.</div>`; return; }
+    hb.innerHTML = `<div class="asgMute" style="margin:2px 0 8px;">${rows.length} change${rows.length === 1 ? '' : 's'} for ${people} ${people === 1 ? 'person' : 'people'}. Newest first.</div>
+      <div class="table-scroll"><table class="report-table"><thead>${head}</thead><tbody>${rows.map(rowHtml).join('') || '<tr><td colspan="7" class="asgMute">Nothing matches.</td></tr>'}</tbody></table></div>`;
+  };
+  draw();
+  $('asgHt').addEventListener('change', () => { asgH.type = $('asgHt').value; draw(); });
+  $('asgHq').addEventListener('input', () => { asgH.q = $('asgHq').value; draw(); });
+  $('asgHpdf').addEventListener('click', async () => {
+    const rows = asgAssignRows(list); if(!rows.length){ toast('Nothing to download'); return; }
+    toast('Making the PDF…');
+    await rvfMakePdf([rvfPdfHeader('Operator & machine changes', [p.label + ' · ' + rows.length + ' changes', rvfNowText()])].concat(rvfTableBlocks(head, rows.map(rowHtml), 26)), 'changes-' + p.from + '-to-' + p.to + '.pdf', { landscape:true });
+  });
+  $('asgHxls').addEventListener('click', () => {
+    if(typeof XLSX === 'undefined'){ toast('Excel tool not loaded — check your connection'); return; }
+    const rows = asgAssignRows(list); if(!rows.length){ toast('Nothing to download'); return; }
+    const aoa = [['#', 'Date', 'Time', 'Operator', 'Operator ID', 'What changed', 'From', 'To', 'Changed by']].concat(rows.map((r, i) => { const d = new Date(r.t), c = asgChangeParts(r); return [i + 1, d.toLocaleDateString('en-GB'), d.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' }), r.on, r.o, c.what, c.from, c.to, r.by || '']; }));
+    const wb = XLSX.utils.book_new(), ws = XLSX.utils.aoa_to_sheet(aoa); ws['!cols'] = [5, 12, 8, 24, 14, 18, 24, 24, 20].map(w => ({ wch:w })); XLSX.utils.book_append_sheet(wb, ws, 'Changes'); XLSX.writeFile(wb, 'changes-' + p.from + '-to-' + p.to + '.xlsx'); toast('Excel file downloaded');
+  });
+}
+
+
 </script>
 </body>
 </html>
