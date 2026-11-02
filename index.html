@@ -3604,6 +3604,10 @@ details.admD{margin:0 0 10px;}
 .pcFR .pcLpN b{ font-weight:500; color:var(--text); margin-left:6px; }
 .pcFR textarea.pcNote::placeholder{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .pcFR textarea.pcNote{ box-sizing:border-box; }
+.a2Jn{font-size:10.5px;font-weight:400;line-height:1.25;white-space:nowrap;color:var(--muted);}
+.a2Chg{border:1px solid #fcd34d;background:#fffbeb;border-radius:14px;padding:10px 14px;margin:0 0 12px;font-size:13px;color:#78350f;}
+.a2ChgH{display:flex;align-items:center;gap:10px;} .a2ChgH b{font-weight:600;color:#92400e;}
+.a2Chg ul{margin:6px 0 0;padding-left:18px;} .a2Chg li{margin:3px 0;line-height:1.4;font-weight:400;} .a2Chg li b{font-weight:500;}
 
 </style>
 </head>
@@ -16765,6 +16769,7 @@ const BK_FIELDS = [
   { k: 'position', t: 'Position', kind: 'pos' },
   { k: 'empType', t: 'Employment type', kind: 'sel', opts: [['', '—'], ['Sponsor', 'Sponsor'], ['Non-Sponsor', 'Non-Sponsor']] },
   { k: 'salary', t: 'Basic salary', kind: 'num' },
+  { k: 'overtime', t: 'Overtime (fixed)', kind: 'num' },
   { k: 'country', t: 'Home country', kind: 'country' },
   { k: 'phone', t: 'Phone number', kind: 'text' },
   { k: 'role', t: 'Account type', kind: 'sel', opts: BK_ROLES, def: 'employee' },
@@ -16778,7 +16783,7 @@ const BK_FIELDS = [
   { k: 'iqamaExpiry', t: 'Iqama expiry date', kind: 'date', more: 1 },
   { k: 'airport', t: 'Home country airport', kind: 'text', more: 1 },
   { k: 'endDate', t: 'End date (if exited)', kind: 'date', more: 1 },
-  { k: 'extraMoney', t: 'Extra money', kind: 'num', more: 1 },
+  { k: 'extraMoney', t: 'Extra money (every month)', kind: 'num' },
   { k: 'insExpiry', t: 'Medical insurance expiry', kind: 'date', more: 1 },
   { k: 'contractEnd', t: 'Contract end date', kind: 'date', more: 1 },
   { k: 'hrNote', t: 'HR note (only HR sees it)', kind: 'text', more: 1 }
@@ -16857,7 +16862,7 @@ async function bkReadFile(file){
   bk.sheets = wb.SheetNames.map(n => ({ name: n, aoa: bkClean(XLSX.utils.sheet_to_json(wb.Sheets[n], { header: 1, raw: false, dateNF: 'yyyy-mm-dd', defval: '', blankrows: false })) })).filter(s => s.aoa.length);
   if(!bk.sheets.length) throw new Error('EMPTY');
   // which sheet is which (the person can change it)
-  const skip = /read\s*me|please check|^notes?$|instruction/i;
+  const skip = /read\s*me|please check|^notes?$|instruction|^summary$/i;
   const cand = bk.sheets.map((s, i) => i).filter(i => !skip.test(bk.sheets[i].name));
   const vi = cand.find(i => /vac|holiday/i.test(bk.sheets[i].name) && cand.length > 1);
   const ei = cand.find(i => i !== vi && /emp|staff|people|detail|worker/i.test(bk.sheets[i].name));
@@ -16884,7 +16889,7 @@ function bkGuess(aoa, map, keys){
 function bkGuessColumns(){
   if(!bk.head || !bk.aoa.length) return;
   bkGuess(bk.aoa, bk.map, { passportExpiry: /passport.*(expir|valid|end)/i, passportIssue: /passport.*issue/i, passportNo: /passport|ppt/i, iqamaExpiry: /(iqama|residen).*(expir|valid|end)/i, iqamaNo: /iqama|residen/i, dob: /birth|dob|d\.o\.b/i, airport: /airport/i, endDate: /end\s*date|exit|last\s*day|terminat/i, insExpiry: /insur/i, contractEnd: /contract/i, extraMoney: /extra/i, hrNote: /note|remark|comment/i, vac: /eligib/i,
-    id: /(^|\b)(id|emp(loyee)?\s*(id|no|number)|code|no\.?)$/i, name: /name/i, joining: /join|hire|doj|start/i, dept: /dep/i, position: /posit|job|desig|title|trade/i, empType: /sponsor|type/i, salary: /salary|basic|wage|pay/i, country: /countr|nation/i, phone: /phone|mobile|tel|contact/i, shift: /shift/i });
+    id: /(^|\b)(id|emp(loyee)?\s*(id|no|number)|code|no\.?)$/i, name: /name/i, joining: /join|hire|doj|start/i, dept: /dep/i, position: /posit|job|desig|title|trade/i, empType: /sponsor|type/i, overtime: /overtime|\bot\b/i, salary: /salary|basic|wage|pay/i, country: /countr|nation/i, phone: /phone|mobile|tel|contact/i, shift: /shift/i });
 }
 function bkGuessV(){
   if(!bk.vhead || !bk.vaoa.length) return;
@@ -16906,11 +16911,13 @@ function bkBuild(){
   const depts = state.departments || [], poss = state.positions || [];
   dataRows.forEach((r, i) => {
     const cell = (k) => { const m = M[k]; if(!m) return ''; const v = m.col >= 0 ? String(r[m.col] == null ? '' : r[m.col]).trim() : ''; return v !== '' ? v : String(m.fixed || '').trim(); };
-    const p = { sid: 'b' + Date.now().toString(36) + i + Math.random().toString(36).slice(2, 5), id: cell('id').replace(/\.0+$/, ''), name: cell('name').replace(/\s+/g, ' '), dept: bkPick(depts, cell('dept')), position: bkPick(poss, cell('position')), empType: bkType(cell('empType')), salary: bkNum(cell('salary')), country: bkCountry(cell('country')), phone: cell('phone'), role: cell('role') || 'employee', shift: cell('shift'), vac: bkNum(cell('vac')), row: i + (bk.head ? 2 : 1),
+    const p = { sid: 'b' + Date.now().toString(36) + i + Math.random().toString(36).slice(2, 5), id: cell('id').replace(/\.0+$/, ''), name: cell('name').replace(/\s+/g, ' '), dept: bkPick(depts, cell('dept')), position: bkPick(poss, cell('position')), empType: bkType(cell('empType')), salary: bkNum(cell('salary')), overtime: bkNum(cell('overtime')), country: bkCountry(cell('country')), phone: cell('phone'), role: cell('role') || 'employee', shift: cell('shift'), vac: bkNum(cell('vac')), row: i + (bk.head ? 2 : 1),
       passportNo: cell('passportNo'), iqamaNo: cell('iqamaNo'), airport: cell('airport'), extraMoney: bkNum(cell('extraMoney')), hrNote: cell('hrNote'), bad: [] };
     Object.keys(BK_DATES).forEach(k => { const raw = cell(k); p[k] = bkParseDate(raw); if(raw && !p[k]) p.bad.push(BK_DATES[k]); });
+    if(r.some(c => /^\s*total\b/i.test(String(c == null ? '' : c))) || (!p.id && !p.name)) return;   // the Total line at the bottom of a sheet is not a person; a row with no ID and no name is not either
     if(!p.id && bk.auto){ next++; p.id = ids.pre + next; p.autoId = true; }
     else if(p.id) { const m = new RegExp('^' + ids.pre.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(\\d+)$', 'i').exec(p.id); if(m) next = Math.max(next, parseInt(m[1], 10)); }
+    if(!p.name && p.id){ const ex0 = bkExisting(p); if(ex0) p.name = ex0.name || ''; }   // no names column: the person is found by the ID
     if(!p.name && !p.id) return;
     out.push(p);
   });
@@ -17038,7 +17045,7 @@ function bkImportHtml(){
     const more = BK_FIELDS.filter(f => f.more), moreN = more.filter(f => bk.map[f.k].col >= 0).length;
     h += `<div class="card bkCard"><div class="bkStep">Employee details — what is in the file <label class="bkChk"><input type="checkbox" data-bk="head" ${bk.head ? 'checked' : ''}> first row is the heading</label></div>${bkPrevHtml(bk.aoa, bk.head)}</div>
     <div class="card bkCard"><div class="bkStep">Tell me what each column is</div><div class="hrNote" style="margin-bottom:10px">Pick the column from the file. If the information is not in the file, or the same for everybody, write it in the second box. People who are already in the app are updated, not duplicated.</div>
-    <div class="bkMap">${BK_FIELDS.filter(f => !f.more).map(f => bkMapRow(f, bk.aoa, bk.head, bk.map, 'e')).join('')}</div>
+    <div style="margin-bottom:10px"><button class="pillBtn" data-bk="salonly">Only salary: use just ID, Basic, Overtime and Extra</button><span class="hrNote" style="margin-left:8px">Matches each person by ID and changes only these salary details. Nothing else in the profile is touched.</span></div><div class="bkMap">${BK_FIELDS.filter(f => !f.more).map(f => bkMapRow(f, bk.aoa, bk.head, bk.map, 'e')).join('')}</div>
     <details class="bkMore" ${moreN ? 'open' : ''}><summary>More details: passport, iqama, birth date, insurance, contract … ${moreN ? '(' + moreN + ' found in your file)' : ''}</summary><div class="bkMap" style="margin-top:8px">${more.map(f => bkMapRow(f, bk.aoa, bk.head, bk.map, 'e')).join('')}</div></details></div>`;
   }
   if(bk.vaoa.length){
@@ -17046,7 +17053,7 @@ function bkImportHtml(){
     <div class="card bkCard"><div class="bkStep">Vacations — tell me what each column is</div><div class="hrNote" style="margin-bottom:10px">Each row becomes one vacation record in the person's profile (Vacation tab). Vacations already saved with the same date are not added twice.</div>
     <div class="bkMap">${BK_VFIELDS.map(f => bkMapRow(f, bk.vaoa, bk.vhead, bk.vmap, 'v')).join('')}</div></div>`;
   }
-  if(has) h += `<div style="margin-top:4px"><button class="btn btn-primary" data-bk="stage">Add to the waiting list</button></div>`;
+  if(has) h += `${bk.stageMsg ? `<div class="hrNote" style="color:var(--danger);margin:6px 0">${bkEsc(bk.stageMsg)}</div>` : ''}<div style="margin-top:4px"><button class="btn btn-primary" data-bk="stage">Add to the waiting list</button></div>`;
   return h;
 }
 function bkSvg(n, s){ const P = { up: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>', check: '<polyline points="20 6 9 17 4 12"/>', trash: '<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>', edit: '<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/>', alert: '<path d="M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>' }; s = s || 16; return `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${P[n] || ''}</svg>`; }
@@ -17095,7 +17102,7 @@ function bkUserFrom(p){
   if(p.position) profile.position = p.position; if(p.empType) profile.employmentType = p.empType; if(p.joining) profile.joiningDate = p.joining;
   if(p.country) profile.homeCountry = p.country; if(p.phone){ const ph = bkPhone(p.phone); profile.phone = ph.full; profile.phoneNumber = ph.number; if(ph.code) profile.phoneCode = ph.code; } if(p.shift) profile.shiftPref = p.shift; if(p.vac) profile.vacationEligibility = String(p.vac);
   if(p.airport) profile.homeCountryAirport = p.airport; if(p.endDate) profile.endDate = p.endDate;
-  if(p.salary || p.extraMoney){ profile.salary = {}; if(p.salary) profile.salary.basicSalary = p.salary; if(p.extraMoney) profile.salary.extraMoney = p.extraMoney; }
+  if(p.salary || p.extraMoney || p.overtime){ profile.salary = {}; if(p.salary) profile.salary.basicSalary = p.salary; if(p.overtime) profile.salary.overtime = p.overtime; if(p.extraMoney) profile.salary.extraMoney = p.extraMoney; }
   const pp = {}; if(p.passportNo) pp.passportNo = p.passportNo; if(p.passportIssue) pp.issueDate = p.passportIssue; if(p.passportExpiry) pp.expiryDate = p.passportExpiry; if(p.dob) pp.dob = p.dob; if(Object.keys(pp).length) profile.passport = pp;
   const iq = {}; if(p.iqamaNo) iq.no = p.iqamaNo; if(p.iqamaExpiry) iq.expiry = p.iqamaExpiry; if(Object.keys(iq).length) profile.iqama = iq;
   const hr = {}; if(p.insExpiry) hr.insuranceExpiry = p.insExpiry; if(p.contractEnd) hr.contractEnd = p.contractEnd; if(p.hrNote) hr.note = p.hrNote; if(Object.keys(hr).length) profile.hr = hr;
@@ -17111,7 +17118,7 @@ function bkPlan(p, ex){
   put('position', p.position); put('employmentType', p.empType); put('joiningDate', p.joining); put('homeCountry', p.country); put('homeCountryAirport', p.airport);
   put('shiftPref', p.shift); put('vacationEligibility', p.vac ? String(p.vac) : ''); put('endDate', p.endDate);
   if(p.phone){ const ph = bkPhone(p.phone); put('phone', ph.full); put('phoneNumber', ph.number); if(ph.code) put('phoneCode', ph.code); }
-  put('salary.basicSalary', p.salary); put('salary.extraMoney', p.extraMoney);
+  put('salary.basicSalary', p.salary); put('salary.overtime', p.overtime); put('salary.extraMoney', p.extraMoney);
   put('passport.passportNo', p.passportNo); put('passport.issueDate', p.passportIssue); put('passport.expiryDate', p.passportExpiry); put('passport.dob', p.dob);
   put('iqama.no', p.iqamaNo); put('iqama.expiry', p.iqamaExpiry);
   put('hr.insuranceExpiry', p.insExpiry); put('hr.contractEnd', p.contractEnd); put('hr.note', p.hrNote);
@@ -17167,19 +17174,22 @@ async function bkClick(e){
   const L = bk.staged || [], P = s ? L.find(x => x.sid === s) : null;
   switch(a){
     case 'close': bkClose(); break;
+    case 'salonly': { Object.keys(bk.map).forEach(k => { if(['id', 'name', 'salary', 'overtime', 'extraMoney'].indexOf(k) < 0) bk.map[k] = { col: -1, fixed: '' }; }); bk.overwrite = true; bk.apprOn = false; bkRender(); break; }
     case 'view': bk.view = el.dataset.v; bkRender(); break;
     case 'paste': { const t = $('bkPaste').value; if(!t.trim()) break; bkReadPaste(t); bkRender(); break; }
     case 'stage': {
+      bk.stageMsg = '';
       if(!bk.aoa.length && !bk.vaoa.length){ toast('Choose the file first'); break; }
       if(bk.aoa.length){
-        if(bk.map.name.col < 0 && !String(bk.map.name.fixed).trim()){ toast('Choose the column that has the names'); break; }
-        if(bk.map.id.col < 0 && !bk.auto){ toast('Choose the ID column, or tick "create ID automatically"'); break; }
+        if(bk.map.id.col < 0 && bk.map.name.col < 0 && !String(bk.map.name.fixed).trim()){ bk.stageMsg = 'Choose the ID column (or the names column) first.'; toast(bk.stageMsg); bkRender(); break; }
+        if(bk.map.id.col < 0 && !bk.auto){ bk.stageMsg = 'Choose the ID column, or tick "create ID automatically"'; toast(bk.stageMsg); bkRender(); break; }
       }
       if(bk.vaoa.length && bk.vmap.id.col < 0){ toast('Vacations: choose the column that has the Employee ID'); break; }
       const add = bk.aoa.length ? bkBuild() : [];
-      if(bk.aoa.length && !add.length){ toast('No people found in the file'); break; }
+      if(bk.aoa.length && !add.length){ bk.stageMsg = 'No people found in the file. Check the ID column and that the first row is the heading.'; toast(bk.stageMsg); bkRender(); break; }
       const vr = bk.vaoa.length ? bkAttachVacs(add) : null;
-      if(!add.length){ toast('Nothing to add'); break; }
+      if(!add.length){ bk.stageMsg = 'Nothing to add'; toast('Nothing to add'); bkRender(); break; }
+      bk.stageMsg = '';
       bk.staged = (bk.staged || []).concat(add); bk.aoa = []; bk.vaoa = []; bk.sheets = []; bk.fileName = ''; bk.view = 'list'; bkSaveSoon(true);
       toast(add.length + ' people added to the waiting list' + (vr ? ' · ' + vr.rows + ' vacation rows' + (vr.skipped ? ' (' + vr.skipped + ' skipped: ID not found anywhere)' : '') : '')); bkRender(); break; }
     case 'confirm': if(P && !bk.busy){ bk.busy = true; el.disabled = true; try{ const r = await bkConfirmOne(P); if(r){ toast(P.name + (r === 'created' ? ' added — password 123456' : ' updated')); bkSaveSoon(); } }catch(err){ console.error(err); toast('Could not save — check your connection'); } bk.busy = false; bkRender(); } break;
@@ -20722,9 +20732,10 @@ function renderSalaryTab(){
     el.innerHTML = `<div class="card">
       ${fieldRow('Basic Salary', s.basicSalary)}
       ${fieldRow('Overtime (fixed)', s.overtime)}
+      ${s.extraMoney ? fieldRow('Extra money (every month)', s.extraMoney) : ''}
       ${s.noSalary ? fieldRow('Salary sheets', 'Left out (not listed or counted)') : ''}
       ${s.otHours ? fieldRow('Overtime hours per working day', s.otPerDay || '-') : ''}
-      ${s.tying ? fieldRow('Beaming / Tying commission', 'Yes') : ''}
+      ${s.tying ? fieldRow('Beaming / Tying team', s.tyFixed ? 'Yes - fixed amount (no commission)' : 'Yes') : ''}
       ${fieldRow('Premium &amp; extra money', (s.premiumEligible || (profileCache.user && profileCache.user.role === 'operator')) ? 'Yes' : 'No')}
       ${extraComponents.map(c => fieldRow(c, (s.components||{})[c])).join('')}
     </div>
@@ -20734,6 +20745,7 @@ function renderSalaryTab(){
   el.innerHTML = `<div class="grid-2">
       <div class="field"><label>Basic Salary</label><input type="text" inputmode="decimal" id="sal-basic" value="${s.basicSalary||''}"></div>
       <div class="field"><label>Overtime (fixed)</label><input type="text" inputmode="decimal" id="sal-ot" value="${s.overtime||''}"></div>
+      <div class="field"><label>Extra money (every month)</label><input type="text" inputmode="decimal" id="sal-extra" value="${s.extraMoney||''}"></div>
     </div>
     <div class="field">
       <label style="display:flex; align-items:center; gap:8px; text-transform:none; font-weight:600; color:var(--text); cursor:pointer;">
@@ -20745,7 +20757,8 @@ function renderSalaryTab(){
       <label class="salTick"><input type="checkbox" id="sal-skip" style="width:auto;" ${s.noSalary ? 'checked' : ''}> Leave out of all salary sheets <span class="salTickN">(backup or unpaid profile &mdash; not listed or counted in Accounts)</span></label>
       <label class="salTick"><input type="checkbox" id="sal-oth" style="width:auto;" ${s.otHours ? 'checked' : ''} onchange="document.getElementById('salOthBox').style.display = this.checked ? 'block' : 'none'"> Gets overtime <span class="salTickN">(hours per working day are different for each person)</span></label>
       <div id="salOthBox" style="display:${s.otHours ? 'block' : 'none'};max-width:260px;"><label>Overtime hours per working day</label><input type="text" inputmode="decimal" id="sal-othd" placeholder="e.g. 1.5" value="${acEsc(s.otPerDay || '')}"></div>
-      <label class="salTick"><input type="checkbox" id="sal-tying" style="width:auto;" ${s.tying ? 'checked' : ''}> Gets Beaming / Tying commission <span class="salTickN">(shared by the supervisors of the same department)</span></label>
+      <label class="salTick"><input type="checkbox" id="sal-tying" style="width:auto;" ${s.tying ? 'checked' : ''} onchange="document.getElementById('sal-tyfix').disabled = !this.checked; if(!this.checked) document.getElementById('sal-tyfix').checked = false"> In the Beaming / Tying team <span class="salTickN">(the department's tying money is shared equally by the whole team)</span></label>
+      <label class="salTick" style="margin-left:26px"><input type="checkbox" id="sal-tyfix" style="width:auto;" ${s.tyFixed ? 'checked' : ''} ${s.tying ? '' : 'disabled'}> Fixed <span class="salTickN">(he has a fixed amount: no tying commission is added, but he still counts in the share)</span></label>
     </div>
     ${extraComponents.length ? `<div class="grid-2">${extraComponents.map(c => `<div class="field"><label>${c}</label><input type="text" inputmode="decimal" class="sal-comp" data-comp="${c}" value="${(s.components||{})[c]||''}"></div>`).join('')}</div>` : ''}
     <button class="btn btn-primary" id="saveSalaryBtn">Save Salary Info</button>`;
@@ -20760,9 +20773,9 @@ async function saveSalaryInfo(){
   document.querySelectorAll('.sal-fl').forEach(inp => { fl[inp.dataset.id] = inp.checked; });
   const salary = Object.assign({}, old, {
     basicSalary: $('sal-basic').value.trim(),
-    extraMoney: old.extraMoney || '',
+    extraMoney: $('sal-extra').value.trim(),
     premiumEligible: $('sal-premium').checked,
-    noSalary: $('sal-skip').checked, otHours: $('sal-oth').checked, otPerDay: $('sal-oth').checked ? $('sal-othd').value.trim() : '', tying: $('sal-tying').checked,
+    noSalary: $('sal-skip').checked, otHours: $('sal-oth').checked, otPerDay: $('sal-oth').checked ? $('sal-othd').value.trim() : '', tying: $('sal-tying').checked, tyFixed: $('sal-tying').checked && $('sal-tyfix').checked,
     overtime: $('sal-ot').value.trim(),
     components, cv, fl
   });
@@ -21868,7 +21881,7 @@ function a2OpRates(r){
   }
   a2OpNet(r);
 }
-function a2OpNet(r){ r.extra = r.ax || 0; r.net = Math.round(acNum(r.bs) + acNum(r.otm) + (r.np != null && r.np !== '' ? r.np : (r.prem || 0)) + r.extra - acNum(r.ded)); }
+function a2OpNet(r){ r.extra = r.ax || 0; a2JoinSet(r, acNum(r.bs) + acNum(r.otm)); r.net = Math.round(acNum(r.bs) + acNum(r.otm) + (r.np != null && r.np !== '' ? r.np : (r.prem || 0)) + r.extra - acNum(r.ded) - acNum(r.jded)); }
 function a2NewSp(u){
   const sal = (u.profile && u.profile.salary) || {};
   const r = { id: u.loginId, name: u.name, dept: u.department || '', basic: sal.basicSalary || '', fixed: sal.salaryType === 'fixed', ot: sal.overtime || '', extra: sal.extraMoney || '', ab: '', pr: '', c: {}, fl: {}, rm: '' };
@@ -21897,11 +21910,11 @@ function a2SpCalc(r){
 }
 function a2NewNs(u){ const sal = (u.profile && u.profile.salary) || {}; const r = { id: u.loginId, name: u.name, dept: u.department || '', pos: a2PosOf(u), fx: sal.basicSalary || '', ded: '', rm: '', net: 0 }; a2NsCalc(r); return r; }
 function a2PosNs(r){ if(r.pos) return r.pos; const u = (state.users || []).find(x => x.loginId === r.id); return u ? a2PosOf(u) : ''; }
-function a2NsCalc(r){ r.net = acR2(acNum(r.fx) - acNum(r.ded)); }
+function a2NsCalc(r){ a2JoinSet(r, r.fx); r.net = acR2(acNum(r.fx) - acNum(r.ded) - acNum(r.jded)); }
 function a2Calc(sec, r){ if(sec === 'operator') a2OpNet(r); else if(sec === 'sponsor') a2SpCalc(r); else a2NsCalc(r); }
 function a2NewRow(sec, u){ return sec === 'operator' ? a2NewOp(u) : sec === 'sponsor' ? a2NewSp(u) : a2NewNs(u); }
 const a2Skip = (u) => !!(((u.profile || {}).salary || {}).noSalary);
-function a2People(sec, withExited){ return (state.users || []).filter(u => u.role !== 'pending' && !a2Skip(u) && a2Group(u) === sec && (withExited || !isExitedEmployee(u))); }
+function a2People(sec, withExited){ return (state.users || []).filter(u => u.role !== 'pending' && !a2Skip(u) && !(a2Live() && a2Off(u)) && a2Group(u) === sec && (withExited || !isExitedEmployee(u))); }
 
 /* ---------- columns (screen, PDF and Excel all come from this list) ---------- */
 const a2In = (r, k, val, ph, cls) => `<input class="a2In${cls ? ' ' + cls : ''}" data-a2="in" data-id="${acEsc(r.id)}" data-k="${k}" value="${acEsc(val == null ? '' : val)}" inputmode="${cls === 'a2Rm' ? 'text' : 'decimal'}"${ph ? ` placeholder="${acEsc(ph)}"` : ''}>`;
@@ -21921,7 +21934,7 @@ function a2HasCut(){ const d = a2Doc(); return acNum(AC.set && AC.set.premCut) >
 function a2Warn(p){ let mx = 0; ((AC.tbl && AC.tbl.tables) || []).forEach(t => (t.rows || []).forEach(r => { if(r[0] > mx) mx = r[0]; })); return p > (mx ? mx * 1.25 : 12000); }
 function a2Peek(r, m){ return `<button type="button" class="a2Pk${a2Warn(m.p) ? ' warn' : ''}" data-a2="peek" data-id="${acEsc(r.id)}" data-m="${acEsc(m.m)}" title="${a2Warn(m.p) ? 'Very high for one machine - check the readings. ' : ''}See the days">${a2I(m.p)}</button>`; }
 const a2Screen = (sec) => a2Cols(sec).filter(c => c.def);
-function a2Cols(sec, all){
+function a2Cols0(sec, all){
   const ed = acCanEdit();
   if(sec === 'operator'){
     const c = a2Common(); c[1].l = 'Operator';
@@ -22011,7 +22024,7 @@ function a2SpCol(c, ed){
 }
 
 /* ---------- loading and drafts ---------- */
-async function a2LoadDoc(sec, ym, force){
+async function a2LoadDoc0(sec, ym, force){
   const key = a2Key(sec, ym); if(!force && A2.docs[key]) return A2.docs[key];
   const s = await window.__db.getConfigObject('salary_' + key, {});
   const def = acDefaultRange(ym);
@@ -22066,7 +22079,7 @@ async function a2CalcPicks(){
     d.rows = d.rows.filter(r => keep.has(r.id)); Object.keys(have).forEach(k => { if(!keep.has(k)) delete have[k]; });
     (state.users || []).filter(a2IsOp).forEach(u => {
       const pk = S.ops[u.loginId];
-      if(isExitedEmployee(u) && !(pk && pk.total > 0) && !have[u.loginId]) return;
+      if(a2Live() && a2Off(u)) return; if(isExitedEmployee(u) && !(pk && pk.total > 0) && !have[u.loginId]) return;
       let r = have[u.loginId]; if(!r){ r = a2NewOp(u); d.rows.push(r); }
       r.name = u.name; r.dept = u.department || ''; r.pos = a2PosOf(u); r.sh = a2Sh(u);
       r.mc = pk ? Object.keys(pk.bm).filter(m => pk.bm[m] > 0).sort(a2Num).map(m => ({ m, n: a2McName(m), p: acR2(pk.bm[m]) })) : [];
@@ -22135,7 +22148,7 @@ function sec2net(sec, r){ return Number(sec === 'sponsor' ? (r.v || {}).net : r.
 
 /* ---------- screen ---------- */
 function a2Rows(){ const d = a2Doc(), skip = new Set((state.users || []).filter(a2Skip).map(u => u.loginId)); return d ? d.rows.filter(r => !skip.has(r.id)).sort((a, b) => a2Num(a.id, b.id)) : []; }
-function a2Filtered(){
+function a2Filtered0(){
   const q = A2.q.trim().toLowerCase();
   return a2Rows().filter(r => (!A2.dept || r.dept === A2.dept) && (!A2.shift || r.sh === A2.shift) && (!A2.pos || (A2.sec === 'operator' ? r.pos : a2PosNs(r)) === A2.pos) && (!A2.nat || a2NatOf(r) === A2.nat) && (!q || (r.id + ' ' + r.name + ' ' + r.dept).toLowerCase().includes(q)));
 }
@@ -22159,12 +22172,13 @@ function a2Draw(){
 }
 function a2DrawSheet(){
   { const gone = a2DropOthers(); if(gone) toast(gone + (gone === 1 ? ' person is' : ' people are') + ' now counted in another sheet and left this one'); }
+  { const d0 = a2Doc(); if(d0 && d0.rows && d0.rows.length) a2JoinRefresh(d0); }
   const d = a2Doc(), sec = A2.sec, ed = acCanEdit(), rows = d ? d.rows : [], op = sec === 'operator';
   const status = !d ? '' : (d.dirty ? '<span class="a2Warn">Not saved</span>' : (d.savedAt ? `Saved ${a2Stamp(d.savedAt)}` : 'Not saved yet'));
   const calc = op && d ? (d.calcAt ? `Picks calculated ${a2Stamp(d.calcAt)}` : 'Picks not calculated yet') : '';
   const depts = Array.from(new Set(rows.map(r => r.dept).filter(Boolean))).sort(), poss = Array.from(new Set(rows.map(r => sec !== 'operator' ? a2PosNs(r) : r.pos).filter(Boolean))).sort(), nats = Array.from(new Set(rows.map(a2NatOf).filter(Boolean))).sort();
   const opts = (list, cur, all) => `<option value="">${all}</option>` + list.map(v => `<option value="${acEsc(v[0])}" ${v[0] === cur ? 'selected' : ''}>${acEsc(v[1])}</option>`).join('');
-  const full = !!(d && rows.length), fN = [A2.q, A2.dept, A2.pos, A2.shift, A2.nat].filter(Boolean).length;
+  const full = !!(d && rows.length), fN = [A2.q, A2.dept, A2.pos, A2.shift, A2.nat, A2.hideNj].filter(Boolean).length;
   $('a2Top').innerHTML = `<div class="a2Fl">${full ? `<button type="button" class="pillBtn${fN ? ' ok' : ''}" data-a2="filt" title="Filter the list">${a2Svg('filter', 13)}Filter${fN ? ' ' + fN : ''}</button>` : ''}
       ${A2.fOpen && full ? `<div class="a2FPanel"><input type="text" id="a2Q" class="acQ" placeholder="Search name or ID" value="${acEsc(A2.q)}">
       ${depts.length > 1 ? `<select id="a2Dept">${opts(depts.map(x => [x, x]), A2.dept, 'All departments')}</select>` : ''}
@@ -22172,7 +22186,7 @@ function a2DrawSheet(){
       ${!op && nats.length > 1 ? `<select id="a2Nat">${opts(nats.map(x => [x, x]), A2.nat, 'All nationalities')}</select>` : ''}
       ${op ? `<select id="a2Shift">${opts([['D', 'Day'], ['N', 'Night']], A2.shift, 'Both shifts')}</select>` : ''}
       ${op ? `<div class="a2FCols"><span class="a2FT">Columns to show</span><label class="a2Fx a2DetL"><input type="checkbox" id="a2Det" ${A2.det !== false ? 'checked' : ''}><span>Machine details (MC, Picks, Rate)</span></label><label class="a2Fx a2DetL"><input type="checkbox" id="a2Tp" ${A2.tp !== false ? 'checked' : ''}><span>Total picks</span></label><label class="a2Fx a2DetL"><input type="checkbox" id="a2Av" ${A2.av !== false ? 'checked' : ''}><span>Avg rate</span></label></div>` : ''}
-      ${fN ? '<button type="button" class="pillBtn" data-a2="fclear">Clear</button>' : ''}</div>` : ''}</div>
+      ${a2NjCount(rows) || A2.hideNj ? `<label class="a2Fx a2DetL"><input type="checkbox" id="a2Hnj" ${A2.hideNj ? 'checked' : ''}><span>Hide people who had not joined yet in this salary month (${a2NjCount(rows)})</span></label>` : ''}${fN ? '<button type="button" class="pillBtn" data-a2="fclear">Clear</button>' : ''}</div>` : ''}</div>
     ${op || sec === 'sponsor' || sec === 'nonsponsor' ? `<button type="button" class="iconBtn" data-a2="set" title="Settings" aria-label="Settings">${a2Svg('gear', 15)}</button>` : ''}
     ${full ? `<button type="button" class="pillBtn" data-a2="dl" title="Download PDF or Excel">${DL_ICON}Download</button>` : ''}`;
   $('a2Head').innerHTML = `<div class="a2Bar a2One">
@@ -22189,7 +22203,7 @@ function a2DrawSheet(){
       ${ed && !op ? '<button type="button" class="pillBtn ok" data-a2="create">Create sheet</button>' : ''}</div>`;
     return;
   }
-  $('acMain').innerHTML = `${sec === 'sponsor' && A2.tyOpen ? a2TyHtml() : ''}
+  $('acMain').innerHTML = `${a2ChgHtml()}${sec === 'sponsor' && A2.tyOpen ? a2TyHtml() : ''}
     <div id="a2Tbl"></div>`;
   a2DrawTable();
 }
@@ -22232,7 +22246,7 @@ function a2DrawTable(){
   const head = `<tr><th class="serial">#</th>${cols.map(c => `<th class="${c.num ? 'a2N' : ''}${c.dedCol ? ' a2D' : ''}">${acEsc(c.l)}</th>`).join('')}</tr>`;
   let n = 0; const trs = rows.map(r => a2TrsOf(cols, r, ++n, ed).join('')).join('');
   box.innerHTML = `<div class="table-scroll"><table class="report-table ovTbl a2T${cols.length > 13 ? ' a2Wide' : ''}"><thead>${head}</thead><tbody>${trs || `<tr><td colspan="${cols.length + 2}" class="a2Empty">No one matches.</td></tr>`}</tbody><tfoot>${a2FootHtml(cols, rows, ed)}</tfoot></table></div>
-    <div class="hrNote" style="margin-top:8px;">${A2.sec === 'operator' ? 'Picks are the approved daily totals plus stop-time picks. Click a number to see its days. If they look low, run Refresh All Calculations (Admin, Shift &amp; Timing) first.' : 'Changes here are for this month only. The salary on the profile is not changed.'}</div>`;
+    <div class="hrNote" style="margin-top:8px;">${A2.sec === 'operator' ? 'Picks are the approved daily totals plus stop-time picks. Click a number to see its days. If they look low, run Refresh All Calculations (Admin, Shift &amp; Timing) first.' : 'Changes here are for this month only. The salary on the profile is not changed.' + (a2Filtered().some(r => r.jd) ? ' In Remarks: days in the month - days before joining = W (days worked and paid).' : '')}</div>`;
 }
 function a2RefreshRow(r){
   a2Calc(A2.sec, r); const cols = a2Screen(A2.sec), ed = acCanEdit();
@@ -22269,7 +22283,7 @@ function a2DlCfg(){
   const sec = A2.sec, cols = a2DlCols(sec), all = cols.map(c => ({ k: c.k, l: c.l, g: c.g || 'Pay', get: r => c.text(r, 0) }));
   return { key: 'acc4_' + sec + (sec === 'operator' && A2.det === false ? '_nd' : ''), title: A2_SEC[sec].n + ' salary - ' + acYmLabel(A2.ym), noun: 'people', file: 'salary-' + sec + '-' + A2.ym, sheet: A2_SEC[sec].n, def: cols.filter(c => c.def).map(c => c.k),
     items: () => a2Filtered(), id: r => r.id, label: r => r.id + ' · ' + r.name + (r.dept ? ' · ' + r.dept : ''), cols: () => all, exporter: a2Export,
-    sumExtra: (it) => [['Month', acYmLabel(A2.ym)]].concat(sec === 'operator' ? [['Picks counted', (a2Doc().from || '') + ' to ' + (a2Doc().to || '')]] : []).concat([['Net payable', acMoney(it.reduce((a, r) => a + sec2net(sec, r), 0))]]) };
+    sumExtra: (it) => [['Month', acYmLabel(A2.ym)]].concat(sec === 'operator' ? [['Picks counted', (a2Doc().from || '') + ' to ' + (a2Doc().to || '')]] : []).concat([['Net payable', acMoney(it.reduce((a, r) => a + sec2net(sec, r), 0))]]).concat(it.some(r => r.jd) ? [['W', 'Days worked and paid = days in the month - days before joining']] : []) };
 }
 async function a2Export(o){
   const sec = A2.sec, all = a2DlCols(sec), cols = o.cols.map(s => all.find(c => c.k === s.k)).filter(Boolean), items = o.items, d = a2Doc();
@@ -22392,7 +22406,7 @@ document.addEventListener('click', async (e) => {
   else if(a === 'grpset'){ const d = a2Doc(), r = d && d.rows.find(x => x.id === A2.popId); if(!r) return; r.gid = t.dataset.g || ''; a2OpRates(r); a2Touch(); a2DrawTable(); a2DirtyUi(); a2GroupPop(); }
   else if(a === 'peekx'){ const ov = document.getElementById('dlOv'); if(ov) ov.remove(); }
   else if(a === 'filt'){ A2.fOpen = !A2.fOpen; a2DrawSheet(); }
-  else if(a === 'fclear'){ A2.q = A2.dept = A2.pos = A2.shift = A2.nat = ''; a2DrawSheet(); }
+  else if(a === 'fclear'){ A2.q = A2.dept = A2.pos = A2.shift = A2.nat = ''; A2.hideNj = false; a2DrawSheet(); }
   else if(a === 'del'){ const d = a2Doc(), r = d && d.rows.find(x => x.id === t.dataset.id); if(!r || !confirm('Take ' + r.name + ' out of this month\'s sheet? Their profile is not changed.')) return; d.rows = d.rows.filter(x => x.id !== r.id); a2Touch(); a2DrawSheet(); }
 });
 document.addEventListener('mousedown', (e) => { if(A2.fOpen && !e.target.closest('.a2Fl') && document.getElementById('a2Top')){ A2.fOpen = false; if(A2.view === 'sheet') a2DrawSheet(); } });
@@ -22408,6 +22422,7 @@ document.addEventListener('input', (e) => {
 document.addEventListener('change', async (e) => {
   const t = e.target; if(!$('accountsBody') || !$('accountsBody').contains(t)) return;
   if(t.id === 'a2From' || t.id === 'a2To'){ const d = a2Doc(); if(d){ d.from = $('a2From').value || d.from; d.to = $('a2To').value || d.to; a2Touch(); a2DirtyUi(); } return; }
+  if(t.id === 'a2Hnj'){ A2.hideNj = t.checked; a2DrawSheet(); return; }
   if(t.id === 'a2Det'){ A2.det = t.checked; a2DrawSheet(); return; }
   if(t.id === 'a2Tp'){ A2.tp = t.checked; a2DrawSheet(); return; }
   if(t.id === 'a2Av'){ A2.av = t.checked; a2DrawSheet(); return; }
@@ -22501,27 +22516,27 @@ function a2TyRate(){ const x = acNum(AC.set && AC.set.tyRate); return x > 0 ? x 
 function a2SpFromProfile(r, u){
   const p = u.profile || {}, sal = p.salary || {};
   r.name = u.name; r.dept = u.department || ''; r.pos = a2PosOf(u); r.nat = String(p.homeCountry || '').trim();
-  r.basic = sal.basicSalary || ''; r.ot = sal.overtime || ''; r.extra = '';
-  r.othf = !!sal.otHours; r.otd = r.othf ? (sal.otPerDay || '') : ''; r.tyf = !!sal.tying; if(!r.tyf) r.ty = '';
+  r.basic = sal.basicSalary || ''; r.ot = sal.overtime || ''; r.extra = sal.extraMoney || '';
+  r.othf = !!sal.otHours; r.otd = r.othf ? (sal.otPerDay || '') : ''; r.tyf = !!sal.tying; r.tyx = r.tyf && !!sal.tyFixed; if(!r.tyf || r.tyx) r.ty = '';
 }
 function a2NewSp(u){ const r = { id: u.loginId, name: u.name, dept: u.department || '', basic: '', ot: '', extra: '', oth: '', ty: '', ded: '', rm: '' }; a2SpFromProfile(r, u); a2SpCalc(r); return r; }
 function a2SpCalc(r){
-  const basic = acNum(r.basic), ot = r.othf ? acR2(acNum(r.otd) * a2WorkDays() * a2OtRate(r)) : acNum(r.ot), ex = acR2(acNum(r.extra) + acNum(r.ty));
-  const gross = acR2(basic + ot + ex), ded = acNum(r.ded);
+  const basic = acNum(r.basic), ot = r.othf ? acR2(acNum(r.otd) * a2WorkDaysFor(r) * a2OtRate(r)) : acNum(r.ot), ex = acR2(acNum(r.extra) + acNum(r.ty));
+  a2JoinSet(r, basic + (r.othf ? 0 : ot) + acNum(r.extra)); const gross = acR2(basic + ot + ex), ded = acNum(r.ded) + acNum(r.jded);
   r.v = { gross, totded: ded, net: acR2(gross - ded), otAmt: ot, exAmt: ex, housing: 0, transport: 0, absentDed: 0, c: {} };
 }
 function a2TyGroups(){ const d = a2Doc(), by = {}; if(d) d.rows.forEach(r => { if(r.tyf) (by[r.dept || '-'] = by[r.dept || '-'] || []).push(r); }); return by; }
 function a2TyHtml(){
   const d = a2Doc(), by = a2TyGroups(), keys = Object.keys(by).sort(), rate = a2TyRate();
-  if(!keys.length) return '<div class="a2Ty"><div class="hrNote" style="margin:0;">Nobody gets Beaming / Tying commission yet. Open a supervisor\'s profile, Salary Info, and tick "Gets Beaming / Tying commission".</div></div>';
+  if(!keys.length) return '<div class="a2Ty"><div class="hrNote" style="margin:0;">Nobody is in the Beaming / Tying team yet. Open a profile, Salary Info, and tick "In the Beaming / Tying team".</div></div>';
   const ed = acCanEdit();
-  return `<div class="a2Ty"><div class="a2TyH"><b>Beaming / Tying commission</b><span class="hrNote" style="margin:0;">${acMoney(rate)} SAR for each tying. The total of a department is shared equally by its supervisors below.</span></div>
-    <div class="table-scroll"><table class="report-table ovTbl a2T"><thead><tr><th>Department</th><th>Supervisors</th><th class="a2N">Number of tying</th><th class="a2N">Total</th><th class="a2N">Each gets</th></tr></thead><tbody>${keys.map(k => { const cnt = acNum((d.ty || {})[k]), tot = cnt * rate; return `<tr><td>${acEsc(k)}</td><td>${by[k].map(r => acEsc(r.name)).join(', ')}</td><td class="a2N"><input class="a2In" data-ty="cnt" data-dept="${acEsc(k)}" value="${acEsc((d.ty || {})[k] == null ? '' : (d.ty || {})[k])}" inputmode="numeric" ${ed ? '' : 'disabled'} style="width:90px;"></td><td class="a2N" data-tyt="${acEsc(k)}">${acMoney(tot) || '0.00'}</td><td class="a2N" data-tye="${acEsc(k)}">${acMoney(acR2(tot / by[k].length)) || '0.00'}</td></tr>`; }).join('')}</tbody></table></div>
+  return `<div class="a2Ty"><div class="a2TyH"><b>Beaming / Tying commission</b><span class="hrNote" style="margin:0;">${acMoney(rate)} SAR for each tying. The total of a department is shared equally by everyone in its team below. People marked Fixed are counted in the share but get nothing here.</span></div>
+    <div class="table-scroll"><table class="report-table ovTbl a2T"><thead><tr><th>Department</th><th>Tying team</th><th class="a2N">Number of tying</th><th class="a2N">Total</th><th class="a2N">Each gets</th></tr></thead><tbody>${keys.map(k => { const cnt = acNum((d.ty || {})[k]), tot = cnt * rate; return `<tr><td>${acEsc(k)}</td><td>${by[k].map(r => acEsc(r.name) + (r.tyx ? ' <span class="hrNote" style="margin:0">(fixed)</span>' : '')).join(', ')}</td><td class="a2N"><input class="a2In" data-ty="cnt" data-dept="${acEsc(k)}" value="${acEsc((d.ty || {})[k] == null ? '' : (d.ty || {})[k])}" inputmode="numeric" ${ed ? '' : 'disabled'} style="width:90px;"></td><td class="a2N" data-tyt="${acEsc(k)}">${acMoney(tot) || '0.00'}</td><td class="a2N" data-tye="${acEsc(k)}">${acMoney(acR2(tot / by[k].length)) || '0.00'}</td></tr>`; }).join('')}</tbody></table></div>
     ${ed ? '<div class="a2TyF"><button type="button" class="pillBtn ok" data-ty="calc">Calculate and add to Extra</button><span class="hrNote" style="margin:0;">Counts come from the tying papers. Press again after changing a number.</span></div>' : ''}</div>`;
 }
 function a2TyCalc(){
   const d = a2Doc(); if(!d) return; const by = a2TyGroups(), rate = a2TyRate();
-  Object.keys(by).forEach(k => { const share = acR2(acNum((d.ty || {})[k]) * rate / by[k].length); by[k].forEach(r => { r.ty = share || ''; }); });
+  Object.keys(by).forEach(k => { const share = acR2(acNum((d.ty || {})[k]) * rate / by[k].length); by[k].forEach(r => { r.ty = r.tyx ? '' : (share || ''); }); });
   d.rows.forEach(r => { if(!r.tyf) r.ty = ''; a2SpCalc(r); });
   a2Touch(); a2DrawSheet(); toast('Commission added to Extra');
 }
@@ -23050,6 +23065,101 @@ document.addEventListener('input', (e) => {
   new MutationObserver(() => { if(!t) t = requestAnimationFrame(fit); }).observe(document.body, { childList: true, subtree: true }); window.addEventListener('resize', () => { if(!t) t = requestAnimationFrame(fit); }); })();
 document.addEventListener('keydown', (e) => { const t = e.target; if(e.key === 'Enter' && t && t.matches && t.matches('textarea.pcNote[data-pc="iname"],textarea.pcNote[data-pc="idesc"]')) e.preventDefault(); });
 document.addEventListener('focusin', (e) => { const el = e.target; if(el && el.classList && el.classList.contains('pcNote')){ el.style.height = 'auto'; el.style.height = Math.max(36, el.scrollHeight + 2) + 'px'; } });
+
+/* ---- joined inside the salary month: pay only from the joining date ---- */
+function a2JoinSet(r, base){
+  r.jd = 0; r.jded = 0; r.jdt = ''; r.jdate = '';
+  const ym = A2.jym || A2.ym, u = (state.users || []).find(x => x.loginId === r.id), j = String((u && u.profile && u.profile.joiningDate) || '').slice(0, 10);
+  if(!ym || !/^\d{4}-\d{2}-\d{2}$/.test(j)) return;
+  const rg = acDefaultRange(ym); if(j <= rg.from) return;
+  const day = (x) => Date.UTC(+x.slice(0, 4), +x.slice(5, 7) - 1, +x.slice(8, 10)) / 864e5;
+  const div = acNum(AC.set && AC.set.absent && AC.set.absent.days) || 30;
+  const n = Math.min(Math.round(day(j) - day(rg.from)), div); if(!(n > 0)) return;
+  r.jd = n; r.jdate = j; r.jded = acR2(acNum(base) * n / div);
+  r.jdt = 'From ' + fmtDate(j).slice(0, 6).replace(/^0/, '') + ' \u00B7 ' + div + '-' + n + '=' + (div - n) + 'W'; r.jdl = 'Joined ' + fmtDate(j) + '. ' + div + ' days in the month - ' + n + ' days before joining = ' + (div - n) + ' days worked and paid (W)' + (r.jded ? ' (' + acMoney(r.jded) + ' deducted)' : '');
+}
+function a2WorkDaysFor(r){   // overtime by hours: only the days he could work (from his joining date)
+  a2JoinSet(r, 0); const d = a2Doc();
+  if(r.jdate && d && d.to){ const n = countWorkingDays(r.jdate > d.from ? r.jdate : d.from, d.to); return n > 0 ? n : 0; }
+  return a2WorkDays();
+}
+function a2Cols(sec, all){
+  const cols = a2Cols0(sec, all), fm = (x) => sec === 'operator' ? (a2W(x) || '') : (a2M(x) || '');
+  cols.forEach(c => {
+    if(c.k === 'ded'){
+      const dv = (r) => acNum(r.ded) + acNum(r.jded);
+      c.sv = dv; c.raw = (r) => dv(r) || ''; c.text = (r) => fm(dv(r)); c.html = (r) => fm(dv(r));
+    }
+    if(c.k === 'rm' && sec === 'sponsor'){
+      const ln = (r) => [r.jdt || '', acNum(r.ty) ? 'Tying ' + acMoney(r.ty) : '', acNum(r.extra) ? 'Extra ' + acMoney(r.extra) : ''].filter(Boolean);
+      c.text = (r) => ln(r).concat(a2RmNums(r).length ? [a2RmNums(r).join(',')] : []).join(', ');
+      c.html = (r) => { const l = ln(r), n = a2RmHtml(r); return n + (n && l.length ? '<br>' : '') + (l.length ? `<span class="a2Jn" title="${acEsc(r.jdl || '')}">${l.map(acEsc).join('<br>')}</span>` : ''); };
+    } else if(c.k === 'rm'){
+      const t0 = c.text, h0 = c.html;
+      c.text = (r, i) => [r.jdt || '', t0(r, i)].filter(Boolean).join(', ');
+      c.html = (r, e, i) => { const x = h0(r, e, i) || ''; return r.jdt ? `<span class="a2Jn" title="${acEsc(r.jdl || r.jdt)}">${acEsc(r.jdt)}</span>` + (x ? '<span class="a2RnC">,</span>' : '') + x : x; };
+    }
+  });
+  return cols;
+}
+async function a2LoadDoc(sec, ym, force){
+  const d = await a2LoadDoc0(sec, ym, force);
+  if(d && !d._jn && (sec === 'operator' || sec === 'sponsor' || sec === 'nonsponsor')){
+    d._jn = 1; A2.jym = ym; let ch = false;
+    try{ d.rows.forEach(r => { const a = r.jd || 0, b = r.jded || 0; a2Calc(sec, r); if((r.jd || 0) !== a || (r.jded || 0) !== b) ch = true; }); }catch(e){ console.error(e); }
+    A2.jym = ''; if(ch) d.dirty = true;
+  }
+  return d;
+}
+
+/* ---- changes since the sheet was made: nothing moves by itself, the person decides ---- */
+function a2DropOthers(){ return 0; }
+const a2Live = () => (A2.ym || '') >= acYmNow();   // exit / vacation only count for the current and coming salary months
+const a2OffWhy = (u) => isExitedEmployee(u) ? 'has left (Exit / Terminated)' : ((u.profile || {}).employmentStatus === 'vacation' ? 'is on vacation' : '');
+const a2Off = (u) => !!a2OffWhy(u);
+function a2JoinRefresh(d){   // the joining date on the profile counts at once
+  let ch = false; const sec = d.sec;
+  if(!(sec === 'operator' || sec === 'sponsor' || sec === 'nonsponsor')) return;
+  A2.jym = d.ym;
+  try{ d.rows.forEach(r => { const a = r.jd || 0, b = r.jded || 0; a2Calc(sec, r); if((r.jd || 0) !== a || (r.jded || 0) !== b) ch = true; }); }catch(e){ console.error(e); }
+  A2.jym = ''; if(ch) a2Touch();
+}
+function a2Changes(){
+  const d = a2Doc(), out = { moved: [], idch: [], gone: [], fresh: [] }; if(!d || !(state.users && state.users.length)) return out;
+  const sec = d.sec, users = state.users, byId = {}, nm = (x) => String(x || '').trim().toLowerCase(); users.forEach(u => { byId[u.loginId] = u; });
+  d.rows.forEach(r => {
+    const u = byId[r.id];
+    if(u){ if(a2Live() && a2Off(u)) out.moved.push({ r, u, to: '', why: a2OffWhy(u) }); else if(a2Skip(u)) out.moved.push({ r, u, to: '' }); else if(a2Group(u) !== sec) out.moved.push({ r, u, to: a2Group(u) }); return; }
+    const m = users.filter(x => nm(x.name) === nm(r.name) && x.role !== 'pending');
+    if(m.length === 1){ const x = m[0], off = a2Live() && a2Off(x), to = (a2Skip(x) || off) ? '' : a2Group(x); out.idch.push({ r, u: x, to, why: off ? a2OffWhy(x) : '', same: !a2Skip(x) && !off && to === sec }); }
+    else out.gone.push({ r });
+  });
+  if(sec !== 'operator'){ const have = new Set(d.rows.map(r => r.id)); out.idch.forEach(c => have.add(c.u.loginId)); a2People(sec).forEach(u => { if(!have.has(u.loginId)) out.fresh.push(u); }); }
+  return out;
+}
+function a2ChgHtml(){
+  const c = a2Changes(), n = c.moved.length + c.idch.length + c.gone.length + c.fresh.length; if(!n) return '';
+  const L = (x) => x ? (A2_SEC[x] || {}).n || x : '', li = [];
+  c.moved.forEach(x => li.push(`<b>${acEsc(x.r.name)}</b> (ID ${acEsc(x.r.id)}) ${x.why ? x.why + '. He is taken out of the salary.' : 'is now ' + (x.to ? 'in the ' + acEsc(L(x.to)) + ' sheet' : 'marked as no salary') + '. He leaves this sheet.'}`));
+  c.idch.forEach(x => li.push(`<b>${acEsc(x.r.name)}</b>: ID ${acEsc(x.r.id)} is now ${acEsc(x.u.loginId)}${x.same ? '. The row will use the new ID.' : (x.why ? ', and he ' + x.why + '. He is taken out of the salary.' : (x.to ? ', and he is now in the ' + acEsc(L(x.to)) + ' sheet. He leaves this sheet.' : ', marked as no salary. He leaves this sheet.'))}`));
+  c.gone.forEach(x => li.push(`<b>${acEsc(x.r.name)}</b> (ID ${acEsc(x.r.id)}) is not in the people list any more. Nothing is changed for him. Check, then delete the row if it is not needed.`));
+  if(c.fresh.length) li.push(`${c.fresh.length} new ${c.fresh.length === 1 ? 'person' : 'people'} for this sheet: ${c.fresh.slice(0, 6).map(u => acEsc(u.name)).join(', ')}${c.fresh.length > 6 ? ' and ' + (c.fresh.length - 6) + ' more' : ''}. They are added with their salary and joining date.`);
+  const act = c.moved.length + c.idch.length + c.fresh.length;
+  return `<div class="a2Chg"><div class="a2ChgH"><b>${n} ${n === 1 ? 'change' : 'changes'} since this sheet was made</b><span style="flex:1"></span>${act && acCanEdit() ? '<button type="button" class="pillBtn ok" data-a2x="chgapply">Apply changes</button>' : ''}</div><ul>${li.map(x => '<li>' + x + '</li>').join('')}</ul><div class="hrNote" style="margin:6px 0 0;">Nothing moves until you press Apply changes. Amounts you typed stay.</div></div>`;
+}
+function a2ChgApply(){
+  const d = a2Doc(); if(!d || !acCanEdit()) return; const c = a2Changes(), sec = d.sec;
+  const drop = new Set(c.moved.map(x => x.r.id));
+  c.idch.forEach(x => { if(x.same){ x.r.id = x.u.loginId; const u = x.u; if(sec === 'operator'){ x.r.name = u.name; x.r.dept = u.department || ''; x.r.pos = a2PosOf(u); x.r.sh = a2Sh(u); a2OpRates(x.r); } else if(sec === 'sponsor'){ a2SpFromProfile(x.r, u); a2SpCalc(x.r); } else { x.r.name = u.name; x.r.dept = u.department || ''; x.r.pos = a2PosOf(u); x.r.fx = ((u.profile || {}).salary || {}).basicSalary || ''; a2NsCalc(x.r); } } else drop.add(x.r.id); });
+  d.rows = d.rows.filter(r => !drop.has(r.id));
+  c.fresh.forEach(u => d.rows.push(a2NewRow(sec, u)));
+  d.rows.sort((a, b) => a2Num(a.id, b.id)); a2Touch(); toast('Changes applied. Press Save sheet to keep them.'); a2Draw();
+}
+document.addEventListener('click', (e) => { const t = e.target.closest && e.target.closest('[data-a2x="chgapply"]'); if(t) a2ChgApply(); });
+
+const a2Nj = (r) => !!(r.jd && r.jd >= (acNum(AC.set && AC.set.absent && AC.set.absent.days) || 30));   // joined after this salary month: nothing to pay
+const a2NjCount = (rows) => (rows || []).filter(a2Nj).length;
+function a2Filtered(){ const l = a2Filtered0(); return A2.hideNj ? l.filter(r => !a2Nj(r)) : l; }
 </script>
 </body>
 </html>
