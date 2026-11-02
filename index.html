@@ -3609,6 +3609,17 @@ details.admD{margin:0 0 10px;}
 .a2ChgH{display:flex;align-items:center;gap:10px;} .a2ChgH b{font-weight:600;color:#92400e;}
 .a2Chg ul{margin:6px 0 0;padding-left:18px;} .a2Chg li{margin:3px 0;line-height:1.4;font-weight:400;} .a2Chg li b{font-weight:500;}
 
+.a2DrK{height:36px;border-radius:999px;border:1px solid var(--line);padding:0 10px;font:inherit;font-size:12.5px;background:#fff}
+.a2DrRow{flex-wrap:wrap}
+.a2DrD{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--muted)} .a2DrD input{width:56px;height:34px;text-align:center}
+.a2DdN{margin:-2px 0 8px 0;font-size:11.5px}
+.salItRow{display:grid;grid-template-columns:minmax(120px,1.3fr) minmax(90px,1fr) 80px 150px 30px;gap:8px;align-items:center;margin-bottom:8px}
+.salItRow .salItN{grid-column:1/-1;margin:-2px 0 0}
+.salItRow input,.salItRow select{height:36px;border-radius:999px;border:1px solid var(--line);padding:0 12px;font:inherit;font-size:13px;min-width:0;background:#fff}
+@media(max-width:620px){.salItRow{grid-template-columns:1fr 1fr 30px}.salItRow .salItT{grid-column:1/3}}
+.a2ItIn{ flex:1; min-width:0; height:36px; border-radius:999px; border:1px solid var(--line); padding:0 12px; font:inherit; font-size:13px; }
+.a2ItRow{ display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+
 </style>
 </head>
 <body>
@@ -12635,6 +12646,7 @@ function renderSalaryTab(){
     el.innerHTML = `<div class="card">
       ${fieldRow('Basic Salary', s.basicSalary)}
       ${fieldRow('Eligible for Premium Money', s.premiumEligible ? 'Yes' : 'No')}
+      ${(s.instl || []).map(it => fieldRow(salInstName(it.t) + ' (instalments)', salInstText(it))).join('')}
       ${extraComponents.map(c => fieldRow(c, (s.components||{})[c])).join('')}
     </div>
     ${s.premiumEligible ? '<div class="hint">Premium Money is paid using the per-pick tiers Admin has set up — see Report / Earned Picks for what was produced.</div>' : ''}`;
@@ -12654,6 +12666,7 @@ function renderSalaryTab(){
     ${extraComponents.length ? `<div class="grid-2">${extraComponents.map(c => `<div class="field"><label>${c}</label><input type="text" inputmode="decimal" class="sal-comp" data-comp="${c}" value="${(s.components||{})[c]||''}"></div>`).join('')}</div>` : '<div class="hint">Admin can add more pay components (e.g. Housing Allowance) under Admin \u2192 Dropdowns \u2192 Salary Components.</div>'}
     <button class="btn btn-primary" id="saveSalaryBtn">Save Salary Info</button>`;
   $('saveSalaryBtn').addEventListener('click', saveSalaryInfo);
+  $('salInstAdd').addEventListener('click', () => { $('salInst').insertAdjacentHTML('beforeend', salInstRow({})); });
 }
 
 async function saveSalaryInfo(){
@@ -20078,7 +20091,8 @@ function acNormSettings(s){
   s.cols = Array.isArray(s.cols) ? s.cols.slice() : d.cols; s.rules = (Array.isArray(s.rules) ? s.rules : []).map(r => Object.assign({}, r, { depts: Array.isArray(r.depts) ? r.depts : (r.dept ? [r.dept] : []) }));
   s.ladders = Object.assign({ grace: 0, every: 500, groups: [], rows: [] }, s.ladders || {}); s.ladders.groups = Array.isArray(s.ladders.groups) ? s.ladders.groups : []; s.ladders.rows = Array.isArray(s.ladders.rows) ? s.ladders.rows : [];
   Object.keys(AC_BUILTIN).forEach(id => { if(!s.cols.some(c => c.id === id)) s.cols.push({ id }); });
-  s.dedReasons = Array.isArray(s.dedReasons) ? s.dedReasons.filter(x => x && x.id).map(x => ({ id: Number(x.id), name: String(x.name || '') })) : [];
+  s.dedReasons = Array.isArray(s.dedReasons) ? s.dedReasons.filter(x => x && x.id).map(x => ({ id: Number(x.id), name: String(x.name || ''), kind: x.kind === 'days' ? 'days' : 'amount', ns: x.ns == null ? '' : x.ns, sp: x.sp == null ? '' : x.sp })) : [];
+  s.instTypes = Array.isArray(s.instTypes) ? s.instTypes.filter(x => x && x.id).map(x => ({ id: Number(x.id), name: String(x.name || '') })) : [{ id: 1, name: 'Loan / Advance' }, { id: 2, name: 'Iqama Transfer' }];
   return s;
 }
 const acNum = (x) => { const n = parseFloat(String(x == null ? '' : x).replace(/,/g, '')); return isFinite(n) ? n : 0; };
@@ -20516,10 +20530,14 @@ function acDrawSettings(){
   const posAll = Array.from(new Set((state.positions || []).concat((state.users || []).filter(u => u.role === 'operator').map(u => ((u.profile || {}).position) || '').filter(Boolean)))).sort(), opPos = Array.isArray(S.opPos) ? S.opPos : [];
   const whoHtml = `<div class="hrNote" style="margin-bottom:8px;">Tick the positions that are paid on the Operator sheet. People with other positions go to Sponsor or Non Sponsor, by their employment type. If nothing is ticked, every operator is listed.</div><div class="checkbox-grid">${posAll.map(x => `<label><input type="checkbox" data-sk="oppos" value="${acEsc(x)}" ${opPos.some(y => String(y).toLowerCase() === x.toLowerCase()) ? 'checked' : ''}> ${acEsc(x)}</label>`).join('') || '<div class="hrNote">No positions yet.</div>'}</div>`;
   const drs = Array.isArray(S.dedReasons) ? S.dedReasons : (S.dedReasons = []);
-  const dedHtml = `<div class="hrNote" style="margin-bottom:8px;">The reasons you can pick when you deduct from someone's pay (the small minus button at the end of each row). The number of the reason shows in the Remarks column, and the PDF explains the numbers on its last page.</div>`
-    + drs.map((x, i) => `<div class="a2DrRow"><span class="a2DrN">${x.id}</span><input type="text" class="a2DrIn" data-sk="dr_name" data-i="${i}" value="${acEsc(x.name || '')}" placeholder="Reason, e.g. Late, Damage, Advance"><button type="button" class="pillBtn" data-ac="s_deldr" data-i="${i}">Delete</button></div>`).join('')
+  const dedHtml = `<div class="hrNote" style="margin-bottom:8px;">The reasons you can pick when you deduct from someone's pay (the small minus button at the end of each row). The number of the reason shows in the Remarks column, and the PDF explains the numbers on its last page.<br><b>Amount typed by hand</b>: you type the amount when you deduct (for example Violation).<br><b>Days of pay</b>: set how many days of pay are cut for 1 day of leave, for Non Sponsor and for Sponsor (0 = nothing is cut, the reason still shows in Remarks). When you deduct you only type the days of leave and the amount is worked out: daily pay = basic salary (Non Sponsor: fixed salary) divided by the days of that salary month. The Operator sheet always uses typed amounts.</div>`
+    + drs.map((x, i) => `<div class="a2DrRow"><span class="a2DrN">${x.id}</span><input type="text" class="a2DrIn" data-sk="dr_name" data-i="${i}" value="${acEsc(x.name || '')}" placeholder="Reason, e.g. Late, Damage"><select class="a2DrK" data-sk="dr_kind" data-i="${i}"><option value="amount" ${x.kind === 'days' ? '' : 'selected'}>Amount typed by hand</option><option value="days" ${x.kind === 'days' ? 'selected' : ''}>Days of pay</option></select>${x.kind === 'days' ? `<label class="a2DrD">Non Sponsor <input class="acNum" data-sk="dr_ns" data-i="${i}" value="${acEsc(x.ns == null ? '' : x.ns)}" inputmode="decimal" placeholder="0"> days</label><label class="a2DrD">Sponsor <input class="acNum" data-sk="dr_sp" data-i="${i}" value="${acEsc(x.sp == null ? '' : x.sp)}" inputmode="decimal" placeholder="0"> days</label>` : ''}<button type="button" class="pillBtn" data-ac="s_deldr" data-i="${i}">Delete</button></div>`).join('')
     + `<button type="button" class="pillBtn" data-ac="s_adddr" style="margin-top:8px;">Add a reason</button>`;
-  const cutHtml = `<div class="acGrid"><label>Deduct from premium (%)<input class="acNum" data-sk="prem_cut" value="${acEsc(S.premCut == null ? '' : S.premCut)}" inputmode="decimal" placeholder="0"></label></div><div class="hrNote">Leave empty or 0 when nothing is deducted. With 15, the sheet shows the two extra columns (15% less and Net premium) and pays the net premium.</div>`;
+  const its = Array.isArray(S.instTypes) ? S.instTypes : (S.instTypes = []);
+  const instHtml = `<div class="hrNote" style="margin-bottom:8px;">Money that is taken back in parts, for example a Loan / Advance or an Iqama Transfer. Here you only make the list of types. Then open a person's profile, Salary Info, and add the total amount, the number of months and the month it starts. The sheet takes one part every month by itself, shows it in the Deduction column and writes it in Remarks (for example Loan / Advance 500.00 (2/6)). The last month takes whatever is left, so the total is always exact.</div>`
+    + its.map((x, i) => `<div class="a2ItRow"><span class="a2DrN">${i + 1}</span><input type="text" class="a2ItIn" data-sk="it_name" data-i="${i}" value="${acEsc(x.name || '')}" placeholder="Type, e.g. Loan / Advance"><button type="button" class="pillBtn" data-ac="s_delit" data-i="${i}">Delete</button></div>`).join('')
+    + `<button type="button" class="pillBtn" data-ac="s_addit" style="margin-top:8px;">Add a type</button>`;
+  const cutHtml = `<div class="acGrid"><label>Deduct from premium (%)<input class="acNum" data-sk="prem_cut" value="${acEsc(S.premCut == null ? '' : S.premCut)}" inputmode="decimal" placeholder="0"></label></div><div class="hrNote">This is not the normal Deduction box. It is a percentage taken from each operator's premium money, and only on the Operator sheet. Leave empty or 0 when nothing is taken. With 15, the sheet shows two more columns: <b>15% less</b> (the amount taken) and <b>Net prem.</b> (premium after it). The net premium is what is paid, so Total and Net pay follow it. The PDF and Excel have the same two columns. Extra money is not reduced.</div>`;
   const rndHtml = `<div class="hrNote" style="margin-bottom:10px;">The premium table has one rate for every level (4,100, 4,200, 4,300 ...). An operator's picks are first moved to the nearest level, and the rate of that level is used. The total picks shown on the sheet are never changed. This is used only to find the premium rate; extra money is worked out from the real picks and has its own rule.</div>
     <div class="acGrid"><label>Levels are every<input class="acNum" data-sk="rnd_step" value="${S.round.step}" inputmode="numeric"></label><label>Move up to the next level when the extra picks are at least<input class="acNum" data-sk="rnd_from" value="${S.round.from}" inputmode="numeric"></label></div>
     <div class="hrNote" id="acRndEx" style="margin-top:8px;">${acRndEx(S.round.step, S.round.from)}</div>`;
@@ -20573,7 +20591,7 @@ function acDrawSettings(){
   const test = T.length ? `<div class="acAdd" style="margin-top:10px;"><b>Try it</b><div class="acCE" style="padding-left:0;"><input class="acNum" id="acTestP" placeholder="picks" inputmode="numeric" value="4174"><select id="acTestM">${(state.machines || []).filter(m => acTableFor(m.id)).map(m => `<option value="${acEsc(m.id)}">${acEsc(m.name)}</option>`).join('')}</select><span id="acTestR" class="hrNote" style="margin:0;"></span></div></div>` : '';
   const tblHtml = `<div class="hrNote" style="margin-bottom:8px;">Premium is paid per pick. The person's total picks are rounded (see Rounding below) and the rate for that level is multiplied by the total picks. If a person works on machines from different tables, the average of their rates is used.</div>${tblList}${editor || '<button type="button" class="pillBtn" data-ac="s_addtbl" style="margin-top:8px;">Add a rate table</button>'}${test}`;
   const saveRow = `<div class="acRow2"><span class="hrNote" style="margin:0;">${AC.setSec === 'nonsponsor' ? 'One list of reasons is shared by every sheet (Operator, Sponsor, Non Sponsor).' : (AC.setSec || 'sponsor') === 'operator' ? 'Press Save settings after changing a value. Rate tables are saved with their own button.' : 'Deduction reasons are one shared list for every sheet. Press Save settings after changing a value.'}</span><span style="flex:1"></span><button type="button" class="pillBtn ok" data-ac="s_save">Save settings</button></div>`;
-  $('acMain').innerHTML = (AC.setSec === 'nonsponsor' ? sec('ded', 'Deduction reasons', dedHtml) : AC.setSec === 'operator' ? sec('who', 'Who is an operator (positions)', whoHtml) + sec('tbl', 'Premium rate tables', tblHtml) + sec('rnd', 'Rounding (premium only)', rndHtml) + sec('rules', 'Extra money (ladder)', ladHtml + (!LD.groups.length && S.rules.length ? ruleHtml : '')) + sec('ded', 'Deduction reasons', dedHtml) : sec('ty', 'Beaming / Tying commission', tyHtml) + sec('ded', 'Deduction reasons', dedHtml)) + saveRow;
+  $('acMain').innerHTML = (AC.setSec === 'nonsponsor' ? sec('ded', 'Deduction reasons', dedHtml) + sec('inst', 'Instalment deductions (Loan, Advance, Iqama Transfer)', instHtml) : AC.setSec === 'operator' ? sec('who', 'Who is an operator (positions)', whoHtml) + sec('tbl', 'Premium rate tables', tblHtml) + sec('rnd', 'Rounding (premium only)', rndHtml) + sec('cut', 'Deduction from premium (Operator only)', cutHtml) + sec('rules', 'Extra money (ladder)', ladHtml + (!LD.groups.length && S.rules.length ? ruleHtml : '')) + sec('ded', 'Deduction reasons', dedHtml) + sec('inst', 'Instalment deductions (Loan, Advance, Iqama Transfer)', instHtml) : sec('ty', 'Beaming / Tying commission', tyHtml) + sec('ded', 'Deduction reasons', dedHtml) + sec('inst', 'Instalment deductions (Loan, Advance, Iqama Transfer)', instHtml)) + saveRow;
   acTestRun();
 }
 function acTxInfo(p){ return p.rows.length ? `${p.rows.length} levels &middot; ${p.rows[0][0]} down to ${p.rows[p.rows.length - 1][0]} &middot; rate ${p.rows[0][1]} to ${p.rows[p.rows.length - 1][1]}${p.n > 1 ? ' &middot; only the first rate column is used' : ''}${p.bad ? ` &middot; <span style="color:var(--danger)">${p.bad} line(s) have a different number of columns</span>` : ''}` : 'Nothing read yet.'; }
@@ -20598,6 +20616,8 @@ function acSettingsClick(a, t){
   else if(a === 's_ladapply'){ acLadApply($('acLadTx').value); }
   else if(a === 's_ladfill'){ if(S.ladders.groups.length && !confirm('Replace the groups and amounts with the proposal?')) return; acLadProposal(); }
   else if(a === 's_adddr'){ const L = S.dedReasons = S.dedReasons || []; const nx = Math.max(Number(S.dedNext) || 1, L.reduce((m, x) => Math.max(m, Number(x.id) || 0), 0) + 1); S.dedNext = nx + 1; L.push({ id: nx, name: '' }); AC.open.ded = true; acDrawSettings(); setTimeout(() => { const ins = document.querySelectorAll('.a2DrIn'); if(ins.length) ins[ins.length - 1].focus(); }, 30); }
+  else if(a === 's_addit'){ const L = S.instTypes = S.instTypes || []; const nx = Math.max(Number(S.instNext) || 1, L.reduce((m, x) => Math.max(m, Number(x.id) || 0), 0) + 1); S.instNext = nx + 1; L.push({ id: nx, name: '' }); AC.open.inst = true; acDrawSettings(); setTimeout(() => { const ins = document.querySelectorAll('[data-sk="it_name"]'); if(ins.length) ins[ins.length - 1].focus(); }, 30); }
+  else if(a === 's_delit'){ const x = (S.instTypes || [])[i]; if(!x || !confirm('Delete the type "' + (x.name || '') + '"? People who already have it in their profile keep it, but it will show as a removed type.')) return; S.instTypes.splice(i, 1); acDrawSettings(); }
   else if(a === 's_deldr'){ const x = (S.dedReasons || [])[i]; if(!x || !confirm('Delete the reason ' + x.id + (x.name ? ' "' + x.name + '"' : '') + '? Sheets that already used it keep its name.')) return; S.dedReasons.splice(i, 1); acDrawSettings(); }
   else if(a === 's_addrule'){ S.rules.push({ depts: [], mc: 0, min: '', amount: '' }); acDrawSettings(); }
   else if(a === 's_delrule'){ S.rules.splice(i, 1); acDrawSettings(); }
@@ -20626,7 +20646,8 @@ async function acSaveSettings(){
   { const L = S.ladders; L.groups = L.groups.filter(g => String(g.name || '').trim()); const ids = new Set(L.groups.map(g => g.id));
     L.rows = L.rows.filter(r => acNum(r.p) > 0).map(r => { const v = {}; Object.keys(r.v || {}).forEach(k => { if(ids.has(k) && String(r.v[k]).trim() !== '') v[k] = acNum(r.v[k]); }); return { p: acNum(r.p), v }; }).sort((x, y) => x.p - y.p);
     L.groups.forEach(g => { g.name = String(g.name).trim(); g.add = String(g.add == null ? '' : g.add).trim() === '' ? '' : acNum(g.add); g.min = Math.max(1, acNum(g.min) || 1); g.share = String(g.share == null ? '' : g.share).trim() === '' ? 50 : acNum(g.share); }); L.every = acNum(L.every) || 500; L.grace = acNum(L.grace); }
-  S.dedReasons = (S.dedReasons || []).filter(x => String(x.name || '').trim()).map(x => ({ id: Number(x.id), name: String(x.name).trim() })); S.dedNext = Math.max(Number(S.dedNext) || 1, S.dedReasons.reduce((m, x) => Math.max(m, x.id), 0) + 1);
+  S.dedReasons = (S.dedReasons || []).filter(x => String(x.name || '').trim()).map(x => ({ id: Number(x.id), name: String(x.name).trim(), kind: x.kind === 'days' ? 'days' : 'amount', ns: x.kind === 'days' && String(x.ns == null ? '' : x.ns).trim() !== '' ? acNum(x.ns) : '', sp: x.kind === 'days' && String(x.sp == null ? '' : x.sp).trim() !== '' ? acNum(x.sp) : '' }));
+  S.instTypes = (S.instTypes || []).filter(x => String(x.name || '').trim()).map(x => ({ id: Number(x.id), name: String(x.name).trim() })); S.instNext = Math.max(Number(S.instNext) || 1, S.instTypes.reduce((m, x) => Math.max(m, x.id), 0) + 1); S.dedNext = Math.max(Number(S.dedNext) || 1, S.dedReasons.reduce((m, x) => Math.max(m, x.id), 0) + 1);
   S.otRate = acNum(S.otRate) || 0; S.tyRate = acNum(S.tyRate) || 25;
   S.premCut = acNum(S.premCut); S.cols.forEach(c => { if(c.pct !== undefined) c.pct = acNum(c.pct); });
   try{ await window.__db.saveConfigObject('acctSettings', S); AC.set = acNormSettings(JSON.parse(JSON.stringify(S))); acCloneSet(); toast('Settings saved'); acDrawSettings(); }
@@ -20672,6 +20693,9 @@ function acSkChange(t, isChange){
   else if(k === 'ot_rate'){ S.otRate = v; }
   else if(k === 'ty_rate'){ S.tyRate = v; }
   else if(k === 'dr_name'){ S.dedReasons[i].name = v; }
+  else if(k === 'dr_kind'){ S.dedReasons[i].kind = v; if(isChange) acDrawSettings(); }
+  else if(k === 'dr_ns'){ S.dedReasons[i].ns = v; } else if(k === 'dr_sp'){ S.dedReasons[i].sp = v; }
+  else if(k === 'it_name'){ S.instTypes[i].name = v; }
   else if(k === 'opded'){ S.opDed = !!t.checked; const b = t.parentElement.querySelector('b'); if(b) b.textContent = S.opDed ? 'On' : 'Off'; }
   else if(k === 'oppos'){ const a = Array.isArray(S.opPos) ? S.opPos.slice() : [], j = a.findIndex(x => String(x).toLowerCase() === v.toLowerCase()); if(t.checked && j < 0) a.push(v); else if(!t.checked && j >= 0) a.splice(j, 1); S.opPos = a; }
   else if(k === 'rnd_step' || k === 'rnd_from'){ if(k === 'rnd_step') S.round.step = v; else S.round.from = v; const ex = document.getElementById('acRndEx'); if(ex) ex.innerHTML = acRndEx(S.round.step, S.round.from); }
@@ -20741,6 +20765,7 @@ function renderSalaryTab(){
       ${s.otHours ? fieldRow('Overtime hours per working day', s.otPerDay || '-') : ''}
       ${s.tying ? fieldRow('Beaming / Tying team', s.tyFixed ? 'Yes - fixed amount (no commission)' : 'Yes') : ''}
       ${fieldRow('Premium &amp; extra money', (s.premiumEligible || (profileCache.user && profileCache.user.role === 'operator')) ? 'Yes' : 'No')}
+      ${(s.instl || []).map(it => fieldRow(salInstName(it.t) + ' (instalments)', salInstText(it))).join('')}
       ${extraComponents.map(c => fieldRow(c, (s.components||{})[c])).join('')}
     </div>
     ${s.premiumEligible ? '<div class="hint">Premium Money is worked out in Accounts from the earned picks and the rate tables.</div>' : ''}`;
@@ -20764,9 +20789,11 @@ function renderSalaryTab(){
       <label class="salTick"><input type="checkbox" id="sal-tying" style="width:auto;" ${s.tying ? 'checked' : ''} onchange="document.getElementById('sal-tyfix').disabled = !this.checked; if(!this.checked) document.getElementById('sal-tyfix').checked = false"> In the Beaming / Tying team <span class="salTickN">(the department's tying money is shared equally by the whole team)</span></label>
       <label class="salTick" style="margin-left:26px"><input type="checkbox" id="sal-tyfix" style="width:auto;" ${s.tyFixed ? 'checked' : ''} ${s.tying ? '' : 'disabled'}> Fixed <span class="salTickN">(he has a fixed amount: no tying commission is added, but he still counts in the share)</span></label>
     </div>
+    <div class="field" id="salInstBox"><label>Salary deductions (instalments)</label><div class="hrNote" style="margin:0 0 8px;">Loan / Advance, Iqama Transfer and similar: the total amount, how many months it is taken in, and the salary month it starts. The salary sheet takes one part each month by itself.</div><div id="salInst">${((s.instl || [])).map(salInstRow).join('')}</div><button type="button" class="pillBtn" id="salInstAdd">Add an instalment</button></div>
     ${extraComponents.length ? `<div class="grid-2">${extraComponents.map(c => `<div class="field"><label>${c}</label><input type="text" inputmode="decimal" class="sal-comp" data-comp="${c}" value="${(s.components||{})[c]||''}"></div>`).join('')}</div>` : ''}
     <button class="btn btn-primary" id="saveSalaryBtn">Save Salary Info</button>`;
   $('saveSalaryBtn').addEventListener('click', saveSalaryInfo);
+  $('salInstAdd').addEventListener('click', () => { $('salInst').insertAdjacentHTML('beforeend', salInstRow({})); });
 }
 async function saveSalaryInfo(){
   const old = (profileCache.user.profile && profileCache.user.profile.salary) || {};
@@ -20780,7 +20807,7 @@ async function saveSalaryInfo(){
     extraMoney: $('sal-extra').value.trim(),
     premiumEligible: $('sal-premium').checked,
     noSalary: $('sal-skip').checked, otHours: $('sal-oth').checked, otPerDay: $('sal-oth').checked ? $('sal-othd').value.trim() : '', tying: $('sal-tying').checked, tyFixed: $('sal-tying').checked && $('sal-tyfix').checked,
-    overtime: $('sal-ot').value.trim(),
+    overtime: $('sal-ot').value.trim(), instl: salInstRead(),
     components, cv, fl
   });
   try{
@@ -22275,7 +22302,7 @@ async function a2DrawSaved(){
 
 /* ---------- settings (only what belongs to the section) ---------- */
 function a2DrawSet(){
-  AC.sd = null; AC.te = null; AC.tn = null; AC.setSec = A2.sec; AC.open = { cols: true, std: true, who: true, tbl: true, rules: true, cut: true, rnd: true, ded: true, ot: true, ty: true };
+  AC.sd = null; AC.te = null; AC.tn = null; AC.setSec = A2.sec; AC.open = { cols: true, std: true, who: true, tbl: true, rules: true, cut: true, rnd: true, ded: true, inst: true, ot: true, ty: true };
   $('a2Head').innerHTML = `<div class="a2Bar"><button type="button" class="pillBtn" data-a2="back">${a2Svg('back', 13)}Back to the sheet</button><b class="a2SetT">${A2_SEC[A2.sec].n} settings</b></div>
     <div class="hrNote" style="margin:0 0 10px;">After saving, press Back to the sheet. The new settings are applied to this month's sheet automatically.</div>`;
   acDrawSettings();
@@ -22283,7 +22310,7 @@ function a2DrawSet(){
 
 /* ---------- download (same table, same columns: screen = PDF = Excel) ---------- */
 const a2DlCols = (sec) => a2Cols(sec, true).filter(c => !c.scr);   // no Deduction box on the sheet = no Deduction column in the PDF / Excel
-function a2DlCfg(){
+function a2DlCfg0(){
   const sec = A2.sec, cols = a2DlCols(sec), all = cols.map(c => ({ k: c.k, l: c.l, g: c.g || 'Pay', get: r => c.text(r, 0) }));
   return { key: 'acc4_' + sec + (sec === 'operator' && A2.det === false ? '_nd' : ''), title: A2_SEC[sec].n + ' salary - ' + acYmLabel(A2.ym), noun: 'people', file: 'salary-' + sec + '-' + A2.ym, sheet: A2_SEC[sec].n, def: cols.filter(c => c.def).map(c => c.k),
     items: () => a2Filtered(), id: r => r.id, label: r => r.id + ' · ' + r.name + (r.dept ? ' · ' + r.dept : ''), cols: () => all, exporter: a2Export,
@@ -23071,7 +23098,7 @@ document.addEventListener('keydown', (e) => { const t = e.target; if(e.key === '
 document.addEventListener('focusin', (e) => { const el = e.target; if(el && el.classList && el.classList.contains('pcNote')){ el.style.height = 'auto'; el.style.height = Math.max(36, el.scrollHeight + 2) + 'px'; } });
 
 /* ---- joined inside the salary month: pay only from the joining date ---- */
-function a2JoinSet(r, base){
+function a2JoinSet0(r, base){
   r.jd = 0; r.jded = 0; r.jdt = ''; r.jdate = '';
   const ym = A2.jym || A2.ym, u = (state.users || []).find(x => x.loginId === r.id), j = String((u && u.profile && u.profile.joiningDate) || '').slice(0, 10);
   if(!ym || !/^\d{4}-\d{2}-\d{2}$/.test(j)) return;
@@ -23087,7 +23114,7 @@ function a2WorkDaysFor(r){   // overtime by hours: only the days he could work (
   if(r.jdate && d && d.to){ const n = countWorkingDays(r.jdate > d.from ? r.jdate : d.from, d.to); return n > 0 ? n : 0; }
   return a2WorkDays();
 }
-function a2Cols(sec, all){
+function a2Cols1(sec, all){
   const cols = a2Cols0(sec, all), fm = (x) => sec === 'operator' ? (a2W(x) || '') : (a2M(x) || '');
   cols.forEach(c => {
     if(c.k === 'ded'){
@@ -23242,6 +23269,81 @@ async function render12MonthProduction(){
     + (sd > 1 && n < 12 ? '<button type="button" class="pillBtn" id="pmMore" style="margin-top:4px">Show older months</button>' : '');
 }
 document.addEventListener('click', (e) => { if(e.target && e.target.id === 'pmMore'){ state.pmMax = 12; render12MonthProduction(); } });
+
+/* ---------- instalment deductions: Loan / Advance / Iqama Transfer ---------- */
+const salInstTypes = () => (AC.set && Array.isArray(AC.set.instTypes)) ? AC.set.instTypes : [];
+function salInstName(id){ const x = salInstTypes().find(y => Number(y.id) === Number(id)); return x ? x.name : 'Removed type'; }
+function salInstPlan(it){ const total = acNum(it.total), n = Math.floor(acNum(it.months)); if(!(total > 0 && n >= 1)) return null; const each = acR2(total / n); return { total, n, each, last: acR2(total - each * (n - 1)) }; }
+function salInstEnd(start, n){ if(!/^\d{4}-\d{2}$/.test(start || '')) return ''; return acYmLabel(acYmShift(start, n - 1)); }
+function salInstText(it){ const p = salInstPlan(it); if(!p) return '-'; return acMoney(p.total) + ' SAR in ' + p.n + ' month' + (p.n > 1 ? 's' : '') + (it.start ? ', from ' + acYmLabel(it.start) + ' to ' + salInstEnd(it.start, p.n) : '') + ' (' + acMoney(p.each) + ' a month)'; }
+function salInstRow(it){
+  it = it || {}; const ty = salInstTypes(), p = salInstPlan(it);
+  return `<div class="salItRow"><select class="salItT">${ty.map(x => `<option value="${x.id}" ${Number(it.t) === Number(x.id) ? 'selected' : ''}>${acEsc(x.name)}</option>`).join('')}${it.t && !ty.some(x => Number(x.id) === Number(it.t)) ? `<option value="${it.t}" selected>Removed type</option>` : ''}</select><input type="text" inputmode="decimal" class="salItA" placeholder="Total amount" value="${acEsc(it.total || '')}"><input type="text" inputmode="numeric" class="salItM" placeholder="Months" value="${acEsc(it.months || '')}"><input type="month" class="salItS" title="Starts in this salary month" value="${acEsc(it.start || '')}"><button type="button" class="a2DdX" data-it="rm" aria-label="Remove">&times;</button><div class="hrNote salItN">${p ? salInstText(Object.assign({}, it)) : ''}</div></div>`;
+}
+function salInstRead(){
+  const out = []; document.querySelectorAll('#salInst .salItRow').forEach(r => {
+    const it = { t: Number(r.querySelector('.salItT').value) || 0, total: r.querySelector('.salItA').value.trim(), months: r.querySelector('.salItM').value.trim(), start: r.querySelector('.salItS').value };
+    if(salInstPlan(it) && it.start) out.push(it);
+  }); return out;
+}
+document.addEventListener('click', (e) => { const t = e.target.closest && e.target.closest('[data-it="rm"]'); if(t){ const r = t.closest('.salItRow'); if(r) r.remove(); } });
+document.addEventListener('input', (e) => { const r = e.target.closest && e.target.closest('.salItRow'); if(!r) return; const it = { total: r.querySelector('.salItA').value, months: r.querySelector('.salItM').value, start: r.querySelector('.salItS').value }; r.querySelector('.salItN').textContent = salInstPlan(it) ? salInstText(it) : ''; });
+// what is taken from this person in the given salary month
+function a2InstFor(r, ym){
+  const u = (state.users || []).find(x => x.loginId === r.id), list = (u && u.profile && u.profile.salary && u.profile.salary.instl) || [], out = [];
+  list.forEach(it => { const p = salInstPlan(it); if(!p || !/^\d{4}-\d{2}$/.test(it.start || '') || !/^\d{4}-\d{2}$/.test(ym || '')) return;
+    const idx = (Number(ym.slice(0, 4)) - Number(it.start.slice(0, 4))) * 12 + Number(ym.slice(5)) - Number(it.start.slice(5)); if(idx < 0 || idx >= p.n) return;
+    out.push({ t: salInstName(it.t), a: idx === p.n - 1 ? p.last : p.each, k: idx + 1, of: p.n }); });
+  return out;
+}
+function a2JoinSet(r, base){
+  a2JoinSet0(r, base);
+  const il = a2InstFor(r, A2.jym || A2.ym), sum = acR2(il.reduce((a, x) => a + x.a, 0));
+  r.il = il; r.idd = sum; r.ilt = il.map(x => x.t + ' ' + acMoney(x.a) + ' (' + x.k + '/' + x.of + ')');
+  if(sum) r.jded = acR2(acNum(r.jded) + sum);
+}
+function a2Cols(sec, all){
+  const cols = a2Cols1(sec, all);
+  cols.forEach(c => { if(c.k === 'rm'){
+    const t0 = c.text, h0 = c.html;
+    c.text = (r, i) => [t0(r, i), (r.ilt || []).join(', ')].filter(Boolean).join(', ');
+    c.html = (r, e, i) => { const x = h0(r, e, i) || '', l = r.ilt || []; return x + (l.length ? (x ? '<br>' : '') + `<span class="a2Jn">${l.map(acEsc).join('<br>')}</span>` : ''); };
+  } });
+  return cols;
+}
+
+/* ---------- deduct pop-up: reasons that work in days of pay ---------- */
+function a2PeriodDays(){ const rg = acDefaultRange(A2.ym), day = (x) => Date.UTC(+x.slice(0, 4), +x.slice(5, 7) - 1, +x.slice(8, 10)) / 864e5; return Math.round(day(rg.to) - day(rg.from)) + 1; }
+function a2DayVal(r){ const sec = A2.sec, b = sec === 'sponsor' ? acNum(r.basic) : sec === 'nonsponsor' ? acNum(r.fx) : 0; return b / a2PeriodDays(); }
+function a2DaysRule(r, id){ const x = a2DedReasons().find(y => Number(y.id) === Number(id)); if(!x || x.kind !== 'days' || A2.sec === 'operator') return null; return { mult: acNum(A2.sec === 'sponsor' ? x.sp : x.ns), set: String(A2.sec === 'sponsor' ? x.sp : x.ns).trim() !== '' }; }
+function a2DedCalc(l){ const d = a2Doc(), r = d && d.rows.find(x => x.id === A2D.id), ru = r && l.r ? a2DaysRule(r, l.r) : null; if(!ru) return null; const dv = a2DayVal(r), lv = acNum(l.lv); l.a = acR2(lv * ru.mult * dv); return { ru, dv, lv }; }
+function a2DedNote(l){ const c = a2DedCalc(l); if(!c) return ''; if(!c.ru.set) return 'Set the days for this reason in the settings first.'; return c.lv ? `${c.lv} day${c.lv === 1 ? '' : 's'} of leave x ${c.ru.mult} day${c.ru.mult === 1 ? '' : 's'} x ${acMoney(c.dv)} a day = ${acMoney(l.a) || '0.00'} SAR` : `${c.ru.mult} day${c.ru.mult === 1 ? '' : 's'} of pay for 1 day of leave (a day = ${acMoney(c.dv)} SAR)`; }
+function a2DedLineHtml(l, i, n){
+  const rs = a2DedReasons(), d = a2Doc(), r = d && d.rows.find(x => x.id === A2D.id), dy = !!(r && l.r && a2DaysRule(r, l.r));
+  const first = dy ? `<input type="text" inputmode="decimal" class="a2DdA" data-ad="lv" data-i="${i}" value="${acEsc(l.lv == null ? '' : l.lv)}" placeholder="Days of leave">` : `<input type="text" inputmode="decimal" class="a2DdA" data-ad="amt" data-i="${i}" value="${acEsc(l.a == null ? '' : l.a)}" placeholder="Amount">`;
+  return `<div class="a2DdL">${first}<select class="a2DdR" data-ad="rsn" data-i="${i}"><option value="">${rs.length ? 'Select reason' : 'No reasons yet'}</option>${rs.map(x => `<option value="${x.id}" ${Number(l.r) === Number(x.id) ? 'selected' : ''}>${x.id} &middot; ${acEsc(x.name)}</option>`).join('')}${l.r && !rs.some(x => Number(x.id) === Number(l.r)) ? `<option value="${l.r}" selected>${l.r} &middot; ${acEsc(l.n || '')}</option>` : ''}</select>${n > 1 ? `<button type="button" class="a2DdX" data-ad="rm" data-i="${i}" title="Remove this line" aria-label="Remove">&times;</button>` : '<span class="a2DdX0"></span>'}</div>${dy ? `<div class="hrNote a2DdN" data-note="${i}">${acEsc(a2DedNote(l))}</div>` : ''}`;
+}
+function a2DedOpen(id){
+  const d = a2Doc(), r = d && d.rows.find(x => x.id === id); if(!r || !acCanEdit()) return;
+  A2D.id = id; A2D.lines = (r.dl && r.dl.length) ? r.dl.map(l => ({ a: l.a, r: l.r || '', n: l.n || '', lv: l.lv == null ? '' : l.lv })) : (acNum(r.ded) ? [{ a: r.ded, r: '', n: '', lv: '' }] : [{ a: '', r: '', n: '', lv: '' }]);
+  let ov = document.getElementById('a2DedOv'); if(ov) ov.remove();
+  ov = document.createElement('div'); ov.id = 'a2DedOv'; ov.className = 'dlOv';
+  ov.innerHTML = `<div class="dlCard a2DdCard"><div class="dlHead"><b>Deduct &middot; ${acEsc(r.name)}</b><button type="button" class="dlX" data-ad="x" aria-label="Close">&times;</button></div><div class="a2DdBody"></div><div class="a2DdBtns"><button type="button" class="pillBtn" data-ad="x">Cancel</button><button type="button" class="pillBtn ok" data-ad="save">Save</button></div></div>`;
+  document.body.appendChild(ov); a2DedDraw();
+}
+function a2DedSave(){
+  const d = a2Doc(), r = d && d.rows.find(x => x.id === A2D.id); if(!r) return;
+  A2D.lines.forEach(l => { a2DedCalc(l); });
+  const lines = A2D.lines.filter(l => acNum(l.a) > 0 || (l.r && acNum(l.lv) > 0 && a2DaysRule(r, l.r))).map(l => { const o = { a: acR2(acNum(l.a)), r: l.r ? Number(l.r) : 0, n: l.r ? ((a2DedReasons().find(x => Number(x.id) === Number(l.r)) || {}).name || l.n || '') : '' }; if(acNum(l.lv) > 0 && l.r && a2DaysRule(r, l.r)) o.lv = acNum(l.lv); return o; });
+  r.dl = lines; const tot = acR2(lines.reduce((a, l) => a + l.a, 0)); r.ded = tot || '';
+  a2Touch(); a2RefreshRow(r); a2DirtyUi();
+  const ov = document.getElementById('a2DedOv'); if(ov) ov.remove();
+}
+document.addEventListener('input', (e) => { const t = e.target; if(!t.dataset || t.dataset.ad !== 'lv') return; const l = A2D.lines[Number(t.dataset.i)]; l.lv = t.value; const nt = document.querySelector(`[data-note="${t.dataset.i}"]`); if(nt) nt.textContent = a2DedNote(l); const x = document.getElementById('a2DdT'); if(x){ A2D.lines.forEach(q => a2DedCalc(q)); x.textContent = (acMoney(A2D.lines.reduce((a, q) => a + acNum(q.a), 0)) || '0.00') + ' SAR'; } });
+document.addEventListener('change', (e) => { const t = e.target; if(!t.dataset || t.dataset.ad !== 'rsn') return; const l = A2D.lines[Number(t.dataset.i)]; if(l){ l.n = ''; a2DedDraw(); } });
+function a2RmTip(r, id){ return (r.dl || []).filter(l => Number(l.r) === Number(id)).map(l => a2ReasonName(r, id) + ': ' + (l.lv ? l.lv + ' day leave, ' : '') + acMoney(l.a) + ' SAR').join('\n'); }
+
+function a2DlCfg(){ const c = a2DlCfg0(); if(A2.sec === 'operator' && a2HasCut()) c.key += '_cut'; return c; }
 </script>
 </body>
 </html>
