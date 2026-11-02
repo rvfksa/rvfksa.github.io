@@ -3846,6 +3846,7 @@ details.admD{margin:0 0 10px;}
         <div class="auth-tab" data-admintab="execaccess">Executive Access</div>
         <div class="auth-tab" data-admintab="passportaccess">Passport Access</div>
         <div class="auth-tab" data-admintab="holidays">Holidays</div>
+        <div class="auth-tab" data-admintab="salarymonth">Salary Month</div>
         <div class="auth-tab" data-admintab="config">Dropdowns</div>
         <div class="auth-tab" data-admintab="purchase">Purchase</div>
         <div class="auth-tab" data-admintab="letterhead">Letterhead</div>
@@ -4036,10 +4037,10 @@ details.admD{margin:0 0 10px;}
         <div id="paList"></div>
       </div>
 
-      <div class="auth-pane" id="admin-holidays">
-        <div class="card" style="margin-bottom:22px;">
+      <div class="auth-pane" id="admin-salarymonth">
+        <div class="card" style="margin-bottom:16px;max-width:560px;">
           <div class="sub" style="margin-top:0; font-weight:600; color:var(--text); text-transform:none;">Salary Month</div>
-          <p class="sub" style="margin-top:0;">Where a salary month starts and ends. Accounts, Employee Overview, My Status (Earned Picks) and every &ldquo;this month / last month&rdquo; filter use it.</p>
+          <p class="sub" style="margin-top:0;">Where a salary month starts and ends. The whole app follows it: Accounts (salary sheets, joining and leaving days), Employee Overview, My Status, Reports, and every &ldquo;this month / last month&rdquo; filter. Change it here and everything follows.</p>
           <div class="field" style="margin-bottom:6px; max-width:260px;">
             <label for="salaryCycleStartDay">Starts on day</label>
             <input type="number" id="salaryCycleStartDay" min="1" max="31" step="1" placeholder="e.g. 26">
@@ -4047,6 +4048,9 @@ details.admD{margin:0 0 10px;}
           <p class="hint" id="salaryCyclePrev" style="text-align:left; margin-left:0;"></p>
           <button class="btn btn-primary" id="saveSalaryCycleBtn" style="margin-top:6px;">Save</button>
         </div>
+      </div>
+
+      <div class="auth-pane" id="admin-holidays">
         <h2 style="margin-top:0;">Working Days &amp; Holidays</h2>
         <p class="sub">Marking a day as a Holiday only affects the expected working-hours calculation on the Dashboard's Machine &amp; Production section — it doesn't lock anyone out or stop them logging readings on that day. If part of the factory genuinely runs on a Friday, that's fine; that day's real production still shows up as normal, it just won't count as an "expected" working day when totalling hours.</p>
 
@@ -6904,7 +6908,8 @@ if($('saveSalaryCycleBtn')){
     try{
       await window.__db.saveConfigObject('salaryCycle', { startDay });
       state.salaryCycleStartDay = startDay;
-      toast('Salary cycle updated');
+      try{ rvfCycleChanged(); }catch(e){ console.error(e); }
+      toast('Salary month updated everywhere');
     }catch(err){ console.error(err); toast('Could not save — check your connection'); }
   });
 }
@@ -14230,11 +14235,10 @@ function renderEmpBreakdown(){
   if(by === 'flow'){
     const now = new Date(), rows = [];
     for(let k = 0; k < 6; k++){
-      const d = new Date(now.getFullYear(), now.getMonth() - k, 1);
-      const ym = d.getFullYear() + '-' + pad(d.getMonth() + 1);
-      const j = people.filter(u => ((u.profile || {}).joiningDate || '').slice(0, 7) === ym).length;
-      const l = people.filter(u => { const p = u.profile || {}; return (p.employmentStatus === 'terminated' || p.employmentStatus === 'final_exit') && (p.endDate || '').slice(0, 7) === ym; }).length;
-      rows.push(`<div class="m">${d.toLocaleString('en-GB', { month: 'short', year: 'numeric' })}</div><div class="v ${j ? '' : 'z'}">${j}</div><div class="v ${l ? '' : 'z'}">${l}</div>`);
+      const cy = rvfCycleAt(k), inC = (v) => { v = String(v || '').slice(0, 10); return v >= cy.start && v <= cy.end; };
+      const j = people.filter(u => inC((u.profile || {}).joiningDate)).length;
+      const l = people.filter(u => { const p = u.profile || {}; return (p.employmentStatus === 'terminated' || p.employmentStatus === 'final_exit') && inC(p.endDate); }).length;
+      rows.push(`<div class="m">${cy.label}</div><div class="v ${j ? '' : 'z'}">${j}</div><div class="v ${l ? '' : 'z'}">${l}</div>`);
     }
     body.innerHTML = `<div class="ovFlow"><div class="h">Month</div><div class="h">Joined</div><div class="h">Left</div>${rows.join('')}</div>`;
     $('ovBrkHint').textContent = 'Tap New Joined or Exit/Terminated above to see the names for any period.';
@@ -14674,7 +14678,7 @@ function renderMachineDrillList(scopedMachines, range){
 // once the one-time "Calculate Now" has built them for every machine;
 // until then it falls back to the daily summaries for the last 12 months,
 // exactly as before, so the chart is never wrong — only slower.
-async function loadMonthTotalsSqm(){
+async function loadMonthTotalsSqm0(){
   let rollups = state.cachedMonthly;   // undefined = not loaded yet, null = not built yet
   if(rollups === undefined){
     try{
@@ -22556,7 +22560,7 @@ document.addEventListener('input', (e) => {
 const ADM_G = [
   { n: 'People', t: [['users', 'Users'], ['execaccess', 'Executive Access'], ['passportaccess', 'Passport Access']] },
   { n: 'Team', t: [['assign', 'Operators & machines']] },
-  { n: 'Factory', t: [['machines', 'Machines'], ['shifttime', 'Shift & Timing'], ['holidays', 'Calendar']] },
+  { n: 'Factory', t: [['machines', 'Machines'], ['shifttime', 'Shift & Timing'], ['holidays', 'Calendar'], ['salarymonth', 'Salary Month']] },
   { n: 'Lists', t: [['config', 'Dropdowns']] },
   { n: 'Documents', t: [['purchase', 'Purchase'], ['letterhead', 'Letterhead'], ['ai', 'AI & Letters']] },
   { n: 'Maintenance', t: [['maint', 'Clean up & refresh']] }
@@ -23073,7 +23077,7 @@ function a2JoinSet(r, base){
   if(!ym || !/^\d{4}-\d{2}-\d{2}$/.test(j)) return;
   const rg = acDefaultRange(ym); if(j <= rg.from) return;
   const day = (x) => Date.UTC(+x.slice(0, 4), +x.slice(5, 7) - 1, +x.slice(8, 10)) / 864e5;
-  const div = acNum(AC.set && AC.set.absent && AC.set.absent.days) || 30;
+  const div = (rg.to && /^\d{4}-\d{2}-\d{2}$/.test(rg.to)) ? Math.round(day(rg.to) - day(rg.from)) + 1 : (acNum(AC.set && AC.set.absent && AC.set.absent.days) || 30);   // real days of this salary month
   const n = Math.min(Math.round(day(j) - day(rg.from)), div); if(!(n > 0)) return;
   r.jd = n; r.jdate = j; r.jded = acR2(acNum(base) * n / div);
   r.jdt = 'From ' + fmtDate(j).slice(0, 6).replace(/^0/, '') + ' \u00B7 ' + div + '-' + n + '=' + (div - n) + 'W'; r.jdl = 'Joined ' + fmtDate(j) + '. ' + div + ' days in the month - ' + n + ' days before joining = ' + (div - n) + ' days worked and paid (W)' + (r.jded ? ' (' + acMoney(r.jded) + ' deducted)' : '');
@@ -23160,6 +23164,84 @@ document.addEventListener('click', (e) => { const t = e.target.closest && e.targ
 const a2Nj = (r) => !!(r.jd && r.jd >= (acNum(AC.set && AC.set.absent && AC.set.absent.days) || 30));   // joined after this salary month: nothing to pay
 const a2NjCount = (rows) => (rows || []).filter(a2Nj).length;
 function a2Filtered(){ const l = a2Filtered0(); return A2.hideNj ? l.filter(r => !a2Nj(r)) : l; }
+
+// production per salary month (named after the month it ends in). With a start day of 1 the stored monthly totals are used as before.
+function pmKey(ds){ const sd = Number(state.salaryCycleStartDay) || 1; let y = +ds.slice(0, 4), m = +ds.slice(5, 7); if(sd > 1 && +ds.slice(8, 10) >= sd){ m++; if(m > 12){ m = 1; y++; } } return y + '-' + String(m).padStart(2, '0'); }
+async function loadMonthTotalsSqm(){
+  const sd = Number(state.salaryCycleStartDay) || 1;
+  if(sd <= 1) return loadMonthTotalsSqm0();
+  const from = rvfCycleAt(11).start, to = rvfCycleAt(0).end;
+  await ensureSummariesCover(from, to);
+  const tot = {};
+  (state.cachedSummaries || []).forEach(x => {
+    if(!x.date || x.date < from || x.date > to) return;
+    const m = state.machines.find(y => String(y.id) === String(x.machine)), sqm = machineSqm(x.picks, m);
+    if(sqm <= 0) return;
+    const k = pmKey(x.date); tot[k] = (tot[k] || 0) + sqm;
+  });
+  return tot;
+}
+async function render12MonthProduction(){
+  const box = $('prod12Month');
+  if(box.style.display === 'none') return;
+  box.innerHTML = '<div class="empty-state">Loading…</div>';
+  let tot;
+  try{ tot = await loadMonthTotalsSqm(); }
+  catch(err){ console.error(err); box.innerHTML = '<div class="empty-state">Could not load this. Tap Refresh and try again.</div>'; return; }
+  const sd = Number(state.salaryCycleStartDay) || 1, MN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'], rows = [];
+  for(let i = 0; i < 12; i++){
+    if(sd <= 1){ const n = new Date(); const d = new Date(n.getFullYear(), n.getMonth() - i, 1); rows.push({ k: d.getFullYear() + '-' + pad(d.getMonth() + 1), label: MN[d.getMonth()] + ' ' + d.getFullYear(), sub: '' }); }
+    else { const c = rvfCycleAt(i); rows.push({ k: c.end.slice(0, 7), label: c.label, sub: c.sub }); }
+  }
+  const mx = Math.max(1, ...rows.map(r => tot[r.k] || 0));
+  box.innerHTML = rows.map(r => { const v = tot[r.k] || 0;
+    return `<div class="card row" style="margin-bottom:6px; align-items:center;"><span class="k" style="min-width:110px;">${r.label}${r.sub ? `<span class="hrNote" style="display:block;margin:0;font-size:10.5px">${r.sub}</span>` : ''}</span><span style="flex:1; margin:0 10px; height:8px; border-radius:6px; background:var(--panel-2); overflow:hidden;"><span style="display:block; height:100%; width:${Math.max(v ? 4 : 0, v / mx * 100)}%; background:var(--amber); border-radius:6px;"></span></span><span style="min-width:70px; text-align:right;"><b>${v.toLocaleString(undefined, { maximumFractionDigits: 1 })}</b> m²</span></div>`; }).join('');
+}
+
+// the current salary month (named after the month it ends in); with start day 1 it is the calendar month
+function acYmNow(){ const sd = Number(state.salaryCycleStartDay) || 1, n = new Date(); if(sd <= 1) return n.getFullYear() + '-' + String(n.getMonth() + 1).padStart(2, '0'); return computeSalaryCycle(n, sd).end.slice(0, 7); }
+// called right after the start day is saved: forget everything that was worked out with the old day
+function rvfCycleChanged(){
+  state.pmTot = {}; state.pmMax = 3;
+  Object.keys(A2.docs || {}).forEach(k => { const d = A2.docs[k]; if(d && !d.savedAt && !d.dirty) delete A2.docs[k]; });   // saved or edited sheets keep their own dates
+  A2.ym = ''; AC.ym = '';
+  ['myPicksFrom', 'myPicksTo'].forEach(i => { const e = document.getElementById(i); if(e) e.value = ''; });
+  const b = document.getElementById('prod12Month'); if(b && b.style.display !== 'none') render12MonthProduction();
+}
+// production per salary month: only the months not yet known are read, one small query each; the oldest ones only when asked
+async function pmLoad(n){
+  state.pmTot = state.pmTot || {}; const sd = Number(state.salaryCycleStartDay) || 1, now = Date.now();
+  for(let i = 0; i < n; i++){
+    const c = rvfCycleAt(i), k = c.end.slice(0, 7), h = state.pmTot[k];
+    if(h && (i > 0 || now - h.at < 300000)) continue;
+    const list = await window.__db.loadSummariesInRange(c.start, c.end); let t = 0;
+    list.forEach(x => { const m = state.machines.find(y => String(y.id) === String(x.machine)), q = machineSqm(x.picks, m); if(q > 0) t += q; });
+    state.pmTot[k] = { v: t, at: now };
+  }
+}
+async function render12MonthProduction(){
+  const box = $('prod12Month'); if(box.style.display === 'none') return;
+  const sd = Number(state.salaryCycleStartDay) || 1, n = state.pmMax || 3;
+  let tot = {};
+  if(sd <= 1){
+    if(state.cachedMonthly === undefined) box.innerHTML = '<div class="empty-state">Loading…</div>';
+    try{ tot = await loadMonthTotalsSqm0(); }catch(err){ console.error(err); box.innerHTML = '<div class="empty-state">Could not load this. Tap Refresh and try again.</div>'; return; }
+  } else {
+    box.innerHTML = '<div class="empty-state">Loading…</div>';
+    try{ await pmLoad(n); }catch(err){ console.error(err); box.innerHTML = '<div class="empty-state">Could not load this. Tap Refresh and try again.</div>'; return; }
+    Object.keys(state.pmTot).forEach(k => { tot[k] = state.pmTot[k].v; });
+  }
+  const MN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'], rows = [], cnt = sd <= 1 ? 12 : n;
+  for(let i = 0; i < cnt; i++){
+    if(sd <= 1){ const t = new Date(), d = new Date(t.getFullYear(), t.getMonth() - i, 1); rows.push({ k: d.getFullYear() + '-' + pad(d.getMonth() + 1), label: MN[d.getMonth()] + ' ' + d.getFullYear(), sub: '' }); }
+    else { const c = rvfCycleAt(i); rows.push({ k: c.end.slice(0, 7), label: c.label, sub: c.sub }); }
+  }
+  const mx = Math.max(1, ...rows.map(r => tot[r.k] || 0));
+  box.innerHTML = rows.map(r => { const v = tot[r.k] || 0;
+    return `<div class="card row" style="margin-bottom:6px; align-items:center;"><span class="k" style="min-width:110px;">${r.label}${r.sub ? `<span class="hrNote" style="display:block;margin:0;font-size:10.5px">${r.sub}</span>` : ''}</span><span style="flex:1; margin:0 10px; height:8px; border-radius:6px; background:var(--panel-2); overflow:hidden;"><span style="display:block; height:100%; width:${Math.max(v ? 4 : 0, v / mx * 100)}%; background:var(--amber); border-radius:6px;"></span></span><span style="min-width:70px; text-align:right;"><b>${v.toLocaleString(undefined, { maximumFractionDigits: 1 })}</b> m²</span></div>`; }).join('')
+    + (sd > 1 && n < 12 ? '<button type="button" class="pillBtn" id="pmMore" style="margin-top:4px">Show older months</button>' : '');
+}
+document.addEventListener('click', (e) => { if(e.target && e.target.id === 'pmMore'){ state.pmMax = 12; render12MonthProduction(); } });
 </script>
 </body>
 </html>
