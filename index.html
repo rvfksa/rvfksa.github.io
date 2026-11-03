@@ -3650,6 +3650,42 @@ details.admD{margin:0 0 10px;}
 #approvalsBody .approve-key-readout{ margin:0; font-size:12.5px; }
 #approvalsBody .stopReasonBoxes .row-2{ margin-bottom:4px !important; gap:8px; }
 #approvalsBody .approve-actions{ margin-top:4px; }
+.viCard{ max-width:460px; } .viBody{ display:flex; flex-direction:column; gap:10px; margin:10px 0 12px; } .viBody .field{ margin:0; }
+.viChk{ display:flex; align-items:center; gap:8px; font-size:13.5px; cursor:pointer; } .viChk input{ width:auto; }
+.viTiles{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:12px; } .viTile{ background:var(--panel-2); border-radius:12px; padding:10px 12px; display:flex; flex-direction:column; gap:1px; } .viTile b{ font-size:20px; font-weight:500; color:var(--text-strong); } .viTile span{ font-size:12px; color:var(--text); } .viTile i{ font-style:normal; font-size:11px; color:var(--muted); }
+.viFl{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px; } .viFl input{ flex:1; min-width:160px; } .viFl select{ width:auto; }
+.viTbl td{ vertical-align:top; font-size:12.5px; }
+.a2Vio{ margin-bottom:10px; } .a2VioR{ display:flex; align-items:center; gap:10px; justify-content:space-between; flex-wrap:wrap; padding:6px 0; border-top:1px solid var(--line); font-size:13px; } .a2VioB{ display:flex; gap:6px; } .a2VioD summary{ cursor:pointer; font-size:12.5px; color:var(--muted); padding:6px 0; }
+@media (max-width:520px){ .viTiles{ grid-template-columns:1fr; } }
+/* Tickets v3 */
+.tkStc{ border-radius:12px; padding:12px 14px; background:#f6f6f8; display:flex; flex-direction:column; gap:4px; } .tkStc.warn{ background:#f3f0fb; } .tkStc.ok{ background:#f6f6f8; }
+.tkStT{ font-size:16px; font-weight:500; color:var(--text-strong); } .tkStS{ font-size:12.5px; color:var(--muted); } .tkStB{ display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
+.tkSl{ grid-template-columns:64px 150px 1fr; } @media (max-width:520px){ .tkSl{ grid-template-columns:56px 1fr; } .tkSl span{ grid-column:2; } }
+.tkFileB{ max-width:100%; display:inline-flex; align-items:center; gap:6px; } .tkFileB span{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; } .tkFl{ max-width:100%; }
+.tkGrp2{ display:contents; } .tkGrp2[style*="none"]{ display:none !important; }
+.tkCost{ margin:0 0 10px; } .tkCostL{ display:flex; flex-wrap:wrap; gap:6px 18px; font-size:13px; color:var(--muted); padding:8px 2px; } .tkCostL b{ color:var(--text-strong); font-weight:500; }
+.tkVr{ display:grid; grid-template-columns:1fr 90px 120px; gap:8px; font-size:13px; padding:4px 0; border-top:1px solid var(--line); } .tkVr b{ text-align:right; font-weight:500; }
+.tkBulk{ font-size:13px; padding:8px 12px; border-radius:10px; background:#f3f0fb; display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:6px; }
+/* Tickets list: clean rows */
+.tkQ{ display:grid; grid-template-columns:22px minmax(140px,1.2fr) minmax(190px,1.7fr) minmax(70px,.7fr) minmax(120px,1fr) minmax(110px,.9fr) auto; gap:14px; align-items:center; padding:11px 16px; cursor:pointer; }
+.tkQ:hover{ background:#fafafc; } .tkQ > *{ min-width:0; }
+.tkQn{ font-size:11.5px; color:var(--muted); }
+.tkQw, .tkQc, .tkQf{ display:flex; flex-direction:column; gap:2px; }
+.tkQw b{ font-size:13px; font-weight:500; color:var(--text-strong); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.tkQw span, .tkQc span, .tkQa span{ font-size:11.5px; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.tkQl{ display:flex; align-items:baseline; gap:10px; white-space:nowrap; } .tkQl b{ font-size:13px; font-weight:500; color:var(--text-strong); min-width:74px; } .tkQl span{ font-size:11.5px; color:var(--muted); overflow:hidden; text-overflow:ellipsis; }
+.tkQl.x b, .tkQl.x span{ text-decoration:line-through; color:var(--muted); }
+.tkQa{ font-size:12.5px; color:var(--text); display:flex; flex-direction:column; gap:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.tkQc b{ font-size:13px; font-weight:500; color:var(--text-strong); white-space:nowrap; }
+.tkQr{ font-size:11.5px; color:var(--accent,#4f46e5); white-space:nowrap; }
+.tkQs{ display:flex; flex-wrap:wrap; gap:4px; justify-content:flex-start; } .tkQs .tkBd{ margin:0; font-size:10.5px; white-space:nowrap; }
+.tkQ .tkView{ height:28px; padding:0 12px; font-size:12px; }
+@media (max-width:820px){ .tkQ{ grid-template-columns:22px 1fr auto; gap:8px 10px; } .tkQf{ grid-column:2 / 4; } .tkQa{ display:none; } .tkQc{ grid-column:2; } .tkQs{ grid-column:2 / 3; } .tkQ .tkView{ grid-column:3; grid-row:1; } }
+.tkCost{ margin:0; padding:2px 16px 8px; } .tkCostL{ gap:4px 22px; font-size:12px; padding:10px 0 6px; } .tkCostL b{ font-size:12.5px; }
+.tkCost .tkDt summary{ font-size:12px; } .tkBulk{ font-size:12.5px; }
+.tkGrp{ padding:14px 16px 6px; } .tkGrp b{ font-size:12.5px; } .tkGrp span{ font-size:11px; }
+.tkCost{ display:block !important; border:0 !important; background:transparent !important; } .tkCost .tkDt{ border-top:0; padding-top:0; margin-bottom:4px; }
+.tkSlM{ grid-column:2 / -1; font-style:normal; font-size:11.5px; color:var(--muted); }
 
 </style>
 </head>
@@ -12571,7 +12607,7 @@ function renderViolationsTab(){
       ${fieldRow('Date', fmtDate(v.date))}
       ${fieldRow('Reason', v.reason)}
       ${v.letter && v.letter.body ? `<details style="margin-top:8px;"><summary style="cursor:pointer;color:var(--amber);font-size:12px;font-weight:600;">Letter: ${aiEsc(v.letter.name || '')}</summary><div style="white-space:pre-wrap;font-size:12.5px;line-height:1.55;margin-top:6px;">${aiEsc((v.letter.subject ? v.letter.subject + '\n\n' : '') + v.letter.body)}</div></details>` : ''}
-      ${fieldRow('Money Deduction', v.deduction && v.deduction.yes ? ('Yes — ' + v.deduction.amount) : 'No')}
+      ${fieldRow('Money Deduction', v.deduction && v.deduction.yes ? ('Yes — ' + v.deduction.amount) : 'No')}${viMetaHtml(v)}
       ${(v.attachments||[]).length ? '<div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;">' + v.attachments.map((a,i)=>`<button class="btn btn-ghost btn-sm docViewBtn" data-ref="${a}">View Attachment ${i+1}</button>`).join('') + '</div>' : ''}
     </div>`;
   });
@@ -12614,6 +12650,7 @@ function violationEditForm(v){
     <div class="field"><label>Reason</label><input type="text" id="violEdit-reason" value="${v.reason||''}"></div>
     <div class="field"><label>Money Deduction</label><select id="violEdit-deduction"><option value="no" ${!ded.yes?'selected':''}>No</option><option value="yes" ${ded.yes?'selected':''}>Yes</option></select></div>
     <div class="field" id="violEdit-amountField" style="display:${ded.yes?'block':'none'};"><label>Amount</label><input type="text" id="violEdit-amount" value="${ded.amount||''}"></div>
+    ${viEditExtra(v)}
     <div class="row-2">
       <button class="btn btn-ghost" id="violEditCancelBtn">Cancel</button>
       <button class="btn btn-primary" id="violEditSaveBtn">Save Changes</button>
@@ -12627,6 +12664,7 @@ async function saveViolationEdit(id){
     reason: $('violEdit-reason').value.trim(),
     deduction: { yes: $('violEdit-deduction').value === 'yes', amount: $('violEdit-amount') ? $('violEdit-amount').value.trim() : '' }
   };
+  Object.assign(updates, viEditRead(id, updates));
   try{
     await window.__db.updateViolation(id, updates);
     toast('Violation updated');
@@ -13224,7 +13262,7 @@ const hrUI = {
 function hrTabsDef(){
   const t = [['todo', 'todo', 'To-Do'], ['people', 'people', 'People']];
   if(typeof astOn === 'function' && astOn()) t.splice(1, 0, ['tasks', 'check', 'My Tasks']);
-  if(hrCanEdit()){ t.push(['tickets', 'plane', 'Tickets'], ['message', 'msg', 'Message'], ['letters', 'file', 'Letters'], ['settings', 'gear', 'Settings']); }
+  if(hrCanEdit()){ t.push(['tickets', 'plane', 'Tickets'], ['message', 'msg', 'Message'], ['letters', 'file', 'Letters'], ['violations', 'warn', 'Violations'], ['settings', 'gear', 'Settings']); }
   return t;
 }
 function hrRender(){
@@ -13247,7 +13285,7 @@ function hrRenderTabs(){
 }
 function hrRenderBody(){
   const b = $('hrBody'); if(!b) return;
-  const fn = { todo:hrRenderTodo, tasks:astRender, tickets:tkRender, people:hrRenderPeople, message:hrRenderMessage, letters:hrRenderLetters, settings:hrRenderSettings }[hrUI.tab];
+  const fn = { todo:hrRenderTodo, tasks:astRender, tickets:tkRender, people:hrRenderPeople, message:hrRenderMessage, letters:hrRenderLetters, violations:hrRenderViolations, settings:hrRenderSettings }[hrUI.tab];
   try{ fn(); }catch(err){ console.error(err); b.innerHTML = '<div class="hrEmpty">Something went wrong in this section. The rest of the page is not affected.</div>'; }
 }
 async function hrOnEmployeesPageLoad(){
@@ -21451,11 +21489,22 @@ const tkPort = (p) => { const m = /\(([A-Za-z]{3})\)/.exec(p || ''); return m ? 
 const tkRoute = (l) => (l.from || l.to) ? tkPort(l.from) + ' → ' + tkPort(l.to) : '';
 const tkFirst = (t) => t.legs[0] || tkLeg0();
 const tkLastDate = (t) => tkLegs(t).filter(l => !l.can).map(l => l.d).filter(Boolean).sort().pop() || '';
-const tkIsPast = (t) => { const d = tkLastDate(t); return !!d && hrDaysTo(d) < 0; };
+const tkIsPast = (t) => !!t.flown;   // flown is marked by hand
+const tkPassed = (t) => { if(t.flown || t.st === 'cancelled' || tkReqOpen(t) || tkRfWait(t)) return false; const d = tkLastDate(t); return !!d && hrDaysTo(d) < 0; };
 const tkIsOne = (t) => t.kind !== 'return';
 const tkNeedRet = (t) => t.st !== 'cancelled' && tkIsOne(t) && tkDir(t) === 'go' && !t.retDone && !t.retOf && t.pur !== 'exit';
 const tkRfWait = (t) => !!(t.rf && t.rf.st === 'waiting');
 const tkReqOpen = (t) => !!(t.req && !t.req.done);
+const tkRefAsked = (t) => tkRfWait(t) || (tkReqOpen(t) && t.req.k === 'refund');
+const tkReschAsked = (t) => tkReqOpen(t) && t.req.k !== 'refund';
+const tkAskAmt = (t) => tkRfWait(t) ? tkNum(t.rf.amt) : (tkReqOpen(t) && t.req.k === 'refund' ? tkNum(t.req.amt) : 0);
+function tkRefInfo(t){
+  if(t.rf && t.rf.st === 'received') return { txt: 'Received', amt: tkNum(t.rf.amt) };
+  if(tkRefAsked(t)) return { txt: 'Asked (waiting)', amt: tkAskAmt(t) };
+  if(t.rf && t.rf.st === 'none') return { txt: 'No refund', amt: 0 };
+  return { txt: '', amt: 0 };
+}
+function tkRefLine(t){ const r = tkRefInfo(t); if(!r.txt || r.txt === 'No refund') return ''; return `<span class="tkLn tkRfAmt">${r.txt === 'Received' ? 'Refunded ' : 'Refund asked '}${r.amt ? tkMoney(r.amt) : '(amount not added)'}</span>`; }
 const tkSpent = (t) => tkNum(t.fare) + tkNum(t.fees);
 const tkDays = (d) => d ? hrDaysTo(d) : null;
 const tkAgo = (d) => { const n = tkDays(d); if(n === null) return ''; return n === 0 ? 'today' : (n < 0 ? Math.abs(n) + (n === -1 ? ' day ago' : ' days ago') : 'in ' + n + (n === 1 ? ' day' : ' days')); };
@@ -21538,10 +21587,11 @@ function tkFiltered(){
     { const d0 = tkFirst(t).d || ''; if(TK.df && (!d0 || d0 < TK.df)) return false; if(TK.dt && (!d0 || d0 > TK.dt)) return false; }
     if(s === 'past' && !(t.st !== 'cancelled' && tkIsPast(t))) return false;
     if(s === 'can' && t.st !== 'cancelled') return false;
-    if(s === 'up' && !(t.st !== 'cancelled' && !tkIsPast(t))) return false;
+    if(s === 'up' && !(t.st !== 'cancelled' && !tkIsPast(t) && !tkPassed(t) && !tkRefAsked(t))) return false;
+    if(s === 'passed' && !tkPassed(t)) return false;
     if(s === 'ret' && !tkNeedRet(t)) return false;
-    if(s === 'rfw' && !tkRfWait(t)) return false;
-    if(s === 'req' && !tkReqOpen(t)) return false;
+    if(s === 'rfw' && !tkRefAsked(t)) return false;
+    if(s === 'req' && !tkReschAsked(t)) return false;
     if(q){ const f = tkFirst(t), u = tkUser(t.emp), hay = [t.emp, u && u.name, t.pnr, t.last, t.vendor, tkLegs(t).map(l => [l.al, l.fn, l.from, l.to].join(' ')).join(' ')].join(' ').toLowerCase(); if(!hay.includes(q)) return false; }
     return true;
   }).sort((a, b) => (tkFirst(b).d || '').localeCompare(tkFirst(a).d || '') || (b.at || 0) - (a.at || 0));
@@ -21564,13 +21614,13 @@ function tkRender(){
 }
 function tkListHtml(){
   const it = TK.items, yr = String(hrToday().getFullYear());
-  const up = it.filter(t => t.st !== 'cancelled' && !tkIsPast(t)).length, ret = it.filter(tkNeedRet).length, rfw = it.filter(tkRfWait), req = it.filter(tkReqOpen).length;
+  const up = it.filter(t => t.st !== 'cancelled' && !tkIsPast(t) && !tkPassed(t) && !tkRefAsked(t)).length, ret = it.filter(tkNeedRet).length, rfw = it.filter(tkRefAsked), req = it.filter(tkReschAsked).length, pas = it.filter(tkPassed).length;
   const spent = it.filter(t => (tkFirst(t).d || '').slice(0, 4) === yr).reduce((s, t) => s + tkSpent(t) - (t.rf && t.rf.st === 'received' ? tkNum(t.rf.amt) : 0), 0);
-  const rfAmt = rfw.reduce((s, t) => s + tkNum(t.rf.amt), 0), refunded = it.filter(t => t.rf && t.rf.st === 'received').reduce((s, t) => s + tkNum(t.rf.amt), 0);
+  const rfAmt = rfw.reduce((s, t) => s + tkAskAmt(t), 0), refunded = it.filter(t => t.rf && t.rf.st === 'received').reduce((s, t) => s + tkNum(t.rf.amt), 0);
   const list = tkFiltered();
   const sec = (ic, title, count, right, body) => `<section class="tkSec"><div class="tkSecH"><span class="tkSecI">${tkIc(ic, 14)}</span><h3>${title}</h3>${count !== '' ? `<i>${count}</i>` : ''}<span class="grow"></span>${right || ''}</div>${body}</section>`;
   const nf = (TK.seg !== 'all' ? 1 : 0) + (TK.pur ? 1 : 0) + (TK.df ? 1 : 0) + (TK.dt ? 1 : 0);
-  const SEG = [['all', 'All tickets'], ['up', 'Upcoming'], ['past', 'Flown'], ['can', 'Cancelled'], ['ret', 'Return to book'], ['rfw', 'Refund waiting'], ['req', 'With the agent']];
+  const SEG = [['all', 'All tickets'], ['up', 'Upcoming'], ['past', 'Flown'], ['can', 'Cancelled'], ['ret', 'Return to book'], ['rfw', 'Refund asked'], ['req', 'Reschedule asked'], ['passed', 'Date passed']];
   const chip = (f, label) => `<span class="fChip">${label}<button data-tk="fclr" data-f="${f}" title="Remove" aria-label="Remove">&times;</button></span>`;
   const chips = (TK.seg !== 'all' ? chip('seg', (SEG.find(x => x[0] === TK.seg) || [0, ''])[1]) : '') + (TK.pur ? chip('pur', (TK_PUR.find(x => x[0] === TK.pur) || [0, ''])[1]) : '') + (TK.df || TK.dt ? chip('date', 'Date: ' + (TK.df ? tkDt(TK.df) : '...') + ' → ' + (TK.dt ? tkDt(TK.dt) : '...')) : '');
   const sel = (key, label, opts, cur) => `<div class="fItem"><label>${label}</label><select data-tk-q="${key}">${opts.map(o => `<option value="${o[0]}" ${cur === o[0] ? 'selected' : ''}>${o[1]}</option>`).join('')}</select></div>`;
@@ -21578,8 +21628,8 @@ function tkListHtml(){
       <div class="fGrid tkFg"><div class="fItem"><label>Travel date from</label><input type="date" data-tk-q="df" value="${tkE(TK.df)}"></div><div class="fItem"><label>To</label><input type="date" data-tk-q="dt" value="${tkE(TK.dt)}"></div>
         ${sel('pur', 'Purpose', [['', 'All']].concat(TK_PUR), TK.pur)}${sel('seg', 'Status', SEG, TK.seg)}</div>
       <div class="tkQuick"><span>Quick:</span><button type="button" data-tk="dpre" data-v="month">This month</button><button type="button" data-tk="dpre" data-v="next30">Next 30 days</button><button type="button" data-tk="dpre" data-v="last30">Last 30 days</button><button type="button" data-tk="dpre" data-v="year">This year</button></div></div>` : '';
-  const spanel = TK.so ? `<div class="tkP tkSm"><div class="asumTiles">${tkTile('up', 'plane', up, 'Upcoming', '', '')}${tkTile('ret', 'cal', ret, 'Return to book', '', '')}${tkTile('rfw', 'down', rfw.length, 'Refund waiting', rfAmt ? tkMoney(rfAmt) + ' waiting' : '', '')}
-        ${tkTile('req', 'clock', req, 'With the agent', '', '', 1)}<div class="asumTile sm tkNoClick"><span class="n">${Math.round(spent).toLocaleString('en-US')}</span><span class="l">Net spent this year (SAR)</span><span class="tkCap">Refunded ${tkMoney(refunded)}</span></div></div></div>` : '';
+  const spanel = TK.so ? `<div class="tkP tkSm"><div class="asumTiles">${tkTile('up', 'plane', up, 'Upcoming', '', '')}${tkTile('ret', 'cal', ret, 'Return to book', '', '')}${tkTile('rfw', 'down', rfw.length, 'Refund asked', rfAmt ? tkMoney(rfAmt) + ' waiting' : 'waiting for the money', '')}
+        ${tkTile('req', 'clock', req, 'Reschedule asked', '', '', 1)}${tkTile('passed', 'cal', pas, 'Date passed', 'mark as flown', '', 1)}<div class="asumTile sm tkNoClick"><span class="n">${Math.round(spent).toLocaleString('en-US')}</span><span class="l">Net spent this year (SAR)</span><span class="tkCap">Refunded ${tkMoney(refunded)}</span></div></div></div>` : '';
   const eye = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
   return `<div class="tkWrap"><div class="tkCard"><div class="tkTb"><button class="iconBtn ${TK.fo ? 'on' : ''}" data-tk="ftoggle" title="Filter by date, purpose and status" aria-label="Filter">${tkIc('filter', 17)}${nf ? `<span class="iconBadge">${nf}</span>` : ''}</button>
         <label class="tkS">${tkIc('search', 15)}<input type="text" data-tk-q="q" placeholder="Search name, ID, PNR, airline, city…" value="${tkE(TK.q)}"></label>
@@ -21592,7 +21642,7 @@ function tkListHtml(){
 function tkTaskRow(x){
   return `<div class="tkTask lv-${x.lv}"><span class="tkTi">${tkIc(x.ic, 15)}</span><div class="tkTx"><b>${tkE(x.title)}</b><span>${tkE(x.sub)}</span></div><div class="tkTa">${x.acts.map(a => `<button class="${a[0] === 'open' ? 'tkGhost' : 'tkMini'}" data-tk="${a[0]}" data-id="${tkE(x.t.id)}" title="${a[1]}">${a[0] === 'open' ? a[1] : tkIc(a[2], 13) + a[1]}</button>`).join('')}</div></div>`;
 }
-function tkTableHtml(list){
+function tkTableHtml0(list){
   if(!list.length) return `<div class="hrEmpty">${TK.items.length ? 'No ticket matches.' : 'No tickets yet. Press <b>New ticket</b> after you book a flight.'}</div>`;
   return `<div class="tkL">${list.map((t, i) => tkRowHtml(t, i)).join('')}</div>`;
 }
@@ -21609,7 +21659,7 @@ function tkRowHtml(t, i){
   const rtLn = l => `<span class="tkLn${l.can ? ' tkCanL' : ''}">${tkE(tkRoute(l)) || '-'}${l.can ? ' (cancelled)' : ''}</span>`, daLn = l => `<span class="tkLn">${tkDt(l.d)}${tkLegTime(l) ? ' · ' + tkLegTime(l) : ''}</span>`;
   const pur = (TK_PUR.find(p => p[0] === t.pur) || [0, ''])[1];
   return `<div class="tkR"><div class="tkRL"><span class="tkN">${i + 1}</span><span class="tkIc">${tkIc('plane', 16)}</span><span class="tkWho"><b>${tkE(tkName(t.emp))}</b> <i>${tkE(t.emp)}</i></span><span class="tkPu">${tkE(pur)}</span>
-    <span class="tkRt">${rtLn(f)}${l2 ? rtLn(l2) : ''}</span><span class="tkDa">${daLn(f)}${l2 ? daLn(l2) : ''}</span><span class="tkAl"><span class="tkLn">${tkE(f.al)}${f.fn ? ' ' + tkE(f.fn) : ''}</span>${t.rf && t.rf.st !== 'none' ? `<span class="tkLn tkRfAmt">${t.rf.st === 'received' ? 'Refunded ' : 'Refund '}${t.rf.amt ? tkMoney(t.rf.amt) : '(amount not added)'}</span>` : ''}</span><span class="tkBs">${tkBadgeHtml(t)}</span><button class="pillBtn tkView" data-tk="view" data-id="${tkE(t.id)}">View</button></div></div>`;
+    <span class="tkRt">${rtLn(f)}${l2 ? rtLn(l2) : ''}</span><span class="tkDa">${daLn(f)}${l2 ? daLn(l2) : ''}</span><span class="tkAl"><span class="tkLn">${tkE(f.al)}${f.fn ? ' ' + tkE(f.fn) : ''}</span>${tkRefLine(t)}</span><span class="tkBs">${tkBadgeHtml(t)}</span><button class="pillBtn tkView" data-tk="view" data-id="${tkE(t.id)}">View</button></div></div>`;
 }
 
 /* ---------- form ---------- */
@@ -21646,9 +21696,8 @@ function tkFormHtml(){
       ${D.pur === 'exit' ? `<div class="tkHint" style="margin-bottom:10px;">${tkIc('info', 13)} Exit: one-way ticket, no return is needed.</div>` : `<div class="tkTrip">${tkSeg('kind', [['return', 'Return trip'], ['one', 'Going only'], ['come', 'Coming only']], tkKindSel(D))}</div>`}
       ${tkLegHtml(0, D.kind === 'return' ? 'Going' : (tkDir(D) === 'come' ? 'Coming to Riyadh' : 'Going'))}${D.kind === 'return' && D.pur !== 'exit' ? tkLegHtml(1, 'Return') : `${D.retOf || D.pur === 'exit' || tkDir(D) === 'come' ? '' : `<div class="tkG tkRet"><div class="tkHint wide">${tkIc('clock', 13)} Going only? Add the possible return date and we will remind you to book the return. If this ticket is only for coming back to Riyadh, choose Coming only.</div>${tkF('Possible return date', 'retBy', D.retBy, 'date')}</div>`}`}</div>
     ${m === 'resched' ? `<div class="tkBox"><div class="tkBoxH">${tkIc('down', 14)}Extra cost of this change</div><div class="tkG">${tkF('Change fee (SAR)', 'fee', D.fee || '', 'number', 'min="0" step="any" inputmode="decimal"')}${tkF('Fare difference (SAR)', 'diff', D.diff || '', 'number', 'min="0" step="any" inputmode="decimal"')}<div class="tkF"><span>Total extra</span><b class="tkTot" id="tkTot">${tkMoney(tkNum(D.fee) + tkNum(D.diff))}</b></div><label class="tkF wide"><span>Reason (optional)</span><input type="text" data-tk-in="why" value="${tkE(D.why || '')}"></label></div><div class="tkHint" style="margin:10px 0 6px;">Receipt or airline mail for this change (optional)</div>${tkDocW('chg', 'Add document')}</div>` : ''}
-    <div class="tkBox"><div class="tkBoxH">${tkIc('idc', 14)}Money and booking</div><div class="tkG">${m === 'resched' ? '' : tkF('Fare paid (SAR)', 'fare', D.fare, 'number', 'min="0" step="any" inputmode="decimal"') + tkF('Booked from', 'vendor', D.vendor, 'text', 'placeholder="Agency / website" list="tkVn" autocomplete="off"')}</div>
-      <details class="tkDt tkOpt" ${D.pnr || D.last || (D.files || []).length || (D.nf || []).length ? 'open' : ''}><summary>PNR, last name and ticket copy (optional)</summary><div class="tkG" style="margin-top:8px;">${tkF('PNR / booking ref.', 'pnr', D.pnr, 'text', 'autocapitalize="characters"')}${tkF('Last name (as on ticket)', 'last', D.last)}</div>
-      <div class="tkHint" style="margin:12px 0 6px;">Ticket copy (photo or PDF up to 600 KB)</div>${tkFilesHtml(D)}</details></div>
+    <div class="tkBox"><div class="tkBoxH">${tkIc('idc', 14)}Booking and cost</div><div class="tkG">${m === 'resched' ? '' : tkF('Fare paid (SAR)', 'fare', D.fare, 'number', 'min="0" step="any" inputmode="decimal"') + tkF('Booked from', 'vendor', D.vendor, 'text', 'placeholder="Agency / website" list="tkVn" autocomplete="off"')}${tkF('PNR / booking ref.', 'pnr', D.pnr, 'text', 'autocapitalize="characters"')}${tkF('Last name (as on ticket)', 'last', D.last)}</div>
+      <div class="tkHint" style="margin:12px 0 6px;">Ticket copy (photo or PDF up to 600 KB)</div>${tkFilesHtml(D)}</div>
     <div class="tkBtns"><button class="pcBtnMain sm" data-tk="save" ${TK.busy ? 'disabled' : ''}>${TK.busy ? 'Saving…' : 'Save'}</button><button class="pcBtnSoft sm" data-tk="back">Cancel</button></div>
     <datalist id="tkEmps">${emps.map(u => `<option value="${tkE(u.name)} (${tkE(u.loginId)})">`).join('')}</datalist><datalist id="tkAl">${tkMem('al').map(a => `<option value="${tkE(a)}">`).join('')}</datalist><datalist id="tkPt">${tkMem('pt').map(a => `<option value="${tkE(a)}">`).join('')}</datalist><datalist id="tkVn">${tkMem('vn').map(a => `<option value="${tkE(a)}">`).join('')}</datalist></div>`;
 }
@@ -21750,7 +21799,7 @@ async function tkFilesChosen(el){
     if(ok){ toast('Saved'); tkRender(); }
   }catch(err){ console.error(err); toast('Could not upload — check your connection'); }
 }
-async function tkSaveDraft(){
+async function tkSaveDraft0(){
   const D = TK.D, m = TK.mode; if(TK.busy) return;
   if(!D.emp){ toast('Choose the employee first'); return; }
   if(!tkFirst(D).d){ toast('Add the flight date'); return; }
@@ -21846,18 +21895,18 @@ function tkXlsx(){
   if(typeof XLSX === 'undefined'){ toast('Excel tool not loaded — check your connection'); return; }
   const list = tkFiltered(); if(!list.length){ toast('Nothing to download'); return; }
   const head = ['ID', 'Name', 'Purpose', 'Trip', 'Airline', 'Flight', 'From', 'To', 'Date', 'Departs', 'Arrives', 'Terminal', 'Baggage', 'Return date', 'Return flight', 'PNR', 'Last name', 'Booked from', 'Fare (SAR)', 'Change fees (SAR)', 'Status', 'Refund', 'Refund amount (SAR)', 'Note'];
-  const rows = list.map(t => { const f = tkFirst(t), r = t.kind === 'return' ? t.legs[1] : null; return [t.emp, tkName(t.emp), (TK_PUR.find(p => p[0] === t.pur) || [0, ''])[1], t.kind === 'return' ? 'Return' : (tkDir(t) === 'come' ? 'Coming only' : 'Going only'), f.al, f.fn, f.from, f.to, f.d, f.dep, f.arr, f.trm, f.bag, r ? r.d : (t.retBy || ''), r ? [r.al, r.fn, tkRoute(r)].filter(Boolean).join(' ') : '', t.pnr, t.last, t.vendor, tkNum(t.fare) || '', tkNum(t.fees) || '', tkStatusText(t), t.rf ? (t.rf.st === 'received' ? 'Received' : (t.rf.st === 'waiting' ? 'Waiting' : 'No refund')) : '', t.rf ? tkNum(t.rf.amt) || '' : '', t.note]; });
+  const rows = list.map(t => { const f = tkFirst(t), r = t.kind === 'return' ? t.legs[1] : null; return [t.emp, tkName(t.emp), (TK_PUR.find(p => p[0] === t.pur) || [0, ''])[1], t.kind === 'return' ? 'Return' : (tkDir(t) === 'come' ? 'Coming only' : 'Going only'), f.al, f.fn, f.from, f.to, f.d, f.dep, f.arr, f.trm, f.bag, r ? r.d : (t.retBy || ''), r ? [r.al, r.fn, tkRoute(r)].filter(Boolean).join(' ') : '', t.pnr, t.last, t.vendor, tkNum(t.fare) || '', tkNum(t.fees) || '', tkStatusText(t), tkRefInfo(t).txt, tkRefInfo(t).amt || '', t.note]; });
   const aoa = rvfNumRows([head].concat(rows)), ws = XLSX.utils.aoa_to_sheet(aoa); ws['!cols'] = aoa[0].map((h, i) => ({ wch: i === 2 ? 22 : 15 }));
   const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Tickets'); XLSX.writeFile(wb, 'tickets-' + rvfDateStamp() + '.xlsx'); toast('Excel file downloaded');
 }
 async function tkPdf(){
   const list = tkFiltered(); if(!list.length){ toast('Nothing to download'); return; }
-  const e = tkE, it = TK.items, rfw = it.filter(tkRfWait), spent = list.reduce((s, t) => s + tkSpent(t) - (t.rf && t.rf.st === 'received' ? tkNum(t.rf.amt) : 0), 0);
-  const filt = [TK.q && 'Search: ' + TK.q, TK.pur && 'Purpose: ' + (TK_PUR.find(p => p[0] === TK.pur) || [0, ''])[1], { up: 'Upcoming', ret: 'Return to book', rfw: 'Refund waiting', req: 'Reissue / refund sent' }[TK.seg]].filter(Boolean).join(' · ');
+  const e = tkE, it = TK.items, rfw = it.filter(tkRefAsked), spent = list.reduce((s, t) => s + tkSpent(t) - (t.rf && t.rf.st === 'received' ? tkNum(t.rf.amt) : 0), 0);
+  const filt = [TK.q && 'Search: ' + TK.q, TK.pur && 'Purpose: ' + (TK_PUR.find(p => p[0] === TK.pur) || [0, ''])[1], { up: 'Upcoming', past: 'Flown', can: 'Cancelled', ret: 'Return to book', rfw: 'Refund asked', req: 'Reschedule asked', passed: 'Date passed' }[TK.seg]].filter(Boolean).join(' · ');
   const rows = list.map((t, i) => { const f = tkFirst(t), r = t.kind === 'return' ? t.legs[1] : null; return `<tr><td>${i + 1}</td><td>${e(tkName(t.emp))} (${e(t.emp)})</td><td>${e((TK_PUR.find(p => p[0] === t.pur) || [0, ''])[1])}</td><td>${e(f.al)} ${e(f.fn)}</td><td>${e(tkRoute(f))}</td><td>${tkDt(f.d)} ${e(f.dep)}${r && r.d ? '<br>back ' + tkDt(r.d) : (tkNeedRet(t) && t.retBy ? '<br>return by ' + tkDt(t.retBy) : '')}</td><td>${e(t.pnr)}</td><td>${t.fare ? tkMoney(t.fare) : ''}</td><td>${e(tkStatusText(t))}</td></tr>`; });
   const th = '<tr><th>#</th><th>Employee</th><th>Purpose</th><th>Flight</th><th>Route</th><th>Date</th><th>PNR</th><th>Fare</th><th>Status</th></tr>';
   toast('Making the PDF…');
-  await rvfMakePdf([rvfPdfHeader('Flight tickets', [list.length + ' tickets · ' + rvfNowText(), filt, 'Total fares shown: ' + tkMoney(spent) + (rfw.length ? ' · refunds waiting: ' + rfw.length : '')])].concat(rvfTableBlocks(th, rows, 24)), 'tickets-' + rvfDateStamp() + '.pdf');
+  await rvfMakePdf([rvfPdfHeader('Flight tickets', [list.length + ' tickets · ' + rvfNowText(), filt, 'Total fares shown: ' + tkMoney(spent) + (rfw.length ? ' · refunds asked, not received: ' + rfw.length : '')])].concat(rvfTableBlocks(th, rows, 24)), 'tickets-' + rvfDateStamp() + '.pdf');
 }
 
 /* ---------- employee profile: a Tickets card at the top of the Vacation tab (Admin and CEO only) ---------- */
@@ -22234,7 +22283,7 @@ function a2Draw(){
   if(A2.sec === 'saudi'){ $('a2Head').innerHTML = ''; $('acMain').innerHTML = '<div class="a2Empty"><div class="a2EmptyT">Saudi salary sheet</div><div class="hrNote">This section is ready and waiting. Its salary format will be added once it is decided.</div></div>'; return; }
   a2DrawSheet();
 }
-function a2DrawSheet(){
+function a2DrawSheet0(){
   { const gone = a2DropOthers(); if(gone) toast(gone + (gone === 1 ? ' person is' : ' people are') + ' now counted in another sheet and left this one'); }
   { const d0 = a2Doc(); if(d0 && d0.rows && d0.rows.length) a2JoinRefresh(d0); }
   const d = a2Doc(), sec = A2.sec, ed = acCanEdit(), rows = d ? d.rows : [], op = sec === 'operator';
@@ -22545,7 +22594,7 @@ function a2DedDraw(){
     + `<div class="a2DdTot"><span>Total deduction</span><b id="a2DdT">${acMoney(tot) || '0.00'} SAR</b></div>`
     + (a2DedReasons().length ? '' : `<div class="hrNote" style="margin:8px 0 0;">Add the reasons first in the Operator settings (gear button), under Deduction reasons.</div>`);
 }
-function a2DedOpen(id){
+function a2DedOpen0(id){
   const d = a2Doc(), r = d && d.rows.find(x => x.id === id); if(!r || !acCanEdit()) return;
   A2D.id = id; A2D.lines = (r.dl && r.dl.length) ? r.dl.map(l => ({ a: l.a, r: l.r || '', n: l.n || '' })) : (acNum(r.ded) ? [{ a: r.ded, r: '', n: '' }] : [{ a: '', r: '', n: '' }]);
   let ov = document.getElementById('a2DedOv'); if(ov) ov.remove();
@@ -22553,7 +22602,7 @@ function a2DedOpen(id){
   ov.innerHTML = `<div class="dlCard a2DdCard"><div class="dlHead"><b>Deduct &middot; ${acEsc(r.name)}</b><button type="button" class="dlX" data-ad="x" aria-label="Close">&times;</button></div><div class="a2DdBody"></div><div class="a2DdBtns"><button type="button" class="pillBtn" data-ad="x">Cancel</button><button type="button" class="pillBtn ok" data-ad="save">Save</button></div></div>`;
   document.body.appendChild(ov); a2DedDraw();
 }
-function a2DedSave(){
+function a2DedSave0(){
   const d = a2Doc(), r = d && d.rows.find(x => x.id === A2D.id); if(!r) return;
   const lines = A2D.lines.filter(l => acNum(l.a) > 0).map(l => ({ a: acR2(acNum(l.a)), r: l.r ? Number(l.r) : 0, n: l.r ? ((a2DedReasons().find(x => Number(x.id) === Number(l.r)) || {}).name || l.n || '') : '' }));
   r.dl = lines; const tot = acR2(lines.reduce((a, l) => a + l.a, 0)); r.ded = tot || '';
@@ -23201,7 +23250,7 @@ function a2Changes(){
   if(sec !== 'operator'){ const have = new Set(d.rows.map(r => r.id)); out.idch.forEach(c => have.add(c.u.loginId)); a2People(sec).forEach(u => { if(!have.has(u.loginId)) out.fresh.push(u); }); }
   return out;
 }
-function a2ChgHtml(){
+function a2ChgHtml0(){
   const c = a2Changes(), n = c.moved.length + c.idch.length + c.gone.length + c.fresh.length; if(!n) return '';
   const L = (x) => x ? (A2_SEC[x] || {}).n || x : '', li = [];
   c.moved.forEach(x => li.push(`<b>${acEsc(x.r.name)}</b> (ID ${acEsc(x.r.id)}) ${x.why ? x.why + '. He is taken out of the salary.' : 'is now ' + (x.to ? 'in the ' + acEsc(L(x.to)) + ' sheet' : 'marked as no salary') + '. He leaves this sheet.'}`));
@@ -23335,7 +23384,7 @@ function a2JoinSet(r, base){
   r.il = il; r.idd = sum; r.ilt = il.map(x => x.t + ' ' + acMoney(x.a) + ' (' + x.k + '/' + x.of + ')');
   if(sum) r.jded = acR2(acNum(r.jded) + sum);
 }
-function a2Cols(sec, all){
+function a2ColsB(sec, all){
   const cols = a2Cols1(sec, all);
   cols.forEach(c => { if(c.k === 'rm'){
     const t0 = c.text, h0 = c.html;
@@ -23356,7 +23405,7 @@ function a2DedLineHtml(l, i, n){
   const first = dy ? `<input type="text" inputmode="decimal" class="a2DdA" data-ad="lv" data-i="${i}" value="${acEsc(l.lv == null ? '' : l.lv)}" placeholder="Days of leave">` : `<input type="text" inputmode="decimal" class="a2DdA" data-ad="amt" data-i="${i}" value="${acEsc(l.a == null ? '' : l.a)}" placeholder="Amount">`;
   return `<div class="a2DdL">${first}<select class="a2DdR" data-ad="rsn" data-i="${i}"><option value="">${rs.length ? 'Select reason' : 'No reasons yet'}</option>${rs.map(x => `<option value="${x.id}" ${Number(l.r) === Number(x.id) ? 'selected' : ''}>${x.id} &middot; ${acEsc(x.name)}</option>`).join('')}${l.r && !rs.some(x => Number(x.id) === Number(l.r)) ? `<option value="${l.r}" selected>${l.r} &middot; ${acEsc(l.n || '')}</option>` : ''}</select>${n > 1 ? `<button type="button" class="a2DdX" data-ad="rm" data-i="${i}" title="Remove this line" aria-label="Remove">&times;</button>` : '<span class="a2DdX0"></span>'}</div>${dy ? `<div class="hrNote a2DdN" data-note="${i}">${acEsc(a2DedNote(l))}</div>` : ''}`;
 }
-function a2DedOpen(id){
+function a2DedOpen0(id){
   const d = a2Doc(), r = d && d.rows.find(x => x.id === id); if(!r || !acCanEdit()) return;
   A2D.id = id; A2D.lines = (r.dl && r.dl.length) ? r.dl.map(l => ({ a: l.a, r: l.r || '', n: l.n || '', lv: l.lv == null ? '' : l.lv })) : (acNum(r.ded) ? [{ a: r.ded, r: '', n: '', lv: '' }] : [{ a: '', r: '', n: '', lv: '' }]);
   let ov = document.getElementById('a2DedOv'); if(ov) ov.remove();
@@ -23364,7 +23413,7 @@ function a2DedOpen(id){
   ov.innerHTML = `<div class="dlCard a2DdCard"><div class="dlHead"><b>Deduct &middot; ${acEsc(r.name)}</b><button type="button" class="dlX" data-ad="x" aria-label="Close">&times;</button></div><div class="a2DdBody"></div><div class="a2DdBtns"><button type="button" class="pillBtn" data-ad="x">Cancel</button><button type="button" class="pillBtn ok" data-ad="save">Save</button></div></div>`;
   document.body.appendChild(ov); a2DedDraw();
 }
-function a2DedSave(){
+function a2DedSave0(){
   const d = a2Doc(), r = d && d.rows.find(x => x.id === A2D.id); if(!r) return;
   A2D.lines.forEach(l => { a2DedCalc(l); });
   const lines = A2D.lines.filter(l => acNum(l.a) > 0 || (l.r && acNum(l.lv) > 0 && a2DaysRule(r, l.r))).map(l => { const o = { a: acR2(acNum(l.a)), r: l.r ? Number(l.r) : 0, n: l.r ? ((a2DedReasons().find(x => Number(x.id) === Number(l.r)) || {}).name || l.n || '') : '' }; if(acNum(l.lv) > 0 && l.r && a2DaysRule(r, l.r)) o.lv = acNum(l.lv); return o; });
@@ -23449,7 +23498,7 @@ async function astSetStatus(id, st){
 /* ---------- Tickets v2 ---------- */
 const tkDir = (t) => t.kind === 'return' ? '' : (t.dir || ((tkPort(tkFirst(t).to) === 'RUH' && tkPort(tkFirst(t).from) !== 'RUH') ? 'come' : 'go'));
 const tkKindSel = (D) => D.kind === 'return' ? 'return' : (tkDir(D) === 'come' ? 'come' : 'one');
-const tkAct = (t) => tkNeedRet(t) || tkRfWait(t) || tkReqOpen(t);
+const tkAct = (t) => tkNeedRet(t) || tkRfWait(t) || tkReqOpen(t) || tkPassed(t);
 function tkPartLong(t, p){ if(!p || p === 'all' || t.kind !== 'return') return t.kind === 'return' ? 'Whole ticket (both flights)' : 'Whole ticket'; if(p === 'both') return 'Both flights'; const l = t.legs[p === 'go' ? 0 : 1] || {}; return (p === 'go' ? 'Going flight' : 'Return flight') + ' (' + (tkRoute(l) || '-') + (l.d ? ', ' + tkDt(l.d) : '') + ')'; }
 function tkPartShort(t, p){ if(!p || p === 'all' || t.kind !== 'return') return ''; return p === 'both' ? ' (both flights)' : p === 'go' ? ' (going flight)' : ' (return flight)'; }
 // names used before come first (most used first), then the built-in list
@@ -23478,7 +23527,7 @@ function tkNowBox(t, id){
   }
   return L.join('');
 }
-function tkTableHtml(list){
+function tkTableHtml0(list){
   if(!list.length) return `<div class="hrEmpty">${TK.items.length ? 'No ticket matches.' : 'No tickets yet. Press <b>New ticket</b> after you book a flight.'}</div>`;
   const act = list.filter(tkAct), up = list.filter(t => !tkAct(t) && t.st !== 'cancelled' && !tkIsPast(t)), done = list.filter(t => !tkAct(t) && (t.st === 'cancelled' || tkIsPast(t)));
   let n = 0;
@@ -23522,7 +23571,7 @@ function tkReqSection(t, id){
   return `<div class="tkMS"><h4>Agent request</h4><div class="tkFxs">${tkFx('Asked for', what)}${tkFx('For', tkPartLong(t, r.part))}${tkFx('Sent on', tkDt(r.at))}${r.k === 'refund' ? tkFx('Refund amount', tkNum(r.amt) ? tkMoney(r.amt) : 'Not added - use Edit request') : ''}${tkFx('Status', r.done ? 'Done on ' + tkDt(r.doneAt) : 'With the agent for ' + w + (w === 1 ? ' day' : ' days'))}${r.note ? tkFx('Note', r.note) : ''}</div>${tip}<div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap;">${b('reqedit', 'Edit request', 'tkMini')}${r.done && r.k === 'refund' && !t.rf ? b('reqdonep', 'Record refund', 'tkMini') : ''}${r.done ? b('reqreopen', 'Not done yet') : b('reqdone', 'Mark done')}${b('reqdel', 'Remove request')}</div></div>`;
 }
 
-async function tkClick(e){
+async function tkClick1(e){
   const el = e.target.closest('[data-tk]'), a = el && el.dataset.tk;
   if(a === 'more'){ TK.more = !TK.more; tkModalSync(); return; }
   if(!['cancelok', 'reqok', 'reqedit', 'reqreopen', 'reqdel', 'rmreqf', 'reqdone', 'reqdonep', 'reqdoneok'].includes(a)) return tkClick0(e);
@@ -23622,6 +23671,384 @@ function apprWhoHtml(r, delayed){
   const sp = apprSupOf(r), nm = sp ? assignEsc(sp.name) + ' <span style="color:var(--muted);">(' + assignEsc(sp.id) + ')</span>' : '<b>no approver set</b> on the operator profile';
   if(delayed) return `<div class="meta-small" style="margin-top:3px; color:var(--danger);">${sp ? 'Waiting for approval from' : 'Nobody to approve:'} <b>${nm}</b> &middot; late by ${apprLateTxt(r)}</div>`;
   return `<div class="meta-small" style="margin-top:3px;">Approver: <b>${nm}</b></div>`;
+}
+
+HR_IC.warn = '<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/>';
+const VI = { list: null, busy: false, q: '', ty: '', sg: '' };
+const viAmt = (v) => acNum(String((v.deduction && v.deduction.amount) || '').replace(/[^\d.]/g, ''));
+const viKind = (v) => (v.deduction && v.deduction.yes && viAmt(v) > 0) ? 'deduction' : 'warning';
+const viHow = { physical: 'Physically signed', esign: 'E-signed', approval: 'Approved in the app' };
+const viSigned = (v) => v.signed && v.signed.yes ? (viHow[v.signed.how] || 'Signed') + ' · kept in the employee file' : 'Not signed';
+function viSal(v){
+  if(viKind(v) !== 'deduction') return '';
+  if(!v.sd) return 'Not linked to salary';
+  const m = v.sd.ym ? ' (' + acYmLabel(v.sd.ym) + ')' : '';
+  return v.sd.st === 'applied' ? 'Added to salary' + m : (v.sd.st === 'skipped' ? 'Not deducted from salary' : 'Waiting for your approval in the salary sheet');
+}
+function viMetaHtml(v){
+  return fieldRow('Signed', viSigned(v)) + (viSal(v) ? fieldRow('Salary', viSal(v)) : '');
+}
+function viEditExtra(v){
+  const sg = v.signed && v.signed.yes ? (v.signed.how || 'physical') : '', st = v.sd ? v.sd.st : 'skipped', o = (val, t, cur) => `<option value="${val}" ${cur === val ? 'selected' : ''}>${t}</option>`;
+  return `<div class="field"><label>Signed copy</label><select id="violEdit-sg">${o('', 'Not signed yet', sg)}${o('physical', 'Physically signed, paper kept in the employee file', sg)}${o('esign', 'E-signed, kept in the employee file', sg)}</select></div>
+    <div class="field" id="violEdit-sdField" style="display:${v.deduction && v.deduction.yes ? 'block' : 'none'};"><label>Salary</label><select id="violEdit-sd">${o('pending', 'Waiting for my approval in the salary sheet', st)}${o('applied', 'Already added to salary', st)}${o('skipped', 'Do not deduct from salary', st)}</select></div>`;
+}
+function viEditRead(id, up){
+  const old = (profileCache.violations || []).find(x => x._id === id) || {}, sg = $('violEdit-sg') ? $('violEdit-sg').value : '', out = {};
+  out.signed = sg ? { yes: true, how: sg, at: (old.signed && old.signed.at) || Date.now(), by: (old.signed && old.signed.by) || state.user.loginId } : { yes: false };
+  if(up.deduction.yes && $('violEdit-sd')){ const st = $('violEdit-sd').value; out.sd = { st, ym: st === 'pending' ? '' : ((old.sd && old.sd.ym) || ''), at: Date.now(), by: state.user.loginId }; }
+  out.kind = viKind(up);
+  return out;
+}
+document.addEventListener('change', (e) => { if(e.target && e.target.id === 'violEdit-deduction'){ const f = $('violEdit-sdField'); if(f) f.style.display = e.target.value === 'yes' ? 'block' : 'none'; } });
+
+/* ---- save a letter in the employee file ---- */
+function aiSaveViolation(){
+  const T = aiType(), u = hrFind(aiU.emp); if(!T || !u) return;
+  if(!aiDocText(aiU.doc).trim()){ toast('The letter has no text yet'); return; }
+  const amt = parseFloat(aiU.amount) || 0, subj = aiSubject() || T.name;
+  let ov = document.getElementById('viOv'); if(ov) ov.remove();
+  ov = document.createElement('div'); ov.id = 'viOv'; ov.className = 'dlOv';
+  ov.innerHTML = `<div class="dlCard viCard"><div class="dlHead"><b>Save in ${aiEsc(u.name || '')}'s file</b><button type="button" class="dlX" data-vi="x" aria-label="Close">&times;</button></div>
+    <div class="viBody">
+      <div class="field"><label>Reason</label><input type="text" id="vi-reason" value="${aiEsc(subj)}"></div>
+      <div class="field"><label>Date</label><input type="date" id="vi-date" value="${aiEsc(aiU.date || aiToday())}"></div>
+      <div class="field"><label>Type</label><select id="vi-type"><option value="w" ${amt > 0 ? '' : 'selected'}>Warning only</option><option value="d" ${amt > 0 ? 'selected' : ''}>Warning with a salary deduction</option></select></div>
+      <div class="field" id="vi-amtF" style="display:${amt > 0 ? 'block' : 'none'};"><label>Deduction amount (SAR)</label><input type="text" inputmode="decimal" id="vi-amt" value="${amt > 0 ? amt : ''}"><div class="hrNote" style="margin-top:4px;">Nothing is cut yet. It waits in the salary sheet until you press Add there, so you can still decide not to.</div></div>
+      <label class="viChk"><input type="checkbox" id="vi-sg"> Signed and kept in the employee file</label>
+      <div class="field" id="vi-sgF" style="display:none;"><label>How was it signed?</label><select id="vi-how"><option value="physical">Physically signed (paper copy)</option><option value="esign">E-signed</option></select></div>
+    </div>
+    <div class="a2DdBtns"><button type="button" class="pillBtn" data-vi="x">Cancel</button><button type="button" class="pillBtn ok" data-vi="save">Save</button></div></div>`;
+  document.body.appendChild(ov);
+}
+document.addEventListener('change', (e) => {
+  const t = e.target; if(!t) return;
+  if(t.id === 'vi-type'){ document.getElementById('vi-amtF').style.display = t.value === 'd' ? 'block' : 'none'; }
+  if(t.id === 'vi-sg'){ document.getElementById('vi-sgF').style.display = t.checked ? 'block' : 'none'; }
+});
+async function viSaveGo(){
+  const T = aiType(), u = hrFind(aiU.emp); if(!T || !u || aiU.busy) return;
+  const type = document.getElementById('vi-type').value, amt = type === 'd' ? acNum(document.getElementById('vi-amt').value) : 0;
+  if(type === 'd' && !(amt > 0)){ toast('Write the deduction amount'); return; }
+  const date = document.getElementById('vi-date').value || aiToday(), reason = document.getElementById('vi-reason').value.trim() || T.name, sg = document.getElementById('vi-sg').checked;
+  const rec = { employeeId: u.loginId, date, reason, deduction: { yes: amt > 0, amount: amt > 0 ? acR2(amt) + ' SAR' : '' }, attachments: [], kind: amt > 0 ? 'deduction' : 'warning',
+    signed: sg ? { yes: true, how: document.getElementById('vi-how').value, at: Date.now(), by: state.user.loginId } : { yes: false },
+    letter: { type: T.id, name: T.name, subject: aiSubject(), body: aiDocText(aiU.doc), date: aiLong(date) }, createdAt: Date.now(), createdBy: state.user.loginId };
+  if(amt > 0) rec.sd = { st: 'pending', ym: '' };
+  aiU.busy = true;
+  try{ await window.__db.saveViolation(rec); VI.list = null; const ov = document.getElementById('viOv'); if(ov) ov.remove(); toast('Saved in the file of ' + u.name + (amt > 0 ? '. The deduction waits for your approval in the salary sheet.' : '')); }
+  catch(err){ console.error(err); toast('Could not save — check your connection'); }
+  aiU.busy = false;
+}
+document.addEventListener('click', (e) => { const t = e.target.closest && e.target.closest('[data-vi]'); if(!t) return;
+  const a = t.dataset.vi;
+  if(a === 'x'){ const o = document.getElementById('viOv'); if(o) o.remove(); } else if(a === 'save') viSaveGo(); });
+
+/* ---- list of violations: HR Assistant > Violations ---- */
+async function hrRenderViolations(){
+  const b = $('hrBody'); if(!b) return;
+  if(!VI.list){
+    b.innerHTML = '<div class="hrEmpty">Loading…</div>';
+    try{ VI.list = await window.__db.listViolations(); }catch(err){ console.error(err); b.innerHTML = '<div class="hrEmpty">Could not load the violations. Check your connection and open this tab again.</div>'; return; }
+    if(hrUI.tab !== 'violations') return;
+  }
+  const L = VI.list, w = L.filter(v => viKind(v) === 'warning').length, d = L.filter(v => viKind(v) === 'deduction'), tot = d.reduce((a, v) => a + viAmt(v), 0), ns = L.filter(v => !(v.signed && v.signed.yes)).length;
+  const tile = (n, t, sub) => `<div class="viTile"><b>${n}</b><span>${t}</span>${sub ? `<i>${sub}</i>` : ''}</div>`;
+  b.innerHTML = `<div class="viTiles">${tile(w, 'Warnings', 'no deduction')}${tile(d.length, 'Deductions', acMoney(tot) + ' SAR in total')}${tile(ns, 'Not signed', 'no signed copy marked')}</div>
+    <div class="viFl"><input type="text" id="viQ" placeholder="Search name, ID or reason" value="${aiEsc(VI.q)}"><select id="viTy"><option value="">All</option><option value="warning" ${VI.ty === 'warning' ? 'selected' : ''}>Warnings only</option><option value="deduction" ${VI.ty === 'deduction' ? 'selected' : ''}>Deductions only</option></select><select id="viSg"><option value="">Signed or not</option><option value="no" ${VI.sg === 'no' ? 'selected' : ''}>Not signed</option><option value="yes" ${VI.sg === 'yes' ? 'selected' : ''}>Signed</option></select></div><div id="viList"></div>`;
+  viDrawList();
+}
+function viDrawList(){
+  const box = document.getElementById('viList'); if(!box) return;
+  const L = VI.list || [], per = {}; L.forEach(v => { const p = per[v.employeeId] = per[v.employeeId] || { w: 0, d: 0 }; if(viKind(v) === 'deduction') p.d++; else p.w++; });
+  const q = VI.q.trim().toLowerCase();
+  const rows = L.filter(v => (!VI.ty || viKind(v) === VI.ty) && (!VI.sg || (VI.sg === 'yes') === !!(v.signed && v.signed.yes)) && (!q || [v.employeeId, (hrFind(v.employeeId) || {}).name, v.reason].join(' ').toLowerCase().includes(q))).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  if(!rows.length){ box.innerHTML = '<div class="hrEmpty">' + (L.length ? 'Nothing matches.' : 'No violations saved yet. Open Letters, write a warning letter and press the warning button.') + '</div>'; return; }
+  box.innerHTML = `<div class="table-scroll"><table class="report-table viTbl"><thead><tr><th>Date</th><th>Employee</th><th>Reason</th><th>Type</th><th>Amount</th><th>Signed</th><th>Salary</th></tr></thead><tbody>${rows.map(v => { const u = hrFind(v.employeeId), p = per[v.employeeId], k = viKind(v);
+    return `<tr><td style="white-space:nowrap">${aiEsc(fmtDate(v.date))}</td><td>${aiEsc((u && u.name) || v.employeeId)}<div class="asgMute">ID ${aiEsc(v.employeeId)} &middot; ${p.w} warning${p.w === 1 ? '' : 's'}, ${p.d} deduction${p.d === 1 ? '' : 's'}</div></td><td>${aiEsc(v.reason || '')}${v.letter && v.letter.body ? `<details><summary class="asgMute" style="cursor:pointer">Letter</summary><div style="white-space:pre-wrap;font-size:12px;line-height:1.5;margin-top:4px;">${aiEsc((v.letter.subject ? v.letter.subject + '\\n\\n' : '') + v.letter.body)}</div></details>` : ''}</td><td>${k === 'deduction' ? 'Deduction' : 'Warning'}</td><td>${k === 'deduction' ? acMoney(viAmt(v)) + ' SAR' : '-'}</td><td>${aiEsc(viSigned(v).replace(' · kept in the employee file', ''))}</td><td>${aiEsc(viSal(v) || '-')}</td></tr>`; }).join('')}</tbody></table></div>`;
+}
+document.addEventListener('input', (e) => { if(e.target && e.target.id === 'viQ'){ VI.q = e.target.value; viDrawList(); } });
+document.addEventListener('change', (e) => { if(!e.target) return; if(e.target.id === 'viTy'){ VI.ty = e.target.value; viDrawList(); } if(e.target.id === 'viSg'){ VI.sg = e.target.value; viDrawList(); } });
+
+/* ---- salary sheet: violation deductions wait for the person's decision ---- */
+function a2VioItems(){
+  const d = a2Doc(), out = { p: [], a: [] }; if(!d || !VI.list || !acCanEdit()) return out;
+  const to = d.to || acDefaultRange(A2.ym).to, rows = {}; d.rows.forEach(r => { rows[r.id] = r; });
+  VI.list.forEach(v => {
+    if(!v.sd || !(viAmt(v) > 0)) return; const r = rows[v.employeeId]; if(!r) return;
+    if((r.dl || []).some(l => l.vid === v._id)){ out.a.push({ v, r }); return; }
+    if((v.sd.st === 'pending' || (v.sd.st === 'applied' && v.sd.ym === A2.ym)) && (v.date || '') <= to) out.p.push({ v, r });
+  });
+  out.p.sort((a, b) => (a.v.date || '').localeCompare(b.v.date || ''));
+  return out;
+}
+const a2VioShort = (dt) => fmtDate(dt).slice(0, 6).replace(/^0/, '');
+function a2VioInner(){
+  const it = a2VioItems(); if(!it.p.length && !it.a.length) return '';
+  const row = (x, btns) => `<div class="a2VioR"><span><b>${acEsc(x.r.name)}</b> &middot; ${acEsc(a2VioShort(x.v.date))} &middot; ${acEsc(x.v.reason || 'Violation')} &middot; <b>${acMoney(viAmt(x.v))} SAR</b></span>${btns}</div>`;
+  return `<div class="a2Chg a2Vio">
+    ${it.p.length ? `<div class="a2ChgH"><b>${it.p.length} violation deduction${it.p.length === 1 ? '' : 's'} waiting for your decision</b></div>${it.p.map(x => row(x, `<span class="a2VioB"><button type="button" class="pillBtn ok" data-a2v="add" data-id="${acEsc(x.v._id)}">Add to salary</button><button type="button" class="pillBtn" data-a2v="skip" data-id="${acEsc(x.v._id)}">Don't add</button></span>`)).join('')}` : ''}
+    ${it.a.length ? `<details class="a2VioD"><summary>${it.a.length} violation deduction${it.a.length === 1 ? '' : 's'} added in this sheet</summary>${it.a.map(x => row(x, `<span class="a2VioB"><button type="button" class="pillBtn" data-a2v="rem" data-id="${acEsc(x.v._id)}">Remove</button></span>`)).join('')}</details>` : ''}</div>`;
+}
+function a2VioFill(){ const b = document.getElementById('a2VioBox'); if(b) b.innerHTML = a2VioInner(); }
+function a2ChgHtml(){ return `<div id="a2VioBox">${a2VioInner()}</div>` + a2ChgHtml0(); }
+function a2DrawSheet(){
+  a2DrawSheet0();
+  if(acCanEdit() && !VI.list && !VI.busy && window.__db && window.__db.listViolations){ VI.busy = true; window.__db.listViolations().then(l => { VI.list = l; VI.busy = false; a2VioFill(); }).catch(err => { console.error(err); VI.busy = false; }); }
+}
+const a2VioSum = (r) => acR2((r.dl || []).reduce((a, l) => a + acNum(l.a), 0)) || '';
+async function a2VioSet(id, st, ym){
+  const v = (VI.list || []).find(x => x._id === id); if(!v) return;
+  v.sd = { st, ym: ym || '', at: Date.now(), by: state.user.loginId };
+  try{ await window.__db.updateViolation(id, { sd: v.sd }); }catch(err){ console.error(err); toast('Done in the sheet, but the letter could not be marked. Check your connection.'); }
+}
+async function a2VioAct(a, id){
+  const d = a2Doc(), v = (VI.list || []).find(x => x._id === id); if(!d || !v || !acCanEdit()) return;
+  const r = d.rows.find(x => x.id === v.employeeId);
+  if(a === 'skip'){ await a2VioSet(id, 'skipped', ''); a2VioFill(); toast('Not added to the salary'); return; }
+  if(!r) return;
+  if(a === 'add'){
+    if(!(r.dl && r.dl.length) && acNum(r.ded) > 0) r.dl = [{ a: acR2(acNum(r.ded)), r: 0, n: '' }];
+    r.dl = (r.dl || []).concat([{ a: acR2(viAmt(v)), r: 0, n: 'Violation: ' + (v.reason || 'Violation'), vid: id, vd: v.date || '' }]); r.ded = a2VioSum(r);
+    a2Touch(); a2RefreshRow(r); a2DirtyUi(); a2VioSet(id, 'applied', A2.ym); a2VioFill(); a2VioCell(r); toast('Added to ' + acEsc(r.name) + "'s deduction. Press Save sheet to keep it.");
+  } else if(a === 'rem'){
+    r.dl = (r.dl || []).filter(l => l.vid !== id); r.ded = a2VioSum(r);
+    a2Touch(); a2RefreshRow(r); a2DirtyUi(); a2VioSet(id, 'skipped', ''); a2VioFill(); a2VioCell(r); toast('Removed from the salary');
+  }
+}
+function a2VioCell(r){   // the remarks cell of this row
+  const cols = a2Screen(A2.sec), c = cols.find(x => x.k === 'rm'); if(!c) return;
+  document.querySelectorAll(`#a2Tbl td[data-rid="${CSS.escape(r.id)}"][data-c="rm"]`).forEach(td => { if(!td.querySelector('input')) td.innerHTML = c.html(r, false, 0); });
+}
+document.addEventListener('click', (e) => { const t = e.target.closest && e.target.closest('[data-a2v]'); if(t) a2VioAct(t.dataset.a2v, t.dataset.id); });
+function a2Cols(sec, all){
+  const cols = a2ColsB(sec, all);
+  const vl = (r) => (r.dl || []).filter(l => l.vid).map(l => 'Violation ' + (l.vd ? a2VioShort(l.vd) + ': ' : ': ') + String(l.n || '').replace(/^Violation:\s*/, '') + ' ' + acMoney(l.a));
+  cols.forEach(c => { if(c.k === 'rm'){
+    const t0 = c.text, h0 = c.html;
+    c.text = (r, i) => [t0(r, i), vl(r).join(', ')].filter(Boolean).join(', ');
+    c.html = (r, e, i) => { const x = h0(r, e, i) || '', l = vl(r); return x + (l.length ? (x ? '<br>' : '') + `<span class="a2Jn">${l.map(acEsc).join('<br>')}</span>` : ''); };
+  } });
+  return cols;
+}
+function a2DedOpen(id){
+  const d = a2Doc(), r = d && d.rows.find(x => x.id === id); if(!r || !acCanEdit()) return;
+  const all = r.dl || [], keep = all.filter(l => l.vid), oded = r.ded;
+  if(keep.length){ r.dl = all.filter(l => !l.vid); r.ded = a2VioSum(r); }
+  try{ a2DedOpen0(id); } finally { r.dl = all; r.ded = oded; }
+  A2D.vl = keep;
+  if(keep.length){ const h = document.querySelector('#a2DedOv .dlHead b'); if(h) h.textContent += ' (violation deductions of ' + acMoney(keep.reduce((a, l) => a + acNum(l.a), 0)) + ' SAR stay as they are)'; }
+}
+function a2DedSave(){
+  const keep = A2D.vl || [], d = a2Doc(), r = d && d.rows.find(x => x.id === A2D.id); A2D.vl = [];
+  a2DedSave0();
+  if(r && keep.length){ r.dl = (r.dl || []).concat(keep); r.ded = a2VioSum(r); a2Touch(); a2RefreshRow(r); a2VioCell(r); }
+}
+
+function tkLegHtml(i, title){
+  const L = TK.D.legs[i], more = L.fn || L.arr || L.bag;
+  return `<div class="tkLeg"><div class="tkLegH">${tkIc('plane', 14)}${title}</div><div class="tkG">
+    ${tkF('Date', 'l' + i + '.d', L.d, 'date')}${tkF('Time', 'l' + i + '.dep', L.dep, 'time')}${tkF('Airline', 'l' + i + '.al', L.al, 'text', 'list="tkAl" autocomplete="off"')}${tkF('From (airport)', 'l' + i + '.from', L.from, 'text', 'list="tkPt" autocomplete="off"')}${tkF('To (airport)', 'l' + i + '.to', L.to, 'text', 'list="tkPt" autocomplete="off"')}${tkF('Riyadh terminal', 'l' + i + '.trm', L.trm, 'text', 'placeholder="e.g. T5"')}</div>
+    <details class="tkDt tkOpt" ${more ? 'open' : ''}><summary>Flight number, arrival time, baggage (optional)</summary><div class="tkG" style="margin-top:8px;">${tkF('Flight no.', 'l' + i + '.fn', L.fn)}${tkF('Arrives', 'l' + i + '.arr', L.arr, 'time')}${tkF('Baggage', 'l' + i + '.bag', L.bag, 'text', 'placeholder="e.g. 30 kg"')}</div></details></div>`;
+}
+async function tkSaveDraft(){
+  const D = TK.D, m = TK.mode;
+  if(D && (m === 'new' || m === 'ret' || m === 'rebook')){
+    if(!D.emp){ toast('Choose the employee first'); return; }
+    if(!tkFirst(D).d){ toast('Add the flight date'); return; }
+    if(!(tkNum(D.fare) > 0)){ toast('Add the fare paid. It is needed for the cost.'); return; }
+    if(!String(D.vendor || '').trim()){ toast('Add where you booked it. It is needed for the cost.'); return; }
+  }
+  return tkSaveDraft0();
+}
+
+/* ---- the one status of a ticket ---- */
+function tkStep(t){
+  const rf = t.rf, rq = t.req, b = (a, l, p) => [a, l, !!p], S = (badge, cls, txt, sub, btns) => ({ badge, cls, txt, sub, btns: btns || [] });
+  const rem = (o) => o && o.remAt ? 'Reminder on ' + tkDt(o.remAt) : '', ask = (d) => 'asked ' + tkDt(d) + ' (' + tkAgo(d) + ')';
+  if(tkRfWait(t)) return S('Refund asked', 'warn', 'Refund asked', [tkPartLong(t, rf.part), tkNum(rf.amt) ? 'expected ' + tkMoney(rf.amt) : 'amount not known yet', ask(rf.since || t.cancelAt), rem(rf)].filter(Boolean).join(' · '), [b('rfok', 'Refund received', 1), b('p_upd', 'Add update')]);
+  if(tkReqOpen(t)){
+    if(rq.k === 'refund') return S('Refund asked', 'warn', 'Refund asked (with the agent)', [tkPartLong(t, rq.part), ask(rq.at), rem(rq)].filter(Boolean).join(' · '), [b('reqdone', 'Refund received', 1), b('p_upd', 'Add update')]);
+    return S('Reschedule asked', 'warn', 'Reschedule asked', [rq.part && rq.part !== 'all' ? tkPartLong(t, rq.part) : '', ask(rq.at), rq.note || '', rem(rq)].filter(Boolean).join(' · '), [b('p_resdone', 'Reschedule done', 1), b('p_upd', 'Add update')]);
+  }
+  if(t.flown) return S('Flown', 'mut', 'Flown', 'on ' + tkDt(t.flown) + ((rf && rf.st === 'received') ? ' · refund received ' + tkMoney(rf.amt) + ' for the cancelled flight' : ''), [b('unflown', 'Not flown yet')]);
+  if(t.st === 'cancelled'){
+    const nb = t.next ? [] : [b('rebook', 'Book a new ticket')];
+    if(rf && rf.st === 'received') return S('Refund received', 'ok', 'Refund received: ' + tkMoney(rf.amt), 'cancelled ' + tkDt(t.cancelAt) + (rf.rec ? ' · received ' + tkDt(rf.rec) : ''), nb);
+    return S('Cancelled', 'bad', 'Cancelled, no refund', 'on ' + tkDt(t.cancelAt), nb);
+  }
+  const f = tkFirst(t), cl = t.kind === 'return' && t.legs.some(l => l.can) ? (t.legs[0].can ? 'Going flight cancelled' : 'Return flight cancelled') + (rf && rf.st === 'received' ? ', refund ' + tkMoney(rf.amt) + ' received' : '') : '';
+  if(tkPassed(t)) return S('Date passed', 'warn', 'Travel date has passed', [cl, 'Did the passenger travel? Then mark it as flown.'].filter(Boolean).join(' · '), [b('flown', 'Mark flown', 1), b('p_resk', 'Reschedule'), b('p_canc', 'Cancel / Refund')]);
+  return S('Booked', 'ok', 'Booked', [cl, f.d ? 'Flies ' + tkDt(f.d) + ' (' + tkAgo(f.d) + ')' : ''].filter(Boolean).join(' · '), [b('p_resk', 'Reschedule'), b('p_canc', 'Cancel / Refund'), b('flown', 'Mark flown')]);
+}
+function tkBadges(t){
+  const s = tkStep(t), b = [[s.badge, s.cls]];
+  if(tkNeedRet(t)) b.push(['Book return ticket', 'warn']);
+  if((t.h || []).some(e => e.k === 'resched')) b.push(['Rescheduled', 'mut']);
+  return b;
+}
+
+/* ---- the small panels ---- */
+const tkDl = () => `<datalist id="tkAl">${tkMem('al').map(a => `<option value="${tkE(a)}">`).join('')}</datalist><datalist id="tkPt">${tkMem('pt').map(a => `<option value="${tkE(a)}">`).join('')}</datalist>`;
+function tkLegSel(t, id, label, cur){
+  if(t.kind !== 'return') return '';
+  const o = (v, i) => { const l = t.legs[i]; return `<option value="${v}" ${l.can ? 'disabled' : ''} ${cur === v ? 'selected' : ''}>${v === 'go' ? 'Going' : 'Return'}: ${tkE(tkRoute(l) || '-')}${l.d ? ', ' + tkE(tkDt(l.d)) : ''}${l.can ? ' (cancelled)' : ''}</option>`; };
+  return `<label class="tkF wide"><span>${label}</span><select id="${id}">${o('go', 0)}${o('ret', 1)}</select></label>`;
+}
+function tkSegIdx(t, part){ return t.kind === 'return' && part === 'ret' ? 1 : 0; }
+function tkReschPanel(t, mode){
+  const rq = t.req && !t.req.done ? t.req : null, part = mode === 'done' && rq ? (rq.part || 'go') : (t.kind === 'return' ? (t.legs[0].can ? 'ret' : 'go') : 'all'), L = t.legs[tkSegIdx(t, part)] || tkLeg0(), choose = mode === 'choose';
+  const vis = (g) => (choose ? (g === 'asked') : (g === 'done' ? mode === 'done' : mode === 'ask')) ? '' : 'display:none;';
+  return tkPan(mode === 'done' ? 'Reschedule done' : 'Reschedule', (choose ? `<label class="tkF wide"><span>What happened?</span><select id="tkp-what"><option value="asked">I asked the agent. Waiting for the answer</option><option value="done">Already rescheduled</option></select></label>` : '') +
+    (mode === 'done' ? (t.kind === 'return' ? `<div class="tkHint wide">${tkE(tkPartLong(t, part))}</div>` : '') : tkLegSel(t, 'tkp-seg', 'Which flight?', part)) +
+    tkP('Date', 'tkp-date', tkToday(), 'date') +
+    `<div class="tkGrp2 wide" data-g="asked" style="${vis('asked')}">${tkP('Remind me in (days)', 'tkp-rem', '7', 'number', 'min="1" step="1"')}${tkP('Note (optional)', 'tkp-note', '')}</div>` +
+    `<div class="tkGrp2 wide" data-g="done" style="${vis('done')}"><div class="tkHint wide">The new details. Leave a field as it is if it did not change.</div>${tkP('New travel date', 'tkp-nd', L.d || '', 'date')}${tkP('New time', 'tkp-nt', L.dep || '', 'time')}${tkP('Airline', 'tkp-nal', L.al || '', 'text', 'list="tkAl" autocomplete="off"')}${tkP('From', 'tkp-nfr', L.from || '', 'text', 'list="tkPt" autocomplete="off"')}${tkP('To', 'tkp-nto', L.to || '', 'text', 'list="tkPt" autocomplete="off"')}${tkP('PNR', 'tkp-npnr', t.pnr || '')}${tkP('Extra cost (SAR)', 'tkp-nex', '', 'number', 'min="0" step="any"')}</div>` +
+    `<div class="tkF wide"><span>Screenshot or attachment</span>${tkDocW('pnl', 'Add')}</div>` + tkDl(), 'reskok', t.id);
+}
+function tkCancelPanel2(t){
+  return tkPan('Cancel / Refund', tkPartSel(t, 'tkp-part', 'Which flight is cancelled?') + tkP('Date', 'tkp-date', tkToday(), 'date') +
+    `<label class="tkF"><span>Refund</span><select id="tkp-rf"><option value="asked">Asked the agent for a refund</option><option value="none">No refund</option></select></label>` +
+    tkP('Refund expected (SAR)', 'tkp-amt', '', 'number', 'min="0" step="any"') + tkP('Remind me in (days)', 'tkp-rem', '7', 'number', 'min="1" step="1"') +
+    `<div class="tkF wide"><span>Screenshot or attachment</span>${tkDocW('pnl', 'Add')}</div>`, 'cancel2ok', t.id);
+}
+function tkUpdPanel(t){
+  return tkPan('Add an update', tkP('What did the agent say? (optional)', 'tkp-note', '') + tkP('Remind me again in (days)', 'tkp-rem', '7', 'number', 'min="1" step="1"') + `<div class="tkF wide"><span>Screenshot or attachment</span>${tkDocW('pnl', 'Add')}</div>`, 'updok', t.id);
+}
+
+/* ---- the details window ---- */
+function tkModalHtml(t){
+  const p = TK.panel, legs = tkLegs(t), id = tkE(t.id), pur = (TK_PUR.find(x => x[0] === t.pur) || [0, ''])[1], st = tkStep(t);
+  const kindTxt = t.kind === 'return' ? 'Return trip' : (tkDir(t) === 'come' ? 'Coming only' : 'Going only');
+  const lk = (tid, txt) => { const o = tid && tkGet(tid); return o ? `<button class="tkLk" data-tk="open" data-id="${tkE(o.id)}">${txt}</button>` : ''; };
+  const fb = (f) => `<button class="tkFileB" data-tk="viewref" data-ref="${tkE(f.ref)}" title="${tkE(f.name || 'File')}">${tkIc('file', 12)}<span>${tkE(f.name || 'File')}</span></button>`;
+  const files = (t.files || []).map(fb).join(''), more = (t.rf ? (t.rf.mails || []) : []).concat(t.req && t.req.files ? t.req.files : []).map(fb).join('');
+  const hist = (t.h || []).slice().reverse(), rf = t.rf && t.rf.st !== 'none' ? t.rf : null, got = rf && rf.st === 'received' ? tkNum(rf.amt) : 0, spent = tkSpent(t);
+  const a = (act, l, cls) => `<button class="tkA ${cls || ''}" data-tk="${act}" data-id="${id}">${l}</button>`;
+  const panel = p === 'resk' ? tkReschPanel(t, 'choose') : p === 'resdone' ? tkReschPanel(t, 'done') : p === 'canc' ? tkCancelPanel2(t) : p === 'upd' ? tkUpdPanel(t) : p === 'rfok' ? tkRfPanel(t) : p === 'reqdone' ? tkReqDonePanel(t) : '';
+  const btns = p ? '' : st.btns.map(x => `<button class="${x[2] ? 'pcBtnMain sm' : 'pcBtnSoft sm'}" data-tk="${x[0]}" data-id="${id}">${x[1]}</button>`).join('');
+  const ret = !p && tkNeedRet(t) ? `<div class="tkW">${tkIc('clock', 13)}<span>Return ticket not booked${t.retBy ? ' · possible return ' + tkE(tkDt(t.retBy)) : ''}</span><button class="tkMini" data-tk="addret" data-id="${id}">Add return ticket</button><button class="tkGhost" data-tk="retdone" data-id="${id}">Booked elsewhere</button></div>` : '';
+  return `<div class="tkMH"><span class="tkIc">${tkIc('plane', 16)}</span><div class="tkMT"><b>${tkE(tkName(t.emp))} <i>${tkE(t.emp)}</i></b><span>${tkE(pur)} · ${kindTxt}</span></div><button class="iconBtn" data-tk="close" aria-label="Close" title="Close">${tkIc('x', 15)}</button></div>
+    <div class="tkMB"><div class="tkStc ${st.cls}"><div class="tkStT">${tkE(st.txt)}</div>${st.sub ? `<div class="tkStS">${tkE(st.sub)}</div>` : ''}${btns ? `<div class="tkStB">${btns}</div>` : ''}</div>
+      ${ret}${panel}${lk(t.prev, 'Rebooked after an earlier ticket') + lk(t.next, 'Rebooked on a new ticket') + lk(t.retOf, 'Return ticket of an earlier one-way') + lk(t.retLink, 'See its return ticket')}
+      <div class="tkMS"><h4>Flight</h4>${legs.map((l, i) => `<div class="tkSl${l.can ? ' x' : ''}"><i>${legs.length > 1 ? (i ? 'Return' : 'Going') : (tkDir(t) === 'come' ? 'Coming' : 'Going')}</i><b>${tkE(l.d ? tkDt(l.d) : '-')}${l.dep ? ' · ' + tkE(l.dep) : ''}</b><span>${tkE(tkRoute(l)) || '-'}${l.al ? ' · ' + tkE(l.al) + (l.fn ? ' ' + tkE(l.fn) : '') : ''}${l.can ? ' · cancelled' : ''}</span>${!t.flown && t.st !== 'cancelled' && !l.can && [l.arr && 'Arrives ' + l.arr, l.trm && 'Riyadh terminal ' + l.trm, l.bag && 'Baggage ' + l.bag].filter(Boolean).length ? `<em class="tkSlM">${[l.arr && 'Arrives ' + l.arr, l.trm && 'Riyadh terminal ' + l.trm, l.bag && 'Baggage ' + l.bag].filter(Boolean).map(tkE).join(' · ')}</em>` : ''}</div>`).join('')}</div>
+      <div class="tkMS"><h4>Ticket and cost</h4><div class="tkFxs">${tkFx('PNR', t.pnr, 1)}${tkFx('Last name', t.last, 1)}${tkFx('Booked from', t.vendor)}${tkFx('Fare paid', t.fare ? tkMoney(t.fare) : '')}${tkNum(t.fees) ? tkFx('Reschedule cost', tkMoney(t.fees)) : ''}${rf ? tkFx(rf.st === 'received' ? 'Refund received' : 'Refund expected', tkNum(rf.amt) ? tkMoney(rf.amt) : 'not known yet') : ''}${rf && rf.st === 'received' ? tkFx('Net cost', tkMoney(spent - got)) : (tkNum(t.fees) ? tkFx('Total paid', tkMoney(spent)) : '')}</div></div>
+      <div class="tkMS"><h4>Files</h4><div class="tkFl">${files}${more}${files || more ? '' : '<span class="tkHint">No files yet.</span>'}<label class="tkAddF">${tkIc('plus', 12)} Add file<input type="file" multiple accept="image/*,application/pdf" data-tk-file="ticket" data-id="${id}"></label></div></div>
+      ${hist.length ? `<details class="tkDt"><summary>History (${hist.length})</summary>${hist.map(e => `<div class="tkHi2"><span>${tkE(fmtDate(hrStr(new Date(e.at))))}</span><div>${tkE(e.txt)}${(e.files || []).length ? `<div class="tkFl" style="margin-top:4px;">${e.files.map(fb).join('')}</div>` : ''}</div></div>`).join('')}</details>` : ''}</div>
+    <div class="tkMF">${a('edit', 'Edit')}<span class="grow"></span>${a('del', 'Delete', 'dng')}</div>`;
+}
+
+/* ---- actions ---- */
+async function tkClick(e){
+  const el = e.target.closest('[data-tk]'), a = el && el.dataset.tk;
+  const open = { p_resk: 'resk', p_resdone: 'resdone', p_canc: 'canc', p_upd: 'upd' };
+  if(a === 'bulkflown'){ if(!hrCanEdit()) return; if(!confirm('Mark every ticket whose travel date has passed as flown?')) return;
+    const ok = await tkCommit(items => items.forEach(c => { if(tkPassed(c)){ const ld = tkLastDate(c); c.flown = ld || tkToday(); tkLog(c, 'flown', 'Marked flown'); } })); if(ok){ toast('Marked as flown'); tkRefreshTodo(); tkRender(); } return; }
+  if(!['reskok', 'cancel2ok', 'updok', 'flown', 'unflown'].includes(a) && !open[a]) return tkClick1(e);
+  if(!hrCanEdit()) return;
+  const id = el.dataset.id || TK.id, t = tkGet(id); if(!t) return;
+  if(open[a]){ if(hrUI.tab !== 'tickets'){ hrUI.tab = 'tickets'; hrRenderTabs(); } TK.view = 'list'; TK.open = id; TK.panel = open[a]; TK.pf = []; tkRender(); return; }
+  if(a === 'flown'){ await tkMutate(id, c => { const ld = tkLastDate(c), today = tkToday(); c.flown = (ld && ld <= today) ? ld : today; tkLog(c, 'flown', 'Marked flown'); }, 'Marked flown'); return; }
+  if(a === 'unflown'){ await tkMutate(id, c => { c.flown = ''; tkLog(c, 'flown', 'Flown mark removed'); }, 'Done'); return; }
+  const d = tkVal('tkp-date') || tkToday(), docs = await tkUp(TK.pf); TK.pf = [];
+  const days = Math.max(1, Math.round(tkNum(tkVal('tkp-rem'))) || 7);
+  if(a === 'updok'){
+    const note = tkVal('tkp-note');
+    await tkMutate(id, c => { const tg = tkRfWait(c) ? c.rf : (c.req && !c.req.done ? c.req : null);
+      if(tg){ if(tg === c.rf) c.rf.mails = (c.rf.mails || []).concat(docs); else c.req.files = (c.req.files || []).concat(docs); tg.remAt = hrAddDays(tkToday(), days); }
+      tkLog(c, 'upd', 'Update' + (note ? ': ' + note : '') + (docs.length ? ' (attachment added)' : '')); if(docs.length) c.h[c.h.length - 1].files = docs; }, 'Saved. I will remind you again in ' + days + ' days');
+    return;
+  }
+  if(a === 'cancel2ok'){
+    const part = t.kind === 'return' ? (tkVal('tkp-part') || 'all') : 'all', asked = tkVal('tkp-rf') !== 'none', amt = tkVal('tkp-amt'), pn = tkPartShort(t, part);
+    await tkMutate(id, c => {
+      if(asked || !(c.rf && c.rf.st !== 'none')) tkApplyRefund(c, part, d, asked ? 'waiting' : 'none', amt, docs);
+      else { if(part === 'all' || c.kind !== 'return'){ c.st = 'cancelled'; c.cancelAt = c.cancelAt || d; } else { const l = c.legs[part === 'go' ? 0 : 1]; l.can = l.can || d; if(c.legs.slice(0, 2).every(x => x.can)){ c.st = 'cancelled'; c.cancelAt = c.cancelAt || d; } } }
+      if(asked && c.rf){ c.rf.remAt = hrAddDays(d, days); }
+      tkLog(c, 'cancel', 'Cancelled' + pn + (asked ? ' - refund asked' + (tkNum(amt) ? ' (' + tkMoney(amt) + ' expected)' : '') : ' - no refund')); if(docs.length) c.h[c.h.length - 1].files = docs;
+    }, asked ? 'Saved. I will remind you in ' + days + ' days' : 'Saved');
+    return;
+  }
+  if(a === 'reskok'){
+    const done = TK.panel === 'resdone' || tkVal('tkp-what') === 'done', rq = t.req && !t.req.done ? t.req : null;
+    const seg = t.kind === 'return' ? (TK.panel === 'resdone' && rq ? (rq.part || 'go') : (tkVal('tkp-seg') || 'go')) : 'all', idx = tkSegIdx(t, seg), pn = tkPartShort(t, seg);
+    if(!done){
+      const note = tkVal('tkp-note');
+      await tkMutate(id, c => { c.req = { k: 'reissue', at: d, part: seg, note, rem: days, remAt: hrAddDays(d, days), files: docs, done: false }; tkLog(c, 'req', 'Reschedule asked' + pn + (note ? ': ' + note : '')); if(docs.length) c.h[c.h.length - 1].files = docs; }, 'Saved. I will remind you in ' + days + ' days');
+      return;
+    }
+    const v = { d: tkVal('tkp-nd'), dep: tkVal('tkp-nt'), al: tkVal('tkp-nal'), from: tkVal('tkp-nfr'), to: tkVal('tkp-nto') }, pnr = tkVal('tkp-npnr'), extra = tkNum(tkVal('tkp-nex'));
+    if(!v.d){ toast('Write the new travel date'); TK.pf = docs.map(x => x); return; }
+    await tkMutate(id, c => {
+      const snap = tkSnap(c), L = c.legs[idx]; Object.keys(v).forEach(k => { if(v[k]) L[k] = v[k]; });
+      if(pnr) c.pnr = pnr.toUpperCase(); if(extra > 0) c.fees = tkNum(c.fees) + extra;
+      if(c.req && !c.req.done){ c.req.done = true; c.req.doneAt = d; }
+      tkLog(c, 'resched', 'Rescheduled' + pn + ' to ' + tkDt(v.d) + (v.dep ? ' ' + v.dep : '') + (extra > 0 ? ' · extra cost ' + tkMoney(extra) : ''), snap); if(docs.length) c.h[c.h.length - 1].files = docs;
+    }, 'Rescheduled');
+    return;
+  }
+}
+document.addEventListener('change', (e) => {
+  const t = e.target; if(!t || !t.id) return;
+  if(t.id === 'tkp-what'){ document.querySelectorAll('.tkGrp2').forEach(g => { g.style.display = g.dataset.g === t.value ? '' : 'none'; }); }
+  if(t.id === 'tkp-seg' || t.id === 'tkp-what'){ const o = TK.open && tkGet(TK.open); if(!o || TK.panel !== 'resk') return; const sg = $('tkp-seg') ? $('tkp-seg').value : 'all', L = o.legs[tkSegIdx(o, sg)] || tkLeg0(), set = (i, v) => { const x = $(i); if(x) x.value = v || ''; }; set('tkp-nd', L.d); set('tkp-nt', L.dep); set('tkp-nal', L.al); set('tkp-nfr', L.from); set('tkp-nto', L.to); }
+});
+
+/* ---- reminders ---- */
+function tkTasks(){
+  const out = [], today = tkToday();
+  TK.items.forEach(t => {
+    const nm = tkName(t.emp), f = tkFirst(t), who = nm;
+    if(tkNeedRet(t)){
+      const due = t.retRem || (t.retBy ? hrAddDays(t.retBy, -14) : ''), dd = tkDays(due), dr = tkDays(t.retBy);
+      if(!due || dd <= 0){
+        out.push({ t, ic: 'plane', lv: dr !== null && dr < 0 ? 'late' : (dr !== null && dr <= 14 ? 'soon' : 'info'), d: dr === null ? 9999 : dr, title: who + ' · return ticket not booked',
+          sub: 'One-way ' + (tkRoute(f) || '') + (f.d ? ' on ' + tkDt(f.d) : '') + (t.retBy ? ' · possible return ' + tkDt(t.retBy) + ' (' + tkAgo(t.retBy) + ')' : ' · no return date set'), acts: [['addret', 'Add return ticket', 'plane'], ['open', 'Open', 'file']] });
+      }
+    }
+    if(tkRfWait(t)){
+      const wait = -tkDays(t.rf.since || t.cancelAt || today), due = t.rf.remAt && tkDays(t.rf.remAt) <= 0;
+      out.push({ t, ic: 'down', lv: due ? 'late' : 'info', d: -wait, title: who + ' · refund asked' + (tkNum(t.rf.amt) ? ' ' + tkMoney(t.rf.amt) : ''),
+        sub: 'Asked ' + tkDt(t.rf.since || t.cancelAt) + ' · waiting ' + wait + (wait === 1 ? ' day' : ' days') + (t.rf.remAt ? ' · reminder ' + tkDt(t.rf.remAt) : ''), acts: [['rfok', 'Refund received', 'check'], ['open', 'Open', 'file']] });
+    }
+    if(tkReqOpen(t)){
+      const wait = -tkDays(t.req.at || today), due = t.req.remAt ? tkDays(t.req.remAt) <= 0 : wait > 7;
+      out.push({ t, ic: 'clock', lv: due ? 'late' : 'info', d: -wait, title: who + ' · ' + (t.req.k === 'refund' ? 'refund' : 'reschedule') + ' asked',
+        sub: tkDt(t.req.at) + ' · waiting ' + wait + (wait === 1 ? ' day' : ' days') + (t.req.remAt ? ' · reminder ' + tkDt(t.req.remAt) : '') + (t.req.note ? ' · ' + t.req.note : ''), acts: [['open', 'Open', 'file']] });
+    }
+    if(tkPassed(t)) out.push({ t, ic: 'plane', lv: 'info', d: tkDays(tkLastDate(t)), title: who + ' · travel date passed', sub: tkRoute(f) + ' · ' + tkDt(tkLastDate(t)) + ' · mark it flown if he travelled', acts: [['open', 'Open', 'file']] });
+    if(t.st !== 'cancelled' && !t.flown){
+      const dd = tkDays(f.d);
+      if(dd !== null && dd >= 0 && dd <= 7) out.push({ t, ic: 'plane', lv: 'info', d: dd, title: who + ' · flies ' + (dd === 0 ? 'today' : (dd === 1 ? 'tomorrow' : 'in ' + dd + ' days')),
+        sub: [tkRoute(f), (f.al || '') + (f.fn ? ' ' + f.fn : ''), f.d ? tkDt(f.d) + (f.dep ? ' ' + f.dep : '') : '', f.trm ? 'Terminal ' + f.trm : ''].filter(Boolean).join(' · '), acts: [['open', 'Open', 'file']] });
+    }
+  });
+  const rk = { late: 0, soon: 1, info: 2 };
+  return out.sort((a, b) => (rk[a.lv] - rk[b.lv]) || (a.d - b.d));
+}
+
+/* ---- list: cost line and one-click flown ---- */
+function tkTableHtml(list){
+  const base = tkTableHtml0(list); if(!list.length) return base;
+  const paid = list.reduce((a, t) => a + tkSpent(t), 0), got = list.reduce((a, t) => a + (t.rf && t.rf.st === 'received' ? tkNum(t.rf.amt) : 0), 0), wait = list.reduce((a, t) => a + tkAskAmt(t), 0), passed = list.filter(tkPassed).length;
+  const ven = {}; list.forEach(t => { const k = String(t.vendor || '').trim() || 'Not written'; const v = ven[k] = ven[k] || { n: 0, a: 0 }; v.n++; v.a += tkSpent(t); });
+  const vr = Object.keys(ven).sort((a, b) => ven[b].a - ven[a].a);
+  return `<div class="tkCost"><div class="tkCostL"><span><b>${list.length}</b> ticket${list.length === 1 ? '' : 's'}</span><span>Paid <b>${tkMoney(paid)}</b></span><span>Refunds received <b>${tkMoney(got)}</b></span>${wait ? `<span>Refund still waiting <b>${tkMoney(wait)}</b></span>` : ''}<span>Net cost <b>${tkMoney(paid - got)}</b></span></div>
+    <details class="tkDt"><summary>Cost by where it was booked</summary>${vr.map(k => `<div class="tkVr"><span>${tkE(k)}</span><span>${ven[k].n} ticket${ven[k].n === 1 ? '' : 's'}</span><b>${tkMoney(ven[k].a)}</b></div>`).join('')}</details>
+    ${passed > 1 ? `<div class="tkBulk">${passed} tickets have passed their travel date. <button type="button" class="pillBtn" data-tk="bulkflown">Mark them all as flown</button></div>` : ''}</div>` + base;
+}
+
+function tkRowHtml(t, i){
+  const f = tkFirst(t), legs = tkLegs(t).filter((l, k) => k === 0 || l.d || l.from || l.to);
+  const pur = (TK_PUR.find(p => p[0] === t.pur) || [0, ''])[1], spent = tkSpent(t), rl = tkRefLine(t);
+  const live = !t.flown && t.st !== 'cancelled', leg = (l) => `<div class="tkQl${l.can ? ' x' : ''}"><b>${tkE(tkRoute(l)) || '-'}</b><span>${tkE(l.d ? tkDt(l.d) : '-')}${live && !l.can ? (tkLegTime(l) ? ' · ' + tkE(tkLegTime(l)) : '') : (l.dep ? ' · ' + tkE(l.dep) : '')}${l.can ? ' · cancelled' : ''}</span></div>`;
+  return `<div class="tkR"><div class="tkQ" data-tk="view" data-id="${tkE(t.id)}"><span class="tkQn">${i + 1}</span>
+    <div class="tkQw"><b>${tkE(tkName(t.emp))}</b><span>${tkE(t.emp)} &middot; ${tkE(pur)}</span></div>
+    <div class="tkQf">${legs.map(leg).join('')}</div>
+    <div class="tkQa">${tkE(f.al) || '-'}${f.fn ? '<span>' + tkE(f.fn) + '</span>' : ''}</div>
+    <div class="tkQc"><b>${spent ? tkE(tkMoney(spent)) : '-'}</b><span>${tkE(t.vendor || 'booked from: not written')}</span>${rl ? rl.replace('tkLn tkRfAmt', 'tkQr') : ''}</div>
+    <div class="tkQs">${tkBadgeHtml(t)}</div>
+    <button class="pillBtn tkView" data-tk="view" data-id="${tkE(t.id)}">View</button></div></div>`;
 }
 </script>
 </body>
