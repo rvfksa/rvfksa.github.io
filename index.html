@@ -3620,6 +3620,37 @@ details.admD{margin:0 0 10px;}
 .a2ItIn{ flex:1; min-width:0; height:36px; border-radius:999px; border:1px solid var(--line); padding:0 12px; font:inherit; font-size:13px; }
 .a2ItRow{ display:flex; align-items:center; gap:8px; margin-bottom:6px; }
 
+.asgCh{font-size:12.5px;line-height:1.5} .asgCh b{font-weight:500;color:#4f46e5;margin-right:6px}
+
+.tkGrp{ display:flex; align-items:baseline; gap:8px; padding:12px 16px 6px; border-top:1px solid var(--line); background:#fff; }
+.tkGrp:first-child{ border-top:0; } .tkGrp b{ font-size:13px; font-weight:600; color:var(--text-strong); } .tkGrp i{ font-style:normal; font-size:11px; background:var(--panel-2); color:#475569; border-radius:999px; padding:0 8px; } .tkGrp span{ font-size:11.5px; color:var(--muted); }
+.tkGrp.act b{ color:#4f46e5; } .tkGrp.done b, .tkGrp.done span{ color:#94a3b8; }
+.tkGrp.done + .tkL .tkRL{ opacity:.72; }
+.tkCanL{ text-decoration:line-through; color:#94a3b8; }
+.tkW.ok b{ font-weight:600; }
+.tkSt{ font-size:14px; color:var(--text-strong); padding:10px 12px; border-radius:10px; background:#f6f6f8; } .tkSt.c{ background:#f6f6f8; } .tkSt.u{ background:#f3f0fb; }
+.tkSl{ display:grid; grid-template-columns:64px 100px 1fr; gap:8px; padding:6px 0; font-size:13.5px; border-bottom:1px solid var(--line); align-items:baseline; } .tkSl i{ font-style:normal; color:var(--muted); font-size:12px; } .tkSl b{ font-weight:500; } .tkSl.x span, .tkSl.x b{ text-decoration:line-through; color:var(--muted); }
+@media (max-width:520px){ .tkSl{ grid-template-columns:56px 1fr; } .tkSl span{ grid-column:2; } }
+.tkDt{ border-top:1px solid var(--line); padding-top:8px; } .tkDt summary{ cursor:pointer; font-size:12.5px; color:var(--muted); }
+.tkMore{ display:contents; }
+.tkOpt{ margin-top:10px; border-top:0; padding-top:0; } .tkOpt summary{ padding:4px 0; }
+/* Approvals: shorter cards (same layout, tighter spacing) */
+#approvalsBody .approve-item{ padding:10px 12px; margin-bottom:10px; }
+#approvalsBody .approve-item .top{ margin-bottom:4px; }
+#approvalsBody .approve-item .meta-small{ margin-bottom:3px; }
+#approvalsBody .approve-photo{ max-height:110px; margin:4px 0 8px; }
+#approvalsBody .approve-key-info{ display:grid; grid-template-columns:1fr 1fr; gap:6px 10px; padding:8px 10px; margin-bottom:6px; }
+#approvalsBody .approve-key-info > *{ grid-column:1 / -1; margin:0; }
+#approvalsBody .approve-key-info > .field:nth-child(1), #approvalsBody .approve-key-info > .field:nth-child(2){ grid-column:auto; }
+#approvalsBody .approve-key-info .field{ margin:0; }
+#approvalsBody .approve-key-info label{ margin-bottom:2px; }
+#approvalsBody .approve-key-info input:not(.editReadingInput), #approvalsBody .approve-key-info select{ padding:6px 10px; font-size:13px; min-height:0; height:34px; }
+#approvalsBody .lcd-input-wrap{ padding:4px 10px; border-radius:12px; }
+#approvalsBody .lcd-input-wrap input{ font-size:22px; padding:2px; }
+#approvalsBody .approve-key-readout{ margin:0; font-size:12.5px; }
+#approvalsBody .stopReasonBoxes .row-2{ margin-bottom:4px !important; gap:8px; }
+#approvalsBody .approve-actions{ margin-top:4px; }
+
 </style>
 </head>
 <body>
@@ -8653,6 +8684,7 @@ async function loadApprovals(){
           ${loggedLate ? '<span class="badge badge-rejected" title="Operator submitted this after their own logging deadline">Logged Late</span>' : ''}
         </div>
         <div class="meta-small">Operator: ${r.operatorName || r.operatorId || 'Unknown'} &middot; ID: ${r.operatorId || '—'} &middot; ${r.photoType === 'start' ? 'Starting Photo (backup only — not counted)' : 'Ending Photo'}</div>
+        ${apprWhoHtml(r, delayed)}
         ${r.photoDataUrl ? `<img src="${r.photoDataUrl}" class="approve-photo" data-full="${r.photoDataUrl}">` : ''}
 
         <div class="approve-key-info">
@@ -21339,7 +21371,7 @@ async function astSaveTask(){
   } finally { AST.busy = false; }
 }
 function astAddHelperQuiet(){ const i = $('astHelp'); if(i && i.value.trim()){ i.value.split(/[,;]/).map(x => x.trim()).filter(Boolean).forEach(v => { if(!AST.draft.helpers.some(n => n.toLowerCase() === v.toLowerCase())) AST.draft.helpers.push(v); }); i.value = ''; } }
-async function astSetStatus(id, st){
+async function astSetStatus0(id, st){
   const t = AST.items.find(x => x.id === id); if(!t || t.status === st) return;
   const was = t.status; t.status = st; t.doneAt = st === 'done' ? Date.now() : 0; if(await astSave()){ astRender(); hrRenderTabs(); astCheck(); } else { t.status = was; }
 }
@@ -21365,7 +21397,7 @@ function astRing(due){
     <div class="astRingF"><button data-r="open">Open My Tasks</button><button data-r="close">Close</button></div></div>`;
   document.body.appendChild(ov);
   ov.addEventListener('click', async (e) => { const b = e.target.closest('[data-r]'); if(!b) return; const r = b.dataset.r, id = b.dataset.id, t = AST.items.find(x => x.id === id);
-    if(r === 'close' || r === 'open'){ ov.remove(); AST.ringing = false; if(r === 'open'){ goTo('employees'); hrUI.tab = 'tasks'; hrRender(); } return; }
+    if(r === 'close' || r === 'open'){ ov.remove(); AST.ringing = false; if(r === 'open'){ hrUI.tab = 'tasks'; goTo('employees'); hrUI.tab = 'tasks'; hrRender(); setTimeout(() => { if(hrUI.tab !== 'tasks'){ hrUI.tab = 'tasks'; hrRender(); } }, 500); } return; }
     if(!t) return;
     if(r === 'peek'){ if(AST.rev.has(id)) AST.rev.delete(id); else AST.rev.add(id); const row = b.closest('.astRingT'); if(row){ row.querySelector('b').textContent = astMasked(t) ? AST_MASK : t.title; row.querySelector('span').textContent = astMasked(t) ? astWhen(t.remind) : (t.by ? 'Given by ' + t.by + ' · ' : '') + astWhen(t.remind); } return; }
     if(r === 'ack'){ await astAck(id); } else if(r === 'done') await astSetStatus(id, 'done'); else if(r === 'work') await astSetStatus(id, 'working');
@@ -21418,11 +21450,11 @@ const tkLegs = (t) => t.kind === 'return' ? t.legs.slice(0, 2) : t.legs.slice(0,
 const tkPort = (p) => { const m = /\(([A-Za-z]{3})\)/.exec(p || ''); return m ? m[1].toUpperCase() : (p || ''); };
 const tkRoute = (l) => (l.from || l.to) ? tkPort(l.from) + ' → ' + tkPort(l.to) : '';
 const tkFirst = (t) => t.legs[0] || tkLeg0();
-const tkLastDate = (t) => tkLegs(t).map(l => l.d).filter(Boolean).sort().pop() || '';
+const tkLastDate = (t) => tkLegs(t).filter(l => !l.can).map(l => l.d).filter(Boolean).sort().pop() || '';
 const tkIsPast = (t) => { const d = tkLastDate(t); return !!d && hrDaysTo(d) < 0; };
 const tkIsOne = (t) => t.kind !== 'return';
-const tkNeedRet = (t) => t.st !== 'cancelled' && tkIsOne(t) && !t.retDone && !t.retOf && t.pur !== 'exit';
-const tkRfWait = (t) => t.st === 'cancelled' && t.rf && t.rf.st === 'waiting';
+const tkNeedRet = (t) => t.st !== 'cancelled' && tkIsOne(t) && tkDir(t) === 'go' && !t.retDone && !t.retOf && t.pur !== 'exit';
+const tkRfWait = (t) => !!(t.rf && t.rf.st === 'waiting');
 const tkReqOpen = (t) => !!(t.req && !t.req.done);
 const tkSpent = (t) => tkNum(t.fare) + tkNum(t.fees);
 const tkDays = (d) => d ? hrDaysTo(d) : null;
@@ -21574,15 +21606,15 @@ function tkLegTime(l){
 }
 function tkRowHtml(t, i){
   const f = tkFirst(t), l2 = t.kind === 'return' && t.legs[1] && (t.legs[1].d || t.legs[1].from || t.legs[1].to) ? t.legs[1] : null;
-  const rtLn = l => `<span class="tkLn">${tkE(tkRoute(l)) || '-'}</span>`, daLn = l => `<span class="tkLn">${tkDt(l.d)}${tkLegTime(l) ? ' · ' + tkLegTime(l) : ''}</span>`;
+  const rtLn = l => `<span class="tkLn${l.can ? ' tkCanL' : ''}">${tkE(tkRoute(l)) || '-'}${l.can ? ' (cancelled)' : ''}</span>`, daLn = l => `<span class="tkLn">${tkDt(l.d)}${tkLegTime(l) ? ' · ' + tkLegTime(l) : ''}</span>`;
   const pur = (TK_PUR.find(p => p[0] === t.pur) || [0, ''])[1];
   return `<div class="tkR"><div class="tkRL"><span class="tkN">${i + 1}</span><span class="tkIc">${tkIc('plane', 16)}</span><span class="tkWho"><b>${tkE(tkName(t.emp))}</b> <i>${tkE(t.emp)}</i></span><span class="tkPu">${tkE(pur)}</span>
-    <span class="tkRt">${rtLn(f)}${l2 ? rtLn(l2) : ''}</span><span class="tkDa">${daLn(f)}${l2 ? daLn(l2) : ''}</span><span class="tkAl"><span class="tkLn">${tkE(f.al)}${f.fn ? ' ' + tkE(f.fn) : ''}</span>${t.st === 'cancelled' && t.rf && t.rf.st !== 'none' ? `<span class="tkLn tkRfAmt">${t.rf.st === 'received' ? 'Refunded ' : 'Refund '}${t.rf.amt ? tkMoney(t.rf.amt) : '(amount not added)'}</span>` : ''}</span><span class="tkBs">${tkBadgeHtml(t)}</span><button class="pillBtn tkView" data-tk="view" data-id="${tkE(t.id)}">View</button></div></div>`;
+    <span class="tkRt">${rtLn(f)}${l2 ? rtLn(l2) : ''}</span><span class="tkDa">${daLn(f)}${l2 ? daLn(l2) : ''}</span><span class="tkAl"><span class="tkLn">${tkE(f.al)}${f.fn ? ' ' + tkE(f.fn) : ''}</span>${t.rf && t.rf.st !== 'none' ? `<span class="tkLn tkRfAmt">${t.rf.st === 'received' ? 'Refunded ' : 'Refund '}${t.rf.amt ? tkMoney(t.rf.amt) : '(amount not added)'}</span>` : ''}</span><span class="tkBs">${tkBadgeHtml(t)}</span><button class="pillBtn tkView" data-tk="view" data-id="${tkE(t.id)}">View</button></div></div>`;
 }
 
 /* ---------- form ---------- */
 const tkF = (label, key, val, type, extra) => `<label class="tkF"><span>${label}</span><input type="${type || 'text'}" data-tk-in="${key}" value="${tkE(val)}" ${extra || ''}></label>`;
-function tkLegHtml(i, title){
+function tkLegHtml0(i, title){
   const L = TK.D.legs[i];
   return `<div class="tkLeg"><div class="tkLegH">${tkIc('plane', 14)}${title}</div><div class="tkG">
     ${tkF('Airline', 'l' + i + '.al', L.al, 'text', 'list="tkAl" autocomplete="off"')}${tkF('Flight no.', 'l' + i + '.fn', L.fn)}${tkF('From (airport)', 'l' + i + '.from', L.from, 'text', 'list="tkPt" autocomplete="off"')}${tkF('To (airport)', 'l' + i + '.to', L.to, 'text', 'list="tkPt" autocomplete="off"')}
@@ -21611,13 +21643,14 @@ function tkFormHtml(){
       <label class="tkF wide"><span>Employee</span><input type="text" data-tk-in="emp" list="tkEmps" placeholder="Type a name or ID" value="${tkE(empTxt)}" autocomplete="off" ${m === 'ret' ? 'readonly' : ''}></label>
       <div class="tkF"><span>Purpose</span>${tkSeg('pur', TK_PUR, D.pur)}</div></div></div>`}
     <div class="tkBox"><div class="tkBoxH">${tkIc('plane', 14)}${m === 'resched' ? 'New flight details' : 'Flight'}</div>
-      ${D.pur === 'exit' ? `<div class="tkHint" style="margin-bottom:10px;">${tkIc('info', 13)} Exit: one-way ticket, no return is needed.</div>` : `<div class="tkTrip">${tkSeg('kind', [['return', 'Return trip'], ['one', 'One way']], D.kind)}</div>`}
-      ${tkLegHtml(0, D.kind === 'return' ? 'Going' : 'Flight')}${D.kind === 'return' && D.pur !== 'exit' ? tkLegHtml(1, 'Return') : `${D.retOf || D.pur === 'exit' ? '' : `<div class="tkG tkRet"><div class="tkHint wide">${tkIc('clock', 13)} One way only? Add the possible return date and we will remind you to book the return.</div>${tkF('Possible return date', 'retBy', D.retBy, 'date')}</div>`}`}</div>
+      ${D.pur === 'exit' ? `<div class="tkHint" style="margin-bottom:10px;">${tkIc('info', 13)} Exit: one-way ticket, no return is needed.</div>` : `<div class="tkTrip">${tkSeg('kind', [['return', 'Return trip'], ['one', 'Going only'], ['come', 'Coming only']], tkKindSel(D))}</div>`}
+      ${tkLegHtml(0, D.kind === 'return' ? 'Going' : (tkDir(D) === 'come' ? 'Coming to Riyadh' : 'Going'))}${D.kind === 'return' && D.pur !== 'exit' ? tkLegHtml(1, 'Return') : `${D.retOf || D.pur === 'exit' || tkDir(D) === 'come' ? '' : `<div class="tkG tkRet"><div class="tkHint wide">${tkIc('clock', 13)} Going only? Add the possible return date and we will remind you to book the return. If this ticket is only for coming back to Riyadh, choose Coming only.</div>${tkF('Possible return date', 'retBy', D.retBy, 'date')}</div>`}`}</div>
     ${m === 'resched' ? `<div class="tkBox"><div class="tkBoxH">${tkIc('down', 14)}Extra cost of this change</div><div class="tkG">${tkF('Change fee (SAR)', 'fee', D.fee || '', 'number', 'min="0" step="any" inputmode="decimal"')}${tkF('Fare difference (SAR)', 'diff', D.diff || '', 'number', 'min="0" step="any" inputmode="decimal"')}<div class="tkF"><span>Total extra</span><b class="tkTot" id="tkTot">${tkMoney(tkNum(D.fee) + tkNum(D.diff))}</b></div><label class="tkF wide"><span>Reason (optional)</span><input type="text" data-tk-in="why" value="${tkE(D.why || '')}"></label></div><div class="tkHint" style="margin:10px 0 6px;">Receipt or airline mail for this change (optional)</div>${tkDocW('chg', 'Add document')}</div>` : ''}
-    <div class="tkBox"><div class="tkBoxH">${tkIc('idc', 14)}Booking</div><div class="tkG">${tkF('PNR / booking ref.', 'pnr', D.pnr, 'text', 'autocapitalize="characters"')}${tkF('Last name (as on ticket)', 'last', D.last)}${m === 'resched' ? '' : tkF('Fare (SAR)', 'fare', D.fare, 'number', 'min="0" step="any" inputmode="decimal"') + tkF('Booked from', 'vendor', D.vendor, 'text', 'placeholder="Agency / website"')}</div>
-      <div class="tkHint" style="margin:12px 0 6px;">Ticket copy (photo or PDF up to 600 KB)</div>${tkFilesHtml(D)}</div>
+    <div class="tkBox"><div class="tkBoxH">${tkIc('idc', 14)}Money and booking</div><div class="tkG">${m === 'resched' ? '' : tkF('Fare paid (SAR)', 'fare', D.fare, 'number', 'min="0" step="any" inputmode="decimal"') + tkF('Booked from', 'vendor', D.vendor, 'text', 'placeholder="Agency / website" list="tkVn" autocomplete="off"')}</div>
+      <details class="tkDt tkOpt" ${D.pnr || D.last || (D.files || []).length || (D.nf || []).length ? 'open' : ''}><summary>PNR, last name and ticket copy (optional)</summary><div class="tkG" style="margin-top:8px;">${tkF('PNR / booking ref.', 'pnr', D.pnr, 'text', 'autocapitalize="characters"')}${tkF('Last name (as on ticket)', 'last', D.last)}</div>
+      <div class="tkHint" style="margin:12px 0 6px;">Ticket copy (photo or PDF up to 600 KB)</div>${tkFilesHtml(D)}</details></div>
     <div class="tkBtns"><button class="pcBtnMain sm" data-tk="save" ${TK.busy ? 'disabled' : ''}>${TK.busy ? 'Saving…' : 'Save'}</button><button class="pcBtnSoft sm" data-tk="back">Cancel</button></div>
-    <datalist id="tkEmps">${emps.map(u => `<option value="${tkE(u.name)} (${tkE(u.loginId)})">`).join('')}</datalist><datalist id="tkAl">${TK_AIRLINES.map(a => `<option value="${a}">`).join('')}</datalist><datalist id="tkPt">${TK_PORTS.map(a => `<option value="${a}">`).join('')}</datalist></div>`;
+    <datalist id="tkEmps">${emps.map(u => `<option value="${tkE(u.name)} (${tkE(u.loginId)})">`).join('')}</datalist><datalist id="tkAl">${tkMem('al').map(a => `<option value="${tkE(a)}">`).join('')}</datalist><datalist id="tkPt">${tkMem('pt').map(a => `<option value="${tkE(a)}">`).join('')}</datalist><datalist id="tkVn">${tkMem('vn').map(a => `<option value="${tkE(a)}">`).join('')}</datalist></div>`;
 }
 
 /* ---------- details popup ---------- */
@@ -21630,19 +21663,19 @@ function tkModalHtml(t){
   const cancelled = t.st === 'cancelled', p = TK.panel, legs = tkLegs(t), id = tkE(t.id), pur = (TK_PUR.find(x => x[0] === t.pur) || [0, ''])[1];
   const lk = (tid, txt) => { const o = tid && tkGet(tid); return o ? `<button class="tkLk" data-tk="open" data-id="${tkE(o.id)}">${txt}</button>` : ''; };
   const fb = (f) => `<button class="tkFileB" data-tk="viewref" data-ref="${tkE(f.ref)}">${tkIc('file', 12)}${tkE(f.name || 'File')}</button>`;
-  const files = (t.files || []).map(fb).join(''), mails = t.rf ? (t.rf.mails || []).map(fb).join('') : '';
+  const files = (t.files || []).map(fb).join(''), mails = (t.rf ? (t.rf.mails || []) : []).concat(t.req && t.req.files ? t.req.files : []).map(fb).join('');
   const hist = (t.h || []).slice().reverse();
   const a = (act, ic, l, cls) => `<button class="tkA ${cls || ''}" data-tk="${act}" data-id="${id}">${tkIc(ic, 13)}${l}</button>`;
   const warn = [];
   if(tkNeedRet(t)) warn.push(`<div class="tkW">${tkIc('clock', 13)}<span>Return not booked${t.retBy ? ' · possible return ' + tkE(tkDt(t.retBy)) + ' (' + tkAgo(t.retBy) + ')' : ' · no return date (use Edit)'}</span><button class="tkMini" data-tk="addret" data-id="${id}">Add return ticket</button><button class="tkGhost" data-tk="retdone" data-id="${id}">Booked elsewhere</button></div>`);
   if(tkReqOpen(t)) warn.push(`<div class="tkW">${tkIc('clock', 13)}<span>With the agent for ${t.req.k === 'refund' ? 'a refund' : 'a reissue'} since ${tkE(tkDt(t.req.at))}${t.req.note ? ' · ' + tkE(t.req.note) : ''}</span><button class="tkMini" data-tk="reqdone" data-id="${id}">Mark done</button></div>`);
   return `<div class="tkMH"><span class="tkIc">${tkIc('plane', 16)}</span><div class="tkMT"><b>${tkE(tkName(t.emp))} <i>${tkE(t.emp)}</i></b><span>${tkE(pur)}${t.vendor ? ' · ' + tkE(t.vendor) : ''}</span></div><span class="tkBs">${tkBadges(t).slice(0, 1).map(x => `<span class="tkBd ${x[1]}">${x[0]}</span>`).join('')}</span><button class="iconBtn" data-tk="close" aria-label="Close" title="Close">${tkIc('x', 15)}</button></div>
-    <div class="tkMB">${warn.join('')}${lk(t.prev, 'Rebooked after an earlier ticket') + lk(t.next, 'Rebooked on a new ticket') + lk(t.retOf, 'Return ticket of an earlier one-way') + lk(t.retLink, 'See its return ticket')}
-      <div class="tkMS"><h4>Flight</h4>${legs.map((l, i) => tkLegRow(l, legs.length > 1 ? (i ? 'Return' : 'Going') : 'Flight')).join('')}</div>
+    <div class="tkMB">${tkNowBox(t, id)}${warn.join('')}${lk(t.prev, 'Rebooked after an earlier ticket') + lk(t.next, 'Rebooked on a new ticket') + lk(t.retOf, 'Return ticket of an earlier one-way') + lk(t.retLink, 'See its return ticket')}
+      <div class="tkMS"><h4>Flight</h4>${legs.map((l, i) => tkLegRow(l, (legs.length > 1 ? (i ? 'Return' : 'Going') : (tkDir(t) === 'come' ? 'Coming to Riyadh' : 'Going only')) + (l.can ? ' (cancelled)' : ''))).join('')}</div>
       <div class="tkMS"><h4>Booking</h4><div class="tkFxs">${tkFx('PNR', t.pnr, 1)}${tkFx('Last name', t.last, 1)}${tkFx('Fare', t.fare ? tkMoney(t.fare) : '')}${tkNum(t.fees) ? tkFx('Reschedule cost', tkMoney(t.fees)) : ''}${tkNum(t.fees) ? tkFx('Total paid', tkMoney(tkSpent(t))) : ''}${tkFx('Booked from', t.vendor)}</div></div>
       <div class="tkMS"><h4>Documents</h4><div class="tkFl">${files}${mails}${files || mails ? '' : '<span class="tkHint">No documents yet.</span>'}<label class="tkAddF">${tkIc('plus', 12)} Ticket copy<input type="file" multiple accept="image/*,application/pdf" data-tk-file="ticket" data-id="${id}"></label>${t.rf && t.rf.st !== 'none' ? `<label class="tkAddF">${tkIc('plus', 12)} Refund mail<input type="file" multiple accept="image/*,application/pdf" data-tk-file="mail" data-id="${id}"></label>` : ''}</div></div>
-      ${t.rf && t.rf.st !== 'none' ? `<div class="tkMS"><h4>Refund</h4><div class="tkFxs">${tkFx(t.rf.st === 'received' ? 'Received' : 'Expected', t.rf.amt ? tkMoney(t.rf.amt) : (t.rf.st === 'received' ? '' : 'Amount not added'))}${tkFx(t.rf.st === 'received' ? 'Received on' : 'Cancelled on', tkDt(t.rf.st === 'received' ? t.rf.rec : t.cancelAt))}${t.rf.st === 'received' ? tkFx('Net cost after refund', tkMoney(tkSpent(t) - tkNum(t.rf.amt))) : ''}</div>${tkRfWait(t) ? `<div style="margin-top:10px;"><button class="tkMini" data-tk="rfok" data-id="${id}">${tkIc('check', 13)}Refund received</button></div>` : ''}</div>` : ''}
-      ${p === 'cancelp' ? tkCancelPanel(t) : ''}${p === 'req' ? tkReqPanel(t) : ''}${p === 'rfok' ? tkRfPanel(t) : ''}
+      ${t.rf && t.rf.st !== 'none' ? `<div class="tkMS"><h4>Refund</h4><div class="tkFxs">${tkFx('Refund for', tkPartLong(t, t.rf.part))}${tkFx(t.rf.st === 'received' ? 'Received' : 'Expected', t.rf.amt ? tkMoney(t.rf.amt) : (t.rf.st === 'received' ? '' : 'Amount not added'))}${tkFx(t.rf.st === 'received' ? 'Received on' : 'Cancelled on', tkDt(t.rf.st === 'received' ? t.rf.rec : t.cancelAt))}${t.rf.st === 'received' ? tkFx('Net cost after refund', tkMoney(tkSpent(t) - tkNum(t.rf.amt))) : ''}</div>${tkRfWait(t) ? `<div style="margin-top:10px;"><button class="tkMini" data-tk="rfok" data-id="${id}">${tkIc('check', 13)}Refund received</button></div>` : ''}</div>` : ''}
+      ${p === 'req' ? '' : tkReqSection(t, id)}${p === 'cancelp' ? tkCancelPanel(t) : ''}${p === 'req' ? tkReqPanel(t) : ''}${p === 'rfok' ? tkRfPanel(t) : ''}${p === 'reqdone' ? tkReqDonePanel(t) : ''}
       ${hist.length ? `<div class="tkMS"><h4>History</h4>${hist.map(e => `<div class="tkHi2"><span>${tkE(fmtDate(hrStr(new Date(e.at))))}</span><div>${tkE(e.txt)}${e.snap ? `<div class="tkOld">${tkE(e.k === 'resched' ? 'Before' : 'Then')}: ${e.snap.legs.map(l => tkE([tkDt(l.d), l.dep, tkRoute(l), l.al, l.fn, l.trm && 'T' + l.trm].filter(x => x && x !== '-').join(' · '))).join(' | ')}${e.snap.fare ? ' · ' + tkMoney(e.snap.fare) : ''}</div>` : ''}${(e.files || []).length ? `<div class="tkFl" style="margin-top:4px;">${e.files.map(fb).join('')}</div>` : ''}</div></div>`).join('')}</div>` : ''}</div>
     <div class="tkMF">${!cancelled ? a('resched', 'clock', 'Reschedule') + a('req', 'file', 'Sent to agent') + a('cancelp', 'x', 'Cancel') : a('rebook', 'plane', t.next ? 'Rebook again' : 'Rebook')}${a('edit', 'file', 'Edit')}<span class="grow"></span>${a('del', 'trash', 'Delete', 'dng')}</div>`;
 }
@@ -21725,7 +21758,7 @@ async function tkSaveDraft(){
   try{
     const refs = await tkUp(D.nf), cfRefs = m === 'resched' ? await tkUp(D.cf) : [];
     const t = tkClone(D); delete t.nf; delete t.cf; delete t.why; delete t.fee; delete t.diff; t.files = (D.files || []).concat(refs);
-    if(t.kind !== 'return') t.legs = [t.legs[0], tkLeg0()]; else t.retBy = '', t.retRem = '';
+    if(t.kind !== 'return'){ t.legs = [t.legs[0], tkLeg0()]; t.dir = t.dir || tkDir(t); if(t.dir === 'come'){ t.retBy = ''; t.retRem = ''; } } else { t.retBy = '', t.retRem = ''; t.dir = ''; }
     if(t.pnr) t.pnr = t.pnr.toUpperCase();
     let openId = '', before = null;
     const ok = await tkCommit(items => {
@@ -21752,10 +21785,10 @@ async function tkMutate(id, fn, msg){
   return ok;
 }
 function tkRebookDraft(t){
-  const D = tkEmpty(t.emp); D.pur = t.pur; D.kind = t.kind; D.last = t.last; D.vendor = ''; D.prev = t.id;
+  const D = tkEmpty(t.emp); D.pur = t.pur; D.kind = t.kind; D.dir = t.dir || ''; D.last = t.last; D.vendor = ''; D.prev = t.id;
   D.legs = tkClone(t.legs); D.legs.forEach(l => { l.al = ''; l.fn = ''; l.d = ''; l.dep = ''; l.arr = ''; l.trm = ''; l.bag = ''; }); D.retBy = t.retBy; return D;
 }
-async function tkClick(e){
+async function tkClick0(e){
   const el = e.target.closest('[data-tk]'); if(!el || !hrCanEdit()) return;
   const a = el.dataset.tk, id = el.dataset.id || TK.id, t = tkGet(id), D = TK.D;
   if(hrUI.tab !== 'tickets'){ if(a === 'alltasks'){ TK.allTasks = !TK.allTasks; hrRenderBody(); return; } if(['open', 'addret', 'rfok', 'reqdone'].includes(a)){ hrUI.tab = 'tickets'; hrRenderTabs(); } else return; }
@@ -21772,17 +21805,17 @@ async function tkClick(e){
     case 'view': TK.open = id; TK.panel = ''; tkRender(); break;
     case 'close': TK.open = ''; TK.panel = ''; tkRender(); break;
     case 'back': TK.view = 'list'; TK.panel = ''; TK.D = null; if(TK.id && tkGet(TK.id)) TK.open = TK.id; tkRender(); break;
-    case 'set': if(D){ D[el.dataset.k] = el.dataset.v; if(el.dataset.k === 'pur' && el.dataset.v === 'exit'){ D.kind = 'one'; D.retBy = ''; D.retRem = ''; } tkRender(); } break;
+    case 'set': if(D){ if(el.dataset.k === 'kind' && el.dataset.v === 'come'){ D.kind = 'one'; D.dir = 'come'; if(!D.legs[0].to) D.legs[0].to = 'Riyadh (RUH)'; D.retBy = ''; } else if(el.dataset.k === 'kind' && el.dataset.v === 'one'){ D.kind = 'one'; D.dir = 'go'; if(!D.legs[0].from) D.legs[0].from = 'Riyadh (RUH)'; } else { D[el.dataset.k] = el.dataset.v; if(el.dataset.k === 'kind') D.dir = ''; } if(el.dataset.k === 'pur' && el.dataset.v === 'exit'){ D.kind = 'one'; D.retBy = ''; D.retRem = ''; } tkRender(); } break;
     case 'rmdoc': { const k = el.dataset.w; tkDocList(k).splice(+el.dataset.i, 1); const w = document.querySelector('[data-tkw="' + k + '"]'); if(w) w.outerHTML = tkDocW(k, 'Add document'); break; }
     case 'rmfile': if(D){ D.files.splice(+el.dataset.i, 1); const w = document.querySelector('[data-tkw="draft"]'); if(w) w.outerHTML = tkFilesHtml(D); } break;
     case 'rmnew': if(D){ D.nf.splice(+el.dataset.i, 1); const w = document.querySelector('[data-tkw="draft"]'); if(w) w.outerHTML = tkFilesHtml(D); } break;
     case 'save': tkSaveDraft(); break;
     case 'edit': if(t) tkOpenForm('edit', tkClone(t), id); break;
     case 'resched': if(t){ const c = tkClone(t); tkOpenForm('resched', c, id); } break;
-    case 'addret': if(t){ const c = tkEmpty(t.emp); c.pur = t.pur; c.kind = 'one'; c.last = t.last; c.retOf = t.id; const f = tkFirst(t); c.legs[0] = Object.assign(tkLeg0(), { from: f.to, to: f.from, d: t.retBy || '' }); tkOpenForm('ret', c); } break;
+    case 'addret': if(t){ const c = tkEmpty(t.emp); c.pur = t.pur; c.kind = 'one'; c.dir = 'come'; c.last = t.last; c.retOf = t.id; const f = tkFirst(t); c.legs[0] = Object.assign(tkLeg0(), { from: f.to, to: f.from, d: t.retBy || '' }); tkOpenForm('ret', c); } break;
     case 'rebook': if(t) tkOpenForm('rebook', tkRebookDraft(t)); break;
     case 'cancelp': case 'req': case 'rfok': if(t){ TK.open = id; TK.panel = a; TK.pf = []; tkRender(); } break;
-    case 'panelx': TK.panel = ''; TK.pf = []; tkRender(); break;
+    case 'panelx': TK.panel = ''; TK.pf = []; TK.reqEdit = false; TK.reqKeep = []; tkRender(); break;
     case 'cancelok': if(t){ const d = tkVal('tkp-date') || tkToday(), w = tkVal('tkp-rf') === 'wait', amt = tkVal('tkp-amt'), exp = '', rebook = $('tkp-rebook') && $('tkp-rebook').checked;
       const docs = await tkUp(TK.pf); TK.pf = [];
       const ok = await tkMutate(id, c => { c.st = 'cancelled'; c.cancelAt = d; c.rf = w ? { st: 'waiting', amt, exp, since: d, mails: ((c.rf && c.rf.mails) || []).concat(docs) } : { st: 'none', mails: docs }; if(c.req && !c.req.done){ c.req.done = true; c.req.doneAt = d; } tkLog(c, 'cancel', 'Cancelled' + (w ? ' · waiting for refund' + (amt ? ' ' + tkMoney(amt) : '') : ' · no refund')); }, 'Ticket cancelled');
@@ -21813,7 +21846,7 @@ function tkXlsx(){
   if(typeof XLSX === 'undefined'){ toast('Excel tool not loaded — check your connection'); return; }
   const list = tkFiltered(); if(!list.length){ toast('Nothing to download'); return; }
   const head = ['ID', 'Name', 'Purpose', 'Trip', 'Airline', 'Flight', 'From', 'To', 'Date', 'Departs', 'Arrives', 'Terminal', 'Baggage', 'Return date', 'Return flight', 'PNR', 'Last name', 'Booked from', 'Fare (SAR)', 'Change fees (SAR)', 'Status', 'Refund', 'Refund amount (SAR)', 'Note'];
-  const rows = list.map(t => { const f = tkFirst(t), r = t.kind === 'return' ? t.legs[1] : null; return [t.emp, tkName(t.emp), (TK_PUR.find(p => p[0] === t.pur) || [0, ''])[1], t.kind === 'return' ? 'Return' : 'One way', f.al, f.fn, f.from, f.to, f.d, f.dep, f.arr, f.trm, f.bag, r ? r.d : (t.retBy || ''), r ? [r.al, r.fn, tkRoute(r)].filter(Boolean).join(' ') : '', t.pnr, t.last, t.vendor, tkNum(t.fare) || '', tkNum(t.fees) || '', tkStatusText(t), t.rf ? (t.rf.st === 'received' ? 'Received' : (t.rf.st === 'waiting' ? 'Waiting' : 'No refund')) : '', t.rf ? tkNum(t.rf.amt) || '' : '', t.note]; });
+  const rows = list.map(t => { const f = tkFirst(t), r = t.kind === 'return' ? t.legs[1] : null; return [t.emp, tkName(t.emp), (TK_PUR.find(p => p[0] === t.pur) || [0, ''])[1], t.kind === 'return' ? 'Return' : (tkDir(t) === 'come' ? 'Coming only' : 'Going only'), f.al, f.fn, f.from, f.to, f.d, f.dep, f.arr, f.trm, f.bag, r ? r.d : (t.retBy || ''), r ? [r.al, r.fn, tkRoute(r)].filter(Boolean).join(' ') : '', t.pnr, t.last, t.vendor, tkNum(t.fare) || '', tkNum(t.fees) || '', tkStatusText(t), t.rf ? (t.rf.st === 'received' ? 'Received' : (t.rf.st === 'waiting' ? 'Waiting' : 'No refund')) : '', t.rf ? tkNum(t.rf.amt) || '' : '', t.note]; });
   const aoa = rvfNumRows([head].concat(rows)), ws = XLSX.utils.aoa_to_sheet(aoa); ws['!cols'] = aoa[0].map((h, i) => ({ wch: i === 2 ? 22 : 15 }));
   const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Tickets'); XLSX.writeFile(wb, 'tickets-' + rvfDateStamp() + '.xlsx'); toast('Excel file downloaded');
 }
@@ -23018,7 +23051,7 @@ function asgChangeParts(e){   // what changed / from / to, in plain words
   if(e.k === 'mrem') return { what:'Machine removed', from:e.mn || e.m, to:'' };
   return { what:ASG_KIND[e.k] || e.k, from:e.f || '—', to:e.to || '—' };
 }
-async function asgAssignView(){
+async function asgAssignView0(){
   const p = asgPeriod(), fl = $('asgHf'), hb = $('asgHb'); if(!hb) return;
   fl.innerHTML = `<select id="asgHt"><option value="">All changes</option>${Object.keys(ASG_KIND).map(k => `<option value="${k}" ${asgH.type === k ? 'selected' : ''}>${ASG_KIND[k]}</option>`).join('')}</select>
     <input type="text" id="asgHq" placeholder="Person or machine..." value="${assignEsc(asgH.q)}">
@@ -23344,6 +23377,252 @@ document.addEventListener('change', (e) => { const t = e.target; if(!t.dataset |
 function a2RmTip(r, id){ return (r.dl || []).filter(l => Number(l.r) === Number(id)).map(l => a2ReasonName(r, id) + ': ' + (l.lv ? l.lv + ' day leave, ' : '') + acMoney(l.a) + ' SAR').join('\n'); }
 
 function a2DlCfg(){ const c = a2DlCfg0(); if(A2.sec === 'operator' && a2HasCut()) c.key += '_cut'; return c; }
+
+const ASG_FILT = { '': 'All changes', sup: 'Approver', dept: 'Department', shift: 'Shift', mach: 'Machines' };
+// the small changes made in one save for one person become one row
+function asgGroup(list){
+  const ev = list.slice().sort((a, b) => a.t - b.t), open = {}, out = [];
+  ev.forEach(e => {
+    const key = e.o + '|' + (e.by || ''); let g = open[key];
+    if(!g || e.t - g.t > 90000){ g = open[key] = { t: e.t, o: e.o, on: e.on, by: e.by || '', sup: null, dept: null, shift: null, madd: [], mrem: [], kinds: {} }; out.push(g); }
+    g.t = e.t; g.kinds[e.k === 'madd' || e.k === 'mrem' ? 'mach' : e.k] = 1;
+    if(e.k === 'madd') g.madd.push(e.mn || e.m); else if(e.k === 'mrem') g.mrem.push(e.mn || e.m);
+    else if(e.k === 'sup' || e.k === 'dept' || e.k === 'shift'){ g[e.k] = g[e.k] ? { f: g[e.k].f, to: e.to || '' } : { f: e.f || '', to: e.to || '' }; }
+  });
+  return out.sort((a, b) => b.t - a.t);
+}
+function asgLines(g){   // [label, text] for every kind of change in the row
+  const L = [];
+  if(g.mrem.length || g.madd.length) L.push(['Machines', (g.mrem.length ? 'Removed ' + g.mrem.join(', ') : '') + (g.mrem.length && g.madd.length ? '  ·  ' : '') + (g.madd.length ? 'Added ' + g.madd.join(', ') : '')]);
+  if(g.sup) L.push(['Approver', (g.sup.f || '-') + '  →  ' + (g.sup.to || '-')]);
+  if(g.dept) L.push(['Department', (g.dept.f || '-') + '  →  ' + (g.dept.to || '-')]);
+  if(g.shift) L.push(['Shift', (g.shift.f || '-') + '  →  ' + (g.shift.to || '-')]);
+  return L;
+}
+function asgGroupRows(list){
+  const q = asgH.q.trim().toLowerCase(), t = asgH.type, kind = t === 'madd' || t === 'mrem' ? 'mach' : t;
+  return asgGroup(list).filter(g => (!kind || g.kinds[kind]) && (!q || [g.on, g.o, g.by].concat(asgLines(g).map(l => l[1])).join(' ').toLowerCase().includes(q)));
+}
+async function asgAssignView(){
+  const p = asgPeriod(), fl = $('asgHf'), hb = $('asgHb'); if(!hb) return;
+  fl.innerHTML = `<select id="asgHt">${Object.keys(ASG_FILT).map(k => `<option value="${k}" ${(asgH.type || '') === k ? 'selected' : ''}>${ASG_FILT[k]}</option>`).join('')}</select>
+    <input type="text" id="asgHq" placeholder="Person or machine..." value="${assignEsc(asgH.q)}">
+    <button class="btn btn-ghost btn-sm" id="asgHpdf">Download PDF</button><button class="btn btn-ghost btn-sm" id="asgHxls">Download Excel</button>`;
+  let list;
+  try{ list = await asgLogRange(p); }catch(err){ console.error(err); hb.innerHTML = '<div class="empty-state">Could not load the history — check your connection.</div>'; return; }
+  const head = '<tr><th>#</th><th>Date</th><th>Operator</th><th>What changed</th><th>Changed by</th></tr>';
+  const rowHtml = (g, i) => `<tr><td>${i + 1}</td><td style="white-space:nowrap">${asgFmt(g.t)}</td><td>${assignEsc(g.on)}<div class="asgMute">${assignEsc(g.o)}</div></td><td>${asgLines(g).map(l => `<div class="asgCh"><b>${l[0]}</b> ${assignEsc(l[1])}</div>`).join('')}</td><td>${assignEsc(g.by)}</td></tr>`;
+  const draw = () => {
+    const rows = asgGroupRows(list), people = new Set(rows.map(r => r.o)).size;
+    if(!list.length){ hb.innerHTML = `<div class="empty-state">No changes were saved in this period.</div>`; return; }
+    hb.innerHTML = `<div class="asgMute" style="margin:2px 0 8px;">${rows.length} change${rows.length === 1 ? '' : 's'} for ${people} ${people === 1 ? 'person' : 'people'}. Newest first. Everything changed in one save is on one row.</div>
+      <div class="table-scroll"><table class="report-table"><thead>${head}</thead><tbody>${rows.map(rowHtml).join('') || '<tr><td colspan="5" class="asgMute">Nothing matches.</td></tr>'}</tbody></table></div>`;
+  };
+  draw();
+  $('asgHt').addEventListener('change', () => { asgH.type = $('asgHt').value; draw(); });
+  $('asgHq').addEventListener('input', () => { asgH.q = $('asgHq').value; draw(); });
+  $('asgHpdf').addEventListener('click', async () => {
+    const rows = asgGroupRows(list); if(!rows.length){ toast('Nothing to download'); return; }
+    toast('Making the PDF…');
+    await rvfMakePdf([rvfPdfHeader('Operator & machine changes', [p.label + ' · ' + rows.length + ' changes', rvfNowText()])].concat(rvfTableBlocks(head, rows.map(rowHtml), 26)), 'changes-' + p.from + '-to-' + p.to + '.pdf', { landscape:true });
+  });
+  $('asgHxls').addEventListener('click', () => {
+    if(typeof XLSX === 'undefined'){ toast('Excel tool not loaded — check your connection'); return; }
+    const rows = asgGroupRows(list); if(!rows.length){ toast('Nothing to download'); return; }
+    const ar = (x) => x ? (x.f || '-') + ' -> ' + (x.to || '-') : '';
+    const aoa = [['#', 'Date', 'Time', 'Operator', 'Operator ID', 'Approver', 'Department', 'Shift', 'Machines removed', 'Machines added', 'Changed by']].concat(rows.map((g, i) => { const d = new Date(g.t); return [i + 1, d.toLocaleDateString('en-GB'), d.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' }), g.on, g.o, ar(g.sup), ar(g.dept), ar(g.shift), g.mrem.join(', '), g.madd.join(', '), g.by]; }));
+    const wb = XLSX.utils.book_new(), ws = XLSX.utils.aoa_to_sheet(aoa); ws['!cols'] = [5, 12, 8, 24, 14, 26, 22, 18, 30, 30, 20].map(w => ({ wch:w })); XLSX.utils.book_append_sheet(wb, ws, 'Changes'); XLSX.writeFile(wb, 'changes-' + p.from + '-to-' + p.to + '.xlsx'); toast('Excel file downloaded');
+  });
+}
+
+// Working / Done / Pending: if the task had a reminder waiting, answering it also clears the reminder (a repeating one goes to its next time)
+async function astSetStatus(id, st){
+  const t = AST.items.find(x => x.id === id); if(!t) return;
+  const due = astIsDue(t), wasS = t.status, wasD = t.doneAt, wasR = t.remind, lbl = { pending: 'Back to Pending', working: 'Marked Working', done: 'Marked Done' }[st] || 'Updated';
+  if(wasS === st && !due) return;
+  t.status = st; t.doneAt = st === 'done' ? (wasS === 'done' ? wasD : Date.now()) : 0;
+  if(due && st !== 'done') t.remind = t.repeat ? astNext(t) : '';
+  if(await astSave()){ toast(lbl + (due && st !== 'done' ? (t.remind ? ' - next reminder ' + astWhen(t.remind) : ' - reminder cleared') : '')); astRender(); hrRenderTabs(); astCheck(); }
+  else { t.status = wasS; t.doneAt = wasD; t.remind = wasR; }
+}
+
+/* ---------- Tickets v2 ---------- */
+const tkDir = (t) => t.kind === 'return' ? '' : (t.dir || ((tkPort(tkFirst(t).to) === 'RUH' && tkPort(tkFirst(t).from) !== 'RUH') ? 'come' : 'go'));
+const tkKindSel = (D) => D.kind === 'return' ? 'return' : (tkDir(D) === 'come' ? 'come' : 'one');
+const tkAct = (t) => tkNeedRet(t) || tkRfWait(t) || tkReqOpen(t);
+function tkPartLong(t, p){ if(!p || p === 'all' || t.kind !== 'return') return t.kind === 'return' ? 'Whole ticket (both flights)' : 'Whole ticket'; if(p === 'both') return 'Both flights'; const l = t.legs[p === 'go' ? 0 : 1] || {}; return (p === 'go' ? 'Going flight' : 'Return flight') + ' (' + (tkRoute(l) || '-') + (l.d ? ', ' + tkDt(l.d) : '') + ')'; }
+function tkPartShort(t, p){ if(!p || p === 'all' || t.kind !== 'return') return ''; return p === 'both' ? ' (both flights)' : p === 'go' ? ' (going flight)' : ' (return flight)'; }
+// names used before come first (most used first), then the built-in list
+function tkMem(k){
+  const cnt = {}, add = (v) => { v = String(v || '').trim(); if(!v) return; const key = v.toLowerCase(); (cnt[key] = cnt[key] || { v, n: 0 }).n++; };
+  (TK.items || []).forEach(t => { if(k === 'vn') add(t.vendor); else (t.legs || []).forEach(l => { if(k === 'al') add(l.al); else { add(l.from); add(l.to); } }); });
+  const used = Object.keys(cnt).map(x => cnt[x]).sort((a, b) => b.n - a.n || a.v.localeCompare(b.v)).map(x => x.v), seen = new Set(used.map(x => x.toLowerCase()));
+  return used.concat((k === 'al' ? TK_AIRLINES : k === 'pt' ? TK_PORTS : []).filter(x => !seen.has(x.toLowerCase())));
+}
+function tkBadges(t){
+  const b = [], rf = t.rf, tiny = (x) => !x || x === 'all' || t.kind !== 'return' ? '' : (x === 'both' ? ' \u00B7 both' : x === 'go' ? ' \u00B7 going' : ' \u00B7 return');
+  if(t.st === 'cancelled') b.push(['Cancelled', 'bad']); else if(tkIsPast(t)) b.push(['Flown', 'mut']); else b.push(['Upcoming', 'ok']);
+  if(t.st !== 'cancelled' && t.kind === 'return' && t.legs.some(l => l.can)) b.push([(t.legs[0].can ? 'Going' : 'Return') + ' flight cancelled', 'bad']);
+  if(tkNeedRet(t)) b.push(['Book return ticket', 'warn']);
+  if(tkRfWait(t)) b.push(['Refund waiting' + tiny(rf.part), 'warn']); else if(rf && rf.st === 'received') b.push(['Refund received' + tiny(rf.part), 'ok']);
+  if(tkReqOpen(t)) b.push([(t.req.k === 'refund' ? 'Agent: refund asked' : 'Agent: change asked') + tiny(t.req.part), 'warn']);
+  if((t.h || []).some(e => e.k === 'resched')) b.push(['Changed', 'mut']);
+  return b;
+}
+function tkNowBox(t, id){
+  const L = [], a = (act, txt) => `<button class="tkMini" data-tk="${act}" data-id="${id}">${txt}</button>`;
+  if(tkRfWait(t)){ const r = t.rf, w = -tkDays(r.since || t.cancelAt || tkToday()); L.push(`<div class="tkW">${tkIc('down', 13)}<span><b>Waiting for refund</b> &middot; ${tkE(tkPartLong(t, r.part))}${tkNum(r.amt) ? ' &middot; ' + tkE(tkMoney(r.amt)) : ' &middot; amount not added'} &middot; since ${tkE(tkDt(r.since || t.cancelAt))} (${w} day${w === 1 ? '' : 's'})</span>${a('rfok', 'Refund received')}</div>`); }
+  if(!tkAct(t)){
+    const done = t.st === 'cancelled' || tkIsPast(t);
+    L.push(`<div class="tkW ok">${tkIc('check', 13)}<span><b>${done ? 'No action needed.' : 'Nothing to do now.'}</b> ${t.st === 'cancelled' ? 'This ticket is cancelled' + (t.rf && t.rf.st === 'received' ? ' and the refund is received.' : (t.rf && t.rf.st === 'none' ? ' (no refund).' : '.')) : (tkIsPast(t) ? 'The flight is finished' + (t.rf && t.rf.st === 'received' ? ' and the refund is received.' : '.') : 'Booked. We will remind you before the flight.')}</span></div>`);
+  }
+  return L.join('');
+}
+function tkTableHtml(list){
+  if(!list.length) return `<div class="hrEmpty">${TK.items.length ? 'No ticket matches.' : 'No tickets yet. Press <b>New ticket</b> after you book a flight.'}</div>`;
+  const act = list.filter(tkAct), up = list.filter(t => !tkAct(t) && t.st !== 'cancelled' && !tkIsPast(t)), done = list.filter(t => !tkAct(t) && (t.st === 'cancelled' || tkIsPast(t)));
+  let n = 0;
+  const g = (title, sub, arr, cls) => arr.length ? `<div class="tkGrp ${cls}"><b>${title}</b><i>${arr.length}</i><span>${sub}</span></div><div class="tkL">${arr.map(t => tkRowHtml(t, n++)).join('')}</div>` : '';
+  return g('Needs your action', 'Return ticket to book, refund to collect, or waiting for the agent', act, 'act') + g('Upcoming', 'Booked. Nothing to do until the flight', up, 'up') + g('Finished', 'Flown or cancelled. No action needed', done, 'done');
+}
+function tkPartSel(t, id, label){
+  if(t.kind !== 'return') return '';
+  const o = (v, txt, dis) => `<option value="${v}" ${dis ? 'disabled' : ''}>${tkE(txt)}${dis ? ' - already cancelled' : ''}</option>`;
+  return `<label class="tkF wide"><span>${label}</span><select id="${id}">${o('all', 'Whole ticket (both flights)', t.legs.some(l => l.can))}${o('go', 'Going flight only: ' + (tkRoute(t.legs[0]) || '-') + (t.legs[0].d ? ', ' + tkDt(t.legs[0].d) : ''), t.legs[0].can)}${o('ret', 'Return flight only: ' + (tkRoute(t.legs[1]) || '-') + (t.legs[1].d ? ', ' + tkDt(t.legs[1].d) : ''), t.legs[1].can)}</select></label>`;
+}
+function tkCancelPanel(t){
+  return tkPan('Cancel this ticket', tkPartSel(t, 'tkp-part', 'What is cancelled?') + tkP('Cancelled on', 'tkp-date', tkToday(), 'date') + `<label class="tkF"><span>Refund</span><select id="tkp-rf"><option value="wait">We will get a refund</option><option value="none">No refund</option></select></label>` + tkP('Refund amount expected (SAR)', 'tkp-amt', '', 'number', 'min="0" step="any"') + `<div class="tkF wide"><span>Cancellation or refund mail (optional)</span>${tkDocW('pnl', 'Add document')}</div><label class="tkF wide tkChk"><input type="checkbox" id="tkp-rebook"> Book another ticket now (rebook)</label>`, 'cancelok', t.id);
+}
+function tkReqPanel(t){
+  const E = TK.reqEdit && t.req ? t.req : null, keep = E ? (TK.reqKeep || []) : [];
+  const files = keep.length ? `<div class="tkFl" style="margin-bottom:6px;">${keep.map((f, i) => `<span class="tkFile"><button type="button" data-tk="viewref" data-ref="${tkE(f.ref)}">${tkIc('file', 13)}${tkE(f.name || 'File')}</button><button type="button" class="x" data-tk="rmreqf" data-i="${i}" title="Remove" aria-label="Remove">&times;</button></span>`).join('')}</div>` : '';
+  const sel = (v, txt, cur) => `<option value="${v}" ${cur === v ? 'selected' : ''}>${txt}</option>`;
+  let ps = tkPartSel(t, 'tkp-part', 'For which flight?'); if(E && ps && E.part) ps = ps.replace(`<option value="${E.part}" `, `<option value="${E.part}" selected `);
+  return tkPan(E ? 'Edit the agent request' : 'Ticket sent to the agent', `<div class="tkHint wide">Use this when you give the ticket to the agent to change it (reissue) or to cancel it for money back (refund). We keep a reminder until you mark it done.</div><label class="tkF"><span>Asked for</span><select id="tkp-k">${sel('refund', 'Refund', E ? E.k : 'refund')}${sel('reissue', 'Reissue (change)', E ? E.k : 'refund')}</select></label>` + tkP('Sent on', 'tkp-date', E ? E.at : tkToday(), 'date') + tkP('Refund amount expected (SAR)', 'tkp-ramt', E && E.amt ? E.amt : '', 'number', 'min="0" step="any"') + ps + `<label class="tkF wide"><span>Note (optional)</span><input type="text" id="tkp-note" placeholder="e.g. agent said 7 working days" value="${tkE(E ? E.note || '' : '')}"></label><div class="tkF wide"><span>Mail, screenshot or form (optional)</span>${files}${tkDocW('pnl', 'Add document')}</div>`, 'reqok', t.id);
+}
+function tkApplyRefund(c, part, d, st, amt, docs){
+  if(part === 'all' || c.kind !== 'return'){ c.st = 'cancelled'; c.cancelAt = c.cancelAt || d; }
+  else { const l = c.legs[part === 'go' ? 0 : 1]; l.can = l.can || d; if(c.legs.slice(0, 2).every(x => x.can)){ c.st = 'cancelled'; c.cancelAt = c.cancelAt || d; } }
+  const old = c.rf && c.rf.st !== 'none' ? c.rf : null, op = old ? (old.part || 'all') : '';
+  let np = part, tot = amt;
+  if(old && op !== part && part !== 'all' && op !== 'all'){ np = 'both'; tot = String(tkNum(old.amt) + tkNum(amt) || ''); }
+  else if(old && op === 'all') np = 'all';
+  c.rf = { st, part: np, amt: tot, exp: '', since: (old && old.since) || d, rec: st === 'received' ? d : '', mails: ((c.rf && c.rf.mails) || []).concat(docs || []) };
+}
+function tkReqDonePanel(t){
+  const r = t.req || {};
+  if(r.k !== 'refund') return tkPan('Change done', tkP('Done on', 'tkp-date', tkToday(), 'date'), 'reqdoneok', t.id);
+  return tkPan('Refund from the agent', `<div class="tkHint wide">${tkE(tkPartLong(t, r.part))}</div>` + `<label class="tkF"><span>Money</span><select id="tkp-rst"><option value="rec">Received</option><option value="wait">Agent will pay later</option></select></label>` + tkP('Refund amount (SAR)', 'tkp-amt', r.amt || (t.rf && t.rf.amt) || '', 'number', 'min="0" step="any"') + tkP('Date', 'tkp-date', tkToday(), 'date') + `<div class="tkF wide"><span>Refund mail or screenshot (optional)</span>${tkDocW('pnl', 'Add document')}</div>`, 'reqdoneok', t.id);
+}
+function tkReqSection(t, id){
+  const r = t.req; if(!r) return '';
+  const w = r.done ? 0 : -tkDays(r.at || tkToday()), what = r.k === 'refund' ? 'Refund' : 'Reissue (change)';
+  const b = (act, txt, cls) => `<button class="${cls || 'tkGhost'}" data-tk="${act}" data-id="${id}">${txt}</button>`;
+  const tip = r.done && r.k === 'refund' && !t.rf ? `<div class="tkHint" style="margin-top:8px;">The agent finished the refund but the amount is not recorded yet. Press <b>Record refund</b> and write the amount.</div>` : '';
+  return `<div class="tkMS"><h4>Agent request</h4><div class="tkFxs">${tkFx('Asked for', what)}${tkFx('For', tkPartLong(t, r.part))}${tkFx('Sent on', tkDt(r.at))}${r.k === 'refund' ? tkFx('Refund amount', tkNum(r.amt) ? tkMoney(r.amt) : 'Not added - use Edit request') : ''}${tkFx('Status', r.done ? 'Done on ' + tkDt(r.doneAt) : 'With the agent for ' + w + (w === 1 ? ' day' : ' days'))}${r.note ? tkFx('Note', r.note) : ''}</div>${tip}<div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap;">${b('reqedit', 'Edit request', 'tkMini')}${r.done && r.k === 'refund' && !t.rf ? b('reqdonep', 'Record refund', 'tkMini') : ''}${r.done ? b('reqreopen', 'Not done yet') : b('reqdone', 'Mark done')}${b('reqdel', 'Remove request')}</div></div>`;
+}
+
+async function tkClick(e){
+  const el = e.target.closest('[data-tk]'), a = el && el.dataset.tk;
+  if(a === 'more'){ TK.more = !TK.more; tkModalSync(); return; }
+  if(!['cancelok', 'reqok', 'reqedit', 'reqreopen', 'reqdel', 'rmreqf', 'reqdone', 'reqdonep', 'reqdoneok'].includes(a)) return tkClick0(e);
+  if(!hrCanEdit()) return;
+  const id = el.dataset.id || TK.id, t = tkGet(id); if(!t) return;
+  if(a === 'reqdone' || a === 'reqdonep'){
+    if(t.req && t.req.k !== 'refund' && a === 'reqdone') return tkClick0(e);
+    if(hrUI.tab !== 'tickets'){ hrUI.tab = 'tickets'; hrRenderTabs(); }
+    TK.view = 'list'; TK.open = id; TK.panel = 'reqdone'; TK.pf = []; tkRender(); return;
+  }
+  if(a === 'reqdoneok'){
+    const d = tkVal('tkp-date') || tkToday(), amt = tkVal('tkp-amt'), st = tkVal('tkp-rst') === 'wait' ? 'waiting' : 'received', docs = await tkUp(TK.pf); TK.pf = [];
+    await tkMutate(id, c => { if(!c.req) return; c.req.done = true; c.req.doneAt = d; if(amt) c.req.amt = amt; tkApplyRefund(c, c.req.part || 'all', d, st, amt, docs); tkLog(c, 'refund', 'Agent finished the refund' + tkPartShort(c, c.req.part) + (amt ? ' ' + tkMoney(amt) : '') + (st === 'received' ? ' - money received' : ' - waiting for the money')); }, st === 'received' ? 'Refund recorded' : 'Saved - waiting for the money');
+    return;
+  }
+  if(a === 'reqedit'){ TK.open = id; TK.panel = 'req'; TK.reqEdit = true; TK.reqKeep = ((t.req && t.req.files) || []).slice(); TK.pf = []; tkRender(); return; }
+  if(a === 'rmreqf'){ (TK.reqKeep || []).splice(+el.dataset.i, 1); tkRender(); return; }
+  if(a === 'reqreopen'){ await tkMutate(id, c => { if(c.req){ c.req.done = false; c.req.doneAt = ''; tkLog(c, 'req', 'Agent request opened again'); } }, 'Opened again'); return; }
+  if(a === 'reqdel'){ if(!confirm('Remove the agent request from this ticket?')) return; await tkMutate(id, c => { if(c.req){ tkLog(c, 'req', 'Agent request removed'); c.req = null; } }, 'Removed'); return; }
+  const d = tkVal('tkp-date') || tkToday(), part = t.kind === 'return' ? (tkVal('tkp-part') || 'all') : 'all', pn = tkPartShort(t, part);
+  const docs = await tkUp(TK.pf); TK.pf = [];
+  if(a === 'cancelok'){
+    const w = tkVal('tkp-rf') === 'wait', amt = tkVal('tkp-amt'), rebook = $('tkp-rebook') && $('tkp-rebook').checked;
+    const ok = await tkMutate(id, c => {
+      if(part === 'all'){ c.st = 'cancelled'; c.cancelAt = d; }
+      else { c.legs[part === 'go' ? 0 : 1].can = d; if(c.legs.slice(0, 2).every(l => l.can)){ c.st = 'cancelled'; c.cancelAt = d; } }
+      const old = c.rf && c.rf.st !== 'none' ? c.rf : null, both = !!old && part !== 'all' && (old.part || 'all') !== 'all' && (old.part || 'all') !== part;
+      if(w) c.rf = { st: 'waiting', part: both ? 'both' : part, amt: both ? String(tkNum(old.amt) + tkNum(amt) || '') : amt, exp: '', since: d, mails: ((c.rf && c.rf.mails) || []).concat(docs) };
+      else if(old) old.mails = (old.mails || []).concat(docs);
+      else c.rf = { st: 'none', part, mails: ((c.rf && c.rf.mails) || []).concat(docs) };
+      if(c.req && !c.req.done){ c.req.done = true; c.req.doneAt = d; }
+      tkLog(c, 'cancel', 'Cancelled' + (part === 'all' ? '' : ' the ' + (part === 'go' ? 'going' : 'return') + ' flight') + (w ? ' · waiting for refund' + (amt ? ' ' + tkMoney(amt) : '') : ' · no refund'));
+    }, 'Cancelled' + (part === 'all' ? ' the ticket' : ' the ' + (part === 'go' ? 'going' : 'return') + ' flight'));
+    if(ok && rebook){ const n = tkGet(id); if(n) tkOpenForm('rebook', tkRebookDraft(n)); }
+    return;
+  }
+  const k = tkVal('tkp-k') || 'refund', note = tkVal('tkp-note'), ramt = tkVal('tkp-ramt');
+  const edit = !!(TK.reqEdit && t.req), keep = edit ? (TK.reqKeep || []) : [];
+  TK.reqEdit = false; TK.reqKeep = [];
+  await tkMutate(id, c => { if(edit && c.req){ Object.assign(c.req, { k, at: d, note, part, amt: ramt, files: keep.concat(docs) }); tkLog(c, 'req', 'Agent request edited: ' + (k === 'refund' ? 'refund' : 'change') + pn + (note ? ' - ' + note : '')); } else { c.req = { k, at: d, note, part, amt: ramt, files: docs, done: false }; tkLog(c, 'req', 'Sent to the agent for ' + (k === 'refund' ? 'a refund' : 'a change') + pn + (note ? ': ' + note : '')); } }, 'Saved');
+}
+
+function tkModalHtml(t){
+  const cancelled = t.st === 'cancelled', p = TK.panel, legs = tkLegs(t), id = tkE(t.id), pur = (TK_PUR.find(x => x[0] === t.pur) || [0, ''])[1];
+  const kindTxt = t.kind === 'return' ? 'Return trip' : (tkDir(t) === 'come' ? 'Coming only' : 'Going only');
+  const lk = (tid, txt) => { const o = tid && tkGet(tid); return o ? `<button class="tkLk" data-tk="open" data-id="${tkE(o.id)}">${txt}</button>` : ''; };
+  const fb = (f) => `<button class="tkFileB" data-tk="viewref" data-ref="${tkE(f.ref)}">${tkIc('file', 12)}${tkE(f.name || 'File')}</button>`;
+  const files = (t.files || []).map(fb).join(''), mails = (t.rf ? (t.rf.mails || []) : []).concat(t.req && t.req.files ? t.req.files : []).map(fb).join('');
+  const hist = (t.h || []).slice().reverse();
+  const a = (act, ic, l, cls) => `<button class="tkA ${cls || ''}" data-tk="${act}" data-id="${id}">${tkIc(ic, 13)}${l}</button>`;
+  const rf = t.rf && t.rf.st !== 'none' ? t.rf : null, got = rf && rf.st === 'received' ? tkNum(rf.amt) : 0, spent = tkSpent(t);
+  // one plain status line
+  let st;
+  if(cancelled) st = 'Cancelled on ' + tkDt(t.cancelAt) + '. ' + (rf ? (rf.st === 'received' ? 'Refund received' + (tkNum(rf.amt) ? ': ' + tkMoney(rf.amt) : '') + (rf.rec ? ' on ' + tkDt(rf.rec) : '') + '.' : 'Waiting for refund' + (tkNum(rf.amt) ? ' of ' + tkMoney(rf.amt) : '') + '.') : 'No refund.');
+  else if(tkIsPast(t)) st = 'Flown. Nothing more to do.';
+  else st = 'Booked. Flies on ' + tkDt(tkFirst(t).d) + ' (' + tkAgo(tkFirst(t).d) + ').';
+  const needs = tkAct(t);
+  let top = '';
+  if(needs){
+    top = tkNowBox(t, id);
+    if(tkNeedRet(t)) top += `<div class="tkW">${tkIc('clock', 13)}<span>Return not booked${t.retBy ? ' · possible return ' + tkE(tkDt(t.retBy)) : ''}</span><button class="tkMini" data-tk="addret" data-id="${id}">Add return ticket</button><button class="tkGhost" data-tk="retdone" data-id="${id}">Booked elsewhere</button></div>`;
+    if(tkReqOpen(t)) top += `<div class="tkW">${tkIc('clock', 13)}<span>With the agent for ${t.req.k === 'refund' ? 'a refund' : 'a reissue'} since ${tkE(tkDt(t.req.at))}</span><button class="tkMini" data-tk="reqdone" data-id="${id}">Mark done</button></div>`;
+  }
+  const sline = `<div class="tkSt ${cancelled ? 'c' : (tkIsPast(t) ? 'p' : 'u')}">${tkE(st)}</div>`;
+  const money = `<div class="tkFxs">${tkFx('Paid', spent ? tkMoney(spent) : '')}${tkNum(t.fees) ? tkFx('Change cost', tkMoney(t.fees)) : ''}${rf ? tkFx(rf.st === 'received' ? 'Refund received' : 'Refund expected', tkNum(rf.amt) ? tkMoney(rf.amt) : 'Amount not added') : ''}${rf && rf.st === 'received' && spent ? tkFx('Net cost', tkMoney(spent - got)) : ''}${tkFx('Bought from', t.vendor)}${tkFx('PNR', t.pnr, 1)}${tkFx('Last name', t.last, 1)}</div>`;
+  const hidden = `${hist.length ? `<details class="tkDt"><summary>History (${hist.length})</summary>${hist.map(e => `<div class="tkHi2"><span>${tkE(fmtDate(hrStr(new Date(e.at))))}</span><div>${tkE(e.txt)}</div></div>`).join('')}</details>` : ''}`;
+  const reqBlock = t.req && p !== 'req' ? `<details class="tkDt"><summary>Agent request (${t.req.done ? 'done' : 'open'})</summary>${tkReqSection(t, id)}</details>` : '';
+  return `<div class="tkMH"><span class="tkIc">${tkIc('plane', 16)}</span><div class="tkMT"><b>${tkE(tkName(t.emp))} <i>${tkE(t.emp)}</i></b><span>${tkE(pur)} · ${kindTxt}</span></div><button class="iconBtn" data-tk="close" aria-label="Close" title="Close">${tkIc('x', 15)}</button></div>
+    <div class="tkMB">${sline}${top}${lk(t.prev, 'Rebooked after an earlier ticket') + lk(t.next, 'Rebooked on a new ticket') + lk(t.retOf, 'Return ticket of an earlier one-way') + lk(t.retLink, 'See its return ticket')}
+      ${p === 'cancelp' ? tkCancelPanel(t) : ''}${p === 'req' ? tkReqPanel(t) : ''}${p === 'rfok' ? tkRfPanel(t) : ''}${p === 'reqdone' ? tkReqDonePanel(t) : ''}
+      <div class="tkMS"><h4>Travel</h4>${legs.map((l, i) => `<div class="tkSl${l.can ? ' x' : ''}"><i>${legs.length > 1 ? (i ? 'Return' : 'Going') : (tkDir(t) === 'come' ? 'Coming' : 'Going')}</i><b>${tkE(l.d ? tkDt(l.d) : '-')}</b><span>${tkE(tkRoute(l)) || '-'}${l.al ? ' · ' + tkE(l.al) + (l.fn ? ' ' + tkE(l.fn) : '') : ''}${l.can ? ' · cancelled' : ''}</span></div>`).join('')}</div>
+      <div class="tkMS"><h4>Money</h4>${money}</div>
+      <div class="tkMS"><h4>Files</h4><div class="tkFl">${files}${mails}${files || mails ? '' : '<span class="tkHint">No files yet.</span>'}<label class="tkAddF">${tkIc('plus', 12)} Ticket copy<input type="file" multiple accept="image/*,application/pdf" data-tk-file="ticket" data-id="${id}"></label></div></div>
+      ${reqBlock}${hidden}</div>
+    <div class="tkMF">${a('edit', 'file', 'Edit')}<button class="tkA" data-tk="more" data-id="${id}">${TK.more ? 'Less' : 'More'}</button>${TK.more ? `<span class="tkMore">${!cancelled ? a('resched', 'clock', 'Reschedule') + a('req', 'file', 'Sent to agent') + a('cancelp', 'x', 'Cancel') : a('rebook', 'plane', t.next ? 'Rebook again' : 'Rebook')}${a('del', 'trash', 'Delete', 'dng')}</span>` : ''}</div>`;
+}
+
+function tkLegHtml(i, title){
+  const L = TK.D.legs[i], more = L.fn || L.dep || L.arr || L.trm || L.bag;
+  return `<div class="tkLeg"><div class="tkLegH">${tkIc('plane', 14)}${title}</div><div class="tkG">
+    ${tkF('Date', 'l' + i + '.d', L.d, 'date')}${tkF('Airline', 'l' + i + '.al', L.al, 'text', 'list="tkAl" autocomplete="off"')}${tkF('From (airport)', 'l' + i + '.from', L.from, 'text', 'list="tkPt" autocomplete="off"')}${tkF('To (airport)', 'l' + i + '.to', L.to, 'text', 'list="tkPt" autocomplete="off"')}</div>
+    <details class="tkDt tkOpt" ${more ? 'open' : ''}><summary>Times, flight number, terminal, baggage (optional)</summary><div class="tkG" style="margin-top:8px;">${tkF('Flight no.', 'l' + i + '.fn', L.fn)}${tkF('Departs', 'l' + i + '.dep', L.dep, 'time')}${tkF('Arrives', 'l' + i + '.arr', L.arr, 'time')}${tkF('Riyadh terminal', 'l' + i + '.trm', L.trm, 'text', 'placeholder="e.g. T5"')}${tkF('Baggage', 'l' + i + '.bag', L.bag, 'text', 'placeholder="e.g. 30 kg"')}</div></details></div>`;
+}
+
+function apprSupOf(r){
+  const op = (state.users || []).find(u => u.loginId === r.operatorId), d = op && op.profile && op.profile.directSupervisor;
+  if(!d || !d.loginId) return null;
+  const sp = (state.users || []).find(u => u.loginId === d.loginId);
+  return { id: d.loginId, name: (sp && sp.name) || d.name || d.loginId };
+}
+function apprLateTxt(r){
+  const ms = Date.now() - computeGraceDeadline(r, 'supervisor').getTime(); if(ms <= 0) return '';
+  const h = Math.floor(ms / 3600000), d = Math.floor(h / 24);
+  return d >= 1 ? d + (d === 1 ? ' day' : ' days') : (h >= 1 ? h + ' h' : Math.max(1, Math.floor(ms / 60000)) + ' min');
+}
+function apprWhoHtml(r, delayed){
+  const sp = apprSupOf(r), nm = sp ? assignEsc(sp.name) + ' <span style="color:var(--muted);">(' + assignEsc(sp.id) + ')</span>' : '<b>no approver set</b> on the operator profile';
+  if(delayed) return `<div class="meta-small" style="margin-top:3px; color:var(--danger);">${sp ? 'Waiting for approval from' : 'Nobody to approve:'} <b>${nm}</b> &middot; late by ${apprLateTxt(r)}</div>`;
+  return `<div class="meta-small" style="margin-top:3px;">Approver: <b>${nm}</b></div>`;
+}
 </script>
 </body>
 </html>
