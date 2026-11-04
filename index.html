@@ -415,6 +415,10 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
       const ref = await addDoc(collection(db, "photoBlobs"), { data: dataUrl, createdAt: Date.now() });
       return ref.id;
     },
+    async deletePhotoBlob(id) {
+      if (!dbReady) throw new Error('NOT_CONFIGURED');
+      await deleteDoc(doc(db, "photoBlobs", id));
+    },
     async getPhotoBlob(id) {
       if (!dbReady) throw new Error('NOT_CONFIGURED');
       const snap = await getDoc(doc(db, "photoBlobs", id));
@@ -1490,6 +1494,9 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
   .seg{ display:flex; gap:2px; background:var(--panel-2); border-radius:12px; padding:3px; margin-bottom:12px; }
   .seg button{ flex:1; border:0; background:transparent; padding:8px 4px; border-radius:9px; font:inherit; font-size:12px; font-weight:600; color:var(--muted); cursor:pointer; }
   .seg button.active{ background:#fff; color:var(--text-strong); box-shadow:0 1px 3px rgba(15,23,42,.14); }
+  .docBtns{ display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; } .docBtns .btn{ width:auto; }
+  .docDelBtn{ color:var(--danger) !important; }
+  #profilePhotoWrap.hasPhoto{ cursor:zoom-in; }
   .pdfSheet *{ font-family:'Inter', sans-serif; }
   .pdfSheet table.report-table{ font-size:11px; }
   .pdfSheet table.report-table th{ position:static !important; }
@@ -3427,7 +3434,7 @@ table.pkPdf tr.tot td{ background:#eef2ff !important; border-top:1px solid #c7d2
 #screen-admin p.sub{font-size:12.5px;margin:2px 0 8px;}
 #screen-admin .hint{font-size:11.5px;margin:2px 0 8px;}
 #screen-admin .grid-2,#screen-admin .grid-3{grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px 12px;}
-#screen-admin input[type=time]{width:100%;font:inherit;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--panel-2);color:var(--text);}
+#screen-admin input[type=time], #screen-admin input[data-tkt]{width:100%;font:inherit;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--panel-2);color:var(--text);}
 details.admD{margin:0 0 10px;}
 .admForm{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:0 14px;align-items:end;}
 .admForm > *{grid-column:1/-1;}
@@ -3468,7 +3475,7 @@ details.admD{margin:0 0 10px;}
 #graceFieldsContainer .gWho{font-size:13px;font-weight:500;}
 #graceFieldsContainer .gCell{display:flex;align-items:center;gap:8px;min-width:0;}
 #graceFieldsContainer .gCell input[type=radio]{width:auto;flex:none;margin:0;}
-#graceFieldsContainer .gCell input[type=number],#graceFieldsContainer .gCell input[type=time]{flex:1;min-width:0;height:44px;box-sizing:border-box;}
+#graceFieldsContainer .gCell input[type=number],#graceFieldsContainer .gCell input[data-tkt], #graceFieldsContainer .gCell input[type=time]{flex:1;min-width:0;height:44px;box-sizing:border-box;}
 #graceFieldsContainer .gChk{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:400;text-transform:none;letter-spacing:0;color:var(--text);cursor:pointer;margin:0;}
 #graceFieldsContainer .gChk input{width:auto;}
 #graceFieldsContainer .gNote{font-size:12px;color:var(--muted);}
@@ -3686,7 +3693,87 @@ details.admD{margin:0 0 10px;}
 .tkGrp{ padding:14px 16px 6px; } .tkGrp b{ font-size:12.5px; } .tkGrp span{ font-size:11px; }
 .tkCost{ display:block !important; border:0 !important; background:transparent !important; } .tkCost .tkDt{ border-top:0; padding-top:0; margin-bottom:4px; }
 .tkSlM{ grid-column:2 / -1; font-style:normal; font-size:11.5px; color:var(--muted); }
+.tkPay{ margin-top:2px; } .tkPayN{ font-size:11.5px; color:var(--muted); margin:4px 0 6px; } .tkPr{ grid-template-columns:96px 1fr 120px; }
 
+/* ---- Machine report: Day / Night grouping, totals, month compare ---- */
+table.report-table td.mpD{ background-color:rgba(79,70,229,.05); } table.report-table th.mpD{ background-color:rgba(79,70,229,.10); }
+table.report-table td.mpN{ background-color:rgba(14,165,233,.075); } table.report-table th.mpN{ background-color:rgba(14,165,233,.13); }
+table.report-table tr.mpT td.mpD{ background-color:rgba(79,70,229,.11); } table.report-table tr.mpT td.mpN{ background-color:rgba(14,165,233,.16); }
+th.mpS, td.mpS{ border-left:1px solid var(--line-strong); }
+table.report-table th.mpD, table.report-table th.mpN, table.report-table th.mpB, table.report-table td.mpD, table.report-table td.mpN, table.report-table td.mpB{ text-align:right; font-variant-numeric:tabular-nums; padding-right:12px; }
+table.report-table tr.mpG th{ text-align:center !important; padding:7px 4px 6px; font-size:10px; letter-spacing:.09em; border-bottom:0; }
+table.report-table tr.mpG th.mpD{ color:var(--amber); }
+table.report-table tr.mpG th.mpN{ color:#0284c7; }
+table.report-table tr.mpG th svg{ vertical-align:-1.5px; margin-right:5px; }
+table.mpTbl th{ position:static; }
+td.mpH{ color:var(--muted); }
+td.mpP{ color:var(--text-strong); font-weight:500; }
+table.mpTbl tbody tr:hover td{ background-color:rgba(79,70,229,.07); }
+table.mpTbl td.mpCol, table.mpTbl th.mpCol{ background-color:rgba(79,70,229,.11); }
+table.report-table tr.mpT td{ background-color:var(--panel-2); font-weight:600; border-bottom:1px solid var(--line-strong); }
+table.report-table tr.mpT td.mpH{ font-weight:400; }
+.mpSum{ display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:8px; margin-bottom:10px; }
+.mpSumB{ background:var(--panel-2); border-radius:14px; padding:10px 12px; }
+.mpSumT{ font-size:10px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); font-weight:600; margin-bottom:7px; }
+.mpSumR{ display:grid; grid-template-columns:repeat(3,1fr); gap:6px; }
+.mpSumR span{ display:block; font-size:10.5px; color:var(--muted); }
+.mpSumR span svg{ vertical-align:-1.5px; margin-right:4px; }
+.mpSumR b{ display:block; margin-top:2px; font-family:'JetBrains Mono',monospace; font-size:15px; font-weight:500; color:var(--text-strong); }
+.mpSumR .mpBoth{ border-left:1px solid var(--line-strong); padding-left:8px; }
+.mpSumR .mpBoth b{ font-weight:600; }
+.mpcBox{ background:var(--panel-2); border-radius:14px; padding:12px; }
+.mpcSel{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.mpcSel .field{ margin-bottom:0; }
+.mpcNote{ font-size:11.5px; color:var(--muted); line-height:1.45; margin:9px 0 10px; }
+.mpcTop{ display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin:14px 0 8px; }
+.mpcUp{ color:var(--ok); } .mpcDn{ color:var(--danger); } .mpcZ{ color:var(--muted); }
+table.mpcSumT{ margin-top:2px; } table.mpcSumT th, table.mpcSumT td{ padding:6px 5px; text-align:right; }
+table.mpcSumT th:first-child, table.mpcSumT td:first-child{ text-align:left; }
+table.mpcSumT th{ background:transparent; position:static; }
+@media(max-width:560px){ .mpcSel{ grid-template-columns:1fr; } }
+.mpcTop .seg{ display:inline-flex; width:auto; } .mpcTop .seg button{ flex:none; padding:7px 16px; white-space:nowrap; }
+
+.dsBar{ margin:8px 0 10px; }
+
+/* ---- Accounts > Pay desk ---- */
+.pdBar{ display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin:0 0 10px; }
+.pdMonth{ display:inline-flex; align-items:center; gap:4px; } .pdMonth b{ font-size:14px; font-weight:600; min-width:78px; text-align:center; } .pdMonth small{ display:block; font-size:10.5px; color:var(--muted); font-weight:400; }
+.pdQ{ flex:1; min-width:150px; max-width:260px; height:34px; border:1px solid var(--line-strong); border-radius:11px; padding:0 11px; font:inherit; font-size:13px; background:#fff; }
+.pdSeg{ display:inline-flex; background:var(--panel-2); border-radius:11px; padding:3px; gap:2px; }
+.pdSeg button{ border:0; background:transparent; padding:6px 11px; border-radius:9px; font:inherit; font-size:12px; font-weight:500; color:var(--muted); cursor:pointer; }
+.pdSeg button.on{ background:#fff; color:var(--text-strong); box-shadow:0 1px 3px rgba(15,23,42,.12); }
+.pdFilt{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; background:var(--panel-2); border-radius:12px; padding:10px; margin-bottom:10px; }
+.pdFilt select{ height:34px; border:1px solid var(--line-strong); border-radius:10px; padding:0 8px; font:inherit; font-size:12.5px; background:#fff; max-width:200px; }
+.pdSum{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin:2px 0 8px; font-size:12.5px; color:var(--muted); }
+.pdSum b{ color:var(--text-strong); font-weight:600; font-size:15px; }
+.pdProg{ flex:1; min-width:100px; height:6px; border-radius:6px; background:var(--panel-2); overflow:hidden; } .pdProg i{ display:block; height:100%; background:var(--amber); border-radius:6px; }
+.pdSel{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; background:var(--amber-soft); border-radius:12px; padding:8px 10px; margin-bottom:8px; font-size:12.5px; }
+.pdList{ border:1px solid var(--line); border-radius:14px; overflow:hidden; background:#fff; }
+.pdHead{ display:flex; align-items:center; gap:10px; padding:8px 10px; background:var(--panel-2); font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); }
+.pdRow{ display:grid; grid-template-columns:22px 46px minmax(0,1fr) auto auto; gap:10px; align-items:center; padding:8px 10px; border-top:1px solid var(--line); }
+.pdRow.paid{ background:rgba(22,163,74,.045); }
+.pdRow input[type=checkbox], .pdHead input[type=checkbox]{ width:16px; height:16px; accent-color:var(--amber); }
+.pdPh{ position:relative; width:46px; height:58px; border-radius:10px; overflow:hidden; background:var(--panel-2); display:flex; align-items:center; justify-content:center; font-family:'Oswald',sans-serif; font-size:15px; color:var(--muted); cursor:pointer; flex:none; border:1px solid var(--line); }
+.pdPh img{ width:100%; height:100%; object-fit:cover; display:block; }
+.pdPh.none{ cursor:default; }
+.pdCam{ position:absolute; right:2px; bottom:2px; width:20px; height:20px; border-radius:50%; background:var(--amber); color:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer; }
+.pdCam input{ display:none; }
+.pdNm{ font-size:13.5px; font-weight:500; color:var(--text-strong); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.pdMeta{ font-size:11.5px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:2px; }
+.pdDocs{ display:flex; gap:5px; flex-wrap:wrap; justify-content:flex-end; }
+.pdChip{ border:1px solid var(--line-strong); background:#fff; border-radius:8px; padding:3px 8px; font:inherit; font-size:11px; color:var(--text); cursor:pointer; }
+.pdChip.no{ color:var(--muted); border-style:dashed; cursor:default; opacity:.7; }
+.pdCat{ font-size:10.5px; padding:2px 7px; border-radius:7px; background:var(--panel-2); color:var(--muted); margin-left:6px; }
+.pdBtn{ height:32px; padding:0 12px; border-radius:10px; border:1px solid var(--amber); background:#fff; color:var(--amber); font:inherit; font-size:12px; font-weight:600; cursor:pointer; white-space:nowrap; min-width:92px; }
+.pdBtn.done{ border-color:transparent; background:var(--lcd-dim); color:var(--ok); font-weight:500; }
+.pdMore{ display:block; width:100%; border:0; border-top:1px solid var(--line); background:#fff; padding:10px; font:inherit; font-size:12.5px; color:var(--amber); cursor:pointer; }
+@media(max-width:620px){ .pdRow{ grid-template-columns:22px 46px minmax(0,1fr) auto; } .pdDocs{ grid-column:3 / 5; justify-content:flex-start; } }
+
+
+#profilePhotoWrap{ width:clamp(112px,34vw,150px) !important; height:clamp(150px,45vw,200px) !important; }
+.lightbox.lbBig img{ width:min(94vw,620px); height:auto; max-height:88vh; object-fit:contain; background:#fff; }
+
+#purchaseMount .pcBar .pcMoreList{ top:auto; bottom:calc(100% + 6px); }
 </style>
 </head>
 <body>
@@ -4017,15 +4104,15 @@ details.admD{margin:0 0 10px;}
           <div class="field"><label for="shiftEffectiveDate">Effective from</label><input type="date" id="shiftEffectiveDate"></div>
           <p class="hint admNote">Readings dated on or after this date use this rule. Use a future date to prepare a change ahead of time (for example the first day of Ramadan).</p>
           <div class="admGT">2. Shift hours</div>
-          <div class="field"><label for="shiftDayStart">Day shift start</label><input type="time" id="shiftDayStart"></div>
-          <div class="field"><label for="shiftDayEnd">Day shift end</label><input type="time" id="shiftDayEnd"></div>
-          <div class="field"><label for="shiftNightStart">Night shift start</label><input type="time" id="shiftNightStart"></div>
-          <div class="field"><label for="shiftNightEnd">Night shift end</label><input type="time" id="shiftNightEnd"></div>
+          <div class="field"><label for="shiftDayStart">Day shift start</label><input type="text" inputmode="numeric" maxlength="5" placeholder="HH:MM" data-tkt="1" id="shiftDayStart"></div>
+          <div class="field"><label for="shiftDayEnd">Day shift end</label><input type="text" inputmode="numeric" maxlength="5" placeholder="HH:MM" data-tkt="1" id="shiftDayEnd"></div>
+          <div class="field"><label for="shiftNightStart">Night shift start</label><input type="text" inputmode="numeric" maxlength="5" placeholder="HH:MM" data-tkt="1" id="shiftNightStart"></div>
+          <div class="field"><label for="shiftNightEnd">Night shift end</label><input type="text" inputmode="numeric" maxlength="5" placeholder="HH:MM" data-tkt="1" id="shiftNightEnd"></div>
           <div class="admGT">3. Machine hours and photo cutover</div>
           <div class="field"><label for="shiftDayMachineHours">Day machine hours</label><input type="number" id="shiftDayMachineHours" min="0" step="0.25" placeholder="e.g. 11.5"></div>
           <div class="field"><label for="shiftNightMachineHours">Night machine hours</label><input type="number" id="shiftNightMachineHours" min="0" step="0.25" placeholder="e.g. 11.5"></div>
-          <div class="field"><label for="shiftDayCutover">Day cutover</label><input type="time" id="shiftDayCutover"></div>
-          <div class="field"><label for="shiftNightCutover">Night cutover</label><input type="time" id="shiftNightCutover"></div>
+          <div class="field"><label for="shiftDayCutover">Day cutover</label><input type="text" inputmode="numeric" maxlength="5" placeholder="HH:MM" data-tkt="1" id="shiftDayCutover"></div>
+          <div class="field"><label for="shiftNightCutover">Night cutover</label><input type="text" inputmode="numeric" maxlength="5" placeholder="HH:MM" data-tkt="1" id="shiftNightCutover"></div>
           <p class="hint admNote4"><b>Machine hours:</b> the shorter number that production and efficiency use (for example 11.5), separate from the full shift length above. <b>Cutover:</b> a reading before this clock time is saved as a Starting photo, from this time on as an Ending photo.</p>
           <div class="admGT">4. When each one locks (grace period)</div>
           <div id="graceFieldsContainer"></div>
@@ -4597,6 +4684,12 @@ details.admD{margin:0 0 10px;}
           <span class="badge badge-pendingrole" id="prod12MonthToggleLbl">Show</span>
         </div>
         <div id="prod12Month" style="display:none; margin-top:10px;"></div>
+
+        <div class="row" style="cursor:pointer; margin-top:8px;" id="mpcToggle">
+          <span style="font-size:12.5px; font-weight:600;">Compare months</span>
+          <span class="badge badge-pendingrole" id="mpcToggleLbl">Show</span>
+        </div>
+        <div id="mpc" style="display:none; margin-top:10px;"></div>
       </div>
       <p class="sub" style="margin-top:2px; margin-bottom:20px;">Tap the filter icon to change date, department, or machine. Tap Total/Running/Stopped for the list.</p>
 
@@ -6795,7 +6888,7 @@ function renderGraceFieldsHtml(){
     const ids = graceFieldIds(c.role, c.shift);
     return `<div class="gWho">${c.label}</div>
       <div class="gCell"><input type="radio" name="${ids.mode}" value="after" aria-label="Use minutes after shift end"><input type="number" id="${ids.minutes}" min="0" step="5" placeholder="e.g. 60"></div>
-      <div class="gCell"><input type="radio" name="${ids.mode}" value="clock" aria-label="Use a fixed clock time"><input type="time" id="${ids.clock}"></div>
+      <div class="gCell"><input type="radio" name="${ids.mode}" value="clock" aria-label="Use a fixed clock time"><input type="text" inputmode="numeric" maxlength="5" placeholder="HH:MM" data-tkt="1" id="${ids.clock}"></div>
       <div class="gCell">${c.role === 'operator' ? `<label class="gChk"><input type="checkbox" id="${ids.mode}_block"> Stop them (not just label &ldquo;Logged Late&rdquo;)</label>` : '<span class="gNote">Approval only</span>'}</div>`;
   }).join('');
 }
@@ -8817,6 +8910,7 @@ async function openPhotoRef(value){
   try{
     const dataUrl = await window.__db.getPhotoBlob(value);
     if(!dataUrl){ toast('Could not find that photo'); return; }
+    if(/^data:application\/pdf/.test(dataUrl)){ docOpenPdf(dataUrl); return; }
     openLightbox(dataUrl);
   }catch(err){ console.error(err); toast('Could not load photo — check your connection'); }
 }
@@ -9273,13 +9367,14 @@ function buildReportRows(allRecords, recordsToShow){
 // then runs on this unchanged. Anything it can't do exactly falls back to the
 // full history: no digests built yet, the dates cleared to see everything, a
 // machine with no digest, or any read failing.
-let reportSourceCache = null;   // { key, ver, records } — reused only while nothing at all has changed
+let reportSourceCache = null, reportSourceMore = {};   // { key, ver, records } — reused only while nothing at all has changed
 async function loadReportSourceRecords(fromDate, toDate){
   if(!fromDate) return window.__db.loadAllReadingsEver();
   // Read the change counter BEFORE loading, so a change that lands while the
   // reads are in flight makes what we stored look old, never new.
   const ver = window.__db.readingsVersion ? window.__db.readingsVersion() : -1;
   const key = fromDate + '|' + (toDate || '');
+  { const c = reportSourceMore[key]; if(ver !== -1 && c && c.ver === ver && (Date.now() - c.at) < 300000) return c.records; }
   if(ver !== -1 && reportSourceCache && reportSourceCache.key === key && reportSourceCache.ver === ver && (Date.now() - reportSourceCache.at) < 300000) return reportSourceCache.records;   // kept at most 5 minutes
   try{
     if(!(await window.__db.getHistoryDigestReady())) return window.__db.loadAllReadingsEver();
@@ -9297,7 +9392,7 @@ async function loadReportSourceRecords(fromDate, toDate){
       full.forEach(r => { if(r.date < fromDate) older.push(r); });
     }
     const records = inView.concat(older);
-    if(ver !== -1) reportSourceCache = { key, ver, records, at: Date.now() };
+    if(ver !== -1){ reportSourceCache = { key, ver, records, at: Date.now() }; reportSourceMore[key] = reportSourceCache; const ks = Object.keys(reportSourceMore); if(ks.length > 4) delete reportSourceMore[ks[0]]; }
     return records;
   }catch(err){
     console.error('Report: could not use the history digests, reading the full history instead', err);
@@ -11670,9 +11765,9 @@ function renderProfilePhoto(u){
   const p = u.profile || {};
   const img = $('profilePhotoImg'), initials = $('profilePhotoInitials');
   if(p.photoDataUrl){
-    img.src = p.photoDataUrl; img.style.display = 'block'; initials.textContent = '';
+    img.src = p.photoDataUrl; img.style.display = 'block'; initials.textContent = ''; $('profilePhotoWrap').classList.add('hasPhoto');
   } else {
-    img.style.display = 'none';
+    img.style.display = 'none'; $('profilePhotoWrap').classList.remove('hasPhoto');
     initials.textContent = (u.name || '?').trim().split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase();
   }
   $('profilePhotoRequired').style.display = p.photoDataUrl ? 'none' : 'block';
@@ -12033,7 +12128,7 @@ function docBlock(kind, title, fields, attachmentUrl){
     return `<div class="card card-with-actions">
       ${canEdit ? `<div class="mini-icon-row"><button class="mini-icon-btn docSectionEditBtn" data-kind="${kind}" title="Edit ${title}">${MINI_EDIT_ICON}</button></div>` : ''}
       ${fields.map(f => fieldRow(f.label, f.type === 'date' ? fmtDate(d[f.key]) : d[f.key])).join('')}
-      ${d.attachment ? `<button class="btn btn-ghost docViewBtn" data-ref="${d.attachment}" style="margin-top:10px;">View Document</button>` : '<div class="sub">No document attached.</div>'}
+      ${d.attachment ? `<div class="docBtns"><button class="btn btn-ghost docViewBtn" data-ref="${d.attachment}">View Document</button>${canEdit ? `<button class="btn btn-ghost docDelBtn" data-kind="${kind}" title="Delete this document (the details stay)">Delete document</button>` : ''}</div>` : '<div class="sub">No document attached.</div>'}
     </div>`;
   }
   return `<div class="grid-2">
@@ -12041,8 +12136,9 @@ function docBlock(kind, title, fields, attachmentUrl){
   </div>
   <div class="field">
     <label>Attachment</label>
-    <input type="file" accept="image/*" id="doc-${kind}-file">
-    ${d.attachment ? `<button class="btn btn-ghost docViewBtn" data-ref="${d.attachment}" style="margin-top:8px;">View Current Document</button>` : ''}
+    <input type="file" accept="image/*,application/pdf" id="doc-${kind}-file">
+    <div class="hint" style="text-align:left; margin-left:0;">A photo or a PDF. A big file is made smaller by itself, and stays easy to read.</div>
+    ${d.attachment ? `<div class="docBtns"><button class="btn btn-ghost docViewBtn" data-ref="${d.attachment}">View Current Document</button>${canEdit ? `<button class="btn btn-ghost docDelBtn" data-kind="${kind}" title="Delete this document (the details stay)">Delete document</button>` : ''}</div>` : ''}
   </div>
   <button class="btn btn-primary" id="doc-${kind}-save">Save ${title}</button>`;
 }
@@ -12376,10 +12472,10 @@ function wireDocSave(kind, keys){
     if(fileInput.files && fileInput.files[0]){
       if(!requireDb()) return;
       try{
-        const dataUrl = await compressImageSafe(fileInput.files[0]);
+        const dataUrl = await docReadFile(fileInput.files[0]);
         const ref = await window.__db.savePhotoBlob(dataUrl);
         finish(ref);
-      }catch(err){ console.error(err); toast('Could not upload photo — try a smaller image'); }
+      }catch(err){ console.error(err); toast(err && err.docMsg ? err.docMsg : 'Could not upload photo — try a smaller image'); }
     } else finish(null);
   });
 }
@@ -14664,33 +14760,7 @@ function renderMachineDrillList(scopedMachines, range){
   const expectedDayHrs = sumShiftHoursForRange(range.fromDate, range.toDate, 'Day');
   const expectedNightHrs = sumShiftHoursForRange(range.fromDate, range.toDate, 'Night');
 
-  // Actual Picks and Stop Hours per machine, split Day/Night, from every
-  // approved Ending-photo reading inside the selected range.
-  const diffs = computeApprovedDiffs(state.cachedRecords || []).filter(r =>
-    (!range.fromDate || r.date >= range.fromDate) && (!range.toDate || r.date <= range.toDate)
-  );
-  const perMachine = {};
-  diffs.forEach(r => {
-    const b = perMachine[r.machine] || (perMachine[r.machine] = { dayPicks:0, nightPicks:0, dayStop:0, nightStop:0 });
-    const stop = Number(r.stopTime) || 0;
-    if(r.shift === 'Day'){ if(r._diff > 0) b.dayPicks += r._diff; b.dayStop += stop; }
-    else if(r.shift === 'Night'){ if(r._diff > 0) b.nightPicks += r._diff; b.nightStop += stop; }
-  });
-  // A Starting photo that carries stop time, in a shift with no approved Ending for that machine, still counts its
-  // stop hours (the same rule as the daily totals on the operator's profile). These readings are already loaded here.
-  const allRecs = state.cachedRecords || [];
-  buildDiffSequenceByMachine(allRecs);   // marks which Starting photos carry picks of their own (no database read)
-  const endedShifts = new Set(allRecs.filter(r => r.status === 'approved' && r.photoType !== 'start').map(r => r.machine + '|' + r.date + '|' + r.shift));
-  allRecs.forEach(r => {
-    if(r.status !== 'approved' || r.photoType !== 'start' || !r.operatorId) return;
-    if((range.fromDate && r.date < range.fromDate) || (range.toDate && r.date > range.toDate)) return;
-    if(endedShifts.has(r.machine + '|' + r.date + '|' + r.shift)) return;
-    const hasStop = extractStopBreakdown(r).length > 0, picks = r._startPicks > 0 ? r._startPicks : 0;
-    if(!hasStop && !picks) return;
-    const b = perMachine[r.machine] || (perMachine[r.machine] = { dayPicks:0, nightPicks:0, dayStop:0, nightStop:0 });
-    const stop = hasStop ? (Number(r.stopTime) || 0) : 0;
-    if(r.shift === 'Day'){ b.dayStop += stop; b.dayPicks += picks; } else if(r.shift === 'Night'){ b.nightStop += stop; b.nightPicks += picks; }
-  });
+  const perMachine = dashPerMachine(state.cachedRecords || [], range.fromDate, range.toDate);
 
   // Cross-check the operators assigned in Admin > Users against each machine's own "Shift run" setting in Admin >
   // Machines. A machine set to run only one shift, but with an operator assigned (or real entries) for the other
@@ -14712,13 +14782,17 @@ function renderMachineDrillList(scopedMachines, range){
 
   // A real <table> on purpose — small, dense cells, easy to select and paste
   // straight into Excel, exactly like the Report page's table.
-  box.innerHTML = `<div class="table-scroll"><table class="report-table">
-    <thead><tr>
+  box.innerHTML = mpSumHtml(list, perMachine) + `<div class="table-scroll"><table class="report-table mpTbl">
+    <thead>
+      <tr class="mpG"><th colspan="4"></th><th colspan="3" class="mpD mpS">${MP_SUN}Day shift</th><th colspan="3" class="mpN mpS">${MP_MOON}Night shift</th></tr>
+      <tr>
       <th>#</th><th>Machine</th><th>Operator</th><th>Status</th>
-      <th>Day Shift Hrs</th><th>Day Stop Hrs</th><th>Day Picks</th>
-      <th>Night Shift Hrs</th><th>Night Stop Hrs</th><th>Night Picks</th>
-    </tr></thead>
+      <th class="mpD mpS">Shift hrs</th><th class="mpD">Stop hrs</th><th class="mpD">Picks</th>
+      <th class="mpN mpS">Shift hrs</th><th class="mpN">Stop hrs</th><th class="mpN">Picks</th>
+      </tr>
+    </thead>
     <tbody>
+      ${mpTotRow(list, perMachine)}
       ${list.map((m, ix) => {
         const statusClass = m.status === 'stopped' ? 'status-text-stopped' : 'status-text-running';
         const statusLabel = m.status === 'stopped' ? (m.stopType === 'permanent' ? 'Perm. Stopped' : 'Stopped') : 'Running';
@@ -14746,8 +14820,8 @@ function renderMachineDrillList(scopedMachines, range){
           <td${clash.length ? ' title="' + clash.join(' \u00B7 ').replace(/"/g, '&quot;') + '"' : ''}>${m.id} &middot; ${m.name}${clash.length ? ' <span style="color:var(--warn); font-weight:800;">\u26A0</span>' : ''}</td>
           <td title="${opTitle}">${dayFirst} / ${nightFirst}</td>
           <td class="${statusClass}">${statusLabel}</td>
-          <td>${runsDay ? expectedDayHrs.toFixed(1) : dash}</td><td>${showDay ? b.dayStop.toFixed(1) : dash}</td><td>${showDay ? b.dayPicks.toLocaleString() : dash}</td>
-          <td>${runsNight ? expectedNightHrs.toFixed(1) : dash}</td><td>${showNight ? b.nightStop.toFixed(1) : dash}</td><td>${showNight ? b.nightPicks.toLocaleString() : dash}</td>
+          <td class="mpD mpS mpH">${runsDay ? expectedDayHrs.toFixed(1) : dash}</td><td class="mpD">${showDay ? b.dayStop.toFixed(1) : dash}</td><td class="mpD mpP">${showDay ? b.dayPicks.toLocaleString() : dash}</td>
+          <td class="mpN mpS mpH">${runsNight ? expectedNightHrs.toFixed(1) : dash}</td><td class="mpN">${showNight ? b.nightStop.toFixed(1) : dash}</td><td class="mpN mpP">${showNight ? b.nightPicks.toLocaleString() : dash}</td>
         </tr>`;
       }).join('')}
     </tbody>
@@ -15511,18 +15585,18 @@ function pcItemsTable(o, rec){
     const left = Math.max(0, it.q - (it.rec || 0)), desc = [it.d, it.b].filter(Boolean).map(pcEsc).join(', ');
     let strip = '';
     if(showRec){
-      const ph = it.p > 0 ? pcMoney(it.p) : '0.00';
+      const ph = it.p > 0 ? pcMoney(it.p * left) : '0.00';
       const open = pcIsOpen(o), reopen = open && canRec ? `<button class="pcBtnSoft sm" data-pc="itemun" data-id="${pcEsc(o.docId)}" data-i="${i}">Needed again</button>` : '';
       if(it.nn) strip = `<span class="pcSt s-cancelled">Not needed</span>${reopen}`;
-      else if(!pcItemDone(it) && canRec) strip = `<span class="hrNote">Received ${it.rec || 0} of ${it.q} ${pcEsc(it.u || '')}</span><label class="pcRecIn"><span>Qty bought</span><input type="number" min="0" step="any" value="${left}" id="pcRq_${i}"></label><label class="pcRecIn"><span>Actual price</span><input type="number" min="0" step="any" placeholder="${ph}" value="${it.ap > 0 ? it.ap : ''}" id="pcRp_${i}"></label><button class="pcBtnSoft ok sm" data-pc="recitem" data-id="${pcEsc(o.docId)}" data-i="${i}">${pcSvg('check', 13)}Got it</button><button class="pcBtnSoft sm" data-pc="itemnn" data-id="${pcEsc(o.docId)}" data-i="${i}" title="${(it.rec || 0) > 0 ? 'Nothing more is coming for this item' : 'This item is not needed any more'}">${(it.rec || 0) > 0 ? 'No more needed' : 'Not needed'}</button>`;
+      else if(!pcItemDone(it) && canRec) strip = `<span class="hrNote">Received ${it.rec || 0} of ${it.q} ${pcEsc(it.u || '')}</span><label class="pcRecIn"><span>Qty bought</span><input type="number" min="0" step="any" value="${left}" id="pcRq_${i}"></label><label class="pcRecIn"><span>Total price</span><input type="number" min="0" step="any" placeholder="${ph}" value="" id="pcRp_${i}"></label><button class="pcBtnSoft ok sm" data-pc="recitem" data-id="${pcEsc(o.docId)}" data-i="${i}">${pcSvg('check', 13)}Got it</button><button class="pcBtnSoft sm" data-pc="itemnn" data-id="${pcEsc(o.docId)}" data-i="${i}" title="${(it.rec || 0) > 0 ? 'Nothing more is coming for this item' : 'This item is not needed any more'}">${(it.rec || 0) > 0 ? 'No more needed' : 'Not needed'}</button>`;
       else if(!pcItemDone(it)) strip = `<span class="pcSt s-new">Still to receive: ${left} ${pcEsc(it.u || '')}</span>`;
-      else strip = `<span class="pcSt s-received">Received ${it.rec}${it.rec !== it.q ? ' (ordered ' + it.q + ')' : ''} ${pcEsc(it.u || '')}</span>` + (it.short ? '<span class="pcTag">Closed \u2014 no more coming</span>' : '') + (it.ap > 0 ? `<span class="hrNote">Actual price <b>${pcMoney(it.ap)}</b> ${cur} \u00B7 total <b>${pcMoney(it.ap * it.rec)}</b></span>` : '') + ((!(it.ap > 0) || it.recAuto) ? `<span class="pcTag warn">${it.ap > 0 ? 'Check the real quantity' : 'Real price missing'}</span>` : '') + (canAct && (!(it.ap > 0) || it.recAuto) ? `<button class="pcBtnSoft sm" data-pc="actual" data-id="${pcEsc(o.docId)}">Add it</button>` : '') + (open && canRec && it.short ? reopen : '');
+      else strip = `<span class="pcSt s-received">Received ${it.rec}${it.rec !== it.q ? ' (ordered ' + it.q + ')' : ''} ${pcEsc(it.u || '')}</span>` + (it.short ? '<span class="pcTag">Closed \u2014 no more coming</span>' : '') + (pcPaid(it) > 0 ? `<span class="hrNote">Total paid <b>${pcMoney(pcPaid(it))}</b> ${cur}${pcRetQ(it) > 0 ? ' · returned ' + pcRetQ(it) + ' · net <b>' + pcMoney(pcPaidNet(it)) + '</b>' : ''}</span>` : '') + ((!(it.ap > 0) || it.recAuto) ? `<span class="pcTag warn">${it.ap > 0 ? 'Check the real quantity' : 'Real price missing'}</span>` : '') + (canAct && (!(it.ap > 0) || it.recAuto) ? `<button class="pcBtnSoft sm" data-pc="actual" data-id="${pcEsc(o.docId)}">Add it</button>` : '') + (open && canRec && it.short ? reopen : '');
     }
     h += `<div class="pcIt pcItG"><span class="c-no">${i + 1}</span><div class="c-name"${it.nn ? ' style="text-decoration:line-through;opacity:.6"' : ''}>${pcEsc(it.n)}</div><div class="c-desc" title="${desc}">${desc}</div>
       <div class="c-nums"><span class="c-qty">${it.q}</span><span class="c-unit">${pcEsc(it.u || '')}</span><span class="c-price"><span class="lbl">Price </span>${pcMoney(it.p)}</span><span class="c-last"><span class="lbl">Last bought </span>${pcLastP(it, cur)}</span><span class="c-ldate">${pcLastD(it)}</span></div>
       <span class="c-tot">${pcMoney(pcLine(it))}</span><div class="c-rem">${pcRemarks(it, o.docId, i)}</div></div>${strip ? `<div class="pcRecStrip">${strip}</div>` : ''}`;
   });
-  const tot = pcTotal(o), act = o.items.reduce((t, it) => t + (it.ap > 0 ? it.ap * (it.rec || 0) : 0), 0);
+  const tot = pcTotal(o), act = o.items.reduce((t, it) => t + pcPaidNet(it), 0);
   const tq = o.items.reduce((t, it) => t + (Number(it.q) || 0), 0);
   return h + `<div class="pcItTotal"><span>Total quantity</span><b>${tq}</b></div>` + (tot ? `<div class="pcItTotal"><span>Total (${cur})</span><b>${pcMoney(tot)}</b></div>` : '') + (act > 0 ? `<div class="pcItTotal pcAct"><span>Actual paid (${cur})</span><b>${pcMoney(act)}</b></div>` : '') + '</div>';
 }
@@ -15557,6 +15631,7 @@ function pcDetailHtml0(o){
   if(R.proc && o.status === 'approval' && paper) a += main('paperok', 'Signed \u2014 mark approved', 'check') + b('reject', 'Rejected', 'x', 'danger');
   if(o.status === 'ordered' && pcCanReceive(o)) a += main('recall', 'Received', 'check');
   if(pcCanActual(o)) a += main('actual', 'Add real quantity & price', 'edit');
+  if(pcCanReturn(o)) a += b('return', 'Return goods', 'back');
   const dl = b('pdfreq', 'Requisition PDF', 'down') + (o.status === 'new' ? '' : b('pdfpo', 'Order PDF', 'file'));
   let more = '';
   if(pcCanEdit(o)) more += b('edit', 'Edit order', 'edit');
@@ -15565,6 +15640,7 @@ function pcDetailHtml0(o){
   if(R.proc && (o.status === 'new' || o.status === 'rejected')) more += b('sendappr', 'Send for approval (optional)', 'send');
   if(o.status === 'ordered' && pcCanReceive(o)) more += b('closeshort', 'Close \u2014 nothing more is coming', 'archive');
   if(R.proc && o.status === 'approval' && !paper) more += b('paperok', 'Already signed on paper', 'stamp');
+  if(o.status === 'received' && (R.admin || R.proc || o.createdBy === me) && (o.items || []).some(it => pcPaid(it) > 0)) more += b('actual', 'Correct the price', 'edit');
   if(R.req || R.proc) more += b('reorder', 'Order again', 'plus');
   if(o.createdBy === me && pcIsOpen(o)) more += b('remind', 'WhatsApp update', 'wa');
   if(pcIsOpen(o) && (R.admin || R.proc || o.createdBy === me)) more += b('cancel', 'Cancel order', 'trash', 'danger');
@@ -15892,13 +15968,42 @@ function pcActCancel(id){
   const r = ($('pcmReason').value || '').trim();
   return pcRun(() => pcMutate(id, (o) => { pcNeed(pcIsOpen(o)); o.status = 'cancelled'; o.closedAt = Date.now(); pcLog(o, 'Cancelled' + (r ? ': ' + r : '')); }), 'Order cancelled');
 }
+const pcRetQ = (it) => Number(it && it.ret) || 0;
+const pcPaid = (it) => it.pt > 0 ? it.pt : (it.ap > 0 ? (it.ap || 0) * (it.rec || 0) : 0);
+const pcPaidNet = (it) => { const r = it.rec || 0; return r > 0 ? pcPaid(it) * Math.max(0, r - pcRetQ(it)) / r : 0; };
+const pcUnitP = (it) => (it.rec > 0 && pcPaid(it) > 0) ? pcPaid(it) / it.rec : (it.ap || 0);
+function pcCanReturn(o){ const R = pcRoles(); return o.status === 'received' && (R.admin || R.proc || o.createdBy === pcMe()) && (o.items || []).some(it => !it.nn && (it.rec || 0) - pcRetQ(it) > 0); }
+function pcOpenReturn(o){
+  pc.ui.modalId = o.docId;
+  const rows = o.items.map((it, i) => { const av = (it.rec || 0) - pcRetQ(it); if(it.nn || !(av > 0)) return '';
+    return `<div class="pcPriceRow"><div class="pcPriceName"><b>${pcEsc(it.n)}</b><span class="hrNote">Received ${it.rec}${pcRetQ(it) > 0 ? ' · already returned ' + pcRetQ(it) : ''} ${pcEsc(it.u || '')}</span></div><input type="number" min="0" max="${av}" step="any" id="pcRt_${i}" data-max="${av}" placeholder="0" aria-label="Quantity returned"></div>`; }).join('');
+  pcModalOpen(pcModalHead('Return goods — ' + o.id, 'Write how many pieces of each item went back to the supplier, or return the whole invoice.') +
+    `<div class="pcTop" style="margin-bottom:10px"><button class="pcBtnSoft" data-pc="rtall">${pcSvg('back', 14)}Return the full invoice</button></div>
+    <div class="pcRecHead"><span>Item</span><span>Returned</span></div>${rows}
+    <div class="field" style="margin-top:10px"><label>Date</label><input type="date" id="pcRtDate" value="${poToday()}" max="${poToday()}"></div>
+    <div class="field"><label>Reason (optional)</label><input type="text" id="pcRtWhy" placeholder="e.g. damaged, wrong size"></div>
+    <button class="pcBtnMain" data-pc="doreturn" data-id="${pcEsc(o.docId)}">${pcSvg('check', 15)}Save return</button>`);
+}
+function pcActReturn(id){
+  const src = pcFind(id); if(!src) return;
+  const vals = src.items.map((it, i) => { const e = $('pcRt_' + i); return e ? Math.max(0, Number(e.value) || 0) : 0; });
+  if(!vals.some(v => v > 0)) return toast('Write the quantity returned');
+  const date = ($('pcRtDate').value || poToday()), ts = Math.min(Date.now(), new Date(date + 'T12:00:00').getTime() || Date.now()), why = ($('pcRtWhy').value || '').trim();
+  return pcRun(async () => { await pcMutate(id, (o) => {
+    pcNeed(o.status === 'received'); const rows = [];
+    o.items.forEach((it, i) => { const av = (it.rec || 0) - pcRetQ(it), q = Math.min(vals[i] || 0, av); if(q > 0){ it.ret = pcRetQ(it) + q; rows.push({ i, q }); } });
+    pcNeed(rows.length > 0);
+    (o.rets = o.rets || []).push({ t: ts, by: (state.user && state.user.name) || pcMe(), why, rows });
+    const full = o.items.every(it => it.nn || (it.rec || 0) - pcRetQ(it) <= 0);
+    pcLog(o, (full ? 'Returned the full invoice: ' : 'Returned ') + rows.map(r => r.q + ' ' + (o.items[r.i].u || '') + ' of ' + o.items[r.i].n).join(', ') + (why ? ' (' + why + ')' : '')); }); }, 'Return saved');
+}
 function pcActRecItem(id, i){
   const eq = $('pcRq_' + i), ep = $('pcRp_' + i), q = eq ? Number(eq.value) : 0, price = ep ? Number(ep.value) : 0;
   if(eq && !(q > 0)) return toast('Write how many were bought');
   return pcRun(async () => { const o2 = await pcMutate(id, (o) => { pcNeed(o.status === 'ordered'); const it = o.items[i]; pcNeed(!!it);
-    it.rec = (it.rec || 0) + q; it.recAt = Date.now(); it.recAuto = false; if(price > 0) it.ap = price;
-    if(o.flow === 2) (o.segs = o.segs || []).push({ t: Date.now(), by: (state.user && state.user.name) || pcMe(), rows: [{ i, q, p: price }] });
-    pcLog(o, 'Received ' + q + ' ' + (it.u || '') + ' of ' + it.n + (price > 0 ? ' at ' + pcCur(o) + ' ' + price : ''));
+    const before = pcPaid(it); it.rec = (it.rec || 0) + q; it.recAt = Date.now(); it.recAuto = false; if(price > 0){ it.pt = before + price; it.ap = it.pt / it.rec; }
+    if(o.flow === 2) (o.segs = o.segs || []).push({ t: Date.now(), by: (state.user && state.user.name) || pcMe(), rows: [{ i, q, p: price > 0 ? price / q : 0, tp: price }] });
+    pcLog(o, 'Received ' + q + ' ' + (it.u || '') + ' of ' + it.n + (price > 0 ? ' for a total of ' + pcCur(o) + ' ' + price : ''));
     if(!pcPendingItems(o).length){ o.status = 'received'; o.closedAt = Date.now(); pcLog(o, 'All items received \u2014 order complete'); } });
     if(o2 && price > 0) pcSavePrices(o2).catch(() => {}); }, 'Marked as received');
 }
@@ -15906,11 +16011,11 @@ function pcActRecItem(id, i){
 function pcOpenRecModal0(o, mode, closeAll){
   pc.ui.modalId = o.docId;
   const cur = pcCur(o), all = mode === 'all';
-  pcModalOpen(pcModalHead(all ? 'Received \u2014 ' + o.id : 'Real quantity and price \u2014 ' + o.id, all ? 'Write what was really bought and the price paid for one piece (' + cur + '). If something is not needed any more, tick "Not needed".' : 'Write what was really bought and the price paid for one piece (' + cur + '). The quantity can be more or less than ordered.') + `
-    <div class="pcRecHead${all ? ' withNn' : ''}"><span>Item</span><span>Quantity bought</span><span>Actual price</span>${all ? '<span>Not needed</span>' : ''}</div>
+  pcModalOpen(pcModalHead(all ? 'Received \u2014 ' + o.id : 'Real quantity and price \u2014 ' + o.id, all ? 'Write what was really bought and the total price paid for that quantity (' + cur + '). If something is not needed any more, tick "Not needed".' : 'Write what was really bought and the total price paid for that quantity (' + cur + '). The quantity can be more or less than ordered.') + `
+    <div class="pcRecHead${all ? ' withNn' : ''}"><span>Item</span><span>Quantity bought</span><span>Total price</span>${all ? '<span>Not needed</span>' : ''}</div>
     ${o.items.map((it, i) => { const dn = pcItemDone(it) && !it.nn; return `<div class="pcPriceRow pcRecRow${all ? ' withNn' : ''}"><div class="pcPriceName"><b>${pcEsc(it.n)}</b><span class="hrNote">Ordered ${it.q} ${pcEsc(it.u || '')}${it.nn ? ' \u00B7 not needed' : ''}</span></div>
       <input type="number" min="0" step="any" id="pcRM_q_${i}" data-def="${all && !closeAll ? Math.max(0, it.q - (it.rec || 0)) + (it.rec || 0) : (it.rec || '')}" ${it.nn ? 'disabled' : ''} value="${it.nn ? '' : all && !closeAll ? Math.max(0, it.q - (it.rec || 0)) + (it.rec || 0) : (it.rec || '')}" aria-label="Quantity bought">
-      <input type="number" min="0" step="any" id="pcRM_p_${i}" ${it.nn ? 'disabled' : ''} value="${it.ap > 0 ? it.ap : ''}" placeholder="${it.p > 0 ? pcMoney(it.p) : (it.lp > 0 ? pcMoney(it.lp) : '0.00')}" aria-label="Actual price">
+      <input type="number" min="0" step="any" id="pcRM_p_${i}" ${it.nn ? 'disabled' : ''} value="${pcPaid(it) > 0 ? +pcPaid(it).toFixed(4) : ''}" placeholder="${it.p > 0 ? pcMoney(it.p * it.q) : (it.lp > 0 ? pcMoney(it.lp * it.q) : '0.00')}" aria-label="Total price">
       ${all ? `<label class="pcNnBox" title="Not needed any more"><input type="checkbox" id="pcRM_n_${i}" data-pc="pcnn" data-i="${i}" ${it.nn ? 'checked' : ''} ${dn ? 'disabled' : ''}><span>No</span></label>` : ''}</div>`; }).join('')}
     ${all ? `<label class="pcChk" style="margin-top:10px"><input type="checkbox" id="pcRM_close" ${closeAll ? 'checked' : ''}> Nothing more is coming \u2014 close the order with what we got</label>` : ''}
     <div class="pcTop" style="margin-top:12px"><button class="pcBtnMain" data-pc="dorecmodal" data-mode="${mode}" data-id="${pcEsc(o.docId)}">${pcSvg('check', 15)}Save</button>${all ? `<button class="pcBtnSoft" data-pc="dorecmodal" data-mode="skip" data-id="${pcEsc(o.docId)}">Skip \u2014 I will add it later</button>` : ''}</div>
@@ -15928,11 +16033,12 @@ function pcActRecModal(id, mode){
   return pcRun(async () => { const o2 = await pcMutate(id, (o) => {
     pcNeed(mode === 'actual' ? o.status === 'received' : o.status === 'ordered');
     o.items.forEach((it, i) => { const v = vals[i] || { q: 0, p: 0, n: false };
-      if(mode !== 'actual' && v.n && !it.nn){ if((it.rec || 0) > 0 || v.q > 0){ if(v.q > 0){ it.rec = v.q; it.recAuto = false; it.recAt = Date.now(); if(v.p > 0) it.ap = v.p; } it.short = true; } else it.nn = true; return; }
+      if(mode !== 'actual' && v.n && !it.nn){ if((it.rec || 0) > 0 || v.q > 0){ if(v.q > 0){ it.rec = v.q; it.recAuto = false; it.recAt = Date.now(); if(v.p > 0){ it.pt = v.p; it.ap = v.p / it.rec; } } it.short = true; } else it.nn = true; return; }
       if(it.nn || (mode === 'skip' && pcItemDone(it))) return;
       if(mode === 'skip'){ if(!closeAll && (it.rec || 0) < it.q){ it.rec = it.q; it.recAuto = true; it.recAt = Date.now(); } return; }
       if(v.q > 0){ it.rec = v.q; it.recAuto = false; it.recAt = Date.now(); } else if(mode === 'all' && !closeAll && (it.rec || 0) < it.q){ it.rec = it.q; it.recAuto = true; it.recAt = Date.now(); }
-      if(v.p > 0) it.ap = v.p; });
+      if(v.p > 0 && (it.rec || 0) > 0){ const old = pcPaid(it); it.pt = v.p; it.ap = v.p / it.rec;
+        if(mode === 'actual' && old > 0 && Math.abs(old - v.p) > 1e-9) (o.segs || []).forEach(sg => (sg.rows || []).forEach(r => { if(r.i === i && r.p > 0) r.p = r.p * v.p / old; })); } });
     if(mode === 'actual') pcLog(o, 'Added the real quantity and price');
     else { if(closeAll) o.items.forEach(pcShortClose);
       if(!pcCompleteIf(o, (mode === 'skip' ? ' (real quantity and price to be added)' : '') + (closeAll ? ' (closed with what was received)' : ''))) pcLog(o, 'Received part of the items'); } });
@@ -16038,6 +16144,27 @@ async function pcTextPdf(m, filename, ctx){
   }
   return pcTextPdf1(m, filename, ctx);
 }
+function pcFitCols(pdf, m, CW, SC, A){
+  try{
+    const n = m.head.length, fs = 7.6 * Math.max(0.82, SC), PADW = 6.5, MAXI = CW * 0.42;
+    pdf.setFont('helvetica', 'normal'); pdf.setFontSize(fs);
+    const mn = [], id = [];
+    for(let i = 0; i < n; i++){
+      let lw = 0, fw = 0;
+      m.rows.forEach(r => { const t = A(String(r[i] == null ? '' : r[i])); if(!t) return; fw = Math.max(fw, pdf.getTextWidth(t)); t.split(/\s+/).forEach(w => { lw = Math.max(lw, pdf.getTextWidth(w)); }); });
+      pdf.setFont('helvetica', 'bold'); pdf.setFontSize(5.6);
+      let hw = 0; A(String(m.head[i]).toUpperCase()).split(/\s+/).forEach(w => { hw = Math.max(hw, pdf.getTextWidth(w)); });
+      pdf.setFont('helvetica', 'normal'); pdf.setFontSize(fs);
+      const minW = Math.max(lw + PADW, hw + 3.6, 7);
+      mn.push(minW); id.push(Math.min(Math.max(minW, fw + PADW), Math.max(minW, MAXI)));
+    }
+    const sumMin = mn.reduce((p, q) => p + q, 0);
+    if(sumMin >= CW) return mn;
+    const spare = CW - sumMin, need = id.map((v, i) => v - mn[i]), sumNeed = need.reduce((p, q) => p + q, 0);
+    if(sumNeed <= spare){ const sumId = id.reduce((p, q) => p + q, 0), extra = CW - sumId; return id.map(v => v + extra * v / sumId); }
+    return mn.map((v, i) => v + spare * need[i] / sumNeed);
+  }catch(e){ console.error(e); const sum = m.w.reduce((p, q) => p + q, 0); return m.w.map(w => w * CW / sum); }
+}
 async function pcTextPdf1(m, filename, ctx){
   try{ await rvfEnsurePdfLibs(); }catch(err){ console.error(err); toast('Could not load the PDF tool — check your connection'); return false; }
   const PG = m.L.page || lhPage({});
@@ -16083,7 +16210,7 @@ async function pcTextPdf1(m, filename, ctx){
   const ftImg = (ftAr && L.footer) ? await pcRast(`<div style="font-size:15px;color:#64748b;text-align:center;padding:2px">${pcEsc(L.footer)}</div>`, 760) : null;
   // title
   pdf.setFont('helvetica', 'bold'); pdf.setFontSize(15); pdf.setTextColor(15, 23, 42); txt(String(m.title).toUpperCase(), PW / 2, y, { align: 'center' });
-  if(m.barTop){ poBarcode(pdf, m.barTop, M + CW - 36, y - 7.5, 36, 9); }
+  if(m.barTop){ poBarcode(pdf, m.barTop, M + CW - 34, y - 5.6, 34, 8.2); }
   y += 6;
   // info boxes (soft grey rounded boxes, same look as the app)
   const GREY = [244, 245, 250], LINE = [226, 229, 238];
@@ -16095,7 +16222,7 @@ async function pcTextPdf1(m, filename, ctx){
   if(m.app) y = poDrawApp(pdf, m, M, CW, PW, y, txt, wrap);
   if(m.intro){ pdf.setFont('helvetica', 'normal'); pdf.setFontSize(9.5); pdf.setTextColor(51, 65, 85); const ls = wrap(m.intro, CW); pdf.text(ls, M, y + 3); y += ls.length * 4.2 + 3; }
   // table: rounded white card, grey heading row, light lines between rows, no vertical lines
-  const SC = m.sc || 1, LH = 3.7 * SC, PAD = 1.9 * SC, xs = []; { let x = M; const sum = m.w.reduce((p, q) => p + q, 0); m.w.forEach(wd => { const ww = wd * CW / sum; xs.push([x, ww]); x += ww; }); }
+  const SC = m.sc || 1, LH = 3.35 * SC, PAD = 1.8 * SC, xs = []; { let x = M; const W = pcFitCols(pdf, m, CW, SC, A), sum = W.reduce((p, q) => p + q, 0); W.forEach(wd => { const ww = wd * CW / sum; xs.push([x, ww]); x += ww; }); }
   let top = y;
   const closeCard = () => { pdf.setDrawColor(LINE[0], LINE[1], LINE[2]); pdf.setLineWidth(0.25); pdf.line(M, y, M + CW, y); };
   const vlines = (y0, y1) => { pdf.setDrawColor(203, 213, 225); pdf.setLineWidth(0.2); xs.forEach(c => pdf.line(c[0], y0, c[0], y1)); pdf.line(M + CW, y0, M + CW, y1); };
@@ -16106,7 +16233,7 @@ async function pcTextPdf1(m, filename, ctx){
     m.head.forEach((t, i) => { const [x, ww] = xs[i], ls = hl[i], y0 = y + (h - ls.length * 2.9) / 2 + 2.1; ls.forEach((ln, k) => { if(m.right.includes(i)) pdf.text(ln, x + ww - 2, y0 + k * 2.9, { align: 'right' }); else pdf.text(ln, x + 2, y0 + k * 2.9); }); }); y += h; };
   drawHead();
   m.rows.forEach(r => {
-    pdf.setFont('helvetica', 'normal'); pdf.setFontSize(8.5 * Math.max(0.82, SC));
+    pdf.setFont('helvetica', 'normal'); pdf.setFontSize(7.6 * Math.max(0.82, SC));
     const cells = r.map((t, i) => wrap(t, xs[i][1] - (xs[i][1] > 18 ? 6.5 : 2.5))), n = Math.max(...cells.map(c => c.length)), h = n * LH + 2 * PAD;
     if(y + h > BOT){ closeCard(); pdf.addPage(); y = M; drawHead(); }
     pdf.setDrawColor(203, 213, 225); pdf.setLineWidth(0.2); pdf.line(M, y, M + CW, y);
@@ -16246,6 +16373,9 @@ async function pcOnClick(e){
     case 'actual': if(O) pcOpenRecModal(O, 'actual'); break;
     case 'dorecmodal': pcActRecModal(id, el.dataset.mode); break;
     case 'recitem': pcActRecItem(id, i); break;
+    case 'return': if(O) pcOpenReturn(O); break;
+    case 'doreturn': pcActReturn(id); break;
+    case 'rtall': document.querySelectorAll('[id^=pcRt_]').forEach(e => { e.value = e.dataset.max; }); break;
     case 'remind': if(O) pcOpenRemind(O); break;
     case 'pdfreq': pcPdf(id, 'req'); break;
     case 'pdfpo': pcPdf(id, 'po'); break;
@@ -19131,14 +19261,14 @@ function pcOpenRecModal(o, mode, closeAll){
     const left = Math.max(0, it.q - (it.rec || 0));
     return `<div class="pcPriceRow pcRecRow withNn"><div class="pcPriceName"><b>${pcEsc(it.n)}</b><span class="hrNote">Ordered ${it.q} ${pcEsc(it.u || '')} · received ${it.rec || 0} · left ${left}</span></div>
       <input type="number" min="0" step="any" id="poQ_${i}" value="${closeAll ? '' : left}" placeholder="0" aria-label="Received now">
-      <input type="number" min="0" step="any" id="poP_${i}" value="${it.ap > 0 ? it.ap : ''}" placeholder="${it.p > 0 ? pcMoney(it.p) : '0.00'}" aria-label="Actual unit price">
+      <input type="number" min="0" step="any" id="poP_${i}" value="" placeholder="${it.p > 0 ? pcMoney(it.p * left) : '0.00'}" aria-label="Total price for this delivery">
       <label class="pcNnBox" title="Not needed any more"><input type="checkbox" id="poN_${i}"><span>No</span></label></div>`;
   }).join('');
   const inp = (k, l, ty) => `<div class="field"><label>${l}</label><input type="${ty || 'text'}" id="poC_${k}" value="${pcEsc(c[k] || (k === 'sup' ? (o.proc && o.proc.supplier) || '' : k === 'rcv' ? (state.user && state.user.name) || '' : ''))}"></div>`;
   const fields = (intl ? PO_IN : [PO_IN[0], PO_IN[3], PO_IN[4]]).concat([['rcv', 'Received by'], ['chk', 'Checked by']]);
   pcModalOpen(pcModalHead('Received \u2014 ' + o.id, 'Write what arrived. Each part is saved with its date.') + `
     <div class="poRecTop"><span class="poRecLbl">${pcSvg('clock', 14)}Date</span><input type="date" id="poDate" value="${poToday()}" max="${poToday()}"></div>
-    <div class="pcRecHead withNn"><span>Item</span><span>Now</span><span>Price (${cur})</span><span>Skip</span></div>${rows}
+    <div class="pcRecHead withNn"><span>Item</span><span>Now</span><span>Total price (${cur})</span><span>Skip</span></div>${rows}
     <details class="poDet"><summary>${pcSvg('list', 14)}${intl ? 'Shipment &amp; invoice details' : 'Delivery details'}<span class="poDetHint">optional</span>${pcSvg('chev', 13)}</summary><div class="poGrid">${fields.map(f => inp(f[0], f[1], f[2])).join('')}</div></details>
     <div class="pcTop" style="margin-top:14px"><button class="pcBtnMain" data-po="rsave" data-mode="seg" data-id="${pcEsc(o.docId)}">${pcSvg('check', 15)}Save delivery</button><button class="pcBtnSoft ok" data-po="rsave" data-mode="done" data-id="${pcEsc(o.docId)}" title="Closes the order. Anything not received is closed as nothing more is coming.">${pcSvg('archive', 14)}Complete order</button></div>`);
 }
@@ -19152,7 +19282,7 @@ function poActRec(id, mode){
     pcNeed(o.status === 'ordered'); const rows = [], by = (state.user && state.user.name) || pcMe();
     o.items.forEach((it, i) => { const v = vals[i]; if(!v || it.nn || pcItemDone(it)) return;
       if(v.n){ if((it.rec || 0) > 0) it.short = true; else it.nn = true; return; }
-      if(v.q > 0){ it.rec = (it.rec || 0) + v.q; it.recAt = ts; it.recAuto = false; if(v.p > 0) it.ap = v.p; rows.push({ i, q: v.q, p: v.p || 0 }); } });
+      if(v.q > 0){ const before = pcPaid(it); it.rec = (it.rec || 0) + v.q; it.recAt = ts; it.recAuto = false; if(v.p > 0){ it.pt = before + v.p; it.ap = it.pt / it.rec; } rows.push({ i, q: v.q, p: v.p > 0 ? v.p / v.q : 0, tp: v.p || 0 }); } });
     if(rows.length){ (o.segs = o.segs || []).push({ t: ts, by, rows }); pcLog(o, 'Received ' + rows.map(r => r.q + ' ' + (o.items[r.i].u || '') + ' of ' + o.items[r.i].n).join(', ')); }
     o.comp = Object.assign({}, o.comp || {}, Object.fromEntries(Object.entries(comp).filter(e => e[1] !== '' || !(o.comp || {})[e[0]])));
     if(mode === 'done') o.items.forEach(pcShortClose);
@@ -19210,6 +19340,8 @@ function poRcvLocal(o, L){
   if(!segs.length) o.items.forEach((it, i) => { if((it.rec || 0) > 0) segs.push({ t: it.recAt || o.closedAt || o.createdAt, rows: [{ i, q: it.rec, p: it.ap || 0 }] }); });
   segs.forEach(s => { last = Math.max(last, s.t || 0); s.rows.forEach(r => { const it = o.items[r.i] || {}, p = r.p > 0 ? r.p : (it.ap || 0), line = p * r.q; tot += line;
     rows.push([String(rows.length + 1)].concat(base(it), [poSd(s.t), String(r.q), p ? pcMoney(p) : '', p ? pcMoney(line) : '', [it.nn ? 'Not needed' : it.short ? 'Closed short' : '', it.note].filter(Boolean).join(' | ')])); }); });
+  (o.rets || []).forEach(rt => (rt.rows || []).forEach(r => { const it = o.items[r.i] || {}, p = pcUnitP(it), line = p * r.q; tot -= line;
+    rows.push([String(rows.length + 1)].concat(base(it), [poSd(rt.t), '-' + r.q, p ? pcMoney(p) : '', p ? '-' + pcMoney(line) : '', ['Returned', rt.why].filter(Boolean).join(': ')])); }));
   o.items.forEach(it => { if(it.nn || !(it.rec > 0)) rows.push([String(rows.length + 1)].concat(base(it), ['', '0', '', '', [it.nn ? 'Not needed' : 'Not received', it.note].filter(Boolean).join(' | ')])); });
   const supN = c.sup || (o.proc && o.proc.supplier) || '';
   const info = [[['Order No.', o.id], ['Order date', poSd(o.createdAt)], ['Type', PO_LABEL.local], ['Department', o.dept], ['Priority', o.priority === 'urgent' ? 'URGENT' : 'Regular']],
@@ -19227,6 +19359,8 @@ function poRcvModel(o, L){
   if(!segs.length) o.items.forEach((it, i) => { if((it.rec || 0) > 0) segs.push({ t: it.recAt || o.closedAt || o.createdAt, rows: [{ i, q: it.rec, p: it.ap || 0 }] }); });
   segs.forEach(s => { last = Math.max(last, s.t || 0); s.rows.forEach(r => { const it = o.items[r.i] || {}, p = r.p > 0 ? r.p : (it.ap || 0), line = p * r.q; tot += line;
     rows.push([String(rows.length + 1), it.cd || '', [it.n, it.d, it.b].filter(Boolean).join(' - '), it.u || '', String(it.q), poSd(s.t), String(r.q), p ? pcMoney(p) : '-', p ? pcMoney(line) : '-', (it.nn ? 'Not needed' : it.short ? 'Closed short' : '')]); }); });
+  (o.rets || []).forEach(rt => (rt.rows || []).forEach(r => { const it = o.items[r.i] || {}, p = pcUnitP(it), line = p * r.q; tot -= line;
+    rows.push([String(rows.length + 1), it.cd || '', [it.n, it.d, it.b].filter(Boolean).join(' - '), it.u || '', String(it.q), poSd(rt.t), '-' + r.q, p ? pcMoney(p) : '-', p ? '-' + pcMoney(line) : '-', ['Returned', rt.why].filter(Boolean).join(': ')]); }));
   o.items.forEach(it => { if(it.nn) rows.push([String(rows.length + 1), it.cd || '', [it.n, it.d].filter(Boolean).join(' - '), it.u || '', String(it.q), '-', '0', '-', '-', 'Not needed']); else if(!(it.rec > 0)) rows.push([String(rows.length + 1), it.cd || '', [it.n, it.d].filter(Boolean).join(' - '), it.u || '', String(it.q), '-', '0', '-', '-', 'Not received']); });
   const info = [[['Order No.', o.id], ['Order date', poSd(o.createdAt)], ['Type', PO_LABEL[t]], ['Department', o.dept], ['Priority', o.priority === 'urgent' ? 'URGENT' : 'Regular']]];
   const supN = c.sup || (o.proc && o.proc.supplier) || '';
@@ -19381,7 +19515,7 @@ function pcOrderRow(o){
   const icCls = urgent ? 'ic-red' : ({ new: 'ic-blue', approval: 'ic-yellow', approved: 'ic-green', rejected: 'ic-red', ordered: 'ic-blue', partial: 'ic-purple', received: 'ic-green', cancelled: 'ic-grey' }[sk] || 'ic-grey');
   const tot = pcTotal(o), names = (o.items || []).map(i => i.n).join(', ');
   const when = (sk === 'received' || sk === 'cancelled') ? (sk === 'received' ? 'Received ' + plShortD(plLastRecv(o)) : 'Cancelled ' + plShortD(o.closedAt)) : (pcIsOpen(o) ? 'Created ' + plShortD(o.createdAt) + ' · ' + pcDaysSince(o.createdAt) + ' d' : plShortD(o.closedAt));
-  const paid = (o.items || []).reduce((s, it) => s + (it.ap > 0 ? it.ap * (it.rec || 0) : 0), 0), shownTot = (sk === 'received' && paid > 0) ? paid : tot;
+  const paid = (o.items || []).reduce((s, it) => s + pcPaidNet(it), 0), shownTot = (sk === 'received' && paid > 0) ? paid : tot;
   const money = shownTot ? (pcCur(o) !== 'SAR' ? pcCur(o) + ' ' : '') + pcMoney(shownTot) : '';
   return `<div class="pcOrder pcCard${open ? ' open' : ''}${urgent ? ' urgent' : ''}${sel ? ' sel' : ''}"><div class="pcOrderHead pcCardHead" data-pc="toggle" data-id="${pcEsc(o.docId)}">
     <label class="pcTick" title="Select for download"><input type="checkbox" data-pcx="sel" data-id="${pcEsc(o.docId)}" ${sel ? 'checked' : ''}></label>
@@ -19406,7 +19540,7 @@ function pcItemsWrap(o){
 function poRecvLine(o){
   const sg = o.segs || [], last = plLastRecv(o);
   const recd = (o.items || []).reduce((t, i) => t + (i.rec || 0), 0); if(!recd && !sg.length) return '';
-  const act = (o.items || []).reduce((t, it) => t + (it.ap > 0 ? it.ap * (it.rec || 0) : 0), 0);
+  const act = (o.items || []).reduce((t, it) => t + pcPaidNet(it), 0);
   const done = o.status === 'received', parts = sg.length > 1;
   const txt = (done ? 'Received ' : 'Received so far, last ') + plShortD(last) + (parts ? ' · ' + sg.length + ' deliveries' : '') + (act > 0 ? ' · paid ' + pcMoney(act) + ' ' + pcCur(o) : '');
   const line = `<span class="poRLtxt">${pcSvg('check', 13)}${pcEsc(txt)}</span>`;
@@ -20109,6 +20243,7 @@ function mpDownload(kind){
     const ws2 = XLSX.utils.aoa_to_sheet(rvfNumRows([['Department', 'Production (m²)']].concat(dep.map(e => [e[0], Math.round(e[1] * 10) / 10])))); ws2['!cols'] = [{ wch: 5 }, { wch: 26 }, { wch: 18 }]; XLSX.utils.book_append_sheet(wb, ws2, 'By Department');
     if(months.length){ const ws3 = XLSX.utils.aoa_to_sheet(rvfNumRows([['Month', 'Production (m²)']].concat(months))); ws3['!cols'] = [{ wch: 5 }, { wch: 16 }, { wch: 18 }]; XLSX.utils.book_append_sheet(wb, ws3, 'Last 12 Months'); }
     const ws4 = XLSX.utils.aoa_to_sheet(rvfNumRows([['ID', 'Machine', 'Department', 'Status', 'Stop type', 'Stop reason']].concat(scoped.map(m => [m.id, m.name, m.department || '', m.status === 'stopped' ? 'Stopped' : 'Running', m.status === 'stopped' ? (m.stopType === 'permanent' ? 'Permanent' : 'Temporary') : '', m.status === 'stopped' ? (m.stopReason || '') : ''])))); ws4['!cols'] = [{ wch: 5 }, { wch: 8 }, { wch: 22 }, { wch: 18 }, { wch: 11 }, { wch: 12 }, { wch: 30 }]; XLSX.utils.book_append_sheet(wb, ws4, 'Machines');
+    mpExtraSheets(wb);
     XLSX.writeFile(wb, 'machine-production-' + rvfDateStamp() + '.xlsx'); toast('Excel file downloaded');
     return;
   }
@@ -20124,8 +20259,10 @@ function mpDownload(kind){
   if(months.length) blocks.push(mpBox(`<div class="sub" style="font-weight:600;color:var(--text);text-transform:none;margin-bottom:8px;">Last 12 months</div>${document.getElementById('prod12Month').innerHTML}`));
   // 4. whichever machine list is open on screen
   const dl = document.getElementById('machDrillList'), tb = dl && dl.style.display !== 'none' && dl.querySelector('table');
-  if(tb){ const head = tb.querySelector('thead tr').outerHTML, rows = Array.from(tb.querySelectorAll('tbody tr')).map(x => x.outerHTML);
+  if(tb){ const head = tb.querySelector('thead').innerHTML, rows = Array.from(tb.querySelectorAll('tbody tr')).map(x => x.outerHTML);
+    { const sm = dl.querySelector('.mpSum'); if(sm) blocks.push(mpBox(mpClone(sm).outerHTML)); }
     blocks.push(`<div style="font-weight:700;font-size:13px;margin:6px 2px 4px;">${machDrillKind === 'running' ? 'Running machines' : 'All machines'}</div>`); rvfTableBlocks(head, rows, 20, 'ovPdfT ovW2').forEach(b => blocks.push(b)); }
+  mpcPdfBlocks().forEach(b => blocks.push(b));
   const sd = document.getElementById('ceoStoppedDetail');
   if(sd && sd.style.display !== 'none' && sd.children.length){ const kids = Array.from(sd.children).filter(x => !/^H2$/.test(x.tagName) || true); for(let i = 0; i < kids.length; i += 6) blocks.push('<div>' + kids.slice(i, i + 6).map(x => mpClone(x).outerHTML).join('') + '</div>'); }
   toast('Making the PDF…');
@@ -21584,7 +21721,7 @@ function tkFiltered(){
   const q = TK.q.trim().toLowerCase(), s = TK.seg, today = tkToday();
   return TK.items.filter(t => {
     if(TK.pur && t.pur !== TK.pur) return false;
-    { const d0 = tkFirst(t).d || ''; if(TK.df && (!d0 || d0 < TK.df)) return false; if(TK.dt && (!d0 || d0 > TK.dt)) return false; }
+    { const d0 = TK.dby === 'book' ? tkBook(t) : (tkFirst(t).d || ''); if(TK.df && (!d0 || d0 < TK.df)) return false; if(TK.dt && (!d0 || d0 > TK.dt)) return false; }
     if(s === 'past' && !(t.st !== 'cancelled' && tkIsPast(t))) return false;
     if(s === 'can' && t.st !== 'cancelled') return false;
     if(s === 'up' && !(t.st !== 'cancelled' && !tkIsPast(t) && !tkPassed(t) && !tkRefAsked(t))) return false;
@@ -21622,10 +21759,10 @@ function tkListHtml(){
   const nf = (TK.seg !== 'all' ? 1 : 0) + (TK.pur ? 1 : 0) + (TK.df ? 1 : 0) + (TK.dt ? 1 : 0);
   const SEG = [['all', 'All tickets'], ['up', 'Upcoming'], ['past', 'Flown'], ['can', 'Cancelled'], ['ret', 'Return to book'], ['rfw', 'Refund asked'], ['req', 'Reschedule asked'], ['passed', 'Date passed']];
   const chip = (f, label) => `<span class="fChip">${label}<button data-tk="fclr" data-f="${f}" title="Remove" aria-label="Remove">&times;</button></span>`;
-  const chips = (TK.seg !== 'all' ? chip('seg', (SEG.find(x => x[0] === TK.seg) || [0, ''])[1]) : '') + (TK.pur ? chip('pur', (TK_PUR.find(x => x[0] === TK.pur) || [0, ''])[1]) : '') + (TK.df || TK.dt ? chip('date', 'Date: ' + (TK.df ? tkDt(TK.df) : '...') + ' → ' + (TK.dt ? tkDt(TK.dt) : '...')) : '');
+  const chips = (TK.seg !== 'all' ? chip('seg', (SEG.find(x => x[0] === TK.seg) || [0, ''])[1]) : '') + (TK.pur ? chip('pur', (TK_PUR.find(x => x[0] === TK.pur) || [0, ''])[1]) : '') + (TK.df || TK.dt ? chip('date', (TK.dby === 'book' ? 'Booked: ' : 'Travel: ') + (TK.df ? tkDt(TK.df) : '...') + ' → ' + (TK.dt ? tkDt(TK.dt) : '...')) : '');
   const sel = (key, label, opts, cur) => `<div class="fItem"><label>${label}</label><select data-tk-q="${key}">${opts.map(o => `<option value="${o[0]}" ${cur === o[0] ? 'selected' : ''}>${o[1]}</option>`).join('')}</select></div>`;
   const fpanel = TK.fo ? `<div class="fPanel tkP"><div class="fHead"><span class="fTitle">${tkIc('filter', 14)}Filter</span><button class="fClear" data-tk="fclear">Clear all</button></div>
-      <div class="fGrid tkFg"><div class="fItem"><label>Travel date from</label><input type="date" data-tk-q="df" value="${tkE(TK.df)}"></div><div class="fItem"><label>To</label><input type="date" data-tk-q="dt" value="${tkE(TK.dt)}"></div>
+      <div class="fGrid tkFg"><div class="fItem"><label>Filter dates by</label><select data-tk-q="dby"><option value="travel" ${TK.dby === 'book' ? '' : 'selected'}>Travel date</option><option value="book" ${TK.dby === 'book' ? 'selected' : ''}>Booking date</option></select></div><div class="fItem"><label>${TK.dby === 'book' ? 'Booking' : 'Travel'} date from</label><input type="date" data-tk-q="df" value="${tkE(TK.df)}"></div><div class="fItem"><label>To</label><input type="date" data-tk-q="dt" value="${tkE(TK.dt)}"></div>
         ${sel('pur', 'Purpose', [['', 'All']].concat(TK_PUR), TK.pur)}${sel('seg', 'Status', SEG, TK.seg)}</div>
       <div class="tkQuick"><span>Quick:</span><button type="button" data-tk="dpre" data-v="month">This month</button><button type="button" data-tk="dpre" data-v="next30">Next 30 days</button><button type="button" data-tk="dpre" data-v="last30">Last 30 days</button><button type="button" data-tk="dpre" data-v="year">This year</button></div></div>` : '';
   const spanel = TK.so ? `<div class="tkP tkSm"><div class="asumTiles">${tkTile('up', 'plane', up, 'Upcoming', '', '')}${tkTile('ret', 'cal', ret, 'Return to book', '', '')}${tkTile('rfw', 'down', rfw.length, 'Refund asked', rfAmt ? tkMoney(rfAmt) + ' waiting' : 'waiting for the money', '')}
@@ -21663,7 +21800,7 @@ function tkRowHtml(t, i){
 }
 
 /* ---------- form ---------- */
-const tkF = (label, key, val, type, extra) => `<label class="tkF"><span>${label}</span><input type="${type || 'text'}" data-tk-in="${key}" value="${tkE(val)}" ${extra || ''}></label>`;
+const tkF = (label, key, val, type, extra) => `<label class="tkF"><span>${label}</span><input type="${type === 'time' ? 'text' : (type || 'text')}" ${type === 'time' ? 'inputmode="numeric" maxlength="5" placeholder="20:45" data-tkt="1"' : ''} data-tk-in="${key}" value="${tkE(val)}" ${extra || ''}></label>`;
 function tkLegHtml0(i, title){
   const L = TK.D.legs[i];
   return `<div class="tkLeg"><div class="tkLegH">${tkIc('plane', 14)}${title}</div><div class="tkG">
@@ -21696,7 +21833,7 @@ function tkFormHtml(){
       ${D.pur === 'exit' ? `<div class="tkHint" style="margin-bottom:10px;">${tkIc('info', 13)} Exit: one-way ticket, no return is needed.</div>` : `<div class="tkTrip">${tkSeg('kind', [['return', 'Return trip'], ['one', 'Going only'], ['come', 'Coming only']], tkKindSel(D))}</div>`}
       ${tkLegHtml(0, D.kind === 'return' ? 'Going' : (tkDir(D) === 'come' ? 'Coming to Riyadh' : 'Going'))}${D.kind === 'return' && D.pur !== 'exit' ? tkLegHtml(1, 'Return') : `${D.retOf || D.pur === 'exit' || tkDir(D) === 'come' ? '' : `<div class="tkG tkRet"><div class="tkHint wide">${tkIc('clock', 13)} Going only? Add the possible return date and we will remind you to book the return. If this ticket is only for coming back to Riyadh, choose Coming only.</div>${tkF('Possible return date', 'retBy', D.retBy, 'date')}</div>`}`}</div>
     ${m === 'resched' ? `<div class="tkBox"><div class="tkBoxH">${tkIc('down', 14)}Extra cost of this change</div><div class="tkG">${tkF('Change fee (SAR)', 'fee', D.fee || '', 'number', 'min="0" step="any" inputmode="decimal"')}${tkF('Fare difference (SAR)', 'diff', D.diff || '', 'number', 'min="0" step="any" inputmode="decimal"')}<div class="tkF"><span>Total extra</span><b class="tkTot" id="tkTot">${tkMoney(tkNum(D.fee) + tkNum(D.diff))}</b></div><label class="tkF wide"><span>Reason (optional)</span><input type="text" data-tk-in="why" value="${tkE(D.why || '')}"></label></div><div class="tkHint" style="margin:10px 0 6px;">Receipt or airline mail for this change (optional)</div>${tkDocW('chg', 'Add document')}</div>` : ''}
-    <div class="tkBox"><div class="tkBoxH">${tkIc('idc', 14)}Booking and cost</div><div class="tkG">${m === 'resched' ? '' : tkF('Fare paid (SAR)', 'fare', D.fare, 'number', 'min="0" step="any" inputmode="decimal"') + tkF('Booked from', 'vendor', D.vendor, 'text', 'placeholder="Agency / website" list="tkVn" autocomplete="off"')}${tkF('PNR / booking ref.', 'pnr', D.pnr, 'text', 'autocapitalize="characters"')}${tkF('Last name (as on ticket)', 'last', D.last)}</div>
+    <div class="tkBox"><div class="tkBoxH">${tkIc('idc', 14)}Booking and cost</div><div class="tkG">${m === 'resched' ? '' : tkF('Fare paid (SAR)', 'fare', D.fare, 'number', 'min="0" step="any" inputmode="decimal"') + tkF('Booked from', 'vendor', D.vendor, 'text', 'placeholder="Agency / website" list="tkVn" autocomplete="off"')}${m === 'resched' ? '' : tkF('Booking date', 'bd', D.bd || (m === 'edit' ? tkBook(D) : tkToday()), 'date')}${tkF('PNR / booking ref.', 'pnr', D.pnr, 'text', 'autocapitalize="characters"')}${tkF('Last name (as on ticket)', 'last', D.last)}</div>
       <div class="tkHint" style="margin:12px 0 6px;">Ticket copy (photo or PDF up to 600 KB)</div>${tkFilesHtml(D)}</div>
     <div class="tkBtns"><button class="pcBtnMain sm" data-tk="save" ${TK.busy ? 'disabled' : ''}>${TK.busy ? 'Saving…' : 'Save'}</button><button class="pcBtnSoft sm" data-tk="back">Cancel</button></div>
     <datalist id="tkEmps">${emps.map(u => `<option value="${tkE(u.name)} (${tkE(u.loginId)})">`).join('')}</datalist><datalist id="tkAl">${tkMem('al').map(a => `<option value="${tkE(a)}">`).join('')}</datalist><datalist id="tkPt">${tkMem('pt').map(a => `<option value="${tkE(a)}">`).join('')}</datalist><datalist id="tkVn">${tkMem('vn').map(a => `<option value="${tkE(a)}">`).join('')}</datalist></div>`;
@@ -21739,7 +21876,7 @@ function tkModalSync(){
   const sh = $('tkSheet'), keep = sh ? sh.scrollTop : 0; sh.innerHTML = tkModalHtml(t); m.style.display = 'flex'; sh.scrollTop = keep;
 }
 const tkPan = (title, body, ok, id) => `<div class="tkPanel"><div class="tkBoxH">${title}</div><div class="tkG">${body}</div><div class="tkBtns"><button class="pcBtnMain sm" data-tk="${ok}" data-id="${tkE(id)}">Confirm</button><button class="pcBtnSoft sm" data-tk="panelx">Close</button></div></div>`;
-const tkP = (l, id, v, type, extra) => `<label class="tkF"><span>${l}</span><input type="${type || 'text'}" id="${id}" value="${tkE(v)}" ${extra || ''}></label>`;
+const tkP = (l, id, v, type, extra) => `<label class="tkF"><span>${l}</span><input type="${type === 'time' ? 'text' : (type || 'text')}" ${type === 'time' ? 'inputmode="numeric" maxlength="5" placeholder="20:45" data-tkt="1"' : ''} id="${id}" value="${tkE(v)}" ${extra || ''}></label>`;
 function tkCancelPanel(t){
   return tkPan('Cancel this ticket', tkP('Cancelled on', 'tkp-date', tkToday(), 'date') + `<label class="tkF"><span>Refund</span><select id="tkp-rf"><option value="wait">We will get a refund</option><option value="none">No refund</option></select></label>` + tkP('Refund amount expected (SAR)', 'tkp-amt', '', 'number', 'min="0" step="any"') + `<div class="tkF wide"><span>Cancellation or refund mail (optional)</span>${tkDocW('pnl', 'Add document')}</div><label class="tkF wide tkChk"><input type="checkbox" id="tkp-rebook"> Book another ticket now (rebook)</label>`, 'cancelok', t.id);
 }
@@ -21894,10 +22031,11 @@ const tkStatusText = (t) => tkBadges(t).map(b => b[0]).join(', ');
 function tkXlsx(){
   if(typeof XLSX === 'undefined'){ toast('Excel tool not loaded — check your connection'); return; }
   const list = tkFiltered(); if(!list.length){ toast('Nothing to download'); return; }
-  const head = ['ID', 'Name', 'Purpose', 'Trip', 'Airline', 'Flight', 'From', 'To', 'Date', 'Departs', 'Arrives', 'Terminal', 'Baggage', 'Return date', 'Return flight', 'PNR', 'Last name', 'Booked from', 'Fare (SAR)', 'Change fees (SAR)', 'Status', 'Refund', 'Refund amount (SAR)', 'Note'];
-  const rows = list.map(t => { const f = tkFirst(t), r = t.kind === 'return' ? t.legs[1] : null; return [t.emp, tkName(t.emp), (TK_PUR.find(p => p[0] === t.pur) || [0, ''])[1], t.kind === 'return' ? 'Return' : (tkDir(t) === 'come' ? 'Coming only' : 'Going only'), f.al, f.fn, f.from, f.to, f.d, f.dep, f.arr, f.trm, f.bag, r ? r.d : (t.retBy || ''), r ? [r.al, r.fn, tkRoute(r)].filter(Boolean).join(' ') : '', t.pnr, t.last, t.vendor, tkNum(t.fare) || '', tkNum(t.fees) || '', tkStatusText(t), tkRefInfo(t).txt, tkRefInfo(t).amt || '', t.note]; });
+  const head = ['ID', 'Name', 'Purpose', 'Trip', 'Airline', 'Flight', 'From', 'To', 'Date', 'Departs', 'Arrives', 'Terminal', 'Baggage', 'Return date', 'Return flight', 'PNR', 'Last name', 'Booked from', 'Booking date', 'Fare (SAR)', 'Change fees (SAR)', 'Status', 'Refund', 'Refund amount (SAR)', 'Note'];
+  const rows = list.map(t => { const f = tkFirst(t), r = t.kind === 'return' ? t.legs[1] : null; return [t.emp, tkName(t.emp), (TK_PUR.find(p => p[0] === t.pur) || [0, ''])[1], t.kind === 'return' ? 'Return' : (tkDir(t) === 'come' ? 'Coming only' : 'Going only'), f.al, f.fn, f.from, f.to, f.d, f.dep, f.arr, f.trm, f.bag, r ? r.d : (t.retBy || ''), r ? [r.al, r.fn, tkRoute(r)].filter(Boolean).join(' ') : '', t.pnr, t.last, t.vendor, tkBook(t), tkNum(t.fare) || '', tkNum(t.fees) || '', tkStatusText(t), tkRefInfo(t).txt, tkRefInfo(t).amt || '', t.note]; });
   const aoa = rvfNumRows([head].concat(rows)), ws = XLSX.utils.aoa_to_sheet(aoa); ws['!cols'] = aoa[0].map((h, i) => ({ wch: i === 2 ? 22 : 15 }));
-  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Tickets'); XLSX.writeFile(wb, 'tickets-' + rvfDateStamp() + '.xlsx'); toast('Excel file downloaded');
+  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Tickets');
+  { const pr = tkPayments(list), a2 = rvfNumRows([['Date', 'Employee ID', 'Name', 'PNR', 'Booked from', 'What', 'Amount (SAR)', 'Note']].concat(pr.map(x => [x.d, x.emp, x.name, x.pnr, x.vendor, x.type, x.amt, x.note]))), w2 = XLSX.utils.aoa_to_sheet(a2); w2['!cols'] = a2[0].map((h, i) => ({ wch: i === 7 ? 30 : 16 })); XLSX.utils.book_append_sheet(wb, w2, 'Payments by date'); } XLSX.writeFile(wb, 'tickets-' + rvfDateStamp() + '.xlsx'); toast('Excel file downloaded');
 }
 async function tkPdf(){
   const list = tkFiltered(); if(!list.length){ toast('Nothing to download'); return; }
@@ -21906,7 +22044,7 @@ async function tkPdf(){
   const rows = list.map((t, i) => { const f = tkFirst(t), r = t.kind === 'return' ? t.legs[1] : null; return `<tr><td>${i + 1}</td><td>${e(tkName(t.emp))} (${e(t.emp)})</td><td>${e((TK_PUR.find(p => p[0] === t.pur) || [0, ''])[1])}</td><td>${e(f.al)} ${e(f.fn)}</td><td>${e(tkRoute(f))}</td><td>${tkDt(f.d)} ${e(f.dep)}${r && r.d ? '<br>back ' + tkDt(r.d) : (tkNeedRet(t) && t.retBy ? '<br>return by ' + tkDt(t.retBy) : '')}</td><td>${e(t.pnr)}</td><td>${t.fare ? tkMoney(t.fare) : ''}</td><td>${e(tkStatusText(t))}</td></tr>`; });
   const th = '<tr><th>#</th><th>Employee</th><th>Purpose</th><th>Flight</th><th>Route</th><th>Date</th><th>PNR</th><th>Fare</th><th>Status</th></tr>';
   toast('Making the PDF…');
-  await rvfMakePdf([rvfPdfHeader('Flight tickets', [list.length + ' tickets · ' + rvfNowText(), filt, 'Total fares shown: ' + tkMoney(spent) + (rfw.length ? ' · refunds asked, not received: ' + rfw.length : '')])].concat(rvfTableBlocks(th, rows, 24)), 'tickets-' + rvfDateStamp() + '.pdf');
+  await rvfMakePdf([rvfPdfHeader('Flight tickets', [list.length + ' tickets · ' + rvfNowText(), filt, 'Total fares shown: ' + tkMoney(spent) + (rfw.length ? ' · refunds asked, not received: ' + rfw.length : '')])].concat(rvfTableBlocks(th, rows, 24)).concat(tkPayBlocks(list)), 'tickets-' + rvfDateStamp() + '.pdf');
 }
 
 /* ---------- employee profile: a Tickets card at the top of the Vacation tab (Admin and CEO only) ---------- */
@@ -22160,7 +22298,7 @@ async function a2Boot(){
     AC.set = set; AC.tbl = tbl; if(!Array.isArray(AC.tbl.tables)) AC.tbl.tables = []; acTblNormalize();
   }
   if(!state.users || !state.users.length) state.users = await window.__db.listUsersOnce();
-  if(A2.view !== 'saved' && A2.view !== 'set') await a2LoadDoc(A2.sec, A2.ym);
+  if(A2.view !== 'saved' && A2.view !== 'set' && A2.view !== 'pay') await a2LoadDoc(A2.sec, A2.ym);
   AC.ready = true;
 }
 async function loadAccountsPage(){
@@ -22276,8 +22414,10 @@ function a2TilesHtml(){ return '';
 function a2Draw(){
   const body = $('accountsBody'); if(!body) return;
   const tabs = ['operator', 'sponsor', 'nonsponsor', 'saudi'].map(s => `<button type="button" class="${A2.view === 'sheet' || A2.view === 'set' ? (A2.sec === s ? 'active' : '') : ''}" data-a2="sec" data-v="${s}">${a2Svg(s)}<span class="hrLbl">${A2_SEC[s].n}</span></button>`).join('')
-    + `<button type="button" class="${A2.view === 'saved' ? 'active' : ''}" data-a2="saved">${a2Svg('saved')}<span class="hrLbl">Saved</span></button>`;
+    + `<button type="button" class="${A2.view === 'saved' ? 'active' : ''}" data-a2="saved">${a2Svg('saved')}<span class="hrLbl">Saved</span></button>`
+    + `<button type="button" class="${A2.view === 'pay' ? 'active' : ''}" data-a2="pay">${a2Svg('wallet')}<span class="hrLbl">Pay desk</span></button>`;
   body.innerHTML = `<div class="card hrBox a2Box"><div class="a2TabRow"><div class="hrTabs">${tabs}</div><div class="a2Top" id="a2Top"></div></div><div id="a2Head"></div><div id="acMain"></div></div>`;
+  if(A2.view === 'pay') return pdDraw();
   if(A2.view === 'saved') return a2DrawSaved();
   if(A2.view === 'set') return a2DrawSet();
   if(A2.sec === 'saudi'){ $('a2Head').innerHTML = ''; $('acMain').innerHTML = '<div class="a2Empty"><div class="a2EmptyT">Saudi salary sheet</div><div class="hrNote">This section is ready and waiting. Its salary format will be added once it is decided.</div></div>'; return; }
@@ -22495,6 +22635,7 @@ document.addEventListener('click', async (e) => {
   const a = t.dataset.a2;
   if(a === 'sec'){ A2.sec = t.dataset.v; A2.view = 'sheet'; A2.q = ''; A2.dept = ''; A2.shift = ''; A2.pos = ''; A2.nat = ''; try{ if(A2.sec !== 'saudi') await a2LoadDoc(A2.sec, A2.ym); a2Draw(); }catch(err){ console.error(err); toast('Could not load'); } }
   else if(a === 'saved'){ A2.view = 'saved'; a2Draw(); }
+  else if(a === 'pay'){ A2.view = 'pay'; a2Draw(); }
   else if(a === 'prev' || a === 'next'){ A2.ym = acYmShift(A2.ym, a === 'next' ? 1 : -1); try{ await a2LoadDoc(A2.sec, A2.ym); a2Draw(); }catch(err){ console.error(err); toast('Could not load that month'); } }
   else if(a === 'open'){ A2.sec = t.dataset.v; A2.ym = t.dataset.ym; A2.view = 'sheet'; try{ await a2LoadDoc(A2.sec, A2.ym); a2Draw(); }catch(err){ console.error(err); toast('Could not open'); } }
   else if(a === 'calc'){ a2CalcPicks(); }
@@ -23859,6 +24000,7 @@ async function tkSaveDraft(){
     if(!(tkNum(D.fare) > 0)){ toast('Add the fare paid. It is needed for the cost.'); return; }
     if(!String(D.vendor || '').trim()){ toast('Add where you booked it. It is needed for the cost.'); return; }
   }
+  if(D && (m === 'new' || m === 'ret' || m === 'rebook') && !D.bd) D.bd = tkToday();
   return tkSaveDraft0();
 }
 
@@ -23903,7 +24045,7 @@ function tkReschPanel(t, mode){
     (mode === 'done' ? (t.kind === 'return' ? `<div class="tkHint wide">${tkE(tkPartLong(t, part))}</div>` : '') : tkLegSel(t, 'tkp-seg', 'Which flight?', part)) +
     tkP('Date', 'tkp-date', tkToday(), 'date') +
     `<div class="tkGrp2 wide" data-g="asked" style="${vis('asked')}">${tkP('Remind me in (days)', 'tkp-rem', '7', 'number', 'min="1" step="1"')}${tkP('Note (optional)', 'tkp-note', '')}</div>` +
-    `<div class="tkGrp2 wide" data-g="done" style="${vis('done')}"><div class="tkHint wide">The new details. Leave a field as it is if it did not change.</div>${tkP('New travel date', 'tkp-nd', L.d || '', 'date')}${tkP('New time', 'tkp-nt', L.dep || '', 'time')}${tkP('Airline', 'tkp-nal', L.al || '', 'text', 'list="tkAl" autocomplete="off"')}${tkP('From', 'tkp-nfr', L.from || '', 'text', 'list="tkPt" autocomplete="off"')}${tkP('To', 'tkp-nto', L.to || '', 'text', 'list="tkPt" autocomplete="off"')}${tkP('PNR', 'tkp-npnr', t.pnr || '')}${tkP('Extra cost (SAR)', 'tkp-nex', '', 'number', 'min="0" step="any"')}</div>` +
+    `<div class="tkGrp2 wide" data-g="done" style="${vis('done')}"><div class="tkHint wide">The new details. Leave a field as it is if it did not change.</div>${tkP('New travel date', 'tkp-nd', L.d || '', 'date')}${tkP('New time', 'tkp-nt', L.dep || '', 'time')}${tkP('Airline', 'tkp-nal', L.al || '', 'text', 'list="tkAl" autocomplete="off"')}${tkP('From', 'tkp-nfr', L.from || '', 'text', 'list="tkPt" autocomplete="off"')}${tkP('To', 'tkp-nto', L.to || '', 'text', 'list="tkPt" autocomplete="off"')}${tkP('PNR', 'tkp-npnr', t.pnr || '')}${tkP('Extra cost (SAR)', 'tkp-nex', '', 'number', 'min="0" step="any"')}${tkP('Date charged', 'tkp-nxd', tkToday(), 'date')}</div>` +
     `<div class="tkF wide"><span>Screenshot or attachment</span>${tkDocW('pnl', 'Add')}</div>` + tkDl(), 'reskok', t.id);
 }
 function tkCancelPanel2(t){
@@ -23932,7 +24074,7 @@ function tkModalHtml(t){
     <div class="tkMB"><div class="tkStc ${st.cls}"><div class="tkStT">${tkE(st.txt)}</div>${st.sub ? `<div class="tkStS">${tkE(st.sub)}</div>` : ''}${btns ? `<div class="tkStB">${btns}</div>` : ''}</div>
       ${ret}${panel}${lk(t.prev, 'Rebooked after an earlier ticket') + lk(t.next, 'Rebooked on a new ticket') + lk(t.retOf, 'Return ticket of an earlier one-way') + lk(t.retLink, 'See its return ticket')}
       <div class="tkMS"><h4>Flight</h4>${legs.map((l, i) => `<div class="tkSl${l.can ? ' x' : ''}"><i>${legs.length > 1 ? (i ? 'Return' : 'Going') : (tkDir(t) === 'come' ? 'Coming' : 'Going')}</i><b>${tkE(l.d ? tkDt(l.d) : '-')}${l.dep ? ' · ' + tkE(l.dep) : ''}</b><span>${tkE(tkRoute(l)) || '-'}${l.al ? ' · ' + tkE(l.al) + (l.fn ? ' ' + tkE(l.fn) : '') : ''}${l.can ? ' · cancelled' : ''}</span>${!t.flown && t.st !== 'cancelled' && !l.can && [l.arr && 'Arrives ' + l.arr, l.trm && 'Riyadh terminal ' + l.trm, l.bag && 'Baggage ' + l.bag].filter(Boolean).length ? `<em class="tkSlM">${[l.arr && 'Arrives ' + l.arr, l.trm && 'Riyadh terminal ' + l.trm, l.bag && 'Baggage ' + l.bag].filter(Boolean).map(tkE).join(' · ')}</em>` : ''}</div>`).join('')}</div>
-      <div class="tkMS"><h4>Ticket and cost</h4><div class="tkFxs">${tkFx('PNR', t.pnr, 1)}${tkFx('Last name', t.last, 1)}${tkFx('Booked from', t.vendor)}${tkFx('Fare paid', t.fare ? tkMoney(t.fare) : '')}${tkNum(t.fees) ? tkFx('Reschedule cost', tkMoney(t.fees)) : ''}${rf ? tkFx(rf.st === 'received' ? 'Refund received' : 'Refund expected', tkNum(rf.amt) ? tkMoney(rf.amt) : 'not known yet') : ''}${rf && rf.st === 'received' ? tkFx('Net cost', tkMoney(spent - got)) : (tkNum(t.fees) ? tkFx('Total paid', tkMoney(spent)) : '')}</div></div>
+      <div class="tkMS"><h4>Ticket and cost</h4><div class="tkFxs">${tkFx('PNR', t.pnr, 1)}${tkFx('Last name', t.last, 1)}${tkFx('Booked from', t.vendor)}${tkFx('Booking date', tkBook(t) ? tkDt(tkBook(t)) : '')}${tkFx('Fare paid', t.fare ? tkMoney(t.fare) : '')}${(t.chg && t.chg.length) ? t.chg.map(c => tkFx('Reschedule cost', tkMoney(c.a) + ' · charged ' + tkDt(c.d))).join('') : (tkNum(t.fees) ? tkFx('Reschedule cost', tkMoney(t.fees)) : '')}${rf ? tkFx(rf.st === 'received' ? 'Refund received' : 'Refund expected', tkNum(rf.amt) ? tkMoney(rf.amt) : 'not known yet') : ''}${rf && rf.st === 'received' ? tkFx('Net cost', tkMoney(spent - got)) : (tkNum(t.fees) ? tkFx('Total paid', tkMoney(spent)) : '')}</div></div>
       <div class="tkMS"><h4>Files</h4><div class="tkFl">${files}${more}${files || more ? '' : '<span class="tkHint">No files yet.</span>'}<label class="tkAddF">${tkIc('plus', 12)} Add file<input type="file" multiple accept="image/*,application/pdf" data-tk-file="ticket" data-id="${id}"></label></div></div>
       ${hist.length ? `<details class="tkDt"><summary>History (${hist.length})</summary>${hist.map(e => `<div class="tkHi2"><span>${tkE(fmtDate(hrStr(new Date(e.at))))}</span><div>${tkE(e.txt)}${(e.files || []).length ? `<div class="tkFl" style="margin-top:4px;">${e.files.map(fb).join('')}</div>` : ''}</div></div>`).join('')}</details>` : ''}</div>
     <div class="tkMF">${a('edit', 'Edit')}<span class="grow"></span>${a('del', 'Delete', 'dng')}</div>`;
@@ -23978,12 +24120,13 @@ async function tkClick(e){
       return;
     }
     const v = { d: tkVal('tkp-nd'), dep: tkVal('tkp-nt'), al: tkVal('tkp-nal'), from: tkVal('tkp-nfr'), to: tkVal('tkp-nto') }, pnr = tkVal('tkp-npnr'), extra = tkNum(tkVal('tkp-nex'));
+    const xd = tkVal('tkp-nxd') || tkToday();
     if(!v.d){ toast('Write the new travel date'); TK.pf = docs.map(x => x); return; }
     await tkMutate(id, c => {
       const snap = tkSnap(c), L = c.legs[idx]; Object.keys(v).forEach(k => { if(v[k]) L[k] = v[k]; });
-      if(pnr) c.pnr = pnr.toUpperCase(); if(extra > 0) c.fees = tkNum(c.fees) + extra;
+      if(pnr) c.pnr = pnr.toUpperCase(); if(extra > 0){ c.fees = tkNum(c.fees) + extra; c.chg = (c.chg || []).concat([{ a: extra, d: xd, why: 'Reschedule' }]); }
       if(c.req && !c.req.done){ c.req.done = true; c.req.doneAt = d; }
-      tkLog(c, 'resched', 'Rescheduled' + pn + ' to ' + tkDt(v.d) + (v.dep ? ' ' + v.dep : '') + (extra > 0 ? ' · extra cost ' + tkMoney(extra) : ''), snap); if(docs.length) c.h[c.h.length - 1].files = docs;
+      tkLog(c, 'resched', 'Rescheduled' + pn + ' to ' + tkDt(v.d) + (v.dep ? ' ' + v.dep : '') + (extra > 0 ? ' · extra cost ' + tkMoney(extra) + ' charged on ' + tkDt(xd) : ''), snap); if(docs.length) c.h[c.h.length - 1].files = docs;
     }, 'Rescheduled');
     return;
   }
@@ -24028,7 +24171,7 @@ function tkTasks(){
 }
 
 /* ---- list: cost line and one-click flown ---- */
-function tkTableHtml(list){
+function tkTableHtml1(list){
   const base = tkTableHtml0(list); if(!list.length) return base;
   const paid = list.reduce((a, t) => a + tkSpent(t), 0), got = list.reduce((a, t) => a + (t.rf && t.rf.st === 'received' ? tkNum(t.rf.amt) : 0), 0), wait = list.reduce((a, t) => a + tkAskAmt(t), 0), passed = list.filter(tkPassed).length;
   const ven = {}; list.forEach(t => { const k = String(t.vendor || '').trim() || 'Not written'; const v = ven[k] = ven[k] || { n: 0, a: 0 }; v.n++; v.a += tkSpent(t); });
@@ -24046,10 +24189,576 @@ function tkRowHtml(t, i){
     <div class="tkQw"><b>${tkE(tkName(t.emp))}</b><span>${tkE(t.emp)} &middot; ${tkE(pur)}</span></div>
     <div class="tkQf">${legs.map(leg).join('')}</div>
     <div class="tkQa">${tkE(f.al) || '-'}${f.fn ? '<span>' + tkE(f.fn) + '</span>' : ''}</div>
-    <div class="tkQc"><b>${spent ? tkE(tkMoney(spent)) : '-'}</b><span>${tkE(t.vendor || 'booked from: not written')}</span>${rl ? rl.replace('tkLn tkRfAmt', 'tkQr') : ''}</div>
+    <div class="tkQc"><b>${spent ? tkE(tkMoney(spent)) : '-'}</b><span>${tkE(t.vendor || 'booked from: not written')}${tkBook(t) ? ' · ' + tkE(tkDt(tkBook(t)).slice(0, 6).replace(/^0/, '')) : ''}</span>${rl ? rl.replace('tkLn tkRfAmt', 'tkQr') : ''}</div>
     <div class="tkQs">${tkBadgeHtml(t)}</div>
     <button class="pillBtn tkView" data-tk="view" data-id="${tkE(t.id)}">View</button></div></div>`;
 }
+
+function tkBook(t){ if(!t) return ''; if(t.bd) return t.bd; if(!t.at) return ''; const d = new Date(t.at); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+function tkTimeFix(v, final){
+  let d = String(v || '').replace(/\D/g, '').slice(0, 4);
+  if(!final) return d.length > 2 ? d.slice(0, 2) + ':' + d.slice(2) : d;
+  if(!d) return '';
+  if(d.length <= 2) d = d.padStart(2, '0') + '00'; else if(d.length === 3) d = '0' + d;
+  const h = +d.slice(0, 2), m = +d.slice(2); if(h > 23 || m > 59) return null;
+  return d.slice(0, 2) + ':' + d.slice(2);
+}
+function tkTimeSet(el){ if(el.dataset.tkIn !== undefined && TK.D) tkSetPath(TK.D, el.dataset.tkIn, el.value); }
+document.addEventListener('input', (e) => { const el = e.target; if(!el || !el.dataset || !el.dataset.tkt) return; el.value = tkTimeFix(el.value, false); tkTimeSet(el); });
+document.addEventListener('focusout', (e) => { const el = e.target; if(!el || !el.dataset || !el.dataset.tkt) return; const v = tkTimeFix(el.value, true); if(v === null){ toast('Write the time like 20:45 (24 hours)'); el.value = ''; } else el.value = v; tkTimeSet(el); });
+
+function tkPayments(list){
+  const out = [], base = (t) => ({ emp: t.emp, name: tkName(t.emp), pnr: t.pnr || '', vendor: t.vendor || '' });
+  (list || []).forEach(t => {
+    if(tkNum(t.fare) > 0) out.push(Object.assign(base(t), { d: tkBook(t), type: 'Ticket fare', amt: tkNum(t.fare), note: tkRoute(tkFirst(t)) + (tkFirst(t).d ? ' · ' + tkDt(tkFirst(t).d) : '') }));
+    if(t.chg && t.chg.length) t.chg.forEach(c => out.push(Object.assign(base(t), { d: c.d || '', type: 'Reschedule charge', amt: tkNum(c.a), note: c.why || '' })));
+    else if(tkNum(t.fees) > 0){ const e = (t.h || []).filter(x => x.k === 'resched').pop(); out.push(Object.assign(base(t), { d: e ? hrStr(new Date(e.at)) : '', type: 'Reschedule charge', amt: tkNum(t.fees), note: 'date from the history' })); }
+    if(t.rf && t.rf.st === 'received' && tkNum(t.rf.amt) > 0) out.push(Object.assign(base(t), { d: t.rf.rec || '', type: 'Refund received', amt: -tkNum(t.rf.amt), note: tkPartLong(t, t.rf.part) }));
+  });
+  return out.sort((a, b) => (a.d || '9999').localeCompare(b.d || '9999') || a.name.localeCompare(b.name));
+}
+function tkPayBlocks(list){
+  const pr = tkPayments(list); if(!pr.length) return [];
+  const rows = pr.map(x => `<tr><td>${tkE(x.d ? tkDt(x.d) : '-')}</td><td>${tkE(x.name)} (${tkE(x.emp)})</td><td>${tkE(x.pnr)}</td><td>${tkE(x.vendor)}</td><td>${tkE(x.type)}</td><td style="text-align:right">${tkE(tkMoney(x.amt))}</td></tr>`);
+  const tot = pr.reduce((a, x) => a + x.amt, 0);
+  rows.push(`<tr><td colspan="5"><b>Net total</b></td><td style="text-align:right"><b>${tkE(tkMoney(tot))}</b></td></tr>`);
+  return ['<div style="padding:14px 2px 6px;font-weight:700;font-size:14px;color:#0f172a;">Payments by date</div>'].concat(rvfTableBlocks('<tr><th>Date</th><th>Employee</th><th>PNR</th><th>Booked from</th><th>What</th><th>Amount</th></tr>', rows, 24));
+}
+function tkTableHtml(list){
+  const base = tkTableHtml1(list), pr = tkPayments(list); if(!list.length || !pr.length) return base;
+  const tot = pr.reduce((a, x) => a + x.amt, 0), i = base.indexOf('<div class="tkGrp') ;
+  const box = `<details class="tkDt tkPay"><summary>Payments by date (${pr.length})</summary><div class="tkPayN">Match these with the card or bank statement. Refunds are shown as minus.</div>${pr.map(x => `<div class="tkVr tkPr"><span>${tkE(x.d ? tkDt(x.d) : 'no date')}</span><span>${tkE(x.name)} &middot; ${tkE(x.type)}${x.vendor ? ' &middot; ' + tkE(x.vendor) : ''}</span><b>${tkE(tkMoney(x.amt))}</b></div>`).join('')}<div class="tkVr tkPr"><span></span><span><b>Net total</b></span><b>${tkE(tkMoney(tot))}</b></div></details>`;
+  const k = base.indexOf('</details>');   // after the "cost by where it was booked" box
+  return k < 0 ? box + base : base.slice(0, k + 10) + box + base.slice(k + 10);
+}
+
+/* ============================================================
+   Dashboard machine report: Day / Night grouping, Picks & Stop totals, compare two months (same days).
+   Nothing here reads the database except the compare button (one read per month, only when pressed).
+   ============================================================ */
+const MP_SUN = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>';
+const MP_MOON = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z"/></svg>';
+const MPC_Z = { dayPicks: 0, nightPicks: 0, dayStop: 0, nightStop: 0 };
+// Picks and stop hours per machine, split Day / Night, from the approved readings inside the dates (the same rules the list always used).
+function dashPerMachine(allRecs, fromDate, toDate){
+  const perMachine = {};
+  const diffs = computeApprovedDiffs(allRecs).filter(r => (!fromDate || r.date >= fromDate) && (!toDate || r.date <= toDate));
+  diffs.forEach(r => {
+    const b = perMachine[r.machine] || (perMachine[r.machine] = { dayPicks:0, nightPicks:0, dayStop:0, nightStop:0 });
+    const stop = Number(r.stopTime) || 0;
+    if(r.shift === 'Day'){ if(r._diff > 0) b.dayPicks += r._diff; b.dayStop += stop; }
+    else if(r.shift === 'Night'){ if(r._diff > 0) b.nightPicks += r._diff; b.nightStop += stop; }
+  });
+  buildDiffSequenceByMachine(allRecs);
+  const endedShifts = new Set(allRecs.filter(r => r.status === 'approved' && r.photoType !== 'start').map(r => r.machine + '|' + r.date + '|' + r.shift));
+  allRecs.forEach(r => {
+    if(r.status !== 'approved' || r.photoType !== 'start' || !r.operatorId) return;
+    if((fromDate && r.date < fromDate) || (toDate && r.date > toDate)) return;
+    if(endedShifts.has(r.machine + '|' + r.date + '|' + r.shift)) return;
+    const hasStop = extractStopBreakdown(r).length > 0, picks = r._startPicks > 0 ? r._startPicks : 0;
+    if(!hasStop && !picks) return;
+    const b = perMachine[r.machine] || (perMachine[r.machine] = { dayPicks:0, nightPicks:0, dayStop:0, nightStop:0 });
+    const stop = hasStop ? (Number(r.stopTime) || 0) : 0;
+    if(r.shift === 'Day'){ b.dayStop += stop; b.dayPicks += picks; } else if(r.shift === 'Night'){ b.nightStop += stop; b.nightPicks += picks; }
+  });
+  return perMachine;
+}
+const mpN0 = (v) => Math.round(v).toLocaleString();
+const mpN1 = (v) => Number(v).toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+function mpSums(list, pm){
+  const t = { dp: 0, np: 0, ds: 0, ns: 0 };
+  list.forEach(m => { const b = pm[m.id]; if(!b) return; t.dp += b.dayPicks; t.np += b.nightPicks; t.ds += b.dayStop; t.ns += b.nightStop; });
+  return t;
+}
+function mpSumHtml(list, pm){
+  const t = mpSums(list, pm);
+  const box = (title, a, b, f) => `<div class="mpSumB"><div class="mpSumT">${title}</div><div class="mpSumR"><div><span>${MP_SUN}Day</span><b>${f(a)}</b></div><div><span>${MP_MOON}Night</span><b>${f(b)}</b></div><div class="mpBoth"><span>Both shifts</span><b>${f(a + b)}</b></div></div></div>`;
+  return `<div class="mpSum">${box('Picks', t.dp, t.np, mpN0)}${box('Stop hours', t.ds, t.ns, mpN1)}</div>`;
+}
+function mpTotRow(list, pm){
+  const t = mpSums(list, pm);
+  return `<tr class="mpT"><td></td><td>Total</td><td>${list.length} machine${list.length === 1 ? '' : 's'}</td><td></td><td class="mpD mpS mpH"></td><td class="mpD">${mpN1(t.ds)}</td><td class="mpD">${mpN0(t.dp)}</td><td class="mpN mpS mpH"></td><td class="mpN">${mpN1(t.ns)}</td><td class="mpN">${mpN0(t.np)}</td></tr>`;
+}
+// the row and the column under the finger / mouse light up, so the eye can follow a number to its heading
+(function(){
+  let last = [];
+  const clear = () => { last.forEach(c => c.classList.remove('mpCol')); last = []; };
+  function hl(e){
+    const td = e.target.closest ? e.target.closest('table.mpTbl tbody td') : null;
+    if(!td){ clear(); return; }
+    const tb = td.closest('table'), i = td.cellIndex, hr = tb.tHead && tb.tHead.rows[tb.tHead.rows.length - 1];
+    if(last.length && last[0].cellIndex === i && last[0].closest('table') === tb) return;
+    clear();
+    Array.from(tb.tBodies[0].rows).forEach(r => { if(r.cells[i]) last.push(r.cells[i]); });
+    if(hr && hr.cells[i]) last.push(hr.cells[i]);
+    last.forEach(c => c.classList.add('mpCol'));
+  }
+  document.addEventListener('mouseover', hl);
+  document.addEventListener('click', hl);
+})();
+
+/* ---------- compare two months (salary cycles), same days ---------- */
+const MPC = { a: 0, b: 1, view: 'picks', res: null, busy: false, cache: {} };
+const mpcMon = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const mpcUt = (ds) => { const p = ds.split('-').map(Number); return Date.UTC(p[0], p[1] - 1, p[2]); };
+const mpcDiff = (a, b) => Math.round((mpcUt(b) - mpcUt(a)) / 864e5);
+const mpcAdd = (ds, n) => { const p = ds.split('-').map(Number); return dateToStr(new Date(p[0], p[1] - 1, p[2] + n)); };
+const mpcLen = (c) => mpcDiff(c.start, c.end) + 1;
+const mpcDay = (ds) => { const p = ds.split('-').map(Number); return p[2] + ' ' + mpcMon[p[1] - 1]; };
+const mpcRange = (f, t) => f === t ? mpcDay(f) : mpcDay(f) + ' – ' + mpcDay(t);
+function mpcPassed(c, today){ const len = mpcLen(c); if(today < c.start) return 0; if(today >= c.end) return len; return mpcDiff(c.start, today) + 1; }
+function mpcPlan(ia, ib){
+  const A = rvfCycleAt(ia), B = rvfCycleAt(ib), today = dateToStr(new Date());
+  const la = mpcLen(A), lb = mpcLen(B), part = A.end > today || B.end > today;
+  let na = la, nb = lb;
+  if(part){ const n = Math.max(1, Math.min(mpcPassed(A, today), mpcPassed(B, today))); na = Math.min(n, la); nb = Math.min(n, lb); }
+  const x = A.label.split(' '), y = B.label.split(' ');
+  return { A, B, part, names: x[0] === y[0] ? [A.label, B.label] : [x[0], y[0]],
+    a: { from: A.start, to: mpcAdd(A.start, na - 1), n: na }, b: { from: B.start, to: mpcAdd(B.start, nb - 1), n: nb } };
+}
+function mpcPlanText(P){
+  if(P.A.start === P.B.start) return 'Pick two different months.';
+  if(P.part) return `Both months are shown for the same ${P.a.n} day${P.a.n === 1 ? '' : 's'} so far: <b>${mpcRange(P.a.from, P.a.to)}</b> (${P.names[0]}) and <b>${mpcRange(P.b.from, P.b.to)}</b> (${P.names[1]}).`;
+  return `Both months are finished, so the full months are compared: <b>${mpcRange(P.a.from, P.a.to)}</b> (${P.a.n} days) and <b>${mpcRange(P.b.from, P.b.to)}</b> (${P.b.n} days).`;
+}
+function mpcDraw(){
+  const box = document.getElementById('mpc'); if(!box) return;
+  const opts = (sel) => Array.from({ length: 12 }, (_, i) => { const c = rvfCycleAt(i); return `<option value="${i}"${i === sel ? ' selected' : ''}>${c.label}${c.sub ? ' (' + c.sub + ')' : ''}${i === 0 ? ' · now' : ''}</option>`; }).join('');
+  const P = mpcPlan(MPC.a, MPC.b);
+  box.innerHTML = `<div class="mpcBox">
+    <div class="mpcSel"><div class="field"><label>Month</label><select id="mpcA">${opts(MPC.a)}</select></div>
+    <div class="field"><label>Compare with</label><select id="mpcB">${opts(MPC.b)}</select></div></div>
+    <div class="mpcNote" id="mpcPlan">${mpcPlanText(P)}<br>Follows the department and machine filter above.</div>
+    <button type="button" class="pillBtn" id="mpcGo"${MPC.a === MPC.b ? ' disabled' : ''}>${MPC.res ? 'Refresh' : 'Show comparison'}</button>
+    <div id="mpcOut"></div></div>`;
+  mpcOut();
+}
+// rows for one view: [this month, before] for Day, Night and both together, per machine, with the totals
+function mpcData(res, view){
+  const kd = view === 'stop' ? 'dayStop' : 'dayPicks', kn = view === 'stop' ? 'nightStop' : 'nightPicks';
+  const tot = { d: [0, 0], n: [0, 0], t: [0, 0] };
+  const rows = res.scoped.map(m => {
+    const a = res.A[m.id] || MPC_Z, b = res.B[m.id] || MPC_Z;
+    const r = { m, d: [a[kd], b[kd]], n: [a[kn], b[kn]], t: [a[kd] + a[kn], b[kd] + b[kn]] };
+    r.showD = machineRunsShift(m, 'Day') || r.d[0] > 0 || r.d[1] > 0; r.showN = machineRunsShift(m, 'Night') || r.n[0] > 0 || r.n[1] > 0;
+    ['d', 'n', 't'].forEach(k => { tot[k][0] += r[k][0]; tot[k][1] += r[k][1]; });
+    return r;
+  });
+  return { rows, tot, dec: view === 'stop' ? 1 : 0, goodUp: view !== 'stop' };
+}
+function mpcFmt(v, dec){ return dec ? mpN1(v) : mpN0(v); }
+function mpcDelta(a, b, dec, goodUp, pct){
+  const k = dec ? 10 : 1, r = Math.round((a - b) * k) / k;
+  if(r === 0) return '<span class="mpcZ">0</span>';
+  const good = goodUp ? r > 0 : r < 0, p = b ? Math.round((a - b) / b * 100) : null, ps = p === null ? '' : (p > 0 ? '+' : p < 0 ? '-' : '') + Math.abs(p) + '%';
+  return `<span class="${good ? 'mpcUp' : 'mpcDn'}"${ps && !pct ? ' title="' + ps + '"' : ''}>${r > 0 ? '+' : '-'}${mpcFmt(Math.abs(r), dec)}${pct && ps ? ' <span style="font-size:10.5px;">(' + ps + ')</span>' : ''}</span>`;
+}
+function mpcSumHtml(res){
+  const nm = res.P.names, one = (view, title) => {
+    const D = mpcData(res, view), row = (lab, v, ic) => `<tr><td>${ic || ''}${lab}</td><td>${mpcFmt(v[0], D.dec)}</td><td>${mpcFmt(v[1], D.dec)}</td><td>${mpcDelta(v[0], v[1], D.dec, D.goodUp, true)}</td></tr>`;
+    return `<div class="mpSumB"><div class="mpSumT">${title}</div><table class="report-table mpcSumT"><thead><tr><th></th><th>${nm[0]}</th><th>${nm[1]}</th><th>Change</th></tr></thead><tbody>${row('Day', D.tot.d, MP_SUN + ' ')}${row('Night', D.tot.n, MP_MOON + ' ')}${row('Both shifts', D.tot.t)}</tbody></table></div>`;
+  };
+  return `<div class="mpSum">${one('picks', 'Picks')}${one('stop', 'Stop hours')}</div>`;
+}
+function mpcTable(res, view){
+  const D = mpcData(res, view), nm = res.P.names, dash = '<span style="color:var(--muted);">—</span>';
+  const grp = (cls, v, show, first) => show
+    ? `<td class="${cls}${first ? ' mpS' : ''}">${mpcFmt(v[0], D.dec)}</td><td class="${cls}">${mpcFmt(v[1], D.dec)}</td><td class="${cls}">${mpcDelta(v[0], v[1], D.dec, D.goodUp)}</td>`
+    : `<td class="${cls} mpS">${dash}</td><td class="${cls}">${dash}</td><td class="${cls}">${dash}</td>`;
+  const hd = (cls) => `<th class="${cls} mpS">${nm[0]}</th><th class="${cls}">${nm[1]}</th><th class="${cls}">Change</th>`;
+  const head = `<tr class="mpG"><th></th><th colspan="3" class="mpD mpS">${MP_SUN}Day shift</th><th colspan="3" class="mpN mpS">${MP_MOON}Night shift</th><th colspan="3" class="mpB mpS">Both shifts</th></tr><tr><th>Machine</th>${hd('mpD')}${hd('mpN')}${hd('mpB')}</tr>`;
+  const tr = (label, r, cls) => `<tr${cls ? ' class="' + cls + '"' : ''}><td>${label}</td>${grp('mpD', r.d, true, true)}${grp('mpN', r.n, true, true)}${grp('mpB', r.t, true, true)}</tr>`;
+  const rows = [tr('Total · ' + D.rows.length + ' machine' + (D.rows.length === 1 ? '' : 's'), D.tot, 'mpT')].concat(D.rows.map(r => `<tr><td>${r.m.id} &middot; ${r.m.name}</td>${grp('mpD', r.d, r.showD, true)}${grp('mpN', r.n, r.showN, true)}${grp('mpB', r.t, true, true)}</tr>`));
+  return { head, rows, html: `<div class="table-scroll"><table class="report-table mpTbl"><thead>${head}</thead><tbody>${rows.join('')}</tbody></table></div>` };
+}
+function mpcOut(){
+  const out = document.getElementById('mpcOut'); if(!out) return;
+  if(MPC.busy){ out.innerHTML = '<div class="empty-state">Loading the readings…</div>'; return; }
+  if(!MPC.res){ out.innerHTML = ''; return; }
+  const res = MPC.res, T = mpcTable(res, MPC.view);
+  out.innerHTML = `<div class="mpcTop"><div class="seg" style="margin:0;"><button type="button" data-mpcv="picks" class="${MPC.view === 'picks' ? 'active' : ''}">Picks</button><button type="button" data-mpcv="stop" class="${MPC.view === 'stop' ? 'active' : ''}">Stop hours</button></div></div>${mpcSumHtml(res)}${T.html}
+    <div class="hint" style="text-align:left; margin-left:0; margin-top:6px;">Change = ${res.P.names[0]} minus ${res.P.names[1]}. Green is better, red is worse (more picks is better, more stop hours is worse).</div>`;
+}
+async function mpcGo(){
+  if(MPC.busy || MPC.a === MPC.b) return;
+  if(!requireDb()) return;
+  const P = mpcPlan(MPC.a, MPC.b), r = computeDashboardRange();
+  MPC.busy = true; mpcOut();
+  try{
+    const ver = window.__db.readingsVersion ? window.__db.readingsVersion() : 0;
+    const per = async (x) => {
+      const key = x.from + '|' + x.to + '|' + ver;
+      if(!MPC.cache[key]){ const recs = await loadReportSourceRecords(x.from, x.to); MPC.cache[key] = dashPerMachine(recs, x.from, x.to); }
+      return MPC.cache[key];
+    };
+    const A = await per(P.a), B = await per(P.b);
+    const scoped = state.machines.filter(m => (!r.department || m.department === r.department) && (!r.machine || String(m.id) === String(r.machine)));
+    MPC.res = { P, A, B, scoped, dept: r.department || 'All departments', mach: r.machine || '' };
+  }catch(err){ console.error(err); toast('Could not load the comparison'); MPC.res = null; }
+  MPC.busy = false; mpcDraw();
+}
+document.addEventListener('click', (e) => {
+  const tg = e.target.closest('#mpcToggle');
+  if(tg){ const b = document.getElementById('mpc'), open = b.style.display !== 'none'; b.style.display = open ? 'none' : 'block'; document.getElementById('mpcToggleLbl').textContent = open ? 'Show' : 'Hide'; if(!open) mpcDraw(); return; }
+  if(e.target.closest('#mpcGo')){ mpcGo(); return; }
+  const v = e.target.closest('[data-mpcv]'); if(v){ MPC.view = v.dataset.mpcv; mpcOut(); }
+});
+document.addEventListener('change', (e) => {
+  if(e.target.id !== 'mpcA' && e.target.id !== 'mpcB') return;
+  MPC.a = Number(document.getElementById('mpcA').value); MPC.b = Number(document.getElementById('mpcB').value); MPC.res = null; mpcDraw();
+});
+function mpcShown(){ const b = document.getElementById('mpc'); return !!(MPC.res && b && b.style.display !== 'none'); }
+function mpcPdfBlocks(){
+  if(!mpcShown()) return [];
+  const res = MPC.res, T = mpcTable(res, MPC.view), P = res.P;
+  const out = [`<div data-pgbreak="1" style="font-weight:700;font-size:13px;margin:10px 2px 2px;">Month comparison: ${P.names[0]} and ${P.names[1]} (${MPC.view === 'stop' ? 'stop hours' : 'picks'})</div><div style="font-size:11px;color:#64748b;margin:0 2px 6px;">${mpcRange(P.a.from, P.a.to)} compared with ${mpcRange(P.b.from, P.b.to)}${P.part ? ' (same days)' : ' (full months)'}</div>`, mpBox(mpcSumHtml(res))];
+  return out.concat(rvfTableBlocks(T.head, T.rows, 20, 'ovPdfT ovW2'));
+}
+function mpExtraSheets(wb){
+  const dl = document.getElementById('machDrillList'), tb = dl && dl.style.display !== 'none' && dl.querySelector('table');
+  const num = (t) => { t = String(t).trim(); if(t === '—') return ''; const u = t.replace(/,/g, ''); return /^-?\d*\.?\d+$/.test(u) ? Number(u) : t; };
+  if(tb){
+    const rows = Array.from(tb.querySelectorAll('tbody tr')).map(tr => Array.from(tr.cells).map(c => num(c.textContent)));
+    const ws = XLSX.utils.aoa_to_sheet([['#', 'Machine', 'Operator', 'Status', 'Day shift hrs', 'Day stop hrs', 'Day picks', 'Night shift hrs', 'Night stop hrs', 'Night picks']].concat(rows));
+    ws['!cols'] = [{ wch: 5 }, { wch: 16 }, { wch: 22 }, { wch: 14 }, { wch: 13 }, { wch: 13 }, { wch: 11 }, { wch: 14 }, { wch: 14 }, { wch: 12 }];
+    XLSX.utils.book_append_sheet(wb, ws, 'Machine report');
+  }
+  mpcSheets(wb);
+}
+function mpcSheets(wb){
+  if(mpcShown()){
+    const res = MPC.res, P = res.P, n = P.names;
+    ['picks', 'stop'].forEach(view => {
+      const D = mpcData(res, view), f = (v) => Math.round(v * 10) / 10, tri = (v) => [f(v[0]), f(v[1]), f(v[0] - v[1])];
+      const aoa = [[(view === 'stop' ? 'Stop hours' : 'Picks') + ' · ' + n[0] + ' compared with ' + n[1]], [n[0] + ': ' + mpcRange(P.a.from, P.a.to) + ' · ' + n[1] + ': ' + mpcRange(P.b.from, P.b.to) + (P.part ? ' (same days)' : ' (full months)')], [],
+        ['Machine', 'Day ' + n[0], 'Day ' + n[1], 'Day change', 'Night ' + n[0], 'Night ' + n[1], 'Night change', 'Both ' + n[0], 'Both ' + n[1], 'Both change'],
+        ['Total'].concat(tri(D.tot.d), tri(D.tot.n), tri(D.tot.t))]
+        .concat(D.rows.map(r => [r.m.id + ' ' + r.m.name].concat(tri(r.d), tri(r.n), tri(r.t))));
+      const ws = XLSX.utils.aoa_to_sheet(aoa); ws['!cols'] = [{ wch: 20 }].concat(Array(9).fill({ wch: 12 }));
+      XLSX.utils.book_append_sheet(wb, ws, view === 'stop' ? 'Compare - Stop hrs' : 'Compare - Picks');
+    });
+  }
+}
+
+/* ============================================================
+   Dashboard downloads: Document Renewals, Performance & Statistics, Machines by Department,
+   and the By Department / Last 12 Months / Compare months folds. Each one downloads exactly what is on screen
+   (nothing new is read from the database; Performance asks for its own data first if it was never loaded).
+   ============================================================ */
+function dsBtns(id){ return `<span style="flex:1;"></span><button type="button" class="pillBtn" data-ds="${id}" data-k="pdf" title="Download as PDF">${MP_DL}PDF</button><button type="button" class="pillBtn" data-ds="${id}" data-k="xlsx" title="Download as Excel">${MP_DL}Excel</button>`; }
+function dsBar(id, note, hidden){ const d = document.createElement('div'); d.className = 'asumTop dsBar'; d.id = 'dsBar_' + id; if(hidden) d.style.display = 'none'; d.innerHTML = (note ? `<span class="hrNote" style="margin:0;">${note}</span>` : '') + dsBtns(id); return d; }
+function dsInit(){
+  if(document.getElementById('dsBar_ren')) return;
+  const ren = document.querySelector('#documentRenewalsBlock > .card'); if(ren) ren.insertBefore(dsBar('ren', 'Download the passport and iqama lists'), ren.firstChild);
+  const pop = document.getElementById('perfFilterPopover'), pc = pop && pop.nextElementSibling; if(pc) pc.insertBefore(dsBar('perf', 'Download this section (follows its date, department and machine filter)'), pc.firstChild);
+  const md = document.getElementById('ceoMachinesByDept'); if(md) md.parentNode.insertBefore(dsBar('dept', 'Download machines by department'), md);
+  [['prodByDept', 'fdept'], ['prod12Month', 'f12'], ['mpc', 'cmp']].forEach(([box, id]) => { const b = document.getElementById(box); if(b) b.parentNode.insertBefore(dsBar(id, '', true), b); });
+}
+if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', dsInit); else dsInit();
+document.addEventListener('click', (e) => {
+  if(!e.target.closest('#prodDeptToggle, #prod12MonthToggle, #mpcToggle')) return;
+  [['prodByDept', 'fdept'], ['prod12Month', 'f12'], ['mpc', 'cmp']].forEach(([box, id]) => { const x = document.getElementById(box), y = document.getElementById('dsBar_' + id); if(x && y) y.style.display = x.style.display === 'none' ? 'none' : ''; });
+});
+function dsClone(el, fix){ const c = mpClone(el); if(fix) fix(c); c.querySelectorAll('select').forEach(sl => { const sp = document.createElement('span'); sp.textContent = (sl.options[sl.selectedIndex] || {}).text || ''; sl.replaceWith(sp); }); return c.outerHTML; }
+const dsTitle = (t) => `<div class="sub" style="font-weight:600;color:var(--text);text-transform:none;margin-bottom:8px;">${t}</div>`;
+function dsGo(kind, file, title, lines, blocksFn, sheetsFn){
+  if(kind === 'xlsx'){
+    if(typeof XLSX === 'undefined'){ toast('Excel tool not loaded — check your connection'); return; }
+    const wb = XLSX.utils.book_new(); sheetsFn(wb);
+    if(!wb.SheetNames || !wb.SheetNames.length){ toast('Nothing to download yet'); return; }
+    XLSX.writeFile(wb, file + '-' + rvfDateStamp() + '.xlsx'); toast('Excel file downloaded'); return;
+  }
+  const bl = blocksFn(); if(!bl.length){ toast('Nothing to download yet'); return; }
+  toast('Making the PDF…'); rvfMakePdf([rvfPdfHeader(title, lines.filter(Boolean).concat(['Created ' + rvfNowText()]))].concat(bl), file + '-' + rvfDateStamp() + '.pdf');
+}
+function dsSheet(wb, name, aoa, wch){ const ws = XLSX.utils.aoa_to_sheet(aoa); ws['!cols'] = (wch || []).map(w => ({ wch: w })); XLSX.utils.book_append_sheet(wb, ws, name); }
+const dsTxt = (el) => el ? el.textContent.replace(/\s+/g, ' ').trim() : '';
+const dsSelTxt = (id) => { const x = document.getElementById(id); return x && x.options[x.selectedIndex] ? x.options[x.selectedIndex].text : ''; };
+
+// ---- Document Renewals
+function dsRenRows(id){
+  return Array.from(document.getElementById(id).querySelectorAll('.card.row')).map(r => {
+    const k = dsTxt(r.querySelector('.k')), m = k.match(/^(.*?)\s*\(([^)]*)\)\s*$/) || [0, k, ''];
+    const ex = Array.from(r.querySelectorAll('span')).find(x => !x.querySelector('span') && /^Expires /.test(dsTxt(x)));
+    const sl = r.querySelector('select'), st = sl ? (sl.options[sl.selectedIndex] || {}).text : dsTxt(r.querySelector('.badge'));
+    return [m[1], m[2], ex ? dsTxt(ex).replace(/^Expires /, '') : '', st || ''];
+  });
+}
+function dsRen(kind){
+  dsGo(kind, 'document-renewals', 'Document Renewals', ['Passports expiring in: ' + dsSelTxt('ceoExpiryDaysPassport') + ' · Iqamas expiring in: ' + dsSelTxt('ceoExpiryDaysIqama')],
+    () => [['Passport Expiring Soon', 'ceoExpiringPassport'], ['Iqama Expiring Soon', 'ceoExpiringIqama']].map(x => mpBox(dsTitle(x[0]) + dsClone(document.getElementById(x[1]), (c) => c.querySelectorAll('.card.row').forEach(r => { r.style.border = '1px solid #d97706'; r.style.borderRadius = '12px'; r.style.margin = '0 0 6px'; })))),
+    (wb) => {
+      const p = dsRenRows('ceoExpiringPassport'), q = dsRenRows('ceoExpiringIqama');
+      if(p.length) dsSheet(wb, 'Passports', rvfNumRows([['Name', 'ID', 'Expires', 'Renewal status']].concat(p)), [5, 26, 12, 14, 18]);
+      if(q.length) dsSheet(wb, 'Iqama', rvfNumRows([['Name', 'ID', 'Expires']].concat(q.map(x => x.slice(0, 3)))), [5, 26, 12, 14]);
+    });
+}
+// ---- Performance & Statistics
+function dsRank(id){ return Array.from(document.getElementById(id).querySelectorAll('.ranked-list-item')).map(r => { const d = r.querySelectorAll(':scope > div:nth-child(2) > div'); return [dsTxt(d[0]), dsTxt(d[1])]; }); }
+function dsPerf(kind){
+  if(!state.perfShown){ state.perfShown = true; toast('Loading the figures…'); renderPerformanceBox().then(() => dsPerf(kind)); return; }
+  const r = computePerfRange(), eff = dsTxt(document.getElementById('kpiEfficiency')), per = r.fromDate === r.toDate ? fmtDate(r.fromDate) : fmtDate(r.fromDate) + ' to ' + fmtDate(r.toDate);
+  const mach = r.machine ? ((state.machines.find(x => String(x.id) === String(r.machine)) || {}).name || r.machine) : 'All machines';
+  dsGo(kind, 'performance-statistics', 'Performance & Statistics', [r.label + ' · ' + per, 'Department: ' + (r.department || 'All departments') + ' · Machine: ' + mach],
+    () => [mpBox(`<div class="row" style="padding:4px 0;"><span class="k">Running Machine Efficiency</span><b style="font-family:'JetBrains Mono',monospace;font-size:16px;">${eff}</b></div>`)].concat(
+      [['Top 5 performers · by picks earned', 'perfTopOperators'], ['Lowest 5 performers · by picks earned', 'perfLowOperators'], ['Top 5 reasons for stops', 'ceoTopStopReason']].map(x => mpBox(dsTitle(x[0]) + dsClone(document.getElementById(x[1]))))),
+    (wb) => {
+      dsSheet(wb, 'Summary', [['Performance & Statistics'], ['Period', r.label + ' (' + per + ')'], ['Department', r.department || 'All departments'], ['Machine', mach], ['Running machine efficiency', eff]], [28, 44]);
+      [['Top performers', 'perfTopOperators', 'Operator'], ['Lowest performers', 'perfLowOperators', 'Operator'], ['Stop reasons', 'ceoTopStopReason', 'Reason']].forEach(x => { const rows = dsRank(x[1]); if(rows.length) dsSheet(wb, x[0], rvfNumRows([[x[2], 'Details']].concat(rows)), [5, 26, 44]); });
+    });
+}
+// ---- Machines by Department
+function dsDept(kind){
+  const rows = Array.from(document.querySelectorAll('#ceoMachinesByDept .card.row')).map(r => { const b = r.querySelectorAll('.badge'), n = (x) => parseInt(dsTxt(x), 10) || 0, a = n(b[0]), c = n(b[1]); return [dsTxt(r.querySelector('.k')), a, c, a + c]; });
+  dsGo(kind, 'machines-by-department', 'Machines by Department', [],
+    () => rows.length ? [mpBox(dsClone(document.getElementById('ceoMachinesByDept')))] : [],
+    (wb) => { if(rows.length) dsSheet(wb, 'Machines by Department', rvfNumRows([['Department', 'Running', 'Stopped', 'Total']].concat(rows)), [5, 26, 10, 10, 10]); });
+}
+// ---- the folds inside Machine & Production
+function dsMpHead(){ const I = mpInfo(); return [I.r.label + ' · ' + I.dates, 'Department: ' + I.dept + ' · Machine: ' + I.mach]; }
+function dsFoldDept(kind){
+  if(!state.prodShown){ state.prodShown = true; toast('Loading the production figures…'); renderMachineProductionBox().then(() => dsFoldDept(kind)); return; }
+  const rows = Array.from(document.querySelectorAll('#prodByDept > .card')).map(c => [dsTxt(c.querySelector('.k')), parseFloat(dsTxt(c.querySelector('b')).replace(/,/g, '')) || 0]);
+  dsGo(kind, 'production-by-department', 'Production by Department', dsMpHead(), () => rows.length ? [mpBox(dsClone(document.getElementById('prodByDept')))] : [],
+    (wb) => { if(rows.length) dsSheet(wb, 'By Department', rvfNumRows([['Department', 'Production (m²)']].concat(rows)), [5, 26, 18]); });
+}
+function dsFold12(kind){
+  const m = mpMonths();
+  dsGo(kind, 'production-last-12-months', 'Production · Last 12 Months', ['Salary months, production in m²'], () => m.length ? [mpBox(dsClone(document.getElementById('prod12Month')))] : [],
+    (wb) => { if(m.length) dsSheet(wb, 'Last 12 Months', rvfNumRows([['Month', 'Production (m²)']].concat(m)), [5, 16, 18]); });
+}
+function dsCmp(kind){
+  if(!mpcShown()){ toast('Press Show comparison first'); return; }
+  const P = MPC.res.P;
+  dsGo(kind, 'month-comparison', 'Month Comparison', [P.names[0] + ' compared with ' + P.names[1] + (P.part ? ' (same days)' : ' (full months)'), 'Department: ' + MPC.res.dept],
+    () => { const bl = mpcPdfBlocks(); return bl.slice(1); }, (wb) => mpcSheets(wb));
+}
+const DS_H = { ren: dsRen, perf: dsPerf, dept: dsDept, fdept: dsFoldDept, f12: dsFold12, cmp: dsCmp };
+document.addEventListener('click', (e) => { const b = e.target.closest('[data-ds]'); if(b && DS_H[b.dataset.ds]) DS_H[b.dataset.ds](b.dataset.k); });
+
+/* ============================================================
+   Documents: PDF upload (made smaller), admin-only delete, big profile photo
+   ============================================================ */
+const DOC_PDFJS = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js', DOC_PDFW = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+const docErr = (m) => { const e = new Error(m); e.docMsg = m; return e; };
+function docFileToDataUrl(file){ return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(file); }); }
+async function docLoadPdfJs(){
+  if(window.pdfjsLib && window.pdfjsLib.__rvfReady) return window.pdfjsLib;
+  if(!window.pdfjsLib) await rvfLoadScript(DOC_PDFJS);
+  window.pdfjsLib.GlobalWorkerOptions.workerSrc = DOC_PDFW;   // the PDF tool itself wraps a worker that lives on another website
+  window.pdfjsLib.__rvfReady = true; return window.pdfjsLib;
+}
+// A photo is shrunk as always. A PDF that is already small is kept exactly as it is. A bigger PDF is redrawn page by page
+// at a sharp size (about 150 dpi) and saved again as a lighter PDF; each try is a little lighter until it fits.
+async function docPdfSmall(file){
+  const KEEP = 450000, MAX = 700000;   // characters of the saved text (the database keeps a document under 1 MB)
+  const orig = await docFileToDataUrl(file);
+  if(orig.length <= KEEP) return orig;
+  let lib;
+  try{ lib = await docLoadPdfJs(); await rvfEnsurePdfLibs(); }
+  catch(err){ console.error(err); if(orig.length <= MAX) return orig; throw docErr('Could not make this PDF smaller (the PDF tool did not load). Check the connection and try again.'); }
+  const pdfDoc = await lib.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
+  if(pdfDoc.numPages > 8) throw docErr('This PDF has ' + pdfDoc.numPages + ' pages. Please send only the pages needed (up to 8).');
+  const tries = [[1400, 0.82], [1200, 0.74], [1000, 0.66], [850, 0.58], [700, 0.5]];
+  for(const [wpx, q] of tries){
+    let out = null;
+    for(let i = 1; i <= pdfDoc.numPages; i++){
+      const page = await pdfDoc.getPage(i), vp1 = page.getViewport({ scale: 1 }), vp = page.getViewport({ scale: wpx / Math.max(vp1.width, vp1.height) });
+      const cv = document.createElement('canvas'); cv.width = Math.ceil(vp.width); cv.height = Math.ceil(vp.height);
+      const cx = cv.getContext('2d'); cx.fillStyle = '#fff'; cx.fillRect(0, 0, cv.width, cv.height);
+      await page.render({ canvasContext: cx, viewport: vp }).promise;
+      const jpg = cv.toDataURL('image/jpeg', q), w = vp1.width, h = vp1.height, o = w > h ? 'l' : 'p';
+      if(!out) out = new window.jspdf.jsPDF({ unit: 'pt', format: [w, h], orientation: o, compress: true }); else out.addPage([w, h], o);
+      out.addImage(jpg, 'JPEG', 0, 0, w, h, undefined, 'FAST');
+    }
+    const du = await docFileToDataUrl(out.output('blob'));
+    if(du.length <= MAX) return (du.length < orig.length || orig.length > MAX) ? du : orig;
+  }
+  throw docErr('This PDF is too big even after making it smaller. Please send fewer pages.');
+}
+async function docReadFile(file){
+  if(/^image\//.test(file.type)) return compressImageSafe(file);
+  if(file.type === 'application/pdf' || /\.pdf$/i.test(file.name || '')) return docPdfSmall(file);
+  throw docErr('Please choose a photo or a PDF.');
+}
+function docOpenPdf(dataUrl){
+  try{
+    const bin = atob(dataUrl.split(',')[1]), arr = new Uint8Array(bin.length); for(let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+    const url = URL.createObjectURL(new Blob([arr], { type: 'application/pdf' })), w = window.open(url, '_blank');
+    if(!w){ const a = document.createElement('a'); a.href = url; a.download = 'document.pdf'; document.body.appendChild(a); a.click(); a.remove(); }
+  }catch(err){ console.error(err); toast('Could not open the PDF'); }
+}
+// admin only: take the wrong document away (the typed details stay); the file itself is removed from the database too
+document.addEventListener('click', async (e) => {
+  const b = e.target.closest('.docDelBtn'); if(!b) return;
+  if(!state.user || state.user.role !== 'admin' || !profileCache.user) return;
+  const kind = b.dataset.kind, d = ((profileCache.user.profile || {})[kind]) || {}; if(!d.attachment) return;
+  if(!confirm('Delete this ' + (kind === 'iqama' ? 'Iqama' : 'Passport') + ' document for ' + profileCache.user.name + '?\n\nThe typed details stay. Only the attached file is removed, and you can attach the right one after.')) return;
+  if(!requireDb()) return;
+  try{
+    const ref = d.attachment;
+    await saveProfileFields(profileCache.user.loginId, { [kind + '.attachment']: null });
+    if(isPhotoBlobRef(ref)){ try{ await window.__db.deletePhotoBlob(ref); }catch(err){ console.warn('file stays in the database', err); } }
+    toast('Document deleted');
+    kind === 'passport' ? renderPassportTab() : renderIqamaTab();
+  }catch(err){ console.error(err); toast('Could not delete - check your connection'); }
+});
+// profile photo: tap it to see it big (zoom with the same viewer as the documents)
+(function(){
+  const wrap = document.getElementById('profilePhotoWrap'), img = document.getElementById('profilePhotoImg'); if(!wrap || !img) return;
+  wrap.addEventListener('click', () => { if(img.style.display !== 'none' && img.src && /^data:|^blob:|^http/.test(img.src)) { openLightbox(img.src); const lb = Array.from(document.querySelectorAll('.lightbox')).pop(); if(lb) lb.classList.add('lbBig'); } });
+})();
+
+/* ============================================================
+   Accounts > Pay desk. One small document per salary month (config "payDesk_YYYY-MM": who was paid, how, when).
+   The people, photos and attached documents are the ones already loaded for the app, so the list costs no database reads;
+   the month document is read once per month and every action is one small write.
+   ============================================================ */
+const PD = { ym: '', docs: {}, q: '', dept: '', cat: '', pos: '', st: 'all', exited: false, edit: false, sel: new Set(), shown: 40, fopen: false, busy: false, loading: false };
+const PD_IC = { cam: '<path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/>', edit: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/>', dl: '<path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>' };
+const pdSvg = (n, s) => `<svg width="${s || 14}" height="${s || 14}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${PD_IC[n] || ''}</svg>`;
+const pdKey = () => 'payDesk_' + PD.ym;
+const pdDoc = () => PD.docs[PD.ym];
+const pdPaid = () => (pdDoc() && pdDoc().paid) || {};
+const pdIsNon = (u) => ((u.profile || {}).employmentType) === 'Non-Sponsor';
+const pdMethodOf = (u) => pdIsNon(u) ? 'cash' : 'bank';   // sponsor staff are paid into the bank, the others in cash (changeable per person)
+const pdCatOf = (u) => (u.profile || {}).employmentType || '';
+const pdToday = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+const pdDayTxt = (ds) => ds ? ds.split('-')[2] + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][Number(ds.split('-')[1]) - 1] : '';
+// everyone who can be paid for this salary month: not joined after the month ended, not left before it began, not marked "no salary"
+function pdPeople(){
+  const r = acDefaultRange(PD.ym), paid = pdPaid();
+  return (state.users || []).filter(u => {
+    if(u.role === 'pending' || a2Skip(u)) return false;
+    const p = u.profile || {}, jd = p.joiningDate;
+    if(jd && jd > r.to) return false;                       // joined after this salary month: belongs to a later one
+    if(isExitedEmployee(u) && !PD.exited && !paid[u.loginId]) return false;
+    return true;
+  }).sort((a, b) => String(a.loginId).localeCompare(String(b.loginId), undefined, { numeric: true }));
+}
+function pdFiltered(all){
+  const q = PD.q.trim().toLowerCase(), paid = pdPaid();
+  return all.filter(u => (!PD.dept || u.department === PD.dept) && (!PD.cat || pdCatOf(u) === PD.cat) && (!PD.pos || ((u.profile || {}).position || '') === PD.pos)
+    && (PD.st === 'all' || (PD.st === 'paid') === !!paid[u.loginId]) && (!q || (u.loginId + ' ' + u.name + ' ' + (u.department || '') + ' ' + ((u.profile || {}).position || '')).toLowerCase().includes(q)));
+}
+async function pdLoad(force){
+  if(!PD.ym) PD.ym = A2.ym || acYmNow();
+  if(PD.docs[PD.ym] && !force) return;
+  if(!requireDb()) throw new Error('db');
+  const o = await window.__db.getConfigObject(pdKey(), { paid: {} });
+  PD.docs[PD.ym] = { paid: (o && o.paid) || {} };
+}
+function pdDraw(){
+  const host = document.getElementById('acMain'); if(!host) return;
+  if(!PD.ym) PD.ym = A2.ym || acYmNow();
+  if(!pdDoc()){
+    host.innerHTML = '<div class="empty-state">Loading…</div>';
+    if(!PD.loading){ PD.loading = true; pdLoad().then(() => { PD.loading = false; if(A2.view === 'pay') pdDraw(); }).catch(err => { PD.loading = false; console.error(err); host.innerHTML = '<div class="empty-state">Could not load. Check your connection and open the page again.</div>'; }); }
+    return;
+  }
+  const ed = acCanEdit(), all = pdPeople(), list = pdFiltered(all), paid = pdPaid(), r = acDefaultRange(PD.ym);
+  const uniq = (fn) => Array.from(new Set(all.map(fn).filter(Boolean))).sort();
+  const fN = [PD.dept, PD.cat, PD.pos, PD.exited].filter(Boolean).length;
+  const opt = (arr, cur, any) => `<option value="">${any}</option>` + arr.map(v => `<option value="${acEsc(v)}"${v === cur ? ' selected' : ''}>${acEsc(v)}</option>`).join('');
+  host.innerHTML = `
+    <div class="pdBar">
+      <span class="pdMonth"><button type="button" class="iconBtn" data-pd="prev" title="Previous month">&lsaquo;</button><b>${acYmLabel(PD.ym)}<small>${pdDayTxt(r.from)} – ${pdDayTxt(r.to)}</small></b><button type="button" class="iconBtn" data-pd="next" title="Next month">&rsaquo;</button></span>
+      <input type="text" class="pdQ" id="pdQ" placeholder="Search name or ID" value="${acEsc(PD.q)}">
+      <button type="button" class="pillBtn${fN ? ' ok' : ''}" data-pd="ftog">${a2Svg('filter', 13)}Filter${fN ? ' ' + fN : ''}</button>
+      <span class="pdSeg">${[['all', 'All'], ['no', 'Not paid'], ['paid', 'Paid']].map(x => `<button type="button" data-pd="st" data-v="${x[0]}" class="${PD.st === x[0] ? 'on' : ''}">${x[1]}</button>`).join('')}</span>
+      <span style="flex:1;"></span>
+      ${ed ? `<button type="button" class="iconBtn${PD.edit ? ' on' : ''}" data-pd="edit" title="${PD.edit ? 'Stop adding photos' : 'Add or change photos'}">${pdSvg('cam', 15)}</button>` : ''}
+      <button type="button" class="pillBtn" data-pd="pdf" title="Download as PDF">${MP_DL}PDF</button><button type="button" class="pillBtn" data-pd="xlsx" title="Download as Excel">${MP_DL}Excel</button>
+    </div>
+    ${PD.fopen ? `<div class="pdFilt"><select id="pdDept">${opt(uniq(u => u.department), PD.dept, 'All departments')}</select><select id="pdPos">${opt(uniq(u => (u.profile || {}).position), PD.pos, 'All positions')}</select><select id="pdCat">${opt(uniq(pdCatOf), PD.cat, 'All categories')}</select>
+      <label class="acChk"><input type="checkbox" id="pdEx" ${PD.exited ? 'checked' : ''}> Include people who left</label><button type="button" class="pillBtn" data-pd="fclear">Clear</button></div>` : ''}
+    <div id="pdBody"></div>`;
+  pdDrawBody();
+}
+function pdDrawBody(){
+  const body = document.getElementById('pdBody'); if(!body) return;
+  const ed = acCanEdit(), all = pdPeople(), list = pdFiltered(all), paid = pdPaid();
+  const nPaid = all.filter(u => paid[u.loginId]).length, left = list.filter(u => !paid[u.loginId]);
+  const shown = list.slice(0, PD.shown), ticked = Array.from(PD.sel).filter(id => list.some(u => u.loginId === id));
+  const row = (u) => {
+    const p = u.profile || {}, pd = paid[u.loginId], ini = (u.name || '?').trim().split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase();
+    const doc = (k, lbl) => (p[k] && p[k].attachment) ? `<button type="button" class="pdChip" data-pd="doc" data-ref="${acEsc(p[k].attachment)}" title="Open the ${lbl}">${lbl}</button>` : `<span class="pdChip no" title="No ${lbl} attached">${lbl}</span>`;
+    return `<div class="pdRow${pd ? ' paid' : ''}" data-id="${acEsc(u.loginId)}">
+      <input type="checkbox" data-pd="tick" data-id="${acEsc(u.loginId)}" ${PD.sel.has(u.loginId) ? 'checked' : ''}>
+      <div class="pdPh${p.photoDataUrl ? '' : ' none'}" ${p.photoDataUrl ? 'data-pd="big"' : ''} data-id="${acEsc(u.loginId)}">${p.photoDataUrl ? `<img src="${p.photoDataUrl}" alt="">` : acEsc(ini)}${PD.edit && ed ? `<label class="pdCam" title="Take or change the photo">${pdSvg('cam', 11)}<input type="file" accept="image/*" capture="environment" data-pd="photo" data-id="${acEsc(u.loginId)}"></label>` : ''}</div>
+      <div style="min-width:0;"><div class="pdNm">${acEsc(u.name)}<span class="pdCat">${acEsc(pdCatOf(u) || '-')}</span></div><div class="pdMeta">ID ${acEsc(u.loginId)} &middot; ${acEsc(u.department || '-')} &middot; ${acEsc(p.position || '-')}</div></div>
+      <div class="pdDocs">${doc('iqama', 'Iqama')}${doc('passport', 'Passport')}</div>
+      ${ed ? `<button type="button" class="pdBtn${pd ? ' done' : ''}" data-pd="pay" data-id="${acEsc(u.loginId)}" title="${pd ? 'Tap to undo' : 'Mark as paid (' + pdMethodOf(u) + ')'}">${pd ? 'Paid · ' + (pd.h === 'bank' ? 'Bank' : 'Cash') + ' · ' + pdDayTxt(pd.d) : 'Mark paid'}</button>` : `<span class="pdBtn done" style="cursor:default;">${pd ? 'Paid · ' + (pd.h === 'bank' ? 'Bank' : 'Cash') : 'Not paid'}</span>`}
+    </div>`;
+  };
+  body.innerHTML = `
+    <div class="pdSum"><span><b>${nPaid}</b> of <b>${all.length}</b> paid</span><span class="pdProg"><i style="width:${all.length ? Math.round(nPaid / all.length * 100) : 0}%"></i></span><span>${left.length} not paid in this list</span>
+      ${ed && left.length ? `<button type="button" class="pillBtn ok" data-pd="markall" title="Marks everyone shown below who is not paid yet. Sponsor staff as Bank, the others as Cash.">Mark all ${left.length} as paid</button>` : ''}</div>
+    ${ed && ticked.length ? `<div class="pdSel"><b>${ticked.length} ticked</b><button type="button" class="pillBtn ok" data-pd="bulk" data-v="bank">Paid · Bank</button><button type="button" class="pillBtn ok" data-pd="bulk" data-v="cash">Paid · Cash</button><button type="button" class="pillBtn" data-pd="bulk" data-v="undo">Not paid</button><button type="button" class="pillBtn" data-pd="clearsel">Clear</button></div>` : ''}
+    <div class="pdList"><div class="pdHead">${ed ? `<input type="checkbox" data-pd="tickall" title="Tick everyone in this list" ${list.length && ticked.length === list.length ? 'checked' : ''}>` : ''}<span>${list.length} ${list.length === 1 ? 'person' : 'people'}</span></div>
+      ${shown.map(row).join('') || '<div class="empty-state" style="padding:18px;">Nobody matches.</div>'}
+      ${list.length > shown.length ? `<button type="button" class="pdMore" data-pd="more">Show ${Math.min(40, list.length - shown.length)} more (${list.length - shown.length} left)</button>` : ''}</div>`;
+}
+// one small write per action; the screen changes at once and goes back if the save fails
+async function pdMark(ids, how){
+  if(!acCanEdit() || PD.busy || !ids.length) return;
+  const d = pdDoc(), before = JSON.stringify(d.paid), by = (state.user && (state.user.name || state.user.loginId)) || '';
+  ids.forEach(id => {
+    if(how === 'undo'){ delete d.paid[id]; return; }
+    const u = (state.users || []).find(x => x.loginId === id);
+    d.paid[id] = { h: how === 'auto' ? (u ? pdMethodOf(u) : 'cash') : how, d: pdToday(), b: by };
+  });
+  PD.busy = true; pdDrawBody();
+  try{ await window.__db.saveConfigObject(pdKey(), { paid: d.paid }); toast(how === 'undo' ? 'Marked not paid' : (ids.length === 1 ? 'Marked paid' : ids.length + ' marked paid')); }
+  catch(err){ console.error(err); d.paid = JSON.parse(before); toast('Could not save - nothing was changed'); }
+  PD.busy = false; PD.sel.clear(); pdDrawBody();
+}
+async function pdPhoto(id, file){
+  if(!file || !acCanEdit() || !requireDb()) return;
+  try{ const du = await compressImageSafe(file); await saveProfileFields(id, { photoDataUrl: du }); toast('Photo saved'); pdDrawBody(); }
+  catch(err){ console.error(err); toast('Could not save the photo - try again'); }
+}
+function pdExportRows(){
+  const paid = pdPaid();
+  return pdFiltered(pdPeople()).map(u => { const p = u.profile || {}, x = paid[u.loginId]; return [u.loginId, u.name, u.department || '', p.position || '', pdCatOf(u), x ? 'Paid' : 'Not paid', x ? (x.h === 'bank' ? 'Bank' : 'Cash') : '', x ? x.d : '', x ? (x.b || '') : '']; });
+}
+function pdDownload(kind){
+  const rows = pdExportRows(), head = ['ID', 'Name', 'Department', 'Position', 'Category', 'Salary', 'How', 'Date', 'Marked by'], n = rows.filter(r => r[5] === 'Paid').length;
+  const f = [PD.dept && 'Department: ' + PD.dept, PD.pos && 'Position: ' + PD.pos, PD.cat && 'Category: ' + PD.cat, PD.st !== 'all' && (PD.st === 'paid' ? 'Paid only' : 'Not paid only'), PD.q && 'Search: ' + PD.q].filter(Boolean).join(' · ');
+  dsGo(kind, 'salary-payment-' + PD.ym, 'Salary payment · ' + acYmLabel(PD.ym), ['Salary month ' + pdDayTxt(acDefaultRange(PD.ym).from) + ' to ' + pdDayTxt(acDefaultRange(PD.ym).to), n + ' paid, ' + (rows.length - n) + ' not paid' + (f ? ' · ' + f : '')],
+    () => rows.length ? rvfTableBlocks('<tr>' + ['#'].concat(head).map(h => `<th>${h}</th>`).join('') + '</tr>', rows.map((r, i) => '<tr><td>' + (i + 1) + '</td>' + r.map(c => `<td>${acEsc(c)}</td>`).join('') + '</tr>'), 28, 'ovPdfT ovW2') : [],
+    (wb) => { if(rows.length) dsSheet(wb, 'Salary payment', rvfNumRows([head].concat(rows)), [5, 10, 26, 18, 18, 14, 11, 8, 12, 16]); });
+}
+document.addEventListener('click', (e) => {
+  const t = e.target.closest('[data-pd]'); if(!t || !document.getElementById('accountsBody') || !document.getElementById('accountsBody').contains(t)) return;
+  const a = t.dataset.pd, id = t.dataset.id;
+  if(a === 'prev' || a === 'next'){ PD.ym = acYmShift(PD.ym, a === 'next' ? 1 : -1); PD.sel.clear(); PD.shown = 40; pdDraw(); }
+  else if(a === 'ftog'){ PD.fopen = !PD.fopen; pdDraw(); }
+  else if(a === 'fclear'){ PD.dept = PD.cat = PD.pos = ''; PD.exited = false; PD.shown = 40; pdDraw(); }
+  else if(a === 'st'){ PD.st = t.dataset.v; PD.shown = 40; PD.sel.clear(); pdDraw(); }
+  else if(a === 'edit'){ PD.edit = !PD.edit; pdDraw(); }
+  else if(a === 'more'){ PD.shown += 40; pdDrawBody(); }
+  else if(a === 'big'){ const u = (state.users || []).find(x => x.loginId === id), p = u && u.profile; if(p && p.photoDataUrl && !e.target.closest('.pdCam')) openLightbox(p.photoDataUrl); }
+  else if(a === 'doc'){ openPhotoRef(t.dataset.ref); }
+  else if(a === 'tick'){ if(t.checked) PD.sel.add(id); else PD.sel.delete(id); pdDrawBody(); }
+  else if(a === 'tickall'){ const list = pdFiltered(pdPeople()); if(t.checked) list.forEach(u => PD.sel.add(u.loginId)); else PD.sel.clear(); pdDrawBody(); }
+  else if(a === 'clearsel'){ PD.sel.clear(); pdDrawBody(); }
+  else if(a === 'pay'){ const x = pdPaid()[id]; if(x){ const u = (state.users || []).find(v => v.loginId === id); if(confirm('Mark ' + (u ? u.name : id) + ' as NOT paid?')) pdMark([id], 'undo'); } else pdMark([id], 'auto'); }
+  else if(a === 'bulk'){ const list = pdFiltered(pdPeople()), ids = Array.from(PD.sel).filter(i => list.some(u => u.loginId === i)), v = t.dataset.v;
+    if(ids.length > 10 && !confirm((v === 'undo' ? 'Mark ' + ids.length + ' people as NOT paid?' : 'Mark ' + ids.length + ' people as paid (' + v + ')?'))) return; pdMark(ids, v); }
+  else if(a === 'markall'){ const paid = pdPaid(), ids = pdFiltered(pdPeople()).filter(u => !paid[u.loginId]).map(u => u.loginId); const nb = ids.filter(i => { const u = (state.users || []).find(x => x.loginId === i); return u && pdMethodOf(u) === 'bank'; }).length;
+    if(confirm('Mark ' + ids.length + ' people as paid?\n\n' + nb + ' by Bank (sponsor staff) and ' + (ids.length - nb) + ' in Cash.')) pdMark(ids, 'auto'); }
+  else if(a === 'pdf' || a === 'xlsx'){ pdDownload(a); }
+});
+document.addEventListener('input', (e) => { if(e.target.id === 'pdQ'){ PD.q = e.target.value; PD.shown = 40; clearTimeout(PD.t); PD.t = setTimeout(pdDrawBody, 160); } });
+document.addEventListener('change', (e) => {
+  const t = e.target; if(!document.getElementById('accountsBody') || !document.getElementById('accountsBody').contains(t)) return;
+  if(t.id === 'pdDept'){ PD.dept = t.value; PD.shown = 40; pdDrawBody(); }
+  else if(t.id === 'pdPos'){ PD.pos = t.value; PD.shown = 40; pdDrawBody(); }
+  else if(t.id === 'pdCat'){ PD.cat = t.value; PD.shown = 40; pdDrawBody(); }
+  else if(t.id === 'pdEx'){ PD.exited = t.checked; PD.shown = 40; pdDraw(); }
+  else if(t.dataset && t.dataset.pd === 'photo'){ const f = t.files && t.files[0]; t.value = ''; pdPhoto(t.dataset.id, f); }
+});
 </script>
 </body>
 </html>
