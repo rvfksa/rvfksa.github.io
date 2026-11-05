@@ -3774,6 +3774,15 @@ table.mpcSumT th{ background:transparent; position:static; }
 .lightbox.lbBig img{ width:min(94vw,620px); height:auto; max-height:88vh; object-fit:contain; background:#fff; }
 
 #purchaseMount .pcBar .pcMoreList{ top:auto; bottom:calc(100% + 6px); }
+
+.rvfPdfV{ position:fixed; inset:0; z-index:300; background:#eef0f6; display:flex; flex-direction:column; }
+.rvfPdfBar{ display:flex; align-items:center; gap:8px; padding:10px 14px; background:#fff; border-bottom:1px solid var(--line); }
+.rvfPdfBar b{ font-size:13.5px; font-weight:600; color:var(--text-strong); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.rvfPdfBody{ flex:1; overflow:auto; padding:12px; -webkit-overflow-scrolling:touch; }
+.rvfPdfPg{ display:block; margin:0 auto 12px; background:#fff; box-shadow:0 2px 10px rgba(15,23,42,.12); border-radius:4px; max-width:100%; }
+
+.rvfPdfNav{ position:absolute; top:14px; left:14px; z-index:3; display:flex; align-items:center; gap:8px; background:rgba(255,255,255,.92); padding:6px 8px; border-radius:22px; box-shadow:0 2px 10px rgba(15,23,42,.2); }
+.rvfPdfNav .pn{ font-size:12.5px; color:var(--text-strong); min-width:42px; text-align:center; }
 </style>
 </head>
 <body>
@@ -11876,8 +11885,8 @@ function renderGeneralTab(){
   const years = calcTotalYears(p.joiningDate);
   const totalYearsTxt = years !== null ? years.toFixed(1) + ' yrs' : '—';
   const eligibility = p.vacationEligibility ? parseFloat(p.vacationEligibility) : null;
-  const takenCount = profileCache.vacations.reduce((a, v) => a + (+v.count > 1 ? +v.count : 1), 0);   // a record can stand for 2-3 vacations taken together
-  const remaining = (years !== null && eligibility) ? Math.max(0, Math.floor(years / eligibility) - takenCount) : null;
+  const takenCount = vacTaken(p, profileCache.vacations).n;   // a record can stand for 2-3 vacations taken together
+  const vr0 = vacRemain(p, profileCache.vacations), remaining = vr0 ? vr0.rem : ((years !== null && eligibility) ? Math.max(0, Math.floor(years / eligibility) - takenCount) : null);
 
   if(!state.profileEditMode){
     el.innerHTML = `
@@ -12482,10 +12491,12 @@ function wireDocSave(kind, keys){
 
 function vacSummaryLine(){
   const p = (profileCache.user && profileCache.user.profile) || {}, vs = profileCache.vacations || [];
-  const taken = vs.reduce((a, v) => a + (+v.count > 1 ? +v.count : 1), 0);
+  const tk0 = vacTaken(p, vs), taken = tk0.n;
   const yrs = calcTotalYears(p.joiningDate), el = p.vacationEligibility ? parseFloat(p.vacationEligibility) : null;
-  let t = 'Vacations taken: ' + taken;
-  if(yrs !== null && el){ const elig = Math.floor(yrs / el); t += ' \u00b7 Eligible so far: ' + elig + ' \u00b7 Remaining: ' + Math.max(0, elig - taken) + (taken > elig ? ' (taken ' + (taken - elig) + ' in advance)' : '') + ' \u00b7 every ' + (el === 1 ? 'year' : el + ' years'); }
+  let t = 'Vacations taken: ' + taken + (tk0.upTo ? ' (every year up to ' + tk0.upTo + ' counted)' : '');
+  const vr1 = vacRemain(p, vs);
+  if(vr1 && vr1.upTo){ t = 'Last vacation year: ' + vr1.upTo + ' \u00b7 Remaining: ' + vr1.rem + (vr1.years.length && vr1.rem ? ' (' + vr1.years.join(', ') + ')' : '') + ' \u00b7 every ' + (el === 1 ? 'year' : el + ' years'); }
+  else if(yrs !== null && el){ const elig = Math.floor(yrs / el); t += ' \u00b7 Eligible so far: ' + elig + ' \u00b7 Remaining: ' + Math.max(0, elig - taken) + (taken > elig ? ' (taken ' + (taken - elig) + ' in advance)' : '') + ' \u00b7 every ' + (el === 1 ? 'year' : el + ' years'); }
   return '<div class="vacSum" style="font-size:11px; color:var(--muted); opacity:.75; margin:0 2px 10px; letter-spacing:.2px;">' + t + '</div>';
 }
 function renderVacationTab(){
@@ -12509,20 +12520,21 @@ function renderVacationTab(){
         <button class="mini-icon-btn danger delVacBtn" data-id="${v._id}" title="Delete">${MINI_TRASH_ICON}</button>
       </div>` : ''}
       ${fieldRow('Dates', (v.from ? fmtDate(v.from) : '—') + ' \u2192 ' + (v.to ? fmtDate(v.to) : '—'))}
-      ${+v.count > 1 ? fieldRow('Counts as', v.count + ' vacations taken together') : ''}
+      ${vacN(v) > 1 ? fieldRow('Counts as', vacN(v) + ' vacations taken together') : ''}
       ${fieldRow('Total Days', v.totalDays)}
-      ${fieldRow('For Year', v.forYear)}
+      ${fieldRow('For Year(s)', v.forYear)}
       ${fieldRow('Vacation Money', v.moneyStatus)}
       ${v.note ? fieldRow('Note', v.note) : ''}
       ${fieldRow('Home Country Contact', v.homeCountryContact)}
+      <div class="vacTk" data-vid="${v._id}"></div>
       ${canSeeTicket && v.ticket ? `
-        <div class="sub" style="margin-top:8px; font-weight:600; color:var(--text); text-transform:none;">Ticket Details</div>
+        <div class="vacLegacy" data-vid="${v._id}"><div class="sub" style="margin-top:8px; font-weight:600; color:var(--text); text-transform:none;">Ticket Details</div>
         ${fieldRow('Airline', v.ticket.airlines)}
         ${fieldRow('Date', fmtDate(v.ticket.date))}
         ${fieldRow('Status', v.ticket.status)}
         ${fieldRow('Departure', v.ticket.departureTime)}
         ${fieldRow('Arrival', v.ticket.arrivalTime)}
-        ${v.ticket.attachment ? `<button class="btn btn-ghost docViewBtn" data-ref="${v.ticket.attachment}" style="margin-top:8px;">View Ticket</button>` : ''}
+        ${v.ticket.attachment ? `<button class="btn btn-ghost docViewBtn" data-ref="${v.ticket.attachment}" style="margin-top:8px;">View Ticket</button>` : ''}</div>
       ` : (v.ticket ? '<div class="sub">Ticket details are only visible once the CEO approves.</div>' : '')}
       ${(isCeo && v.ticket && !v.ticket.ceoApproved) ? `<button class="btn btn-approve btn-sm ceoApproveTicket" data-id="${v._id}" style="margin-top:10px;">Approve Ticket for Employee to See</button>` : ''}
     </div>`;
@@ -12537,7 +12549,7 @@ function renderVacationTab(){
       </div>
       <div class="grid-2">
         <div class="field"><label>Total Days</label><input type="text" id="vac-totalDays"></div>
-        <div class="field"><label>For Year</label><input type="text" id="vac-forYear" placeholder="e.g. 2026"></div>
+        <div class="field"><label>For Year(s)</label><input type="text" id="vac-forYear" placeholder="e.g. 2025, 2026" autocomplete="off"><div class="hrNote" style="margin-top:3px">One year, or several separated by commas</div></div>
       </div>
       <div class="field"><label>Vacation Money</label><select id="vac-moneyStatus"><option>Paid</option><option>Unpaid</option></select></div>
       <div class="field"><label>Home Country Contact Number</label><input type="text" id="vac-contact"></div>
@@ -12581,13 +12593,14 @@ function vacationEditForm(v){
       <div class="field"><label>From</label><input type="date" id="vacEdit-from" value="${v.from||''}"></div>
       <div class="field"><label>To</label><input type="date" id="vacEdit-to" value="${v.to||''}"></div>
     </div>
+    <div class="vacTk" data-vid="${v._id}" data-edit="1"></div>
     <div class="grid-2">
       <div class="field"><label>Total Days</label><input type="text" id="vacEdit-totalDays" value="${v.totalDays||vacCalcDays(v.from, v.to)}"></div>
-      <div class="field"><label>For Year</label><input type="text" id="vacEdit-forYear" value="${v.forYear||''}"></div>
+      <div class="field"><label>For Year(s)</label><input type="text" id="vacEdit-forYear" value="${v.forYear||''}" placeholder="e.g. 2024, 2025" autocomplete="off"><div class="hrNote" style="margin-top:3px">One year, or several separated by commas</div></div>
     </div>
     <div class="field"><label>Vacation Money</label><select id="vacEdit-moneyStatus"><option ${v.moneyStatus==='Paid'?'selected':''}>Paid</option><option ${v.moneyStatus==='Unpaid'?'selected':''}>Unpaid</option></select></div>
     <div class="field"><label>Home Country Contact Number</label><input type="text" id="vacEdit-contact" value="${v.homeCountryContact||''}"></div>
-    <div class="sub" style="font-weight:600; color:var(--text); text-transform:none; margin:10px 0;">Ticket</div>
+    <details class="poDet" style="margin:10px 0"><summary>Ticket notes (old way, use the Tickets tab)<span class="poDetHint">optional</span></summary>
     <div class="grid-2">
       <div class="field"><label>Airline</label><input type="text" id="vacEdit-airlines" value="${t.airlines||''}"></div>
       <div class="field"><label>Date</label><input type="date" id="vacEdit-ticketDate" value="${t.date||''}"></div>
@@ -12597,6 +12610,7 @@ function vacationEditForm(v){
       <div class="field"><label>Departure Time</label><input type="text" id="vacEdit-departure" value="${t.departureTime||''}"></div>
       <div class="field"><label>Arrival Time</label><input type="text" id="vacEdit-arrival" value="${t.arrivalTime||''}"></div>
     </div>
+    </details>
     <div class="row-2">
       <button class="btn btn-ghost" id="vacEditCancelBtn">Cancel</button>
       <button class="btn btn-primary" id="vacEditSaveBtn">Save Changes</button>
@@ -20014,13 +20028,14 @@ const OV_COLS = [
 // the salary lines an admin added in the profile (Admin > Dropdowns) become columns too
 function ovAll(){ return OV_COLS.concat((state.salaryComponents || []).map(c => ({ k: 'sc_' + c, l: c, g: 'Admin only', adm: true, get: u => { const m = ((((u.profile || {}).salary) || {}).components) || {}; return m[c] == null ? '' : m[c]; } }))); }
 // ---- vacation info: the latest vacation of each person (one shared read of the vacations list per session, only when it is needed)
-const OVV = { loaded: false, loading: false, map: {}, back: new Set() };
+const OVV = { loaded: false, loading: false, map: {}, all: {}, back: new Set() };
 function ovVacEnsure(){
   if(OVV.loaded) return true;
   if(OVV.loading || !window.__db || !window.__db.listVacations) return false;
   OVV.loading = true;
   window.__db.listVacations().then(all => {
     const m = {}; (all || []).forEach(v => { const e = v.employeeId; if(e && (!m[e] || (v.from || '') > (m[e].from || ''))) m[e] = v; });
+    OVV.all = {}; (all || []).forEach(v => { if(v.employeeId) (OVV.all[v.employeeId] = OVV.all[v.employeeId] || []).push(v); });
     OVV.map = m; OVV.loaded = true; OVV.loading = false;
     try{ if(typeof empDrillKind !== 'undefined' && empDrillKind && document.getElementById('ceoEmpDrill').style.display === 'block') renderEmpDrillList(); }catch(e){}
   }).catch(err => { console.error(err); OVV.loading = false; });
@@ -20032,6 +20047,8 @@ OV_COLS.push(
   { k: 'vfrom', l: 'Vacation from (going)', g: 'Vacation', get: u => OV_DT((ovVac(u) || {}).from) },
   { k: 'vto', l: 'Return date', g: 'Vacation', get: u => OV_DT((ovVac(u) || {}).to) },
   { k: 'vdays', l: 'Vacation days', g: 'Vacation', get: u => (ovVac(u) || {}).totalDays || '' },
+  { k: 'vrem', l: 'Vacations remaining', g: 'Vacation', get: u => { const r = vacRemaining(u); return r === null ? '' : r; } },
+  { k: 'vupto', l: 'Vacations counted up to (year)', g: 'Vacation', get: u => { const r = vacTaken(u.profile || {}, OVV.all[u.loginId] || []); return r.upTo || ''; } },
   { k: 'tdate', l: 'Ticket date', g: 'Vacation', tk: true, get: u => OV_DT(ovTk(u).date) },
   { k: 'tair', l: 'Ticket airline', g: 'Vacation', tk: true, get: u => ovTk(u).airlines || '' },
   { k: 'ttype', l: 'Ticket type', g: 'Vacation', tk: true, get: u => ovTk(u).status || '' },
@@ -20064,7 +20081,7 @@ function ovLoadSel(){
 }
 function ovSaveSel(){ try{ const all = JSON.parse(localStorage.getItem('rvfOvCols2') || 'null') || {}; all[OVC.selKind || ovKind()] = OVC.sel; localStorage.setItem('rvfOvCols2', JSON.stringify(all)); }catch(e){} }
 function ovSelCols(){ const sel = ovLoadSel().slice(); const av = ovAvail();
-  if(sel.some(k => /^(vfrom|vto|vdays|tdate|tair|ttype|tdep|tarr)$/.test(k))) ovVacEnsure();
+  if(sel.some(k => /^(vfrom|vto|vdays|vrem|vupto|tdate|tair|ttype|tdep|tarr)$/.test(k))) ovVacEnsure();
   const out = av.filter(c => sel.includes(c.k)); return out.length ? out : av.filter(c => ovDefSel().includes(c.k)); }
 
 function ovColsHtml(){
@@ -21828,7 +21845,7 @@ function tkFormHtml(){
     ${m === 'rebook' ? `<div class="tkNotice">${tkIc('info', 14)} New booking after the cancellation. Both stay linked in the history.</div>` : ''}
     ${m === 'resched' ? '' : `<div class="tkBox"><div class="tkBoxH">${tkIc('user', 14)}Employee</div><div class="tkG">
       <label class="tkF wide"><span>Employee</span><input type="text" data-tk-in="emp" list="tkEmps" placeholder="Type a name or ID" value="${tkE(empTxt)}" autocomplete="off" ${m === 'ret' ? 'readonly' : ''}></label>
-      <div class="tkF"><span>Purpose</span>${tkSeg('pur', TK_PUR, D.pur)}</div></div></div>`}
+      <div class="tkF"><span>Purpose</span>${tkSeg('pur', TK_PUR, D.pur)}</div>${D.pur === 'vacation' ? tkVacSelHtml(D) : ''}</div></div>`}
     <div class="tkBox"><div class="tkBoxH">${tkIc('plane', 14)}${m === 'resched' ? 'New flight details' : 'Flight'}</div>
       ${D.pur === 'exit' ? `<div class="tkHint" style="margin-bottom:10px;">${tkIc('info', 13)} Exit: one-way ticket, no return is needed.</div>` : `<div class="tkTrip">${tkSeg('kind', [['return', 'Return trip'], ['one', 'Going only'], ['come', 'Coming only']], tkKindSel(D))}</div>`}
       ${tkLegHtml(0, D.kind === 'return' ? 'Going' : (tkDir(D) === 'come' ? 'Coming to Riyadh' : 'Going'))}${D.kind === 'return' && D.pur !== 'exit' ? tkLegHtml(1, 'Return') : `${D.retOf || D.pur === 'exit' || tkDir(D) === 'come' ? '' : `<div class="tkG tkRet"><div class="tkHint wide">${tkIc('clock', 13)} Going only? Add the possible return date and we will remind you to book the return. If this ticket is only for coming back to Riyadh, choose Coming only.</div>${tkF('Possible return date', 'retBy', D.retBy, 'date')}</div>`}`}</div>
@@ -21900,7 +21917,7 @@ function tkPickEmp(text){
 function tkSetPath(D, key, val){
   const m = /^l(\d)\.(\w+)$/.exec(key);
   if(m){ D.legs[+m[1]][m[2]] = val; return; }
-  if(key === 'emp'){ const u = tkPickEmp(val); D.emp = u ? u.loginId : ''; if(u && !D.last){ D.last = (u.name || '').trim().split(/\s+/).slice(-1)[0] || ''; const li = document.querySelector('[data-tk-in="last"]'); if(li) li.value = D.last; } return; }
+  if(key === 'emp'){ const pe = D.emp, u = tkPickEmp(val); D.emp = u ? u.loginId : ''; if(D.emp !== pe){ D.vac = ''; setTimeout(() => tkVacSync(), 0); } if(u && !D.last){ D.last = (u.name || '').trim().split(/\s+/).slice(-1)[0] || ''; const li = document.querySelector('[data-tk-in="last"]'); if(li) li.value = D.last; } return; }
   D[key] = val;
 }
 function tkInput(e){
@@ -21971,7 +21988,7 @@ async function tkMutate(id, fn, msg){
   return ok;
 }
 function tkRebookDraft(t){
-  const D = tkEmpty(t.emp); D.pur = t.pur; D.kind = t.kind; D.dir = t.dir || ''; D.last = t.last; D.vendor = ''; D.prev = t.id;
+  const D = tkEmpty(t.emp); D.pur = t.pur; D.kind = t.kind; D.dir = t.dir || ''; D.last = t.last; D.vendor = ''; D.prev = t.id; D.vac = t.vac || '';
   D.legs = tkClone(t.legs); D.legs.forEach(l => { l.al = ''; l.fn = ''; l.d = ''; l.dep = ''; l.arr = ''; l.trm = ''; l.bag = ''; }); D.retBy = t.retBy; return D;
 }
 async function tkClick0(e){
@@ -21998,7 +22015,7 @@ async function tkClick0(e){
     case 'save': tkSaveDraft(); break;
     case 'edit': if(t) tkOpenForm('edit', tkClone(t), id); break;
     case 'resched': if(t){ const c = tkClone(t); tkOpenForm('resched', c, id); } break;
-    case 'addret': if(t){ const c = tkEmpty(t.emp); c.pur = t.pur; c.kind = 'one'; c.dir = 'come'; c.last = t.last; c.retOf = t.id; const f = tkFirst(t); c.legs[0] = Object.assign(tkLeg0(), { from: f.to, to: f.from, d: t.retBy || '' }); tkOpenForm('ret', c); } break;
+    case 'addret': if(t){ const c = tkEmpty(t.emp); c.pur = t.pur; c.kind = 'one'; c.dir = 'come'; c.last = t.last; c.retOf = t.id; c.vac = t.vac || ''; const f = tkFirst(t); c.legs[0] = Object.assign(tkLeg0(), { from: f.to, to: f.from, d: t.retBy || '' }); tkOpenForm('ret', c); } break;
     case 'rebook': if(t) tkOpenForm('rebook', tkRebookDraft(t)); break;
     case 'cancelp': case 'req': case 'rfok': if(t){ TK.open = id; TK.panel = a; TK.pf = []; tkRender(); } break;
     case 'panelx': TK.panel = ''; TK.pf = []; TK.reqEdit = false; TK.reqKeep = []; tkRender(); break;
@@ -22021,7 +22038,7 @@ async function tkViewRef(ref){
   if(!ref || !requireDb()) return;
   try{
     const d = await window.__db.getPhotoBlob(ref); if(!d){ toast('Could not find that file'); return; }
-    if(/^data:application\/pdf/.test(d)){ const bin = atob(d.split(',')[1]), arr = new Uint8Array(bin.length); for(let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i); window.open(URL.createObjectURL(new Blob([arr], { type: 'application/pdf' })), '_blank'); }
+    if(/^data:application\/pdf/.test(d)){ rvfPdfView(d, 'Ticket copy'); }
     else openLightbox(d);
   }catch(err){ console.error(err); toast('Could not load the file — check your connection'); }
 }
@@ -22060,12 +22077,16 @@ async function tkProfileFill(el, loginId){
       const hist = (t.h || []).filter(h => h.snap).map(h => `<div class="tkOld">Before change: ${h.snap.legs.map(l => tkE([tkDt(l.d), tkRoute(l), l.al, l.fn].filter(x => x && x !== '-').join(' · ')).replace(/ · /g, ' · ')).join(' | ')}</div>`).join('');
       return `<div class="tkPRow"><div class="tkPH"><b>${tkE(pur)}</b> · ${legs.map(l => tkE(tkRoute(l)) + ' ' + tkDt(l.d)).join(' · ')}<span class="grow"></span>${tkBadgeHtml(t)}</div>
         <div class="tkPB">${[f.al && (f.al + (f.fn ? ' ' + f.fn : '')), f.dep && 'Departs ' + f.dep, f.trm && 'Terminal ' + f.trm, f.bag && 'Baggage ' + f.bag, t.pnr && 'PNR ' + t.pnr, t.last && 'Last name ' + t.last, t.fare && tkMoney(t.fare), t.vendor && 'Booked from ' + t.vendor].filter(Boolean).map(tkE).join(' · ')}</div>
-        ${tkNeedRet(t) ? `<div class="tkOld" style="color:#b45309">Return ticket not booked${t.retBy ? ' · possible return ' + tkE(tkDt(t.retBy)) : ''}</div>` : ''}${hist}
+        ${tkVacTag(t)}${tkNeedRet(t) ? `<div class="tkOld" style="color:#b45309">Return ticket not booked${t.retBy ? ' · possible return ' + tkE(tkDt(t.retBy)) : ''}</div>` : ''}${hist}
         ${(t.files || []).length ? `<div class="tkFiles" style="margin-top:6px;">${t.files.map(x => `<button class="tkFileB" data-tkp="${tkE(x.ref)}">${tkIc('file', 13)}${tkE(x.name || 'Ticket copy')}</button>`).join('')}</div>` : ''}</div>`; };
     const box = document.createElement('div'); box.className = 'card tkProf';
     box.innerHTML = `<div class="sub" style="font-weight:600; color:var(--text); text-transform:none; margin-bottom:8px;">Flight tickets</div>${mine.map(row).join('')}`;
     box.addEventListener('click', (ev) => { const b = ev.target.closest('[data-tkp]'); if(b) tkViewRef(b.dataset.tkp); });
+    box.addEventListener('change', async (ev) => { const sl = ev.target.closest('.tkLink'); if(!sl) return; const id = sl.dataset.t, val = sl.value;
+      const ok = await tkCommit(items => { const c = items.find(x => x.id === id); if(c){ c.vac = val; tkLog(c, 'vac', val ? 'Linked to a vacation' : 'Vacation link removed'); } });
+      if(ok){ toast('Saved'); renderVacationTab(); } });
     el.insertBefore(box, el.firstChild);
+    tkVacCards(el, mine);
   }catch(err){ console.error(err); }
 }
 
@@ -24581,7 +24602,7 @@ async function docReadFile(file){
   if(file.type === 'application/pdf' || /\.pdf$/i.test(file.name || '')) return docPdfSmall(file);
   throw docErr('Please choose a photo or a PDF.');
 }
-function docOpenPdf(dataUrl){
+function docOpenPdfOld(dataUrl){
   try{
     const bin = atob(dataUrl.split(',')[1]), arr = new Uint8Array(bin.length); for(let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
     const url = URL.createObjectURL(new Blob([arr], { type: 'application/pdf' })), w = window.open(url, '_blank');
@@ -24759,6 +24780,220 @@ document.addEventListener('change', (e) => {
   else if(t.id === 'pdEx'){ PD.exited = t.checked; PD.shown = 40; pdDraw(); }
   else if(t.dataset && t.dataset.pd === 'photo'){ const f = t.files && t.files[0]; t.value = ''; pdPhoto(t.dataset.id, f); }
 });
+
+/* ---------- tickets <-> vacations ---------- */
+const TKV = { c: {} };
+const tkVacLabel = (v) => (v.from ? fmtDate(v.from) : '-') + ' → ' + (v.to ? fmtDate(v.to) : '-') + (v.forYear ? ' · ' + v.forYear : '');
+function tkVacOpts(emp, cur){
+  const L = TKV.c[emp]; if(!emp) return '<option value="">Choose the employee first</option>';
+  if(!L) return '<option value="">Loading...</option>';
+  return '<option value="">Not linked yet</option>' + L.map(v => `<option value="${tkE(v._id)}" ${cur === v._id ? 'selected' : ''}>${tkE(tkVacLabel(v))}</option>`).join('') + (L.length ? '' : '<option value="" disabled>No vacation recorded for this person yet</option>');
+}
+function tkVacSelHtml(D){ if(D.emp && !TKV.c[D.emp]) tkVacLoad(D.emp); return `<label class="tkF wide"><span>For which vacation</span><select data-tk-in="vac" id="tkVacSel">${tkVacOpts(D.emp, D.vac)}</select></label>`; }
+async function tkVacLoad(emp){ try{ TKV.c[emp] = (await window.__db.listVacations(emp)).slice().sort((a, b) => (b.from || '').localeCompare(a.from || '')); }catch(e){ TKV.c[emp] = []; } tkVacSync(); }
+function tkVacSync(){ const sl = document.getElementById('tkVacSel'); if(!sl || !TK.D) return; if(TK.D.emp && !TKV.c[TK.D.emp]){ tkVacLoad(TK.D.emp); return; } sl.innerHTML = tkVacOpts(TK.D.emp, TK.D.vac); }
+// which vacation a ticket belongs to: the one chosen, otherwise the nearest one within 45 days of the first flight
+function tkVacOf(t, vacs){
+  if(t.vac){ const v = vacs.find(x => x._id === t.vac); return v ? { v, auto: false } : null; }
+  const d = (tkFirst(t).d || ''); if(!d) return null; const ms = Date.parse(d + 'T12:00:00'); let best = null, bd = 1e18;
+  vacs.forEach(v => { if(!v.from) return; const f = Date.parse(v.from + 'T12:00:00'), e = Date.parse((v.to || v.from) + 'T12:00:00'), dist = ms < f ? f - ms : (ms > e ? ms - e : 0); if(dist < bd){ bd = dist; best = v; } });
+  return best && bd <= 45 * 864e5 ? { v: best, auto: true } : null;
+}
+function tkVacTag(t){
+  const vacs = (typeof profileCache !== 'undefined' && profileCache && profileCache.vacations) || [], r = tkVacOf(t, vacs);
+  const sel = hrCanEdit() ? `<select class="tkLink" data-t="${tkE(t.id)}" style="margin-left:6px;max-width:100%"><option value="">Not linked</option>${vacs.slice().sort((a, b) => (b.from || '').localeCompare(a.from || '')).map(v => `<option value="${tkE(v._id)}" ${t.vac === v._id ? 'selected' : ''}>${tkE(tkVacLabel(v))}</option>`).join('')}</select>` : '';
+  const txt = r ? 'Vacation: ' + tkVacLabel(r.v) + (r.auto ? ' (matched by date)' : '') : (t.pur === 'vacation' ? 'Not linked to a vacation' : '');
+  return (txt || sel) ? `<div class="tkOld">${tkE(txt)}${sel}</div>` : '';
+}
+function tkTrip(list){
+  let go = null, come = null;
+  list.forEach(t => { const L = tkLegs(t);
+    if(t.kind === 'return'){ const a = L[0], b = L[1]; if(a && a.d && (!go || a.d >= go.l.d)) go = { l: a, t }; if(b && b.d && (!come || b.d >= come.l.d)) come = { l: b, t }; }
+    else { const a = L[0]; if(!a || !a.d) return; if(t.retOf){ if(!come || a.d >= come.l.d) come = { l: a, t }; } else if(!go || a.d >= go.l.d) go = { l: a, t }; } });
+  return { go, come };
+}
+const tkLegTxt = (l) => [tkDt(l.d), tkRoute(l), l.al ? l.al + (l.fn ? ' ' + l.fn : '') : '', l.dep ? 'departs ' + l.dep : ''].filter(x => x && x !== '-').join(' · ');
+function tkVacCards(root, mine){
+  const vacs = (profileCache && profileCache.vacations) || [], canEdit = state.user && state.user.role === 'admin';
+  root.querySelectorAll('.vacTk').forEach(box => {
+    const vid = box.dataset.vid, v = vacs.find(x => x._id === vid); if(!v) return;
+    const mt = mine.filter(t => { const r = tkVacOf(t, vacs); return r && r.v._id === vid; }), act = mt.filter(t => t.st !== 'cancelled'), canc = mt.length - act.length;
+    const trip = tkTrip(act); if(!trip.go && !trip.come){ box.innerHTML = ''; return; }
+    const gd = trip.go ? trip.go.l.d : '', cd = trip.come ? trip.come.l.d : '', diff = !!(gd && cd && (gd !== v.from || cd !== v.to));
+    const nf = gd || v.from, nt = cd || v.to;
+    const leg = (lab, x) => x ? `<div class="row"><span class="k">${lab}</span><span>${tkE(tkLegTxt(x.l))}</span></div>` : '';
+    const lg = box.closest('.card') && box.closest('.card').querySelector('.vacLegacy'); if(lg && !box.dataset.edit) lg.style.display = 'none';
+    box.innerHTML = (box.dataset.edit ? '' : '<div class="sub" style="margin-top:8px; font-weight:600; color:var(--text); text-transform:none;">Flights (from the tickets)</div>') + leg('Going', trip.go) + leg('Coming', trip.come) + (!box.dataset.edit && canc ? `<div class="hrNote">${canc} cancelled ticket${canc > 1 ? 's' : ''} not shown</div>` : '') +
+      (canEdit && diff ? `<button type="button" class="btn btn-ghost btn-sm vacUseTk" style="margin:6px 0 4px">Use the ticket dates (${tkE(fmtDate(nf))} → ${tkE(fmtDate(nt))}) for this vacation</button>` : '');
+    const b = box.querySelector('.vacUseTk'); if(b) b.addEventListener('click', async () => {
+      if(box.dataset.edit){ const f = $('vacEdit-from'), t2 = $('vacEdit-to'), td = $('vacEdit-totalDays'); if(f) f.value = nf; if(t2) t2.value = nt; if(td) td.value = vacCalcDays(nf, nt); return; }
+      try{ await window.__db.updateVacation(vid, { from: nf, to: nt, totalDays: vacCalcDays(nf, nt) }); v.from = nf; v.to = nt; v.totalDays = vacCalcDays(nf, nt); toast('Vacation dates updated'); renderVacationTab(); }catch(err){ console.error(err); toast('Could not save, check your connection'); } });
+  });
+}
+
+// "2024, 2025" or "2023-2025" in For Year(s) means that many yearly vacations were taken together
+function vacYears(txt){
+  let n = 0; String(txt || '').split(/[,&;\/]|\band\b/i).forEach(tok => { const r = /((?:19|20)\d{2})\s*(?:-|–|to)\s*((?:19|20)\d{2})/i.exec(tok); if(r){ const d = +r[2] - +r[1]; n += d >= 0 && d < 8 ? d + 1 : 1; } else if(/(?:19|20)\d{2}/.test(tok)) n += 1; });
+  return Math.min(n, 8);
+}
+function vacN(v){ return Math.max(+v.count > 1 ? Math.floor(+v.count) : 1, vacYears(v.forYear)); }
+// going / coming from the tickets: route decides (leaving Saudi = going, arriving = coming); a rebooked or cancelled ticket never counts
+const TK_KSA = ['RUH', 'JED', 'DMM', 'MED', 'AHB', 'TIF', 'ELQ', 'TUU', 'YNB', 'GIZ', 'HAS', 'AJF', 'ABT', 'EAM', 'URY', 'RAE', 'DWD', 'WAE', 'GSM', 'HOF', 'KMX', 'SHW'];
+function tkTrip(list){
+  let go = null, come = null; const inK = (p) => TK_KSA.includes(tkPort(p).toUpperCase());
+  const put = (kind, l, t) => { if(kind === 'go'){ if(!go || l.d >= go.l.d) go = { l, t }; } else if(!come || l.d >= come.l.d) come = { l, t }; };
+  list.filter(t => t.st !== 'cancelled' && !t.next).forEach(t => { const L = tkLegs(t);
+    L.forEach((l, i) => { if(!l || !l.d) return; const a = inK(l.from), b = inK(l.to);
+      if(a && !b) put('go', l, t); else if(b && !a) put('come', l, t);
+      else if(t.kind === 'return') put(i === 0 ? 'go' : 'come', l, t);
+      else put(t.retOf ? 'come' : 'go', l, t); }); });
+  return { go, come };
+}
+
+function tkVacOf(t, vacs){
+  if(t.vac){ const v = vacs.find(x => x._id === t.vac); return v ? { v, auto: false } : null; }
+  if(t.pur !== 'vacation') return null;
+  const d = (tkFirst(t).d || ''); if(!d) return null; const ms = Date.parse(d + 'T12:00:00'); let best = null, bd = 1e18;
+  vacs.forEach(v => { if(!v.from) return; const f = Date.parse(v.from + 'T12:00:00'), e = Date.parse((v.to || v.from) + 'T12:00:00'), dist = ms < f ? f - ms : (ms > e ? ms - e : 0); if(dist < bd){ bd = dist; best = v; } });
+  return best && bd <= 45 * 864e5 ? { v: best, auto: true } : null;
+}
+function tkLinkCtl(t, linked, auto){
+  if(!hrCanEdit()) return '';
+  const vacs = (profileCache && profileCache.vacations) || [];
+  const sel = `<select class="tkLink" data-t="${tkE(t.id)}" ${linked ? 'style="display:none;margin-top:6px"' : 'style="margin-top:6px"'}><option value="">${linked ? 'Not linked' : 'Choose the vacation this ticket is for'}</option>${vacs.slice().sort((a, b) => (b.from || '').localeCompare(a.from || '')).map(v => `<option value="${tkE(v._id)}" ${t.vac === v._id ? 'selected' : ''}>${tkE(tkVacLabel(v))}</option>`).join('')}</select>`;
+  return linked ? `<div class="tkOld">${auto ? 'Matched to this vacation by date. ' : ''}<button type="button" class="tkChg" style="background:none;border:0;padding:0;color:var(--accent);font:inherit;cursor:pointer;text-decoration:underline">${auto ? 'Confirm or change' : 'Change vacation'}</button>${sel}</div>` : `<div class="tkOld" style="color:#b45309">Not linked to a vacation yet</div>${sel}`;
+}
+function tkRowHtml2(t, linked, auto){
+  const legs = tkLegs(t), f = tkFirst(t), pur = (TK_PUR.find(p => p[0] === t.pur) || [0, ''])[1];
+  const hist = (t.h || []).filter(h => h.snap).map(h => `<div class="tkOld">Before change: ${h.snap.legs.map(l => tkE([tkDt(l.d), tkRoute(l), l.al, l.fn].filter(x => x && x !== '-').join(' · '))).join(' | ')}</div>`).join('');
+  return `<div class="tkPRow"><div class="tkPH"><b>${tkE(pur)}</b> · ${legs.map(l => tkE(tkRoute(l)) + ' ' + tkDt(l.d)).join(' · ')}<span class="grow"></span>${tkBadgeHtml(t)}</div>
+    <div class="tkPB">${[f.al && (f.al + (f.fn ? ' ' + f.fn : '')), f.dep && 'Departs ' + f.dep, f.trm && 'Terminal ' + f.trm, f.bag && 'Baggage ' + f.bag, t.pnr && 'PNR ' + t.pnr, t.last && 'Last name ' + t.last, t.fare && tkMoney(t.fare), t.vendor && 'Booked from ' + t.vendor].filter(Boolean).map(tkE).join(' · ')}</div>
+    ${tkNeedRet(t) ? `<div class="tkOld" style="color:#b45309">Return ticket not booked${t.retBy ? ' · possible return ' + tkE(tkDt(t.retBy)) : ''}</div>` : ''}${hist}
+    ${(t.files || []).length ? `<div class="tkFiles" style="margin-top:6px;">${t.files.map(x => `<button class="tkFileB" data-tkp="${tkE(x.ref)}">${tkIc('file', 13)}${tkE(x.name || 'Ticket copy')}</button>`).join('')}</div>` : ''}${t.pur === 'vacation' ? tkLinkCtl(t, linked, auto) : ''}</div>`;
+}
+function tkProfBind(root){
+  if(root._tkB) return; root._tkB = 1;
+  root.addEventListener('click', (ev) => { const b = ev.target.closest('[data-tkp]'); if(b){ tkViewRef(b.dataset.tkp); return; }
+    const c = ev.target.closest('.tkChg'); if(c){ const s2 = c.parentElement.querySelector('.tkLink'); if(s2){ s2.style.display = s2.style.display === 'none' ? '' : 'none'; } } });
+  root.addEventListener('change', async (ev) => { const sl = ev.target.closest('.tkLink'); if(!sl) return; const id = sl.dataset.t, val = sl.value;
+    const ok = await tkCommit(items => { const c = items.find(x => x.id === id); if(c){ c.vac = val; tkLog(c, 'vac', val ? 'Linked to a vacation' : 'Vacation link removed'); } });
+    if(ok){ toast('Saved'); renderVacationTab(); } });
+}
+function tkVacCards(root, mine){
+  const vacs = (profileCache && profileCache.vacations) || [], canEdit = state.user && state.user.role === 'admin';
+  root.querySelectorAll('.vacTk').forEach(box => {
+    const vid = box.dataset.vid, v = vacs.find(x => x._id === vid); if(!v) return;
+    const mt = mine.map(t => ({ t, r: tkVacOf(t, vacs) })).filter(x => x.r && x.r.v._id === vid), act = mt.filter(x => x.t.st !== 'cancelled').map(x => x.t), canc = mt.length - act.length;
+    const trip = tkTrip(act); if(!trip.go && !trip.come && !mt.length){ box.innerHTML = ''; return; }
+    const gd = trip.go ? trip.go.l.d : '', cd = trip.come ? trip.come.l.d : '', diff = !!(gd && cd && (gd !== v.from || cd !== v.to));
+    const nf = gd || v.from, nt = cd || v.to;
+    const leg = (lab, x) => x ? `<div class="row"><span class="k">${lab}</span><span>${tkE(tkLegTxt(x.l))}</span></div>` : '';
+    const lg = box.closest('.card') && box.closest('.card').querySelector('.vacLegacy'); if(lg && !box.dataset.edit && (trip.go || trip.come)) lg.style.display = 'none';
+    const list = box.dataset.edit ? '' : `<details class="poDet" style="margin:8px 0 2px"><summary>${tkIc('plane', 14)}Ticket details (${mt.length})<span class="poDetHint">booking, copies, history</span>${tkIc('chev', 13)}</summary><div style="margin-top:8px">${mt.map(x => tkRowHtml2(x.t, true, x.r.auto)).join('')}</div></details>`;
+    box.innerHTML = (box.dataset.edit ? '' : '<div class="sub" style="margin-top:8px; font-weight:600; color:var(--text); text-transform:none;">Flights (from the tickets)</div>') + leg('Going', trip.go) + leg('Coming', trip.come) + (!box.dataset.edit && canc ? `<div class="hrNote">${canc} cancelled ticket${canc > 1 ? 's' : ''} not in the summary</div>` : '') +
+      (canEdit && diff ? `<button type="button" class="btn btn-ghost btn-sm vacUseTk" style="margin:6px 0 4px">Use the ticket dates (${tkE(fmtDate(nf))} → ${tkE(fmtDate(nt))}) for this vacation</button>` : '') + list;
+    const b = box.querySelector('.vacUseTk'); if(b) b.addEventListener('click', async () => {
+      if(box.dataset.edit){ const f = $('vacEdit-from'), t2 = $('vacEdit-to'), td = $('vacEdit-totalDays'); if(f) f.value = nf; if(t2) t2.value = nt; if(td) td.value = vacCalcDays(nf, nt); return; }
+      try{ await window.__db.updateVacation(vid, { from: nf, to: nt, totalDays: vacCalcDays(nf, nt) }); v.from = nf; v.to = nt; v.totalDays = vacCalcDays(nf, nt); toast('Vacation dates updated'); renderVacationTab(); }catch(err){ console.error(err); toast('Could not save, check your connection'); } });
+  });
+  tkProfBind(root);
+}
+async function tkProfileFill(el, loginId){
+  try{
+    if(!el || !state.user) return; const isCeo = (typeof userPages === 'function') && userPages(state.user).includes('ceo');
+    if(state.user.role !== 'admin' && !isCeo) return;
+    if(!TK.loaded){ if(state.user.role !== 'admin') { const d = await window.__db.getConfigObject(TK_KEY, { items: [] }); TK.items = Array.isArray(d.items) ? d.items : []; TK.loaded = true; } else if(!(await tkLoad())) return; }
+    const mine = TK.items.filter(t => t.emp === loginId).sort((a, b) => (tkFirst(b).d || '').localeCompare(tkFirst(a).d || ''));
+    if(!mine.length || !el.isConnected) return;
+    const old = el.querySelector('.tkProf'); if(old) old.remove();
+    const vacs = (profileCache && profileCache.vacations) || [], loose = mine.filter(t => !tkVacOf(t, vacs));
+    if(loose.length){
+      const box = document.createElement('div'); box.className = 'card tkProf';
+      box.innerHTML = `<div class="sub" style="font-weight:600; color:var(--text); text-transform:none; margin-bottom:8px;">Other flight tickets <span class="hrNote" style="display:inline">not inside a vacation</span></div>${loose.map(t => tkRowHtml2(t, false, false)).join('')}`;
+      el.insertBefore(box, el.firstChild);
+    }
+    tkVacCards(el, mine);
+  }catch(err){ console.error(err); }
+}
+
+function docOpenPdf(dataUrl, name){ rvfPdfView(dataUrl, name || 'Document'); }
+function rvfPdfBlobUrl(dataUrl){ const bin = atob(dataUrl.split(',')[1]), arr = new Uint8Array(bin.length); for(let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i); return URL.createObjectURL(new Blob([arr], { type: 'application/pdf' })); }
+async function rvfPdfView(dataUrl, name){
+  const box = document.createElement('div'); box.className = 'rvfPdfV';
+  box.innerHTML = `<div class="rvfPdfBar"><b>${String(name || 'Document').replace(/[<>&"]/g, '')}</b><span class="grow"></span><button type="button" class="pillBtn rvfPdfDl">Download</button><button type="button" class="pillBtn rvfPdfX" aria-label="Close">Close</button></div><div class="rvfPdfBody"><div class="hrNote" style="text-align:center;padding:30px">Opening the document...</div></div>`;
+  document.body.appendChild(box); document.body.style.overflow = 'hidden';
+  let burl = ''; const close = () => { box.remove(); document.body.style.overflow = ''; if(burl) URL.revokeObjectURL(burl); };
+  box.querySelector('.rvfPdfX').addEventListener('click', close);
+  box.querySelector('.rvfPdfDl').addEventListener('click', () => { try{ burl = burl || rvfPdfBlobUrl(dataUrl); const a = document.createElement('a'); a.href = burl; a.download = (String(name || 'document').replace(/[^\w .-]+/g, '_')) + '.pdf'; document.body.appendChild(a); a.click(); a.remove(); }catch(e){ toast('Could not download'); } });
+  const body = box.querySelector('.rvfPdfBody');
+  try{
+    const lib = await docLoadPdfJs(), bin = atob(dataUrl.split(',')[1]), arr = new Uint8Array(bin.length); for(let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+    const pdf = await lib.getDocument({ data: arr }).promise; body.innerHTML = '';
+    const W = Math.min(body.clientWidth - 24, 980), dpr = Math.min(window.devicePixelRatio || 1, 2);
+    for(let n = 1; n <= pdf.numPages; n++){
+      const pg = await pdf.getPage(n), vp0 = pg.getViewport({ scale: 1 }), sc = W / vp0.width, vp = pg.getViewport({ scale: sc * dpr });
+      const c = document.createElement('canvas'); c.width = Math.floor(vp.width); c.height = Math.floor(vp.height); c.style.width = Math.floor(vp.width / dpr) + 'px'; c.style.height = Math.floor(vp.height / dpr) + 'px'; c.className = 'rvfPdfPg';
+      body.appendChild(c); await pg.render({ canvasContext: c.getContext('2d'), viewport: vp }).promise;
+    }
+  }catch(err){ console.error(err); body.innerHTML = '<div style="text-align:center;padding:30px"><div class="hrNote" style="margin-bottom:10px">The document could not be shown here.</div><button type="button" class="btn btn-primary" id="rvfPdfDl2">Download it</button></div>'; const b = body.querySelector('#rvfPdfDl2'); if(b) b.addEventListener('click', () => box.querySelector('.rvfPdfDl').click()); }
+}
+
+async function rvfPdfView(dataUrl, name){
+  toast('Opening the document...');
+  let pages = [];
+  try{
+    const lib = await docLoadPdfJs(), bin = atob(dataUrl.split(',')[1]), arr = new Uint8Array(bin.length); for(let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+    const pdf = await lib.getDocument({ data: arr }).promise, n = Math.min(pdf.numPages, 20);
+    for(let k = 1; k <= n; k++){
+      const pg = await pdf.getPage(k), v0 = pg.getViewport({ scale: 1 }), sc = Math.min(2.2, 1800 / Math.max(v0.width, v0.height)), vp = pg.getViewport({ scale: sc });
+      const c = document.createElement('canvas'); c.width = Math.floor(vp.width); c.height = Math.floor(vp.height);
+      const cx = c.getContext('2d'); cx.fillStyle = '#fff'; cx.fillRect(0, 0, c.width, c.height);
+      await pg.render({ canvasContext: cx, viewport: vp }).promise; pages.push(c.toDataURL('image/jpeg', 0.92));
+      if(k === 1) openLightbox(pages[0]);
+    }
+  }catch(err){ console.error(err); if(!pages.length){ try{ const a = document.createElement('a'); a.href = rvfPdfBlobUrl(dataUrl); a.download = 'document.pdf'; document.body.appendChild(a); a.click(); a.remove(); toast('Could not show the PDF here, it was downloaded instead'); }catch(e){ toast('Could not open the PDF'); } return; } }
+  const lb = Array.from(document.querySelectorAll('.lightbox')).pop(); if(!lb) return;
+  const img = lb.querySelector('img'); let cur = 0;
+  const bar = document.createElement('div'); bar.className = 'rvfPdfNav';
+  const show = () => { img.src = pages[cur]; const t = bar.querySelector('.pn'); if(t) t.textContent = (cur + 1) + ' / ' + pages.length; };
+  bar.innerHTML = (pages.length > 1 ? '<button type="button" class="pillBtn pp">&lsaquo;</button><span class="pn"></span><button type="button" class="pillBtn pnx">&rsaquo;</button>' : '') + '<button type="button" class="pillBtn pdl">Download PDF</button>';
+  bar.addEventListener('click', (e) => { e.stopPropagation(); const b = e.target.closest('button'); if(!b) return;
+    if(b.classList.contains('pp')){ cur = (cur + pages.length - 1) % pages.length; show(); }
+    else if(b.classList.contains('pnx')){ cur = (cur + 1) % pages.length; show(); }
+    else if(b.classList.contains('pdl')){ try{ const u = rvfPdfBlobUrl(dataUrl), a = document.createElement('a'); a.href = u; a.download = (String(name || 'document').replace(/[^\w .-]+/g, '_')) + '.pdf'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 4000); }catch(er){ toast('Could not download'); } } });
+  lb.appendChild(bar); if(pages.length > 1) show();
+}
+
+function vacMaxYear(txt){ let m = 0; String(txt || '').replace(/(?:19|20)\d{2}/g, (y) => { m = Math.max(m, +y); return y; }); return m; }
+// n = vacations taken. The records are counted first; then, if the latest "For Year(s)" is later than what the records add up to,
+// every year from the joining year to that year counts as taken (the old records have gaps).
+function vacTaken(p, vs){
+  vs = vs || [];
+  const recs = vs.reduce((a, v) => a + vacN(v), 0);
+  const el = p && p.vacationEligibility ? parseFloat(p.vacationEligibility) : 0, J = p && p.joiningDate ? new Date(p.joiningDate).getFullYear() : 0;
+  let maxY = 0; vs.forEach(v => { maxY = Math.max(maxY, vacMaxYear(v.forYear)); });
+  if(!(el > 0) || !J || !maxY || maxY < J) return { n: recs, upTo: 0, recs };
+  // older years are taken as done (the old records are not complete); only what comes after the latest year is counted from the records
+  const units = Math.ceil((maxY - J + 1) / el);
+  const extra = vs.reduce((a, v) => a + ((!vacMaxYear(v.forYear) && v.from && +String(v.from).slice(0, 4) > maxY) ? vacN(v) : 0), 0);
+  return { n: units + extra, upTo: maxY, recs };
+}
+
+function vacRemaining(u){
+  const p = u.profile || {}, y = calcTotalYears(p.joiningDate), el = p.vacationEligibility ? parseFloat(p.vacationEligibility) : 0;
+  if(y === null || !(el > 0) || !OVV.loaded) return null;
+  const vr = vacRemain(p, OVV.all[u.loginId] || []); return vr ? vr.rem : Math.max(0, Math.floor(y / el) - vacTaken(p, OVV.all[u.loginId] || []).n);
+}
+
+// remaining vacations, counted from the LATEST year written in the records: each calendar year after it is one vacation due (every N years: divided by N)
+function vacRemain(p, vs){
+  const el = p && p.vacationEligibility ? parseFloat(p.vacationEligibility) : 0; if(!(el > 0)) return null;
+  let maxY = 0; (vs || []).forEach(v => { maxY = Math.max(maxY, vacMaxYear(v.forYear)); });
+  if(!maxY) return null;
+  const J = p.joiningDate ? new Date(p.joiningDate).getFullYear() : 0, base = Math.max(maxY, J ? J - 1 : 0), now = new Date().getFullYear();
+  const diff = Math.max(0, now - base), rem = Math.floor(diff / el), years = []; for(let y = base + 1; y <= now && years.length < 12; y++) years.push(y);
+  return { rem, upTo: maxY, years };
+}
 </script>
 </body>
 </html>
