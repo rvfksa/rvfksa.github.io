@@ -22324,16 +22324,16 @@ async function a2LoadDoc0(sec, ym, force){
   const key = a2Key(sec, ym); if(!force && A2.docs[key]) return A2.docs[key];
   const s = await window.__db.getConfigObject('salary_' + key, {});
   const def = acDefaultRange(ym);
-  let d = { ym, sec, from: s.from || def.from, to: s.to || def.to, calcAt: s.calcAt || '', ty: (s.ty && typeof s.ty === 'object') ? s.ty : {}, savedAt: s.savedAt || '', savedBy: s.savedBy || '', rows: Array.isArray(s.rows) ? s.rows : [], dirty: false, draft: false };
+  let d = { ym, sec, from: s.from || def.from, to: s.to || def.to, calcAt: s.calcAt || '', keep: (s.keep && typeof s.keep === 'object') ? s.keep : {}, ty: (s.ty && typeof s.ty === 'object') ? s.ty : {}, savedAt: s.savedAt || '', savedBy: s.savedBy || '', rows: Array.isArray(s.rows) ? s.rows : [], dirty: false, draft: false };
   try{
     const dr = JSON.parse(localStorage.getItem('rvfSal_' + key) || 'null');
-    if(dr && Array.isArray(dr.rows) && (dr.base || '') === (d.savedAt || '')){ d = Object.assign(d, { from: dr.from || d.from, to: dr.to || d.to, calcAt: dr.calcAt || '', ty: dr.ty || d.ty || {}, rows: dr.rows, dirty: true, draft: true }); }
+    if(dr && Array.isArray(dr.rows) && (dr.base || '') === (d.savedAt || '')){ d = Object.assign(d, { from: dr.from || d.from, to: dr.to || d.to, calcAt: dr.calcAt || '', keep: dr.keep || d.keep || {}, ty: dr.ty || d.ty || {}, rows: dr.rows, dirty: true, draft: true }); }
   }catch(e){}
   A2.docs[key] = d; return d;
 }
 function a2Touch(){
   const d = a2Doc(); if(!d) return; d.dirty = true; clearTimeout(A2.t);
-  A2.t = setTimeout(() => { try{ localStorage.setItem('rvfSal_' + a2Key(d.sec, d.ym), JSON.stringify({ base: d.savedAt || '', from: d.from, to: d.to, calcAt: d.calcAt, ty: d.ty || {}, rows: d.rows })); }catch(e){} }, 400);
+  A2.t = setTimeout(() => { try{ localStorage.setItem('rvfSal_' + a2Key(d.sec, d.ym), JSON.stringify({ base: d.savedAt || '', from: d.from, to: d.to, calcAt: d.calcAt, keep: d.keep || {}, ty: d.ty || {}, rows: d.rows })); }catch(e){} }, 400);
 }
 async function a2Boot(){
   if(!requireDb()) throw new Error('db');
@@ -22431,7 +22431,7 @@ async function a2Save(){
   A2.busy = true; a2Draw();
   try{
     const idx = await a2LoadIndex(), key = a2Key(d.sec, d.ym), now = new Date().toISOString(), by = (state.user && (state.user.name || state.user.loginId)) || '';
-    const out = JSON.parse(JSON.stringify({ ym: d.ym, sec: d.sec, from: d.from || '', to: d.to || '', calcAt: d.calcAt || '', ty: d.ty || {}, savedAt: now, savedBy: by, rows: d.rows }));
+    const out = JSON.parse(JSON.stringify({ ym: d.ym, sec: d.sec, from: d.from || '', to: d.to || '', calcAt: d.calcAt || '', keep: d.keep || {}, ty: d.ty || {}, savedAt: now, savedBy: by, rows: d.rows }));
     await window.__db.saveConfigObject('salary_' + key, out);
     idx.items[key] = { ym: d.ym, sec: d.sec, savedAt: now, by, count: d.rows.length, total: acR2(d.rows.reduce((a, r) => a + (sec2net(d.sec, r)), 0)) };
     await window.__db.saveConfigObject('salaryIndex', idx);
@@ -23471,11 +23471,16 @@ const a2PaidMap = (ym) => ((PD.docs && PD.docs[ym]) ? PD.docs[ym].paid : A2.paid
 function a2ExitWhy(u){   // he was settled in hand when he left, so he is not in the sheet, unless this month is already marked paid for him
   if(!isExitedEmployee(u)) return '';
   const ym = A2.jym || A2.ym; if(ym && a2PaidMap(ym)[u.loginId]) return '';
+  const ed = (u.profile || {}).endDate;
+  if(ym && a2D8(ed) && ed > acDefaultRange(ym).to) return 'left after this salary month (' + fmtDate(ed) + ')';
   return 'has left (Exit / Terminated) and was settled when he left';
 }
+function a2JoinWhy(u){ const ym = A2.jym || A2.ym, jd = (u.profile || {}).joiningDate; return (ym && a2D8(jd) && jd > acDefaultRange(ym).to) ? 'joined after this salary month (' + fmtDate(jd) + ')' : ''; }
+const a2Decide = (u) => !!(a2JoinWhy(u) || /^left after/.test(a2ExitWhy(u)));   // the two cases you decide yourself
+const a2Kept = (u) => { const d = a2Doc(); return !!(d && d.keep && d.keep[u.loginId]); };
 const a2ExitOld = () => (A2.ym || '') < acYmShift(acYmNow(), -1);   // sheets older than last month are history: nobody is taken out of them
-const a2Gate = (u) => isExitedEmployee(u) ? !a2ExitOld() : a2Live();
-const a2OffWhy = (u) => a2ExitWhy(u) || (a2VacWhole(u) ? 'is on vacation the whole salary month' : '');
+const a2Gate = (u) => (isExitedEmployee(u) || a2JoinWhy(u)) ? !a2ExitOld() : a2Live();
+const a2OffWhy = (u) => (a2Decide(u) && a2Kept(u)) ? '' : (a2JoinWhy(u) || a2ExitWhy(u) || (a2VacWhole(u) ? 'is on vacation the whole salary month' : ''));
 const a2Off = (u) => !!a2OffWhy(u);
 function a2JoinRefresh(d){   // the joining date on the profile counts at once
   let ch = false; const sec = d.sec;
@@ -23500,7 +23505,7 @@ function a2Changes(){
 function a2ChgHtml0(){
   const c = a2Changes(), n = c.moved.length + c.idch.length + c.gone.length + c.fresh.length; if(!n) return '';
   const L = (x) => x ? (A2_SEC[x] || {}).n || x : '', li = [];
-  c.moved.forEach(x => li.push(`<b>${acEsc(x.r.name)}</b> (ID ${acEsc(x.r.id)}) ${x.why ? x.why + '. He is taken out of the salary.' : 'is now ' + (x.to ? 'in the ' + acEsc(L(x.to)) + ' sheet' : 'marked as no salary') + '. He leaves this sheet.'}`));
+  c.moved.forEach(x => li.push(`<b>${acEsc(x.r.name)}</b> (ID ${acEsc(x.r.id)}) ${x.why ? x.why + '. He is taken out of the salary.' + (acCanEdit() && x.u && a2Decide(x.u) ? ` <button type="button" class="pillBtn" data-a2x="keep2" data-id="${acEsc(x.r.id)}">Keep him</button>` : '') : 'is now ' + (x.to ? 'in the ' + acEsc(L(x.to)) + ' sheet' : 'marked as no salary') + '. He leaves this sheet.'}`));
   c.idch.forEach(x => li.push(`<b>${acEsc(x.r.name)}</b>: ID ${acEsc(x.r.id)} is now ${acEsc(x.u.loginId)}${x.same ? '. The row will use the new ID.' : (x.why ? ', and he ' + x.why + '. He is taken out of the salary.' : (x.to ? ', and he is now in the ' + acEsc(L(x.to)) + ' sheet. He leaves this sheet.' : ', marked as no salary. He leaves this sheet.'))}`));
   c.gone.forEach(x => li.push(`<b>${acEsc(x.r.name)}</b> (ID ${acEsc(x.r.id)}) is not in the people list any more. Nothing is changed for him. Check, then delete the row if it is not needed.`));
   if(c.fresh.length) li.push(`${c.fresh.length} new ${c.fresh.length === 1 ? 'person' : 'people'} for this sheet: ${c.fresh.slice(0, 6).map(u => acEsc(u.name)).join(', ')}${c.fresh.length > 6 ? ' and ' + (c.fresh.length - 6) + ' more' : ''}. They are added with their salary and joining date.`);
@@ -24054,7 +24059,22 @@ function a2VacList(){
 }
 function a2VacNoteText(){ const l = a2VacList(); return l.length ? 'Not in this sheet, on vacation the whole salary month: ' + l.join(', ') : ''; }
 function a2VacNote(){ const l = a2VacList(); return l.length ? `<div class="hrNote a2VacN" style="margin:8px 0;"><b>Not in this sheet, on vacation the whole salary month:</b> ${l.map(acEsc).join(', ')}</div>` : ''; }
-function a2ChgHtml(){ return `<div id="a2VioBox">${a2VioInner()}</div>` + a2VacNote() + a2ChgHtml0(); }
+function a2DecideList(){   // people not in this sheet who joined or left after the salary month: you decide
+  const d = a2Doc(); if(!d || !A2.ym) return []; const have = new Set(d.rows.map(r => r.id));
+  return (state.users || []).filter(u => u.role !== 'pending' && !a2Skip(u) && a2Group(u) === d.sec && !have.has(u.loginId) && a2Decide(u) && !a2Kept(u) && (A2.jym ? true : true));
+}
+function a2DecideNote(){
+  const l = a2DecideList(); if(!l.length) return '';
+  return `<div class="hrNote a2VacN" style="margin:8px 0;"><b>Not in this sheet, after the salary month. Keep them?</b><br>${l.map(u => `${acEsc(u.name)} (ID ${acEsc(u.loginId)}) ${acEsc(a2JoinWhy(u) || a2ExitWhy(u))}${acCanEdit() ? ` <button type="button" class="pillBtn" data-a2x="keep" data-id="${acEsc(u.loginId)}">Add to this sheet</button>` : ''}`).join('<br>')}</div>`;
+}
+document.addEventListener('click', (e) => {
+  const t = e.target.closest && e.target.closest('[data-a2x="keep"],[data-a2x="keep2"]'); if(!t || !acCanEdit()) return; const d = a2Doc(); if(!d) return;
+  const id = t.dataset.id, u = (state.users || []).find(x => x.loginId === id); if(!u) return;
+  d.keep = d.keep || {}; d.keep[id] = 1;
+  if(t.dataset.a2x === 'keep' && !d.rows.some(r => r.id === id)){ d.rows.push(a2NewRow(d.sec, u)); d.rows.sort((a, b) => a2Num(a.id, b.id)); }
+  a2Touch(); a2Draw();
+});
+function a2ChgHtml(){ return `<div id="a2VioBox">${a2VioInner()}</div>` + a2VacNote() + a2DecideNote() + a2ChgHtml0(); }
 function a2DrawSheet(){
   a2DrawSheet0();
   if(acCanEdit() && !VI.list && !VI.busy && window.__db && window.__db.listViolations){ VI.busy = true; window.__db.listViolations().then(l => { VI.list = l; VI.busy = false; a2VioFill(); }).catch(err => { console.error(err); VI.busy = false; }); }
