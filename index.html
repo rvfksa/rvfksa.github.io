@@ -3783,6 +3783,7 @@ table.mpcSumT th{ background:transparent; position:static; }
 
 .rvfPdfNav{ position:absolute; top:14px; left:14px; z-index:3; display:flex; align-items:center; gap:8px; background:rgba(255,255,255,.92); padding:6px 8px; border-radius:22px; box-shadow:0 2px 10px rgba(15,23,42,.2); }
 .rvfPdfNav .pn{ font-size:12.5px; color:var(--text-strong); min-width:42px; text-align:center; }
+.a2OtTip{ border-bottom:1px dotted #b6bccb; cursor:help; }
 </style>
 </head>
 <body>
@@ -22277,7 +22278,7 @@ function a2Cols0(sec, all){
     { k: 'pos', l: 'Position', g: 'Person', def: 1, rep: 1, text: r => a2PosNs(r), html: r => acEsc(a2PosNs(r)) },
     { k: 'nat', l: 'Nationality', g: 'Person', def: 0, rep: 1, text: r => a2NatOf(r), html: r => acEsc(a2NatOf(r)) },
     money('basic', 'Basic Salary', r => acNum(r.basic)),
-    money('otv', 'Overtime', r => (r.v || {}).otAmt, { html: r => { const x = a2M((r.v || {}).otAmt); return (r.othf && x && !A2.pdf) ? `<span title="${acEsc(acNum(r.otd) + ' h x ' + a2WorkDays() + ' working days')}">${x}</span>` : x; } }),
+    money('otv', 'Overtime', r => (r.v || {}).otAmt, { html: r => { const x = a2M((r.v || {}).otAmt); return (r.othf && x && !A2.pdf) ? `<span class="a2OtTip" title="${acEsc(a2OtTip(r)).replace(/\n/g, '&#10;')}">${x}</span>` : x; } }),
     money('exv', 'Extra', r => (r.v || {}).exAmt),
     money('tot', 'Total salary', r => (r.v || {}).gross, { bold: 1, text: r => a2W((r.v || {}).gross) || '0', html: r => a2W((r.v || {}).gross) || '0' }),
     money('ded', 'Deduction', r => acNum(r.ded), { dedCol: 0 }),
@@ -22806,6 +22807,16 @@ document.addEventListener('change', (e) => { const t = e.target; if(!t.dataset |
 
 /* ---------- v101: Sponsor sheet ---------- */
 function a2NatOf(r){ if(r.nat) return r.nat; const u = (state.users || []).find(x => x.loginId === r.id); return u ? String(((u.profile || {}).homeCountry) || '').trim() : ''; }
+function a2OtTip(r){   // the overtime of someone paid by the hour, worked out in plain steps
+  const f = (n, d) => String(+(+n).toFixed(d == null ? 4 : d)).replace(/^(\d+)/, (m) => m.replace(/\B(?=(\d{3})+(?!\d))/g, ',')), basic = acNum(r.basic), h = acNum(r.otd), days = a2WorkDaysFor(r), rate = a2OtRate(r), hrs = acR2(h * days);
+  return ['Overtime paid by the hour', '',
+    '1 hour of overtime = basic salary / 30 days / 8 hours x 1.5',
+    '= ' + f(basic, 2) + ' / 30 / 8 x 1.5 = ' + f(rate), '',
+    'Overtime hours per day: ' + f(h, 2),
+    'Working days counted: ' + days + (r.jdate ? ' (from his joining date)' : ''),
+    'Total hours = ' + f(h, 2) + ' x ' + days + ' = ' + f(hrs, 2), '',
+    'Overtime = ' + f(hrs, 2) + ' h x ' + f(rate) + ' = ' + f(acR2(acNum(r.otd) * days * rate), 2) + ' SAR'].join('\n');
+}
 function a2OtRate(r){ return acNum(r.basic) / 30 / 8 * 1.5; }
 function a2WorkDays(){ const d = a2Doc(); const n = d ? countWorkingDays(d.from, d.to) : 0; return n > 0 ? n : 30; }
 function a2TyRate(){ const x = acNum(AC.set && AC.set.tyRate); return x > 0 ? x : 25; }
