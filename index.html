@@ -20837,7 +20837,8 @@ function acDrawSettings(){
   const test = T.length ? `<div class="acAdd" style="margin-top:10px;"><b>Try it</b><div class="acCE" style="padding-left:0;"><input class="acNum" id="acTestP" placeholder="picks" inputmode="numeric" value="4174"><select id="acTestM">${(state.machines || []).filter(m => acTableFor(m.id)).map(m => `<option value="${acEsc(m.id)}">${acEsc(m.name)}</option>`).join('')}</select><span id="acTestR" class="hrNote" style="margin:0;"></span></div></div>` : '';
   const tblHtml = `<div class="hrNote" style="margin-bottom:8px;">Premium is paid per pick. The person's total picks are rounded (see Rounding below) and the rate for that level is multiplied by the total picks. If a person works on machines from different tables, the average of their rates is used.</div>${tblList}${editor || '<button type="button" class="pillBtn" data-ac="s_addtbl" style="margin-top:8px;">Add a rate table</button>'}${test}`;
   const saveRow = `<div class="acRow2"><span class="hrNote" style="margin:0;">${AC.setSec === 'nonsponsor' ? 'One list of reasons is shared by every sheet (Operator, Sponsor, Non Sponsor).' : (AC.setSec || 'sponsor') === 'operator' ? 'Press Save settings after changing a value. Rate tables are saved with their own button.' : 'Deduction reasons are one shared list for every sheet. Press Save settings after changing a value.'}</span><span style="flex:1"></span><button type="button" class="pillBtn ok" data-ac="s_save">Save settings</button></div>`;
-  $('acMain').innerHTML = (AC.setSec === 'nonsponsor' ? sec('ded', 'Deduction reasons', dedHtml) + sec('inst', 'Instalment deductions (Loan, Advance, Iqama Transfer)', instHtml) : AC.setSec === 'operator' ? sec('who', 'Who is an operator (positions)', whoHtml) + sec('tbl', 'Premium rate tables', tblHtml) + sec('rnd', 'Rounding (premium only)', rndHtml) + sec('cut', 'Deduction from premium (Operator only)', cutHtml) + sec('rules', 'Extra money (ladder)', ladHtml + (!LD.groups.length && S.rules.length ? ruleHtml : '')) + sec('ded', 'Deduction reasons', dedHtml) + sec('inst', 'Instalment deductions (Loan, Advance, Iqama Transfer)', instHtml) : sec('ty', 'Beaming / Tying commission', tyHtml) + sec('ded', 'Deduction reasons', dedHtml) + sec('inst', 'Instalment deductions (Loan, Advance, Iqama Transfer)', instHtml)) + saveRow;
+  const whHtml = `<div class="hrNote" style="margin-bottom:8px;">Used for overtime that is paid by the hour. His normal hours = total working hours - his overtime hours (set in his profile). One hour of overtime = basic salary / 30 days / his normal hours x 1.5.</div><div class="acRow2"><label style="display:flex;align-items:center;gap:8px;">Total working hours a day <input class="acNum" data-sk="wh_hours" value="${acEsc(S.workHours == null ? 11.5 : S.workHours)}" inputmode="decimal" style="width:80px;"></label></div>`;
+  $('acMain').innerHTML = (AC.setSec === 'nonsponsor' ? sec('wh', 'Working hours (overtime by the hour)', whHtml) + sec('ded', 'Deduction reasons', dedHtml) + sec('inst', 'Instalment deductions (Loan, Advance, Iqama Transfer)', instHtml) : AC.setSec === 'operator' ? sec('who', 'Who is an operator (positions)', whoHtml) + sec('tbl', 'Premium rate tables', tblHtml) + sec('rnd', 'Rounding (premium only)', rndHtml) + sec('cut', 'Deduction from premium (Operator only)', cutHtml) + sec('rules', 'Extra money (ladder)', ladHtml + (!LD.groups.length && S.rules.length ? ruleHtml : '')) + sec('ded', 'Deduction reasons', dedHtml) + sec('inst', 'Instalment deductions (Loan, Advance, Iqama Transfer)', instHtml) : sec('ty', 'Beaming / Tying commission', tyHtml) + sec('wh', 'Working hours (overtime by the hour)', whHtml) + sec('ded', 'Deduction reasons', dedHtml) + sec('inst', 'Instalment deductions (Loan, Advance, Iqama Transfer)', instHtml)) + saveRow;
   acTestRun();
 }
 function acTxInfo(p){ return p.rows.length ? `${p.rows.length} levels &middot; ${p.rows[0][0]} down to ${p.rows[p.rows.length - 1][0]} &middot; rate ${p.rows[0][1]} to ${p.rows[p.rows.length - 1][1]}${p.n > 1 ? ' &middot; only the first rate column is used' : ''}${p.bad ? ` &middot; <span style="color:var(--danger)">${p.bad} line(s) have a different number of columns</span>` : ''}` : 'Nothing read yet.'; }
@@ -20894,7 +20895,7 @@ async function acSaveSettings(){
     L.groups.forEach(g => { g.name = String(g.name).trim(); g.add = String(g.add == null ? '' : g.add).trim() === '' ? '' : acNum(g.add); g.min = Math.max(1, acNum(g.min) || 1); g.share = String(g.share == null ? '' : g.share).trim() === '' ? 50 : acNum(g.share); }); L.every = acNum(L.every) || 500; L.grace = acNum(L.grace); }
   S.dedReasons = (S.dedReasons || []).filter(x => String(x.name || '').trim()).map(x => ({ id: Number(x.id), name: String(x.name).trim(), kind: x.kind === 'days' ? 'days' : 'amount', ns: x.kind === 'days' && String(x.ns == null ? '' : x.ns).trim() !== '' ? acNum(x.ns) : '', sp: x.kind === 'days' && String(x.sp == null ? '' : x.sp).trim() !== '' ? acNum(x.sp) : '' }));
   S.instTypes = (S.instTypes || []).filter(x => String(x.name || '').trim()).map(x => ({ id: Number(x.id), name: String(x.name).trim() })); S.instNext = Math.max(Number(S.instNext) || 1, S.instTypes.reduce((m, x) => Math.max(m, x.id), 0) + 1); S.dedNext = Math.max(Number(S.dedNext) || 1, S.dedReasons.reduce((m, x) => Math.max(m, x.id), 0) + 1);
-  S.otRate = acNum(S.otRate) || 0; S.tyRate = acNum(S.tyRate) || 25;
+  S.workHours = acNum(S.workHours) || 11.5; S.otRate = acNum(S.otRate) || 0; S.tyRate = acNum(S.tyRate) || 25;
   S.premCut = acNum(S.premCut); S.cols.forEach(c => { if(c.pct !== undefined) c.pct = acNum(c.pct); });
   try{ await window.__db.saveConfigObject('acctSettings', S); AC.set = acNormSettings(JSON.parse(JSON.stringify(S))); acCloneSet(); toast('Settings saved'); acDrawSettings(); }
   catch(err){ console.error(err); toast('Could not save — check your connection'); }
@@ -20937,6 +20938,7 @@ function acSkChange(t, isChange){
   else if(k === 'ld_every'){ S.ladders.every = v; }
   else if(k === 'ld_grace'){ S.ladders.grace = v; }
   else if(k === 'ot_rate'){ S.otRate = v; }
+  else if(k === 'wh_hours'){ S.workHours = v; }
   else if(k === 'ty_rate'){ S.tyRate = v; }
   else if(k === 'dr_name'){ S.dedReasons[i].name = v; }
   else if(k === 'dr_kind'){ S.dedReasons[i].kind = v; if(isChange) acDrawSettings(); }
@@ -22810,14 +22812,18 @@ function a2NatOf(r){ if(r.nat) return r.nat; const u = (state.users || []).find(
 function a2OtTip(r){   // the overtime of someone paid by the hour, worked out in plain steps
   const f = (n, d) => String(+(+n).toFixed(d == null ? 4 : d)).replace(/^(\d+)/, (m) => m.replace(/\B(?=(\d{3})+(?!\d))/g, ',')), basic = acNum(r.basic), h = acNum(r.otd), days = a2WorkDaysFor(r), rate = a2OtRate(r), hrs = acR2(h * days);
   return ['Overtime paid by the hour', '',
-    '1 hour of overtime = basic salary / 30 days / 8 hours x 1.5',
-    '= ' + f(basic, 2) + ' / 30 / 8 x 1.5 = ' + f(rate), '',
-    'Overtime hours per day: ' + f(h, 2),
+    'Total working hours a day: ' + f(a2WorkHours(), 2),
+    'His overtime hours: ' + f(h, 2),
+    'His normal hours = ' + f(a2WorkHours(), 2) + ' - ' + f(h, 2) + ' = ' + f(a2NormHours(r), 2), '',
+    '1 hour of overtime = basic salary / 30 days / normal hours x 1.5',
+    '= ' + f(basic, 2) + ' / 30 / ' + f(a2NormHours(r), 2) + ' x 1.5 = ' + f(rate), '',
     'Working days counted: ' + days + (r.jdate ? ' (from his joining date)' : ''),
     'Total hours = ' + f(h, 2) + ' x ' + days + ' = ' + f(hrs, 2), '',
     'Overtime = ' + f(hrs, 2) + ' h x ' + f(rate) + ' = ' + f(acR2(acNum(r.otd) * days * rate), 2) + ' SAR'].join('\n');
 }
-function a2OtRate(r){ return acNum(r.basic) / 30 / 8 * 1.5; }
+const a2WorkHours = () => acNum((AC.set || {}).workHours) || 11.5;   // total working hours a day, set in the Accounts settings
+function a2NormHours(r){ const h = a2WorkHours() - acNum(r.otd); return h > 0 ? h : 8; }   // his normal hours = total hours - his overtime hours
+function a2OtRate(r){ return acNum(r.basic) / 30 / a2NormHours(r) * 1.5; }
 function a2WorkDays(){ const d = a2Doc(); const n = d ? countWorkingDays(d.from, d.to) : 0; return n > 0 ? n : 30; }
 function a2TyRate(){ const x = acNum(AC.set && AC.set.tyRate); return x > 0 ? x : 25; }
 function a2SpFromProfile(r, u){
