@@ -22545,7 +22545,7 @@ async function a2DrawSaved(){
 
 /* ---------- settings (only what belongs to the section) ---------- */
 function a2DrawSet(){
-  AC.sd = null; AC.te = null; AC.tn = null; AC.setSec = A2.sec; AC.open = { cols: true, std: true, who: true, tbl: true, rules: true, cut: true, rnd: true, ded: true, inst: true, ot: true, ty: true };
+  AC.sd = null; AC.te = null; AC.tn = null; AC.setSec = A2.sec; AC.open = {};
   $('a2Head').innerHTML = `<div class="a2Bar"><button type="button" class="pillBtn" data-a2="back">${a2Svg('back', 13)}Back to the sheet</button><b class="a2SetT">${A2_SEC[A2.sec].n} settings</b></div>
     <div class="hrNote" style="margin:0 0 10px;">After saving, press Back to the sheet. The new settings are applied to this month's sheet automatically.</div>`;
   acDrawSettings();
