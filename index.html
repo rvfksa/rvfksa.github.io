@@ -22177,7 +22177,7 @@ function a2OpRates(r){
   }
   a2OpNet(r);
 }
-function a2OpNet(r){ r.extra = r.ax || 0; a2JoinSet(r, acNum(r.bs) + acNum(r.otm)); r.net = Math.round(acNum(r.bs) + acNum(r.otm) + (r.np != null && r.np !== '' ? r.np : (r.prem || 0)) + r.extra - acNum(r.ded) - acNum(r.jded)); }
+function a2OpNet(r){ if(typeof a2DaysRecalc === 'function') a2DaysRecalc(r); r.extra = r.ax || 0; a2JoinSet(r, acNum(r.bs) + acNum(r.otm)); r.net = Math.round(acNum(r.bs) + acNum(r.otm) + (r.np != null && r.np !== '' ? r.np : (r.prem || 0)) + r.extra - acNum(r.ded) - acNum(r.jded)); }
 function a2NewSp(u){
   const sal = (u.profile && u.profile.salary) || {};
   const r = { id: u.loginId, name: u.name, dept: u.department || '', basic: sal.basicSalary || '', fixed: sal.salaryType === 'fixed', ot: sal.overtime || '', extra: sal.extraMoney || '', ab: '', pr: '', c: {}, fl: {}, rm: '' };
@@ -22836,7 +22836,7 @@ function a2NewSp(u){ const r = { id: u.loginId, name: u.name, dept: u.department
 function a2DaysRecalc(r){   // leave deductions in days of pay always follow the fixed pay of the row
   if(!(r.dl && r.dl.length)) return; const ym = A2.jym || A2.ym; if(!ym) return;
   const rg = acDefaultRange(ym), dy = (x) => Date.UTC(+x.slice(0, 4), +x.slice(5, 7) - 1, +x.slice(8, 10)) / 864e5, pd = Math.round(dy(rg.to) - dy(rg.from)) + 1, rs = a2DedReasons(); let ch = false;
-  r.dl.forEach(l => { if(!l.r || !(acNum(l.lv) > 0)) return; const x = rs.find(y => Number(y.id) === Number(l.r)); if(!x || x.kind !== 'days' || String(x.sp).trim() === '') return; const v = acR2(acNum(l.lv) * acNum(x.sp) * a2FixedBase(r) / pd); if(v !== acNum(l.a)){ l.a = v; ch = true; } });
+  r.dl.forEach(l => { if(!l.r || !(acNum(l.lv) > 0)) return; const x = rs.find(y => Number(y.id) === Number(l.r)); if(!x || x.kind !== 'days') return; const k = a2RuleKey(r); if(String(x[k]).trim() === '') return; const v = acR2(acNum(l.lv) * acNum(x[k]) * a2FixedBase(r) / pd); if(v !== acNum(l.a)){ l.a = v; ch = true; } });
   if(ch) r.ded = acR2(r.dl.reduce((a, l) => a + acNum(l.a), 0)) || '';
 }
 function a2SpCalc(r){
@@ -23658,8 +23658,9 @@ function a2ColsB(sec, all){
 /* ---------- deduct pop-up: reasons that work in days of pay ---------- */
 function a2PeriodDays(){ const rg = acDefaultRange(A2.ym), day = (x) => Date.UTC(+x.slice(0, 4), +x.slice(5, 7) - 1, +x.slice(8, 10)) / 864e5; return Math.round(day(rg.to) - day(rg.from)) + 1; }
 function a2FixedBase(r){ if(r.fx !== undefined) return acNum(r.fx); if(r.basic !== undefined) return acNum(r.basic) + (r.othf ? 0 : acNum(r.ot)); return acNum(r.bs) + acNum(r.otm); }   // fixed pay only: basic + fixed overtime. Premium, hourly overtime, tying/beaming and extra money are not in it
-function a2DayVal(r){ return A2.sec === 'operator' ? 0 : a2FixedBase(r) / a2PeriodDays(); }
-function a2DaysRule(r, id){ const x = a2DedReasons().find(y => Number(y.id) === Number(id)); if(!x || x.kind !== 'days' || A2.sec === 'operator') return null; return { mult: acNum(A2.sec === 'sponsor' ? x.sp : x.ns), set: String(A2.sec === 'sponsor' ? x.sp : x.ns).trim() !== '' }; }
+function a2DayVal(r){ return a2FixedBase(r) / a2PeriodDays(); }
+function a2RuleKey(r){ if(A2.sec !== 'operator') return A2.sec === 'sponsor' ? 'sp' : 'ns'; const u = (state.users || []).find(x => x.loginId === r.id); return (u && (u.profile || {}).employmentType) === 'Non-Sponsor' ? 'ns' : 'sp'; }   // an operator follows the days set for his own category
+function a2DaysRule(r, id){ const x = a2DedReasons().find(y => Number(y.id) === Number(id)); if(!x || x.kind !== 'days') return null; const k = a2RuleKey(r); return { mult: acNum(x[k]), set: String(x[k]).trim() !== '' }; }
 function a2DedCalc(l){ const d = a2Doc(), r = d && d.rows.find(x => x.id === A2D.id), ru = r && l.r ? a2DaysRule(r, l.r) : null; if(!ru) return null; const dv = a2DayVal(r), lv = acNum(l.lv); l.a = acR2(lv * ru.mult * dv); return { ru, dv, lv }; }
 function a2DedNote(l){ const c = a2DedCalc(l); if(!c) return ''; if(!c.ru.set) return 'Set the days for this reason in the settings first.'; return c.lv ? `${c.lv} day${c.lv === 1 ? '' : 's'} of leave x ${c.ru.mult} day${c.ru.mult === 1 ? '' : 's'} x ${acMoney(c.dv)} a day = ${acMoney(l.a) || '0.00'} SAR` : `${c.ru.mult} day${c.ru.mult === 1 ? '' : 's'} of pay for 1 day of leave (a day = ${acMoney(c.dv)} SAR)`; }
 function a2DedLineHtml(l, i, n){
