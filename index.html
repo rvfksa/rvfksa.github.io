@@ -3787,6 +3787,18 @@ table.mpcSumT th{ background:transparent; position:static; }
 #a2Tbl td[data-c="rm"]{ white-space:normal; width:120px; min-width:90px; max-width:130px; font-size:10px; line-height:1.25; word-break:normal; overflow-wrap:anywhere; }
 #a2Tbl td[data-c="rm"] .a2Rn, #a2Tbl td[data-c="rm"] .a2RnT, #a2Tbl td[data-c="rm"] .a2RnC{ font-size:10px; }
 #a2Tbl td[data-c="rm"] .a2In.a2Rm{ max-width:120px; min-width:80px; font-size:10.5px; }
+
+.acg details{ border:1px solid var(--line); border-radius:10px; margin:8px 0; background:#fff; }
+.acg summary{ padding:10px 14px; cursor:pointer; font-size:14px; color:var(--text-strong,#111827); list-style:none; display:flex; gap:8px; align-items:center; }
+.acg summary::-webkit-details-marker{ display:none; } .acg summary::before{ content:'+'; width:14px; color:var(--muted); } .acg details[open] > summary::before{ content:'-'; }
+.acgB{ padding:0 14px 12px 36px; font-size:13px; line-height:1.6; color:var(--text); font-weight:400; }
+.acgB p{ margin:6px 0; } .acgB ul{ margin:6px 0 6px 16px; padding:0; } .acgB li{ margin:3px 0; }
+.acgEx{ background:#f7f8fc; border-left:3px solid var(--accent,#4f46e5); padding:8px 12px; margin:8px 0; border-radius:6px; }
+.acgF{ background:#f7f8fc; border:1px solid #e3e6ef; padding:7px 12px; border-radius:6px; margin:8px 0; }
+.acgB table{ border-collapse:collapse; margin:8px 0; font-size:12.5px; } .acgB th, .acgB td{ border:1px solid #e3e6ef; padding:5px 9px; text-align:left; vertical-align:top; } .acgB th{ background:#f7f8fc; color:#64748b; font-weight:500; }
+.acgTag{ font-size:10.5px; color:#64748b; border:1px solid #e3e6ef; border-radius:8px; padding:0 6px; margin-left:4px; }
+.acgBar{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:6px; }
+@media print{ body.acgPrinting > *:not(#app):not(main){ } body.acgPrinting .screen:not(#screen-accounts), body.acgPrinting header, body.acgPrinting nav, body.acgPrinting .hrTabs, body.acgPrinting .a2TabRow, body.acgPrinting .acgBar button{ display:none !important; } body.acgPrinting .acg details{ break-inside:avoid; } }
 </style>
 </head>
 <body>
@@ -4023,6 +4035,7 @@ table.mpcSumT th{ background:transparent; position:static; }
         <div class="auth-tab" data-admintab="shifttime">Shift &amp; Timing</div>
         <div class="auth-tab" data-admintab="execaccess">Executive Access</div>
         <div class="auth-tab" data-admintab="passportaccess">Passport Access</div>
+        <div class="auth-tab" data-admintab="proflog">Profile changes</div>
         <div class="auth-tab" data-admintab="holidays">Holidays</div>
         <div class="auth-tab" data-admintab="salarymonth">Salary Month</div>
         <div class="auth-tab" data-admintab="config">Dropdowns</div>
@@ -4192,6 +4205,8 @@ table.mpcSumT th{ background:transparent; position:static; }
         </div>
         <button class="btn btn-primary" id="saveExecVisBtn" style="margin-top:12px;">Save</button>
       </div>
+
+      <div class="auth-pane" id="admin-proflog"><div id="plBox"></div></div>
 
       <div class="auth-pane" id="admin-passportaccess">
         <h2 style="margin-top:0;">Who Can See Passport Location &amp; Renewal Status</h2>
@@ -4457,6 +4472,7 @@ table.mpcSumT th{ background:transparent; position:static; }
 
     <!-- PROFILE -->
     <section class="screen" id="screen-profile">
+      <button type="button" class="btn btn-ghost btn-sm" id="accProfBack" style="display:none; margin-bottom:8px;">&larr; Back to Accounts &middot; Users</button>
       <div class="eyebrow" id="profileEyebrow">Profile</div>
       <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:8px;">
         <div>
@@ -11605,7 +11621,8 @@ async function saveProfileFields(loginId, fields){
 
 async function loadProfile(loginId, editMode){
   state.profileTarget = loginId;
-  state.profileEditMode = !!editMode && state.user.role === 'admin';
+  state.profileEditMode = !!editMode && profCanEdit();
+  { const cb = $('accProfBack'); const keep = state._accOpen === loginId; state._accOpen = null; if(cb) cb.style.display = keep ? '' : 'none'; }
   docSectionEditing = { passport: false, iqama: false, passportRenewal: false, passportLocation: false };
   editingVacationId = null;
   editingViolationId = null;
@@ -11635,7 +11652,7 @@ async function loadProfile(loginId, editMode){
     profileCache = { user: u, vacations, violations };
     $('profileName').textContent = u.name;
     $('profileSub').textContent = `ID: ${u.loginId} · ${u.department || '—'}`;
-    $('editCoreInfoBtn').style.display = state.user.role === 'admin' ? 'flex' : 'none';
+    $('editCoreInfoBtn').style.display = profCanEdit() ? 'flex' : 'none';
     $('coreInfoEditPanel').style.display = 'none';
     renderProfilePhoto(u);
     applyExecTabVisibility(loginId);
@@ -12145,7 +12162,7 @@ let editingViolationId = null;
 function docBlock(kind, title, fields, attachmentUrl){
   const p = profileCache.user.profile || {};
   const d = p[kind] || {};
-  const canEdit = state.user.role === 'admin';
+  const canEdit = profCanEdit();
   const editingThis = state.profileEditMode || docSectionEditing[kind];
   if(!editingThis){
     return `<div class="card card-with-actions">
@@ -12517,7 +12534,7 @@ function renderVacationTab(){
   const el = $('ptab-vacation');
   const isCeo = userPages(state.user).includes('ceo');
   const isSelf = profileCache.user.loginId === state.user.loginId;
-  const canEdit = state.user.role === 'admin';
+  const canEdit = profCanEdit();
   let html = vacSummaryLine();
   if(profileCache.vacations.length === 0){
     html += '<div class="empty-state">No vacations recorded yet.</div>';
@@ -12724,7 +12741,7 @@ async function addVacation(){
 
 function renderViolationsTab(){
   const el = $('ptab-violations');
-  const canEdit = state.user.role === 'admin';
+  const canEdit = profCanEdit();
   let html = '';
   if(profileCache.violations.length === 0){
     html += '<div class="empty-state">No violations on record.</div>';
@@ -15700,7 +15717,7 @@ function pcFormHtml0(){
   return `<button class="pcBack" data-pc="back">${pcSvg('back', 15)}Back</button><div class="card pcForm"><h2 style="margin-top:0">${F.docId ? 'Edit order' : 'New order'}</h2>
     <div class="hrForm"><div class="field"><label>Priority</label><div class="pcSeg"><button data-pc="prio" data-v="regular" class="${F.priority === 'regular' ? 'on' : ''}">Regular</button><button data-pc="prio" data-v="urgent" class="urgent ${F.priority === 'urgent' ? 'on' : ''}">${pcSvg('flame', 15)}Urgent</button></div></div>
     <div class="field"><label>Prices in (change only for international buying)</label><select data-pc="cur">${PC_CUR.map(c => `<option value="${c[0]}" ${F.cur === c[0] ? 'selected' : ''}>${c[0]} \u2014 ${c[1]}</option>`).join('')}</select></div>
-    <div class="field"><label>Requested by department</label><select data-pc="dept"><option value="">Select…</option>${depts.map(d => `<option ${F.dept === d ? 'selected' : ''}>${pcEsc(d)}</option>`).join('')}${F.dept && !depts.includes(F.dept) ? `<option selected>${pcEsc(F.dept)}</option>` : ''}</select></div>
+    <div class="field"><label>Requested by department</label>${F.deptOther ? `<input type="text" data-pc="dept" autocomplete="off" placeholder="Type the department" value="${pcEsc(F.dept)}">` : `<select data-pc="dept"><option value="">Select…</option>${depts.map(d => `<option ${F.dept === d ? 'selected' : ''}>${pcEsc(d)}</option>`).join('')}${F.dept && !depts.includes(F.dept) ? `<option selected>${pcEsc(F.dept)}</option>` : ''}<option value="__other">Other - type it…</option></select>`}</div>
     <div class="field pcWho"><label>Requested by person (search or type)</label><input type="text" data-pc="who" autocomplete="off" placeholder="Start typing a name…" value="${pcEsc(F.reqBy.name)}"><div class="pcSug" id="pcWhoSug" style="display:none"></div></div></div>
     <div class="pcSection" style="margin-top:6px">Items</div><div class="pcFT"><div class="pcFTH pcFRow"><span>#</span><span>Item name</span><span>Description</span><span>Qty</span><span>Unit</span><span>Price (${F.cur})</span><span>Last price</span><span>Last date</span><span>Remarks</span><span></span></div><div id="pcItems">${F.items.map((it, i) => pcItemHtml(it, i, S.units)).join('')}</div></div>
     <button class="pcBtnSoft" data-pc="additem" style="margin-bottom:14px">${pcSvg('plus', 14)}Add another item</button>
@@ -15720,7 +15737,7 @@ function pcItemHtml0(it, i, units){
     <div class="c-name pcWho">${L('Item name')}<input type="text" data-pc="iname" data-i="${i}" autocomplete="off" placeholder="e.g. Needle" value="${pcEsc(it.n)}"><div class="pcSug" id="pcItSug${i}" style="display:none"></div></div>
     <div class="c-desc">${L('Description')}<input type="text" data-pc="idesc" data-i="${i}" placeholder="Size, model, specification" value="${pcEsc(it.d)}"></div>
     <div class="c-qty">${L('Qty')}<input type="number" min="1" step="any" data-pc="iqty" data-i="${i}" value="${it.q}"></div>
-    <div class="c-unit">${L('Unit')}<select data-pc="iunit" data-i="${i}">${us.map(u => `<option ${u === it.u ? 'selected' : ''}>${pcEsc(u)}</option>`).join('')}</select></div>
+    <div class="c-unit">${L('Unit')}${it.uo ? `<input type="text" data-pc="iunit" data-i="${i}" autocomplete="off" placeholder="Type the unit" value="${pcEsc(it.u)}">` : `<select data-pc="iunit" data-i="${i}">${us.map(u => `<option ${u === it.u ? 'selected' : ''}>${pcEsc(u)}</option>`).join('')}<option value="__other">Other - type it…</option></select>`}</div>
     <div class="c-price">${L('Price (if known)')}<input type="number" min="0" step="any" data-pc="iprice" data-i="${i}" placeholder="0.00" value="${pcEsc(it.p)}"></div>
     <div class="c-lp">${L('Last bought price')}<input type="number" min="0" step="any" data-pc="ilp" data-i="${i}" id="pcLp${i}" placeholder="0.00" value="${it.lp > 0 ? it.lp : ''}"></div>
     <div class="c-ld">${L('Last bought date')}<input type="date" data-pc="ild" data-i="${i}" id="pcLd${i}" value="${it.lp > 0 && it.ld ? pcDateStr(it.ld) : ''}"></div>
@@ -16050,9 +16067,9 @@ function pcActRecItem(id, i){
 function pcOpenRecModal0(o, mode, closeAll){
   pc.ui.modalId = o.docId;
   const cur = pcCur(o), all = mode === 'all';
-  pcModalOpen(pcModalHead(all ? 'Received \u2014 ' + o.id : 'Real quantity and price \u2014 ' + o.id, all ? 'Write what was really bought and the total price paid for that quantity (' + cur + '). If something is not needed any more, tick "Not needed".' : 'Write what was really bought and the total price paid for that quantity (' + cur + '). The quantity can be more or less than ordered.') + `
+  pcModalOpen(pcModalHead(all ? 'Received \u2014 ' + o.id : 'Real quantity and price \u2014 ' + o.id, all ? 'Deliveries can come in parts: write the total received so far, all deliveries together, and the total price paid for it (' + cur + '). The order stays open until everything is received. If something is not needed any more, tick "Not needed".' : 'Write what was really bought and the total price paid for that quantity (' + cur + '). The quantity can be more or less than ordered.') + `
     <div class="pcRecHead${all ? ' withNn' : ''}"><span>Item</span><span>Quantity bought</span><span>Total price</span>${all ? '<span>Not needed</span>' : ''}</div>
-    ${o.items.map((it, i) => { const dn = pcItemDone(it) && !it.nn; return `<div class="pcPriceRow pcRecRow${all ? ' withNn' : ''}"><div class="pcPriceName"><b>${pcEsc(it.n)}</b><span class="hrNote">Ordered ${it.q} ${pcEsc(it.u || '')}${it.nn ? ' \u00B7 not needed' : ''}</span></div>
+    ${o.items.map((it, i) => { const dn = pcItemDone(it) && !it.nn; return `<div class="pcPriceRow pcRecRow${all ? ' withNn' : ''}"><div class="pcPriceName"><b>${pcEsc(it.n)}</b><span class="hrNote">Ordered ${it.q} ${pcEsc(it.u || '')}${(it.rec || 0) > 0 ? ' \u00B7 received so far ' + it.rec : ''}${it.nn ? ' \u00B7 not needed' : ''}</span></div>
       <input type="number" min="0" step="any" id="pcRM_q_${i}" data-def="${all && !closeAll ? Math.max(0, it.q - (it.rec || 0)) + (it.rec || 0) : (it.rec || '')}" ${it.nn ? 'disabled' : ''} value="${it.nn ? '' : all && !closeAll ? Math.max(0, it.q - (it.rec || 0)) + (it.rec || 0) : (it.rec || '')}" aria-label="Quantity bought">
       <input type="number" min="0" step="any" id="pcRM_p_${i}" ${it.nn ? 'disabled' : ''} value="${pcPaid(it) > 0 ? +pcPaid(it).toFixed(4) : ''}" placeholder="${it.p > 0 ? pcMoney(it.p * it.q) : (it.lp > 0 ? pcMoney(it.lp * it.q) : '0.00')}" aria-label="Total price">
       ${all ? `<label class="pcNnBox" title="Not needed any more"><input type="checkbox" id="pcRM_n_${i}" data-pc="pcnn" data-i="${i}" ${it.nn ? 'checked' : ''} ${dn ? 'disabled' : ''}><span>No</span></label>` : ''}</div>`; }).join('')}
@@ -16467,7 +16484,7 @@ async function pcOnChange(e){
   const el = e.target; const a = el.dataset && el.dataset.pc; if(!a) return;
   const U = pc.ui, F = U.form, i = el.dataset.i != null ? Number(el.dataset.i) : -1;
   switch(a){
-    case 'dept': F.dept = el.value; break;
+    case 'dept': if(el.value === '__other'){ F.deptOther = true; F.dept = ''; pcKeepScroll(pcRender); setTimeout(() => { const n = document.querySelector('input[data-pc="dept"]'); if(n) n.focus(); }, 30); break; } F.dept = el.value.trim(); break;
     case 'iname': { const it = F.items[i]; if(!pc.catalog) break; const ex = pcCatByName(it.n);
       // the whole name is typed and only one version of it is remembered: bring in all its details
       if(ex.length === 1 && !(it.d || '').trim() && !(it.b || '').trim() && !it.lpm){ pcFillFromCat(it, ex[0]); pcSyncRow(i); } break; }
@@ -16475,7 +16492,7 @@ async function pcOnChange(e){
     case 'bdate': F.backDate = el.value; break;
     case 'pcnn': { const q = $('pcRM_q_' + i); if(!q) break; if(el.checked){ if(q.value === q.dataset.def && !(pcFind(pc.ui.modalId).items[i].rec > 0)) q.value = ''; } else if(q.value === '') q.value = q.dataset.def; break; }
     case 'bord': F.backOrdered = el.checked; break;
-    case 'iunit': F.items[i].u = el.value; break;
+    case 'iunit': if(el.value === '__other'){ F.items[i].uo = true; F.items[i].u = ''; pcKeepScroll(pcRender); setTimeout(() => { const n = document.querySelector(`input[data-pc="iunit"][data-i="${i}"]`); if(n) n.focus(); }, 30); break; } F.items[i].u = el.value.trim(); break;
     case 'iphys': F.items[i].phys = el.checked; pcKeepScroll(pcRender); break;
     case 'iphoto': { const f = el.files && el.files[0]; if(!f) break;
       try{ const d = await pcCompress(f, 800, 0.6); if(F.items[i].photos.length < 3) F.items[i].photos.push(d); pcKeepScroll(pcRender); }
@@ -19159,7 +19176,7 @@ function poFormExtra(F){
   if(t === 'international'){
     const all = Array.from(new Set(['Account', 'Purchase'].concat(depts, F.depts2))), sel = F.depts2.join(', ');
     inline += `<div class="field"><label>To (department)</label><div class="poDd"><button type="button" class="poDdBtn${F.ddOpen ? ' open' : ''}" data-po="ddtoggle"><span>${sel ? pcEsc(sel) : 'Choose department(s)'}</span>${pcSvg('chev', 14)}</button>
-      ${F.ddOpen ? `<div class="poDdPanel">${all.map(d => `<label class="poDdRow"><input type="checkbox" data-po="dept" data-v="${pcEsc(d)}" ${F.depts2.includes(d) ? 'checked' : ''}><span>${pcEsc(d)}</span></label>`).join('')}</div>` : ''}</div></div>`;
+      ${F.ddOpen ? `<div class="poDdPanel">${all.map(d => `<label class="poDdRow"><input type="checkbox" data-po="dept" data-v="${pcEsc(d)}" ${F.depts2.includes(d) ? 'checked' : ''}><span>${pcEsc(d)}</span></label>`).join('')}<div class="poDdRow" style="gap:6px;"><input type="text" id="poDeptNew" placeholder="Other department, type it" style="flex:1;min-width:0;"><button type="button" class="pcBtnSoft" data-po="deptnew">Add</button></div></div>` : ''}</div></div>`;
   } else {
     inline += `<div class="field"><label>Supplier name</label><input type="text" ${f('sup', F.sup)} placeholder="Name of the supplier" autocomplete="off"></div>
       <div class="field"><label>Supplier address (optional)</label><input type="text" ${f('supAddr', F.supAddr)} placeholder="City, street"></div>
@@ -19438,6 +19455,7 @@ document.addEventListener('click', async (e) => {
     case 'type': if(!F || F.docId) break; F.type = el.dataset.v; if(F.type === 'packing' && !pp.sups){ pcpLoadSups().then(() => { if(pc.ui.form === F) pcKeepScroll(pcRender); }).catch(() => {}); } if(F.type !== 'local'){ try{ aiLoad().then(() => { if(pc.ui.form === F) pcKeepScroll(pcRender); }).catch(() => {}); }catch(x){} } pcKeepScroll(pcRender); break;
     case 'ordtoggle': F.ordOpen = !F.ordOpen; pcKeepScroll(pcRender); break;
     case 'ddtoggle': F.ddOpen = !F.ddOpen; pcKeepScroll(pcRender); break;
+    case 'deptnew': { const n = $('poDeptNew'), v = n ? n.value.trim() : ''; if(v && !F.depts2.includes(v)) F.depts2.push(v); pcKeepScroll(pcRender); break; }
     case 'dept': { const v = el.dataset.v, k = F.depts2.indexOf(v); if(k >= 0) F.depts2.splice(k, 1); else F.depts2.push(v); pcKeepScroll(pcRender); break; }
     case 'ordrm': F.ordBy.splice(i, 1); pcKeepScroll(pcRender); break;
     case 'ordadd': { const s = ((pc.settings || PC_DEF).tpl.reqSigners || []).filter(x => x.name)[Number($('poOrdSel').value)]; if(s && F.ordBy.length < 5 && !F.ordBy.some(x => x.name === s.name)) F.ordBy.push({ name: s.name, title: s.title || '' }); pcKeepScroll(pcRender); break; }
@@ -22463,9 +22481,13 @@ function a2Draw(){
   const body = $('accountsBody'); if(!body) return;
   const tabs = ['operator', 'sponsor', 'nonsponsor', 'saudi'].map(s => `<button type="button" class="${A2.view === 'sheet' || A2.view === 'set' ? (A2.sec === s ? 'active' : '') : ''}" data-a2="sec" data-v="${s}">${a2Svg(s)}<span class="hrLbl">${A2_SEC[s].n}</span></button>`).join('')
     + `<button type="button" class="${A2.view === 'saved' ? 'active' : ''}" data-a2="saved">${a2Svg('saved')}<span class="hrLbl">Saved</span></button>`
-    + `<button type="button" class="${A2.view === 'pay' ? 'active' : ''}" data-a2="pay">${a2Svg('wallet')}<span class="hrLbl">Pay desk</span></button>`;
+    + `<button type="button" class="${A2.view === 'pay' ? 'active' : ''}" data-a2="pay">${a2Svg('wallet')}<span class="hrLbl">Pay desk</span></button>`
+    + `<button type="button" class="${A2.view === 'users' ? 'active' : ''}" data-a2="users">${a2Svg('users')}<span class="hrLbl">Users</span></button>`
+    + `<button type="button" class="${A2.view === 'guide' ? 'active' : ''}" data-a2="guide">${a2Svg('saved')}<span class="hrLbl">Rules</span></button>`;
   body.innerHTML = `<div class="card hrBox a2Box"><div class="a2TabRow"><div class="hrTabs">${tabs}</div><div class="a2Top" id="a2Top"></div></div><div id="a2Head"></div><div id="acMain"></div></div>`;
   if(A2.view === 'pay') return pdDraw();
+  if(A2.view === 'users') return a2DrawUsers();
+  if(A2.view === 'guide') return a2DrawGuide();
   if(A2.view === 'saved') return a2DrawSaved();
   if(A2.view === 'set') return a2DrawSet();
   if(A2.sec === 'saudi'){ $('a2Head').innerHTML = ''; $('acMain').innerHTML = '<div class="a2Empty"><div class="a2EmptyT">Saudi salary sheet</div><div class="hrNote">This section is ready and waiting. Its salary format will be added once it is decided.</div></div>'; return; }
@@ -22684,6 +22706,8 @@ document.addEventListener('click', async (e) => {
   if(a === 'sec'){ A2.sec = t.dataset.v; A2.view = 'sheet'; A2.q = ''; A2.dept = ''; A2.shift = ''; A2.pos = ''; A2.nat = ''; try{ if(A2.sec !== 'saudi') await a2LoadDoc(A2.sec, A2.ym); a2Draw(); }catch(err){ console.error(err); toast('Could not load'); } }
   else if(a === 'saved'){ A2.view = 'saved'; a2Draw(); }
   else if(a === 'pay'){ A2.view = 'pay'; a2Draw(); }
+  else if(a === 'users'){ A2.view = 'users'; a2Draw(); }
+  else if(a === 'guide'){ A2.view = 'guide'; a2Draw(); }
   else if(a === 'prev' || a === 'next'){ A2.ym = acYmShift(A2.ym, a === 'next' ? 1 : -1); try{ await a2LoadDoc(A2.sec, A2.ym); a2Draw(); }catch(err){ console.error(err); toast('Could not load that month'); } }
   else if(a === 'open'){ A2.sec = t.dataset.v; A2.ym = t.dataset.ym; A2.view = 'sheet'; try{ await a2LoadDoc(A2.sec, A2.ym); a2Draw(); }catch(err){ console.error(err); toast('Could not open'); } }
   else if(a === 'calc'){ a2CalcPicks(); }
@@ -22877,7 +22901,7 @@ document.addEventListener('input', (e) => {
 
 /* ---------- v102: grouped Admin menu ---------- */
 const ADM_G = [
-  { n: 'People', t: [['users', 'Users'], ['execaccess', 'Executive Access'], ['passportaccess', 'Passport Access']] },
+  { n: 'People', t: [['users', 'Users'], ['proflog', 'Profile changes'], ['execaccess', 'Executive Access'], ['passportaccess', 'Passport Access']] },
   { n: 'Team', t: [['assign', 'Operators & machines']] },
   { n: 'Factory', t: [['machines', 'Machines'], ['shifttime', 'Shift & Timing'], ['holidays', 'Calendar'], ['salarymonth', 'Salary Month']] },
   { n: 'Lists', t: [['config', 'Dropdowns']] },
@@ -23479,11 +23503,12 @@ function a2ExitWhy(u){   // he was settled in hand when he left, so he is not in
   return 'has left (Exit / Terminated) and was settled when he left';
 }
 function a2JoinWhy(u){ const ym = A2.jym || A2.ym, jd = (u.profile || {}).joiningDate; return (ym && a2D8(jd) && jd > acDefaultRange(ym).to) ? 'joined after this salary month (' + fmtDate(jd) + ')' : ''; }
+const a2OtherWhy = (u) => { const ym = A2.jym || A2.ym, x = ym ? a2PaidMap(ym)[u.loginId] : null; return (x && x.h === 'other') ? 'was paid another way (Pay desk)' : ''; };
 const a2Decide = (u) => !!(a2JoinWhy(u) || /^left after/.test(a2ExitWhy(u)));   // the two cases you decide yourself
 const a2Kept = (u) => { const d = a2Doc(); return !!(d && d.keep && d.keep[u.loginId]); };
 const a2ExitOld = () => (A2.ym || '') < acYmShift(acYmNow(), -1);   // sheets older than last month are history: nobody is taken out of them
-const a2Gate = (u) => (isExitedEmployee(u) || a2JoinWhy(u)) ? !a2ExitOld() : a2Live();
-const a2OffWhy = (u) => (a2Decide(u) && a2Kept(u)) ? '' : (a2JoinWhy(u) || a2ExitWhy(u) || (a2VacWhole(u) ? 'is on vacation the whole salary month' : ''));
+const a2Gate = (u) => (isExitedEmployee(u) || a2JoinWhy(u) || a2OtherWhy(u)) ? !a2ExitOld() : a2Live();
+const a2OffWhy = (u) => a2OtherWhy(u) || ((a2Decide(u) && a2Kept(u)) ? '' : (a2JoinWhy(u) || a2ExitWhy(u) || (a2VacWhole(u) ? 'is on vacation the whole salary month' : '')));
 const a2Off = (u) => !!a2OffWhy(u);
 function a2JoinRefresh(d){   // the joining date on the profile counts at once
   let ch = false; const sec = d.sec;
@@ -24061,7 +24086,12 @@ function a2VacList(){
   if(!OVV.loaded || !A2.ym) return []; const sec = A2.sec;
   return (state.users || []).filter(u => u.role !== 'pending' && !a2Skip(u) && !isExitedEmployee(u) && a2Group(u) === sec && a2VacWhole(u)).map(u => { const f = a2VacAbs(u, A2.ym).list[0], b = f && (a2D8(f.v.workStart) ? f.v.workStart : f.v.to); return u.name + (a2D8(b) ? ' (back ' + fmtDate(b) + ')' : ''); });
 }
-function a2VacNoteText(){ const l = a2VacList(); return l.length ? 'Not in this sheet, on vacation the whole salary month: ' + l.join(', ') : ''; }
+function a2OtherList(){
+  if(!A2.ym) return []; const sec = A2.sec;
+  return (state.users || []).filter(u => u.role !== 'pending' && !a2Skip(u) && a2Group(u) === sec && a2OtherWhy(u)).map(u => u.name);
+}
+function a2VacNoteText(){ const l = a2VacList(), o = a2OtherList(); return [l.length ? 'Not in this sheet, on vacation the whole salary month: ' + l.join(', ') : '', o.length ? 'Not in this sheet, paid another way: ' + o.join(', ') : ''].filter(Boolean).join('. '); }
+function a2OtherNote(){ const o = a2OtherList(); return o.length ? `<div class="hrNote a2VacN" style="margin:8px 0;"><b>Not in this sheet, paid another way (Pay desk):</b> ${o.map(acEsc).join(', ')}. To put one back, mark him not paid in the Pay desk.</div>` : ''; }
 function a2VacNote(){ const l = a2VacList(); return l.length ? `<div class="hrNote a2VacN" style="margin:8px 0;"><b>Not in this sheet, on vacation the whole salary month:</b> ${l.map(acEsc).join(', ')}</div>` : ''; }
 function a2DecideList(){   // people not in this sheet who joined or left after the salary month: you decide
   const d = a2Doc(); if(!d || !A2.ym) return []; const have = new Set(d.rows.map(r => r.id));
@@ -24078,7 +24108,7 @@ document.addEventListener('click', (e) => {
   if(t.dataset.a2x === 'keep' && !d.rows.some(r => r.id === id)){ d.rows.push(a2NewRow(d.sec, u)); d.rows.sort((a, b) => a2Num(a.id, b.id)); }
   a2Touch(); a2Draw();
 });
-function a2ChgHtml(){ return `<div id="a2VioBox">${a2VioInner()}</div>` + a2VacNote() + a2DecideNote() + a2ChgHtml0(); }
+function a2ChgHtml(){ return `<div id="a2VioBox">${a2VioInner()}</div>` + a2VacNote() + a2OtherNote() + a2DecideNote() + a2ChgHtml0(); }
 function a2DrawSheet(){
   a2DrawSheet0();
   if(acCanEdit() && !VI.list && !VI.busy && window.__db && window.__db.listViolations){ VI.busy = true; window.__db.listViolations().then(l => { VI.list = l; VI.busy = false; a2VioFill(); }).catch(err => { console.error(err); VI.busy = false; }); }
@@ -24764,6 +24794,7 @@ const PD = { ym: '', docs: {}, q: '', dept: '', cat: '', pos: '', st: 'all', exi
 const PD_IC = { cam: '<path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/>', edit: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/>', dl: '<path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>' };
 const pdSvg = (n, s) => `<svg width="${s || 14}" height="${s || 14}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${PD_IC[n] || ''}</svg>`;
 const pdKey = () => 'payDesk_' + PD.ym;
+const pdHow = (h) => h === 'bank' ? 'Bank' : (h === 'other' ? 'Other way' : 'Cash');
 const pdDoc = () => PD.docs[PD.ym];
 const pdPaid = () => (pdDoc() && pdDoc().paid) || {};
 const pdIsNon = (u) => ((u.profile || {}).employmentType) === 'Non-Sponsor';
@@ -24778,7 +24809,7 @@ function pdPeople(){
     if(u.role === 'pending' || a2Skip(u)) return false;
     const p = u.profile || {}, jd = p.joiningDate;
     if(jd && jd > r.to) return false;                       // joined after this salary month: belongs to a later one
-    if(isExitedEmployee(u) && !PD.exited && !paid[u.loginId]) return false;
+    if(isExitedEmployee(u) && !PD.exited && !paid[u.loginId] && PD.q.trim().length < 2) return false;   // someone who left shows when you search his name
     return true;
   }).sort((a, b) => String(a.loginId).localeCompare(String(b.loginId), undefined, { numeric: true }));
 }
@@ -24834,13 +24865,14 @@ function pdDrawBody(){
       <div class="pdPh${p.photoDataUrl ? '' : ' none'}" ${p.photoDataUrl ? 'data-pd="big"' : ''} data-id="${acEsc(u.loginId)}">${p.photoDataUrl ? `<img src="${p.photoDataUrl}" alt="">` : acEsc(ini)}${PD.edit && ed ? `<label class="pdCam" title="Take or change the photo">${pdSvg('cam', 11)}<input type="file" accept="image/*" capture="environment" data-pd="photo" data-id="${acEsc(u.loginId)}"></label>` : ''}</div>
       <div style="min-width:0;"><div class="pdNm">${acEsc(u.name)}<span class="pdCat">${acEsc(pdCatOf(u) || '-')}</span></div><div class="pdMeta">ID ${acEsc(u.loginId)} &middot; ${acEsc(u.department || '-')} &middot; ${acEsc(p.position || '-')}</div></div>
       <div class="pdDocs">${doc('iqama', 'Iqama')}${doc('passport', 'Passport')}</div>
-      ${ed ? `<button type="button" class="pdBtn${pd ? ' done' : ''}" data-pd="pay" data-id="${acEsc(u.loginId)}" title="${pd ? 'Tap to undo' : 'Mark as paid (' + pdMethodOf(u) + ')'}">${pd ? 'Paid · ' + (pd.h === 'bank' ? 'Bank' : 'Cash') + ' · ' + pdDayTxt(pd.d) : 'Mark paid'}</button>` : `<span class="pdBtn done" style="cursor:default;">${pd ? 'Paid · ' + (pd.h === 'bank' ? 'Bank' : 'Cash') : 'Not paid'}</span>`}
+      ${ed && !pd ? `<button type="button" class="pdBtn" style="background:#fff;color:var(--muted);" data-pd="payo" data-id="${acEsc(u.loginId)}" title="Paid outside the salary sheet (at exit, in hand, by transfer). He is left out of this month's sheet.">Other way</button>` : ''}
+      ${ed ? `<button type="button" class="pdBtn${pd ? ' done' : ''}" data-pd="pay" data-id="${acEsc(u.loginId)}" title="${pd ? 'Tap to undo' : 'Mark as paid (' + pdMethodOf(u) + ')'}">${pd ? 'Paid · ' + pdHow(pd.h) + ' · ' + pdDayTxt(pd.d) : 'Mark paid'}</button>` : `<span class="pdBtn done" style="cursor:default;">${pd ? 'Paid · ' + pdHow(pd.h) : 'Not paid'}</span>`}
     </div>`;
   };
   body.innerHTML = `
     <div class="pdSum"><span><b>${nPaid}</b> of <b>${all.length}</b> paid</span><span class="pdProg"><i style="width:${all.length ? Math.round(nPaid / all.length * 100) : 0}%"></i></span><span>${left.length} not paid in this list</span>
       ${ed && left.length ? `<button type="button" class="pillBtn ok" data-pd="markall" title="Marks everyone shown below who is not paid yet. Sponsor staff as Bank, the others as Cash.">Mark all ${left.length} as paid</button>` : ''}</div>
-    ${ed && ticked.length ? `<div class="pdSel"><b>${ticked.length} ticked</b><button type="button" class="pillBtn ok" data-pd="bulk" data-v="bank">Paid · Bank</button><button type="button" class="pillBtn ok" data-pd="bulk" data-v="cash">Paid · Cash</button><button type="button" class="pillBtn" data-pd="bulk" data-v="undo">Not paid</button><button type="button" class="pillBtn" data-pd="clearsel">Clear</button></div>` : ''}
+    ${ed && ticked.length ? `<div class="pdSel"><b>${ticked.length} ticked</b><button type="button" class="pillBtn ok" data-pd="bulk" data-v="bank">Paid · Bank</button><button type="button" class="pillBtn ok" data-pd="bulk" data-v="cash">Paid · Cash</button><button type="button" class="pillBtn ok" data-pd="bulk" data-v="other" title="Paid outside the salary sheet, for example at exit. He is then left out of that month's sheet.">Paid · Other way</button><button type="button" class="pillBtn" data-pd="bulk" data-v="undo">Not paid</button><button type="button" class="pillBtn" data-pd="clearsel">Clear</button></div>` : ''}
     <div class="pdList"><div class="pdHead">${ed ? `<input type="checkbox" data-pd="tickall" title="Tick everyone in this list" ${list.length && ticked.length === list.length ? 'checked' : ''}>` : ''}<span>${list.length} ${list.length === 1 ? 'person' : 'people'}</span></div>
       ${shown.map(row).join('') || '<div class="empty-state" style="padding:18px;">Nobody matches.</div>'}
       ${list.length > shown.length ? `<button type="button" class="pdMore" data-pd="more">Show ${Math.min(40, list.length - shown.length)} more (${list.length - shown.length} left)</button>` : ''}</div>`;
@@ -24866,7 +24898,7 @@ async function pdPhoto(id, file){
 }
 function pdExportRows(){
   const paid = pdPaid();
-  return pdFiltered(pdPeople()).map(u => { const p = u.profile || {}, x = paid[u.loginId]; return [u.loginId, u.name, u.department || '', p.position || '', pdCatOf(u), x ? 'Paid' : 'Not paid', x ? (x.h === 'bank' ? 'Bank' : 'Cash') : '', x ? x.d : '', x ? (x.b || '') : '']; });
+  return pdFiltered(pdPeople()).map(u => { const p = u.profile || {}, x = paid[u.loginId]; return [u.loginId, u.name, u.department || '', p.position || '', pdCatOf(u), x ? 'Paid' : 'Not paid', x ? pdHow(x.h) : '', x ? x.d : '', x ? (x.b || '') : '']; });
 }
 function pdDownload(kind){
   const rows = pdExportRows(), head = ['ID', 'Name', 'Department', 'Position', 'Category', 'Salary', 'How', 'Date', 'Marked by'], n = rows.filter(r => r[5] === 'Paid').length;
@@ -24889,6 +24921,7 @@ document.addEventListener('click', (e) => {
   else if(a === 'tick'){ if(t.checked) PD.sel.add(id); else PD.sel.delete(id); pdDrawBody(); }
   else if(a === 'tickall'){ const list = pdFiltered(pdPeople()); if(t.checked) list.forEach(u => PD.sel.add(u.loginId)); else PD.sel.clear(); pdDrawBody(); }
   else if(a === 'clearsel'){ PD.sel.clear(); pdDrawBody(); }
+  else if(a === 'payo'){ pdMark([id], 'other'); }
   else if(a === 'pay'){ const x = pdPaid()[id]; if(x){ const u = (state.users || []).find(v => v.loginId === id); if(confirm('Mark ' + (u ? u.name : id) + ' as NOT paid?')) pdMark([id], 'undo'); } else pdMark([id], 'auto'); }
   else if(a === 'bulk'){ const list = pdFiltered(pdPeople()), ids = Array.from(PD.sel).filter(i => list.some(u => u.loginId === i)), v = t.dataset.v;
     if(ids.length > 10 && !confirm((v === 'undo' ? 'Mark ' + ids.length + ' people as NOT paid?' : 'Mark ' + ids.length + ' people as paid (' + v + ')?'))) return; pdMark(ids, v); }
@@ -25119,6 +25152,238 @@ function vacRemain(p, vs){
   const diff = Math.max(0, now - base), rem = Math.floor(diff / el), years = []; for(let y = base + 1; y <= now && years.length < 12; y++) years.push(y);
   return { rem, upTo: maxY, years };
 }
+
+/* ===== Accounts > Users: the accountant edits profiles; every change is written to a history the Admin reads ===== */
+function profCanEdit(){ return !!(state.user && (state.user.role === 'admin' || (state.user.pages || []).indexOf('accounts') >= 0)); }
+const PL = { buf: [], t: null, month: '', items: null, q: '', busy: false };
+const plGet = (o, path) => String(path).split('.').reduce((a, k) => (a == null ? undefined : a[k]), o);
+const plKey = (k) => String(k).replace(/^profile\./, '').split('.').map(x => x.replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase()).join(' > ');
+const plVal = (v) => { if(v == null || v === '') return ''; if(typeof v === 'object') v = JSON.stringify(v); v = String(v); return v.length > 70 ? 'changed (long text or photo)' : v; };
+function plLog(target, name, what){
+  what = what.filter(w => plVal(w.a) !== plVal(w.b)); if(!what.length) return;
+  PL.buf.push({ t: Date.now(), by: (state.user && (state.user.name || state.user.loginId)) || '', byId: state.user.loginId, to: target, name: name || target, what: what.map(w => ({ k: w.k, a: plVal(w.a), b: plVal(w.b) })) });
+  clearTimeout(PL.t); PL.t = setTimeout(plFlush, 4000);
+}
+async function plFlush(){
+  if(!PL.buf.length || PL.busy) return; PL.busy = true; const take = PL.buf.slice(); PL.buf = [];
+  try{
+    const d = new Date(take[0].t), key = 'profLog_' + d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+    const o = await window.__db.getConfigObject(key, { items: [] }), items = (o && Array.isArray(o.items)) ? o.items : [];
+    await window.__db.saveConfigObject(key, { items: items.concat(take).slice(-800) });
+    if(PL.month === key) PL.items = null;
+  }catch(err){ console.error(err); PL.buf = take.concat(PL.buf); PL.t = setTimeout(plFlush, 30000); }
+  PL.busy = false;
+}
+document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'hidden') plFlush(); });
+function plWrap(){
+  const db = window.__db; if(!db || db.__plWrapped) return false; db.__plWrapped = true;
+  const actor = (target) => state.user && state.user.role !== 'admin' && target && target !== state.user.loginId;   // only changes made by Accounts staff are logged
+  const userOf = (id) => (state.users || []).find(x => x.loginId === id) || (profileCache.user && profileCache.user.loginId === id ? profileCache.user : null);
+  const wrapUpd = (fn) => { const orig = db[fn]; if(!orig) return; db[fn] = async function(id, updates){
+    if(actor(id) && updates && typeof updates === 'object'){ const u = userOf(id); try{ plLog(id, u && u.name, Object.keys(updates).map(k => ({ k: plKey(k), a: u ? plGet(u, k) : '', b: updates[k] }))); }catch(e){ console.error(e); } }
+    return orig.apply(this, arguments); }; };
+  ['updateUser', 'updateUserQuiet'].forEach(wrapUpd);
+  const oB = db.updateUsersBatch; if(oB) db.updateUsersBatch = async function(changes){ (changes || []).forEach(c => { if(actor(c.loginId)){ const u = userOf(c.loginId); plLog(c.loginId, u && u.name, Object.keys(c.fields || {}).map(k => ({ k: plKey(k), a: u ? plGet(u, k) : '', b: c.fields[k] }))); } }); return oB.apply(this, arguments); };
+  const vacOf = (id) => (profileCache.vacations || []).find(v => v._id === id), vioOf = (id) => (profileCache.violations || []).find(v => v._id === id);
+  const lab = (v) => [v && v.from, v && v.to].filter(Boolean).join(' to ');
+  const upd2 = (fn, kind, find) => { const orig = db[fn]; if(!orig) return; db[fn] = async function(id, updates){ const old = find(id); if(old && actor(old.employeeId)){ const u = userOf(old.employeeId); plLog(old.employeeId, u && u.name, Object.keys(updates || {}).map(k => ({ k: kind + ' > ' + plKey(k), a: old[k], b: updates[k] }))); } return orig.apply(this, arguments); }; };
+  upd2('updateVacation', 'vacation', vacOf); upd2('updateViolation', 'violation', vioOf);
+  const del2 = (fn, kind, find) => { const orig = db[fn]; if(!orig) return; db[fn] = async function(id){ const old = find(id); if(old && actor(old.employeeId)){ const u = userOf(old.employeeId); plLog(old.employeeId, u && u.name, [{ k: kind, a: lab(old) || old.type || 'record', b: 'deleted' }]); } return orig.apply(this, arguments); }; };
+  del2('deleteVacation', 'vacation', vacOf); del2('deleteViolation', 'violation', vioOf);
+  const add2 = (fn, kind) => { const orig = db[fn]; if(!orig) return; db[fn] = async function(rec){ if(rec && actor(rec.employeeId)){ const u = userOf(rec.employeeId); plLog(rec.employeeId, u && u.name, [{ k: kind, a: '', b: 'added ' + (lab(rec) || rec.type || '') }]); } return orig.apply(this, arguments); }; };
+  add2('saveVacation', 'vacation'); add2('saveViolation', 'violation');
+  return true;
+}
+{ const iv = setInterval(() => { if(window.__db){ clearInterval(iv); plWrap(); } }, 250); }
+// Employee ID stays Admin-only (it moves the whole record)
+$('editCoreInfoBtn').addEventListener('click', () => { const i = $('coreEditId'); if(i) i.disabled = !(state.user && state.user.role === 'admin'); });
+$('accProfBack').addEventListener('click', () => { A2.view = 'users'; goTo('accounts'); });
+
+/* ---- the Users page inside Accounts ---- */
+const ACU = { q: '', dept: '', old: false };
+function acuList(){
+  const q = ACU.q.trim().toLowerCase(), admin = state.user && state.user.role === 'admin';
+  return (state.users || []).filter(u => u.role !== 'pending' && (admin || u.role !== 'admin') && (ACU.old || !isExitedEmployee(u))
+    && (!ACU.dept || (u.department || '') === ACU.dept)
+    && (!q || ((u.name || '') + ' ' + u.loginId + ' ' + (u.department || '') + ' ' + a2PosOf(u)).toLowerCase().includes(q))).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+}
+function acuRows(){
+  const l = acuList(), show = l.slice(0, 60);
+  if(!l.length) return '<div class="a2Empty"><div class="hrNote">No one matches.</div></div>';
+  return `<div class="table-scroll"><table class="report-table ovTbl a2T"><thead><tr><th>ID</th><th>Name</th><th>Department</th><th>Position</th><th>Status</th><th></th></tr></thead><tbody>${show.map(u => `<tr><td>${acEsc(u.loginId)}</td><td>${acEsc(u.name)}</td><td>${acEsc(u.department || '')}</td><td>${acEsc(a2PosOf(u))}</td><td>${acEsc(String((u.profile || {}).employmentStatus || '').replace(/_/g, ' '))}</td><td><button type="button" class="pillBtn ok" data-acu="open" data-id="${acEsc(u.loginId)}">Edit profile</button></td></tr>`).join('')}</tbody></table></div>${l.length > show.length ? `<div class="hrNote" style="margin-top:6px;">Showing ${show.length} of ${l.length}. Type a name or ID to narrow the list.</div>` : ''}`;
+}
+function a2DrawUsers(){
+  $('a2Top').innerHTML = ''; $('a2Head').innerHTML = '';
+  const depts = Array.from(new Set((state.users || []).map(u => u.department || '').filter(Boolean))).sort();
+  $('acMain').innerHTML = `<div class="hrNote" style="margin-bottom:8px;">Search a person and open the profile to change anything in it. Every change you save is written to a history that the Admin can read.</div>
+    <div class="a2UBar" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px;"><input type="text" id="acuQ" class="a2In" style="max-width:260px;" placeholder="Search name, ID, department, position" value="${acEsc(ACU.q)}" autocomplete="off">
+    <select id="acuDept" style="max-width:200px;"><option value="">All departments</option>${depts.map(d => `<option ${ACU.dept === d ? 'selected' : ''}>${acEsc(d)}</option>`).join('')}</select>
+    <label style="display:flex;gap:5px;align-items:center;font-size:12px;"><input type="checkbox" id="acuOld" ${ACU.old ? 'checked' : ''}> Include people who left</label></div><div id="acuList">${acuRows()}</div>`;
+}
+document.addEventListener('input', (e) => { if(e.target && e.target.id === 'acuQ'){ ACU.q = e.target.value; const l = $('acuList'); if(l) l.innerHTML = acuRows(); } });
+document.addEventListener('change', (e) => { const t = e.target; if(!t) return; if(t.id === 'acuDept'){ ACU.dept = t.value; } else if(t.id === 'acuOld'){ ACU.old = t.checked; } else return; const l = $('acuList'); if(l) l.innerHTML = acuRows(); });
+document.addEventListener('click', (e) => {
+  const t = e.target.closest && e.target.closest('[data-acu="open"]'); if(!t || !profCanEdit()) return;
+  state._accOpen = t.dataset.id; state.execViewTarget = null; markNavActive('accounts'); showScreen('screen-profile'); loadProfile(t.dataset.id, true);
+});
+
+/* ---- Admin > People > Profile changes ---- */
+function plMonths(){ const out = [], d = new Date(); for(let i = 0; i < 6; i++){ const x = new Date(d.getFullYear(), d.getMonth() - i, 1); out.push('profLog_' + x.getFullYear() + '-' + String(x.getMonth() + 1).padStart(2, '0')); } return out; }
+async function plLoad(force){
+  const box = $('plBox'); if(!box) return; if(!PL.month) PL.month = plMonths()[0];
+  if(!PL.items || force){ box.innerHTML = '<div class="empty-state">Loading…</div>'; await plFlush(); try{ const o = await window.__db.getConfigObject(PL.month, { items: [] }); PL.items = (o && Array.isArray(o.items)) ? o.items : []; }catch(err){ console.error(err); box.innerHTML = '<div class="empty-state">Could not load. Check your connection.</div>'; return; } }
+  plDraw();
+}
+function plDraw(){
+  const box = $('plBox'); if(!box) return; const q = PL.q.trim().toLowerCase();
+  const l = (PL.items || []).slice().reverse().filter(x => !q || ((x.name || '') + ' ' + x.to + ' ' + (x.by || '')).toLowerCase().includes(q));
+  const fmt = (t) => { try{ return new Date(t).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }); }catch(e){ return ''; } };
+  box.innerHTML = `<h2 style="margin-top:0;">Profile changes</h2><p class="sub">Every change made to a person's profile by someone with Accounts access: who changed it, when, and the old and new value.</p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px;"><select id="plMonth" style="max-width:170px;">${plMonths().map(m => `<option value="${m}" ${PL.month === m ? 'selected' : ''}>${m.slice(8)}</option>`).join('')}</select>
+    <input type="text" id="plQ" placeholder="Search a person or who changed" style="max-width:260px;" value="${acEsc(PL.q)}" autocomplete="off"></div>
+    <div id="plList">${l.length ? `<div class="table-scroll"><table class="report-table ovTbl a2T"><thead><tr><th>When</th><th>Changed by</th><th>Person</th><th>What changed</th></tr></thead><tbody>${l.map(x => `<tr><td style="white-space:nowrap">${acEsc(fmt(x.t))}</td><td>${acEsc(x.by || '')}</td><td>${acEsc(x.name || '')} <span class="hrNote">${acEsc(x.to)}</span></td><td style="white-space:normal">${(x.what || []).map(w => `<div><b>${acEsc(w.k)}</b>: ${w.a ? acEsc(w.a) : '<i>empty</i>'} &rarr; ${w.b ? acEsc(w.b) : '<i>empty</i>'}</div>`).join('')}</td></tr>`).join('')}</tbody></table></div>` : '<div class="empty-state">No changes in this month.</div>'}</div>`;
+}
+document.addEventListener('change', (e) => { if(e.target && e.target.id === 'plMonth'){ PL.month = e.target.value; PL.items = null; plLoad(true); } });
+document.addEventListener('input', (e) => { if(e.target && e.target.id === 'plQ'){ PL.q = e.target.value; const pos = e.target.selectionStart; plDraw(); const n = $('plQ'); if(n){ n.focus(); try{ n.setSelectionRange(pos, pos); }catch(x){} } } });
+document.addEventListener('click', (e) => { if(e.target.closest && e.target.closest('[data-adm="proflog"]')) setTimeout(() => plLoad(false), 80); });
+
+/* ===== Accounts > Rules: the guideline of how the salary works ===== */
+/* HOW TO KEEP IT UP TO DATE: numbers and lists that come from Settings, the Calendar or profiles are read live, so they update by themselves.
+   When a rule is changed inside the app code, add one line to ACG_LOG below (month, short sentence). */
+const ACG_LOG = [
+  ['2026-11', 'Leave deductions (days of pay) use all the fixed pay: basic salary plus fixed overtime. Premium, overtime by hours, tying / beaming and extra money are not cut.'],
+  ['2026-11', 'Overtime by hours uses the total working hours set in Settings, minus the person\'s own overtime hours.'],
+  ['2026-11', 'Total salary and Net pay are shown in whole riyals.'],
+  ['2026-11', 'Vacation: the vacation has a last working day and a work start date. A person away the whole salary month is not in the sheet. A person away part of the month is paid only for the days he worked.'],
+  ['2026-11', 'People who joined after the salary month, or left after it, are left off the sheet and listed at the top so you decide.'],
+  ['2026-11', 'A person who left is settled when he leaves, so he is not in the sheet, unless the month is already marked paid for him (Bank or Cash).'],
+  ['2026-11', 'Paid · Other way in the Pay desk leaves a person out of that month\'s sheet (paid at exit, in hand, by transfer).'],
+  ['2026-11', 'A position ticked under Who is an operator goes to the Operator sheet even without a machine.'],
+  ['2026-11', 'Operator deductions work in days of pay like the Sponsor sheet.'],
+  ['2026-11', 'Accounts staff can edit profiles from Accounts > Users. Every change is saved in Admin > People > Profile changes.']
+];
+const ACG = { open: null };
+const acgE = (x) => acEsc(x == null ? '' : x);
+function acgDays(ym){ const r = acDefaultRange(ym), d = (x) => Date.UTC(+x.slice(0, 4), +x.slice(5, 7) - 1, +x.slice(8, 10)) / 864e5; return { r, n: Math.round(d(r.to) - d(r.from)) + 1 }; }
+function acgSec(n, title, body){ return `<details data-acg="${n}"${ACG.open === true || (ACG.open == null && n === 1) ? ' open' : ''}><summary>${n}. ${acgE(title)}</summary><div class="acgB">${body}</div></details>`; }
+function acgHtml(){
+  const S = AC.set || {}, ym = A2.ym || acYmNow(), dy = acgDays(ym), per = dy.n, fmt = (x) => acMoney(x);
+  const step = Math.max(1, acNum((S.round || {}).step) || 100), from = acNum((S.round || {}).from) || step / 2, cut = acNum(S.premCut), wh = a2WorkHours(), tyr = a2TyRate();
+  const reasons = Array.isArray(S.dedReasons) ? S.dedReasons : [], inst = Array.isArray(S.instTypes) ? S.instTypes : [], opPos = Array.isArray(S.opPos) ? S.opPos : [];
+  const tables = (AC.tbl && AC.tbl.tables) || [], groups = (S.ladders && S.ladders.groups) || [];
+  const dRs = reasons.find(x => x.kind === 'days' && acNum(x.sp) > 0) || { name: 'Sick - Approved', sp: 1 };
+  const mult = acNum(dRs.sp) || 1, dayV = 1300 / per;
+  const lv = (() => { try { return acLevel(47380); } catch(e){ return 47400; } })(), otD = 1.5, nh = wh - otD > 0 ? wh - otD : 8, rate = 1250 / 30 / nh * 1.5, otAmt = otD * 26 * rate;
+  const live = '<span class="acgTag">from Settings</span>', built = '<span class="acgTag">built in</span>';
+  const b = [];
+  b.push(acgSec(1, 'The basics', `
+    <p><b>The salary month.</b> It runs from the ${acgE(fmtDate(dy.r.from).slice(0, 6))} to the ${acgE(fmtDate(dy.r.to).slice(0, 6))}, so ${acgE(acYmLabel(ym))} has <b>${per} days</b> (${acgE(fmtDate(dy.r.from))} to ${acgE(fmtDate(dy.r.to))}). A month is named after the month it ends in. The start day is set in Admin > Salary Month. ${live}</p>
+    <p><b>Three sheets.</b> Operator, Sponsor and Non Sponsor. (Saudi is reserved for later.) Every person is in only one sheet.</p>
+    <p><b>Which sheet is he in?</b></p><ul>
+      <li>A person whose position is ticked under <i>Settings > Who is an operator</i> goes to <b>Operator</b>${opPos.length ? ' (now ticked: ' + opPos.map(acgE).join(', ') + ')' : ' (nothing is ticked now, so everyone with the operator role is listed)'}. ${live}</li>
+      <li>Everyone else goes by <i>Employment type</i> in the profile: <b>Non Sponsor</b> goes to the Non Sponsor sheet, anyone else to <b>Sponsor</b>.</li>
+      <li>A profile with <i>Leave out of all salary sheets</i> ticked (Salary Info) is never listed.</li></ul>
+    <p><b>Where the numbers come from.</b> The person's own pay: Profile > Salary Info. Rates and rules: Settings (gear icon). Holidays: Admin > Calendar. Operator picks: the daily readings. Payment status: Pay desk.</p>
+    <p><b>Rounding.</b> Total salary and Net pay are whole riyals. Deductions keep the halalas, for example 43.33.</p>
+    <p><b>Nothing changes on its own.</b> Changes made inside a sheet are for that month only. The salary in the profile is not changed.</p>`));
+  b.push(acgSec(2, 'Operator sheet', `
+    <div class="acgF">Net pay = Basic + Fixed overtime + Premium (after the cut) + Extra money - Deductions - Days not worked</div>
+    <ul><li><b>Basic and fixed overtime</b> come from the profile (Salary Info).</li>
+    <li><b>Picks.</b> The approved daily picks of the salary month, plus the picks counted for stop time. They are added per machine.</li>
+    <li><b>Premium level.</b> His total picks are rounded to the nearest ${step}. It rounds up when the leftover is ${acgE(from)} or more. ${live}</li>
+    <li><b>Premium rate.</b> Each machine has a premium table (${tables.length} table${tables.length === 1 ? '' : 's'} now). The rate for his level is taken from the table of each machine he ran. The average of those rates x his total picks = Premium. A VIP group uses the VIP table for all of its machines. ${live}</li>
+    <li><b>The cut.</b> ${cut > 0 ? acgE(cut) + '% of the premium is cut and he gets the rest.' : 'No cut is set now.'} ${live}</li>
+    <li><b>Extra money.</b> ${groups.length ? 'It follows the ladder: groups (' + groups.map(g => acgE(g.name || 'Group')).join(', ') + ') and the picks steps. ' : 'It follows the extra money rules. '}${live}</li>
+    <li><b>Who gets premium.</b> Everyone with the operator role. Anyone else only when <i>Premium eligible</i> is ticked in his profile.</li></ul>
+    <div class="acgEx"><b>Example.</b> An operator has 47,380 picks. With the rounding now in Settings, his level is <b>${fmt(lv).replace('.00', '')}</b>. The premium table of his machine gives the rate for that level. Premium = 47,380 x that rate (average if he ran several machines).</div>`));
+  b.push(acgSec(3, 'Sponsor sheet', `
+    <div class="acgF">Total salary = Basic + Overtime + Extra money + Tying commission. Net pay = Total - Deductions</div>
+    <ul><li><b>Overtime, fixed.</b> A fixed monthly amount from the profile.</li>
+    <li><b>Overtime, by the hour.</b> For people whose overtime changes (tick <i>Gets overtime by hours</i> in the profile and write his overtime hours per day). The total working hours a day are set in Settings: <b>${acgE(wh)} hours</b>. ${live}</li></ul>
+    <div class="acgF">His normal hours = ${acgE(wh)} - his overtime hours<br>1 hour of overtime = Basic / 30 / his normal hours x 1.5<br>Overtime = overtime hours per day x working days x 1 hour of overtime</div>
+    <div class="acgEx"><b>Example.</b> Basic 1,250, overtime ${otD} hours a day, 26 working days. Normal hours = ${acgE(wh)} - ${otD} = ${acgE(nh)}. One hour = 1,250 / 30 / ${acgE(nh)} x 1.5 = ${rate.toFixed(4)}. Overtime = ${otD} x 26 x ${rate.toFixed(4)} = <b>${fmt(otAmt)}</b>. Hold the mouse on the overtime amount in the sheet to see this working for every person.</div>
+    <ul><li><b>Working days</b> are the days of the salary month that are not holidays in the Calendar (Fridays and public holidays). A person who joined in the month counts from his joining date. ${built}</li>
+    <li><b>Extra money (every month)</b> is a fixed amount from the profile. It is added every month.</li>
+    <li><b>Beaming / Tying commission.</b> ${fmt(tyr)} SAR for each tying. The total of a department is shared equally by everyone in its tying team. A person marked <i>Fixed</i> is counted in the share but gets nothing here (he has a fixed amount). Press <i>Calculate and add to Extra</i> after writing the counts. ${live}</li></ul>`));
+  b.push(acgSec(4, 'Non Sponsor sheet', `
+    <div class="acgF">Net pay = Fixed salary - Deductions - Days not worked</div>
+    <p>The whole fixed salary comes from <i>Basic salary</i> in the profile. There is no overtime, premium or commission on this sheet.</p>`));
+  b.push(acgSec(5, 'Deductions', `
+    <p>Press the minus button on a person to deduct. Each line has a <b>reason</b>. There are two kinds of reason:</p>
+    <ul><li><b>Amount.</b> You write the amount, for example Late or Damage.</li>
+    <li><b>Days of pay.</b> You write the days of leave. The app works out the amount.</li></ul>
+    <div class="acgF">1 day of pay = all the fixed pay / days of the salary month<br>Deduction = days of leave x days of pay for each day of leave (set per reason) x 1 day of pay</div>
+    <p><b>What is fixed pay?</b> Basic salary + fixed overtime (Non Sponsor: the fixed salary). <b>Not</b> counted, because they depend on work or are incentives: premium, overtime by hours, tying / beaming commission and extra money. ${built}</p>
+    <div class="acgEx"><b>Example.</b> Basic 760 + fixed overtime 540 = 1,300. ${acgE(acYmLabel(ym))} has ${per} days, so one day = 1,300 / ${per} = <b>${fmt(dayV)}</b>. One day of "${acgE(dRs.name)}" (${mult} day${mult === 1 ? '' : 's'} of pay) = ${mult} x ${fmt(dayV)} = <b>${fmt(mult * dayV)}</b>.</div>
+    <p><b>The reasons now in Settings</b> ${live}</p>
+    ${reasons.length ? `<table><tr><th>Reason</th><th>Kind</th><th>Days of pay (Sponsor)</th><th>Days of pay (Non Sponsor)</th></tr>${reasons.map(x => `<tr><td>${acgE(x.name)}</td><td>${x.kind === 'days' ? 'Days of pay' : 'Amount'}</td><td>${x.kind === 'days' ? acgE(x.sp) : '-'}</td><td>${x.kind === 'days' ? acgE(x.ns) : '-'}</td></tr>`).join('')}</table>` : '<p>No reasons are set yet.</p>'}
+    <p>An operator follows the days set for his own category (Sponsor or Non Sponsor).</p>
+    <p><b>Instalments (Loan, Advance, Iqama transfer).</b> Written in the profile (Salary Info): the total, the number of months and the first month. The app deducts a share every month by itself and the last month takes what is left. Types now: ${inst.length ? inst.map(x => acgE(x.name)).join(', ') : 'none'}. ${live}</p>
+    <p><b>Violations.</b> A deduction that comes from a violation waits at the top of the sheet for your decision before it is added.</p>`));
+  b.push(acgSec(6, 'People who join, leave or go on vacation', `
+    <p>All of these are ${built}. A person who is not paid for the full month is paid <b>day by day</b>: fixed pay / days of the salary month, for each day he was away.</p>
+    <table><tr><th>Case</th><th>What the sheet does</th></tr>
+    <tr><td>Joined in the middle of the month</td><td>Paid from his joining date. Remarks shows, for example, "From 10 Oct · 30-14=16W" (30 days in the month, 14 before joining, 16 worked).</td></tr>
+    <tr><td>Joined after the salary month</td><td>Left off the sheet. Listed at the top: you can add him with one button.</td></tr>
+    <tr><td>Left (exit or terminated)</td><td>Settled when he left, so he is left off. If the month is already marked paid for him in the Pay desk (Bank or Cash), he stays as the record.</td></tr>
+    <tr><td>Left after the salary month</td><td>Left off. Listed at the top: you decide to keep him or not.</td></tr>
+    <tr><td>On vacation the whole month</td><td>Not in the sheet. A line at the top says who and why.</td></tr>
+    <tr><td>On vacation part of the month</td><td>Paid up to his <b>last working day</b> and again from his <b>work start date</b>. The days between are not paid. The vacation form asks for the last working day. The work start date is asked when he is changed from Vacation to On the job.</td></tr>
+    <tr><td>Paid another way</td><td>Mark him <b>Paid · Other way</b> in the Pay desk. He is left off that month's sheet and listed at the top. Mark him not paid to put him back.</td></tr></table>
+    <p>The sheet never removes anyone by itself: it shows the change at the top and you press <b>Apply changes</b>. Sheets older than last month are history and are not changed.</p>`));
+  b.push(acgSec(7, 'Pay desk', `
+    <p>The Pay desk is where you mark who was paid in a month: <b>Bank</b> (Sponsor staff by default), <b>Cash</b> (the others) or <b>Other way</b>. It does not change any amount.</p>
+    <ul><li>Search a name to find someone who left, they are hidden until you search.</li>
+    <li><i>Paid · Other way</i> is for money paid outside the sheet: at exit, in hand, or by transfer. The person is then left out of that month's sheet.</li>
+    <li>You can mark many people at once: tick them and use the buttons.</li></ul>`));
+  const cust = (() => { try { return acCols().filter(c => !c.builtin); } catch(e){ return []; } })();
+  b.push(acgSec(8, 'Setting up a person (Salary Info)', `
+    <p>Open <b>Accounts > Users</b>, search the person, press <i>Edit profile</i> and open <i>Salary Info</i>. This is where you choose how he is paid.</p>
+    <table><tr><th>Field</th><th>What it does</th></tr>
+    <tr><td>Employment type (General Info)</td><td>Sponsor or Non Sponsor. Decides his sheet (unless he is an operator).</td></tr>
+    <tr><td>Position (General Info)</td><td>If the position is ticked under Who is an operator, he goes to the Operator sheet.</td></tr>
+    <tr><td>Basic salary</td><td>His fixed monthly pay. It is the base for overtime by hours and for leave deductions. Non Sponsor: the whole fixed salary.</td></tr>
+    <tr><td>Overtime (fixed)</td><td>A fixed monthly amount. Counted as fixed pay in deductions.</td></tr>
+    <tr><td>Gets overtime by hours + hours per day</td><td>His overtime is paid by the hour. Not counted as fixed pay.</td></tr>
+    <tr><td>Extra money (every month)</td><td>Added every month. Not cut when he takes leave.</td></tr>
+    <tr><td>Premium eligible</td><td>Operators always get premium. Anyone else only when ticked.</td></tr>
+    <tr><td>In the Beaming / Tying team (+ Fixed)</td><td>Shares the tying commission. Fixed: counted in the share but gets nothing.</td></tr>
+    <tr><td>Salary deductions (instalments)</td><td>Loan, advance, iqama transfer: total, months, first month.</td></tr>
+    <tr><td>Leave out of all salary sheets</td><td>For backup or unpaid profiles: never listed.</td></tr>${cust.length ? cust.map(c => `<tr><td>${acgE(c.l || c.name || c.id)}</td><td>An extra column added in Settings.</td></tr>`).join('') : ''}</table>
+    <div class="acgEx"><b>To change a person's category.</b> Edit profile > General Info: change <i>Employment type</i> (Sponsor / Non Sponsor) or <i>Position</i>. Open the sheet: the changes box at the top shows him moving to the right sheet, press <b>Apply changes</b>.</div>`));
+  b.push(acgSec(9, 'Settings: what each part controls', `
+    <p>Open Settings with the gear icon in Accounts. Each part is folded: open it, change, then press Save settings.</p>
+    <table><tr><th>Part</th><th>What it controls</th></tr>
+    <tr><td>Who is an operator (positions)</td><td>Which positions are paid on the Operator sheet.</td></tr>
+    <tr><td>Premium rate tables</td><td>The premium rate for each level of picks, per machine.</td></tr>
+    <tr><td>Rounding (premium only)</td><td>The step and the point where picks round up to the next level (now step ${step}, up from ${acgE(from)}).</td></tr>
+    <tr><td>Deduction from premium</td><td>The percent cut from the premium (now ${acgE(cut)}%).</td></tr>
+    <tr><td>Extra money (ladder)</td><td>Extra money by picks and group.</td></tr>
+    <tr><td>Beaming / Tying commission</td><td>The amount for each tying (now ${fmt(tyr)} SAR).</td></tr>
+    <tr><td>Working hours (overtime by the hour)</td><td>The total working hours a day (now ${acgE(wh)}).</td></tr>
+    <tr><td>Deduction reasons</td><td>The reasons in the deduct pop-up and their days of pay.</td></tr>
+    <tr><td>Instalment deductions</td><td>The types of instalment (Loan, Advance, Iqama transfer).</td></tr></table>
+    <p>This page reads the Settings again each time you open it, so it always shows the numbers that are in use now.</p>`));
+  b.push(acgSec(10, 'Who can do what', `
+    <ul><li>Anyone with the <b>Accounts</b> page can open the sheets, deduct, mark paid and save.</li>
+    <li>The same people can edit a profile from <b>Accounts > Users</b>. They cannot change roles, page access or the Employee ID: these stay with the Admin.</li>
+    <li>Every profile change they save is written to <b>Admin > People > Profile changes</b>: who, when, old and new value.</li>
+    <li>Saved sheets are kept in <b>Saved</b>. Opening an old month never recalculates anyone out of it.</li></ul>`));
+  b.push(acgSec(11, 'Rule log: what was added and when', `<p>Rules that live inside the app are added here when they are introduced.</p><table><tr><th>Month</th><th>Rule</th></tr>${ACG_LOG.slice().reverse().map(x => `<tr><td style="white-space:nowrap">${acgE(x[0])}</td><td>${acgE(x[1])}</td></tr>`).join('')}</table>`));
+  return `<div class="acg"><div class="acgBar"><b style="font-weight:500;">How the salary works</b><span style="flex:1"></span><button type="button" class="pillBtn" data-acg="all">Open all</button><button type="button" class="pillBtn" data-acg="none">Close all</button><button type="button" class="pillBtn" data-acg="print" title="Print or save as PDF">Print</button></div>
+    <div class="hrNote" style="margin-bottom:6px;">A short guide for anyone new, for the boss and for audit. Lines tagged <span class="acgTag">from Settings</span> are read live from the Settings now in use.</div>${b.join('')}</div>`;
+}
+function a2DrawGuide(){
+  $('a2Top').innerHTML = ''; $('a2Head').innerHTML = '';
+  if(!(AC.set && AC.tbl)){ $('acMain').innerHTML = '<div class="empty-state">Loading…</div>'; acEnsureLoaded().then(() => { if(A2.view === 'guide') a2DrawGuide(); }).catch(() => {}); return; }
+  $('acMain').innerHTML = acgHtml();
+}
+document.addEventListener('click', (e) => {
+  const t = e.target.closest && e.target.closest('button[data-acg]'); if(!t) return;
+  const a = t.dataset.acg;
+  if(a === 'all' || a === 'none'){ ACG.open = a === 'all'; document.querySelectorAll('.acg details').forEach(d => { d.open = a === 'all'; }); }
+  else if(a === 'print'){ document.querySelectorAll('.acg details').forEach(d => { d.open = true; }); document.body.classList.add('acgPrinting'); setTimeout(() => { window.print(); document.body.classList.remove('acgPrinting'); }, 100); }
+});
 </script>
 </body>
 </html>
