@@ -3853,6 +3853,95 @@ table.a2T td .a2In{ width:100%; min-width:36px; }
 .pdPh[data-pd=big]{ cursor:zoom-in; }
 @media (hover:none){ .pdHov{ display:none !important; } }
 #a2Tbl td[data-c="rm"]{ width:140px; max-width:170px; }
+
+/* one toolbar for every Accounts page: month, search, filter ... actions on the right */
+.a2TabRow .a2Top:empty{ display:none; }
+.a2Tool{ display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin:0 0 8px; }
+.a2Tool .a2Mn, .pdBar .pdMonth{ display:inline-flex; align-items:center; gap:2px; }
+.a2Tool .a2Mnnth{ min-width:96px; font-size:13.5px; line-height:1.15; } .a2Month small, .pdMonth small{ display:block; font-size:10.5px; color:var(--muted); font-weight:400; }
+.a2Tool .a2Srch, .pdBar .pdQ{ width:220px; max-width:100%; height:34px; border-radius:999px; border:1px solid var(--line); background:#fff; padding:0 14px; font:inherit; font-size:12.5px; box-shadow:0 1px 2px rgba(15,23,42,.05); flex:none; }
+.a2Tool .a2Stat{ margin:0 4px 0 0; white-space:nowrap; }
+.a2Tool .pillBtn, .a2Tool .iconBtn{ white-space:nowrap; }
+.a2Strip{ display:flex; flex-wrap:wrap; align-items:center; gap:8px; padding:7px 10px; margin:0 0 10px; background:#f7f8fc; border:1px solid #e9ecf6; border-radius:12px; }
+.a2Strip input[type=date]{ height:30px; border-radius:999px; border:1px solid var(--line); background:#fff; padding:0 8px; font:inherit; font-size:12px; width:128px; }
+.a2Strip .pillBtn{ height:30px; }
+.a2Tool .a2FPanel{ left:0; right:auto; }
+@media (max-width:640px){ .a2Tool .a2Srch, .pdBar .pdQ{ flex:1 1 100%; width:100%; } }
+
+/* ---- top of Accounts: tabs on row 1, one aligned toolbar on row 2 ---- */
+.a2Tool{ flex-wrap:nowrap; gap:8px; align-items:center; margin:0 0 12px; min-height:36px; }
+.a2Tool > *{ flex:none; }
+.a2Tool .a2Mn, .pdBar .pdMonth{ height:34px; border:1px solid var(--line); border-radius:999px; background:#fff; padding:0 2px; box-shadow:0 1px 2px rgba(15,23,42,.05); display:inline-flex; align-items:center; }
+.a2Tool .a2Mn .iconBtn, .pdBar .pdMonth .iconBtn{ width:28px; height:28px; border:0; box-shadow:none; background:transparent; }
+.a2Tool .a2Mnnth, .pdBar .pdMonth b{ min-width:80px; font-size:13px; font-weight:500; text-align:center; line-height:1; }
+.pdBar .pdMonth small, .a2Month small{ display:none; }
+.a2Tool .a2Srch, .pdBar .pdQ, .a2Tool .acQ{ flex:1 1 150px; width:auto; min-width:120px; max-width:250px; height:34px; box-sizing:border-box; }
+.a2Tool .pillBtn, .pdBar .pillBtn{ height:34px; box-sizing:border-box; display:inline-flex; align-items:center; gap:6px; }
+.a2Tool .a2Stat{ display:inline-flex; align-items:center; gap:6px; margin:0 4px; font-size:12.5px; color:var(--text); font-weight:400; }
+.a2Tool .a2Stat::before{ content:''; width:7px; height:7px; border-radius:50%; background:#16a34a; flex:none; }
+.a2Tool .a2Stat:has(.a2Warn)::before{ background:#d97706; } .a2Tool .a2Stat:empty{ display:none; }
+.a2TP{ position:absolute; top:calc(100% + 6px); left:0; z-index:30; width:290px; background:#fff; border:1px solid var(--line); border-radius:14px; box-shadow:0 10px 30px rgba(15,23,42,.14); padding:8px; display:flex; flex-direction:column; gap:2px; }
+.a2TH{ font-size:11.5px; color:var(--muted); padding:4px 8px 8px; border-bottom:1px solid #eef0f6; margin-bottom:4px; }
+.a2TR{ display:flex; align-items:center; gap:6px; padding:4px 8px 8px; flex-wrap:wrap; } .a2TR input[type=date]{ height:30px; border-radius:999px; border:1px solid var(--line); background:#fff; padding:0 8px; font:inherit; font-size:12px; width:122px; }
+.a2TI{ text-align:left; border:0; background:transparent; padding:9px 10px; border-radius:9px; font:inherit; font-size:13px; color:var(--text-strong); cursor:pointer; } .a2TI:hover{ background:#f3f5fb; } .a2TI.on{ color:var(--accent,#4f46e5); } .a2TI:disabled{ opacity:.5; cursor:default; }
+.pdBar{ flex-wrap:nowrap; align-items:center; margin-bottom:12px; min-height:36px; } .pdBar > *{ flex:none; } .pdBar .pdQ{ flex:1 1 150px; }
+@media (max-width:900px){ .a2Tool, .pdBar{ flex-wrap:wrap; } }
+
+/* ---- Accounts top panel, final: tabs + Settings on row 1; one aligned toolbar on row 2 ---- */
+.a2TabRow{ align-items:center; } .a2TabRow .a2Top{ display:flex; } .a2TabRow .a2Top:empty{ display:none; }
+.a2SetB{ height:38px; border-radius:999px; padding:0 14px; display:inline-flex; align-items:center; gap:6px; }
+.a2Tool{ display:flex; flex-wrap:wrap; align-items:flex-start; gap:8px; margin:0 0 12px; min-height:0; }
+.a2Tool > *{ flex:none; }
+.a2Tool .a2Mn{ height:34px; box-sizing:border-box; border:1px solid var(--line); border-radius:999px; background:#fff; padding:0 2px; display:inline-flex; align-items:center; box-shadow:0 1px 2px rgba(15,23,42,.05); margin:0; }
+.a2Tool .a2Mn .iconBtn{ width:28px; height:28px; border:0; background:transparent; box-shadow:none; }
+.a2Tool .a2Month{ min-width:0; padding:0 6px; font-size:13px; font-weight:500; white-space:nowrap; }
+.a2Tool .a2Cyc{ font-size:11.5px; color:var(--muted); padding:0 8px 0 2px; white-space:nowrap; border-left:1px solid #e3e6ef; margin-left:2px; padding-left:10px; }
+.a2Tool .a2Dts{ display:inline-flex; align-items:center; gap:4px; height:34px; } .a2Tool .a2Dts i{ font-style:normal; color:var(--muted); font-size:12px; }
+.a2Tool .a2Dts input[type=date]{ height:34px; box-sizing:border-box; width:124px; border-radius:999px; border:1px solid var(--line); background:#fff; padding:0 8px; font:inherit; font-size:12px; box-shadow:0 1px 2px rgba(15,23,42,.05); }
+.a2Tool .a2Srch{ flex:1 1 130px; width:auto; min-width:110px; max-width:230px; height:34px; box-sizing:border-box; border-radius:999px; border:1px solid var(--line); background:#fff; padding:0 14px; font:inherit; font-size:12.5px; box-shadow:0 1px 2px rgba(15,23,42,.05); }
+.a2Tool .pillBtn{ height:34px; box-sizing:border-box; display:inline-flex; align-items:center; gap:6px; white-space:nowrap; padding:0 13px; }
+.a2Tool .a2Grp{ display:inline-flex; gap:6px; align-items:center; padding-left:10px; border-left:1px solid #e3e6ef; height:34px; }
+.a2Tool .a2Sv{ display:flex; flex-direction:column; align-items:flex-end; gap:3px; }
+.a2Tool .a2SvRow{ display:flex; gap:8px; }
+.a2Tool .a2Stat{ margin:0; font-size:10.5px; line-height:1; color:var(--muted); display:inline-flex; align-items:center; gap:4px; font-weight:400; }
+.a2Tool .a2Stat::before{ width:6px; height:6px; }
+.a2Tool .a2Fl{ position:relative; }
+@media (max-width:760px){ .a2Tool .a2Srch{ flex:1 1 100%; max-width:none; } .a2Tool .a2Grp{ border-left:0; padding-left:0; } }
+.pdBar{ flex-wrap:wrap; align-items:center; }
+.pdBar .pdMonth small{ display:inline; margin-left:8px; padding-left:10px; border-left:1px solid #e3e6ef; font-size:11.5px; color:var(--muted); } .pdBar .pdMonth b{ display:inline-flex; align-items:center; min-width:0; padding:0 4px; font-size:13px; font-weight:500; }
+.a2Tool{ gap:7px; } .a2Tool .pillBtn{ padding:0 11px; } .a2Tool .pillBtn.a2Ic{ width:34px; padding:0; justify-content:center; }
+.a2Tool .a2Dts input[type=date]{ width:114px; font-size:11.5px; padding:0 7px; } .a2Tool .a2Dts{ gap:3px; }
+.a2Tool .a2Srch{ min-width:96px; } .a2Tool .a2Grp{ padding-left:8px; gap:5px; }
+
+/* ---- dates button + responsive toolbar ---- */
+.a2Tool .a2CycB{ border:0; background:transparent; cursor:pointer; font:inherit; font-size:11.5px; color:var(--muted); border-left:1px solid #e3e6ef; padding:0 10px; height:20px; } .a2Tool .a2CycB:hover{ color:var(--accent,#4f46e5); }
+.a2MnW{ flex:none; } .a2DP{ left:0; right:auto; width:300px; } .a2DP .a2TH{ padding:2px 2px 8px; border:0; margin:0; }
+.a2DP .a2TR{ display:flex; align-items:center; gap:6px; padding:0; flex-wrap:nowrap; } .a2DP .a2TR input[type=date]{ height:34px; width:124px; border-radius:999px; border:1px solid var(--line); padding:0 8px; font:inherit; font-size:12px; background:#fff; } .a2DP .a2TR i{ font-style:normal; color:var(--muted); }
+.a2FPanel{ max-width:calc(100vw - 48px); box-sizing:border-box; }
+@media (max-width:1050px){
+  .a2Tool .a2Srch{ flex:1 1 170px; max-width:none; }
+  .a2Tool .a2Sv{ margin-left:auto; }
+}
+@media (max-width:700px){
+  .a2TabRow{ flex-wrap:nowrap; } .a2TabRow .hrTabs{ flex:1 1 0; min-width:0; overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; } .a2TabRow .hrTabs::-webkit-scrollbar{ display:none; }
+  .a2TabRow .a2Top{ margin-left:auto; }
+  .a2Tool{ gap:8px; }
+  .a2Tool > span:empty{ display:none; }
+  .a2Tool .a2MnW{ flex:1 1 auto; } .a2Tool .a2Mn{ width:100%; justify-content:space-between; box-sizing:border-box; }
+  .a2Tool .a2Mn .a2Month{ flex:1; text-align:center; }
+  .a2Tool .a2Srch{ order:3; flex:1 1 100%; } .a2Tool > .a2Fl:not(.a2MnW){ order:2; } .a2Tool .a2Grp{ order:4; flex:1 1 100%; border-left:0; padding-left:0; flex-wrap:wrap; height:auto; }
+  .a2Tool .a2Grp .pillBtn{ flex:1 1 auto; justify-content:center; } .a2Tool .a2Grp .pillBtn.a2Ic{ flex:none; }
+  .a2Tool .a2Sv{ order:5; flex:1 1 100%; margin-left:0; align-items:stretch; } .a2Tool .a2SvRow{ width:100%; } .a2Tool .a2SvRow .pillBtn{ flex:1; justify-content:center; } .a2Tool .a2Stat{ justify-content:flex-end; }
+  .a2DP, .a2Tool .a2FPanel{ position:fixed; left:12px; right:12px; top:auto; width:auto; max-width:none; }
+  .pdBar{ gap:8px; } .pdBar .pdQ{ flex:1 1 100%; order:3; } .pdBar .pdSeg{ order:4; } 
+}
+@media (max-width:480px){ .a2SetT{ display:none; } .a2SetB{ width:38px; padding:0; justify-content:center; } }
+
+/* status text fills the free space of the row, right beside the buttons */
+.a2Tool .a2StW{ flex:1 1 auto; min-width:0; display:flex; justify-content:flex-end; align-items:center; height:34px; padding-right:2px; }
+.a2Tool .a2Stat{ font-size:11px; color:var(--muted); white-space:nowrap; }
+@media (max-width:1050px){ .a2Tool .a2StW{ flex:1 1 100%; order:6; height:auto; } }
+@media (max-width:700px){ .a2Tool .a2StW{ order:6; flex:1 1 100%; justify-content:flex-end; } .a2Tool .a2Sv{ order:5; } }
 </style>
 </head>
 <body>
@@ -22554,29 +22643,31 @@ function a2DrawSheet0(){
   { const gone = a2DropOthers(); if(gone) toast(gone + (gone === 1 ? ' person is' : ' people are') + ' now counted in another sheet and left this one'); }
   { const d0 = a2Doc(); if(d0 && d0.rows && d0.rows.length) a2JoinRefresh(d0); }
   const d = a2Doc(), sec = A2.sec, ed = acCanEdit(), rows = d ? d.rows : [], op = sec === 'operator';
-  const status = !d ? '' : (d.dirty ? '<span class="a2Warn">Not saved</span>' : (d.savedAt ? `Saved ${a2Stamp(d.savedAt)}` : 'Not saved yet'));
+  const status = !d ? '' : (d.dirty ? '<span class="a2Warn">Not saved</span>' : (d.savedAt ? `Saved ${a2Stamp(d.savedAt)}` : '<span class="a2Warn">Not saved yet</span>'));
   const calc = op && d ? (d.calcAt ? `Picks calculated ${a2Stamp(d.calcAt)}` : 'Picks not calculated yet') : '';
   const depts = Array.from(new Set(rows.map(r => r.dept).filter(Boolean))).sort(), poss = Array.from(new Set(rows.map(r => sec !== 'operator' ? a2PosNs(r) : r.pos).filter(Boolean))).sort(), nats = Array.from(new Set(rows.map(a2NatOf).filter(Boolean))).sort();
   const opts = (list, cur, all) => `<option value="">${all}</option>` + list.map(v => `<option value="${acEsc(v[0])}" ${v[0] === cur ? 'selected' : ''}>${acEsc(v[1])}</option>`).join('');
   const full = !!(d && rows.length), fN = [A2.q, A2.dept, A2.pos, A2.shift, A2.nat, A2.hideNj].filter(Boolean).length;
-  $('a2Top').innerHTML = `<div class="a2Fl">${full ? `<button type="button" class="pillBtn${fN ? ' ok' : ''}" data-a2="filt" title="Filter the list">${a2Svg('filter', 13)}Filter${fN ? ' ' + fN : ''}</button>` : ''}
-      ${A2.fOpen && full ? `<div class="a2FPanel"><input type="text" id="a2Q" class="acQ" placeholder="Search name or ID" value="${acEsc(A2.q)}">
+  $('a2Top').innerHTML = (op || sec === 'sponsor' || sec === 'nonsponsor') ? `<button type="button" class="pillBtn a2SetB" data-a2="set" title="Settings: rates, rules, reasons">${a2Svg('gear', 14)}<span class="a2SetT">Settings</span></button>` : '';
+  { const rg0 = d && d.from && d.to ? { from: d.from, to: d.to } : acDefaultRange(A2.ym), sh = (x) => (typeof pdDayTxt === 'function' ? pdDayTxt(x) : x);
+    const panel = A2.fOpen && full ? `<div class="a2FPanel">
       ${depts.length > 1 ? `<select id="a2Dept">${opts(depts.map(x => [x, x]), A2.dept, 'All departments')}</select>` : ''}
       ${poss.length > 1 ? `<select id="a2Pos">${opts(poss.map(x => [x, x]), A2.pos, 'All positions')}</select>` : ''}
       ${!op && nats.length > 1 ? `<select id="a2Nat">${opts(nats.map(x => [x, x]), A2.nat, 'All nationalities')}</select>` : ''}
       ${op ? `<select id="a2Shift">${opts([['D', 'Day'], ['N', 'Night']], A2.shift, 'Both shifts')}</select>` : ''}
       ${op ? `<div class="a2FCols"><span class="a2FT">Columns to show</span><label class="a2Fx a2DetL"><input type="checkbox" id="a2Det" ${A2.det !== false ? 'checked' : ''}><span>Machine details (MC, Picks, Rate)</span></label><label class="a2Fx a2DetL"><input type="checkbox" id="a2Tp" ${A2.tp !== false ? 'checked' : ''}><span>Total picks</span></label><label class="a2Fx a2DetL"><input type="checkbox" id="a2Av" ${A2.av !== false ? 'checked' : ''}><span>Avg rate</span></label></div>` : ''}
-      ${a2NjCount(rows) || A2.hideNj ? `<label class="a2Fx a2DetL"><input type="checkbox" id="a2Hnj" ${A2.hideNj ? 'checked' : ''}><span>Hide people who had not joined yet in this salary month (${a2NjCount(rows)})</span></label>` : ''}${fN ? '<button type="button" class="pillBtn" data-a2="fclear">Clear</button>' : ''}</div>` : ''}</div>
-    ${op || sec === 'sponsor' || sec === 'nonsponsor' ? `<button type="button" class="iconBtn" data-a2="set" title="Settings" aria-label="Settings">${a2Svg('gear', 15)}</button>` : ''}
-    ${full ? `<button type="button" class="pillBtn" data-a2="dl" title="Download PDF or Excel">${DL_ICON}Download</button>` : ''}`;
-  $('a2Head').innerHTML = `<div class="a2Bar a2One">
-      <button type="button" class="iconBtn" data-a2="prev" title="Previous month">&lsaquo;</button><b class="a2Month">${acYmLabel(A2.ym)}</b><button type="button" class="iconBtn" data-a2="next" title="Next month">&rsaquo;</button>
-      <span class="a2Stat">${status}${calc && !(d && !d.dirty && d.savedAt) ? ' &middot; ' + calc.replace('Picks calculated', 'Picks') : ''}</span>
-      ${op ? `<span class="a2Lbl">From</span><input type="date" id="a2From" value="${d ? d.from : ''}" ${ed ? '' : 'disabled'}><span class="a2Lbl">to</span><input type="date" id="a2To" value="${d ? d.to : ''}" ${ed ? '' : 'disabled'}>
-      ${ed ? `<button type="button" class="pillBtn ok" data-a2="calc" ${A2.busy ? 'disabled' : ''}>${A2.busy ? 'Calculating…' : (d && d.calcAt ? 'Recalculate' : 'Calculate picks')}</button>` : ''}` : ''}
-      ${ed && full ? `<button type="button" class="iconBtn" data-a2="refresh" title="${op ? 'Add new operators' : 'Add new people and update from profiles'}">${a2Svg('refresh')}</button>
-      ${op ? `<button type="button" class="pillBtn" data-a2="recalc" title="Apply the latest settings to the saved picks and amounts">${op ? 'Update rates' : 'Recalculate'}</button>` : ''}` : ''}
-      <span style="flex:1"></span>${sec === 'sponsor' && full ? `<button type="button" class="pillBtn${A2.tyOpen ? ' ok' : ''}" data-ty="toggle" title="Beaming / Tying commission">Tying commission</button>` : ''}${ed && full ? `<button type="button" class="pillBtn ok" data-a2="save" ${d.dirty && !A2.busy ? '' : 'disabled'}>Save sheet</button>` : ''}</div>`;
+      ${a2NjCount(rows) || A2.hideNj ? `<label class="a2Fx a2DetL"><input type="checkbox" id="a2Hnj" ${A2.hideNj ? 'checked' : ''}><span>Hide people who had not joined yet in this salary month (${a2NjCount(rows)})</span></label>` : ''}${fN ? '<button type="button" class="pillBtn" data-a2="fclear">Clear</button>' : ''}</div>` : '';
+    const fCnt = [A2.dept, A2.pos, A2.shift, A2.nat, A2.hideNj].filter(Boolean).length;
+    const needCalc = op && ed && !(d && d.calcAt), cyc = sh(rg0.from) + ' &ndash; ' + sh(rg0.to);
+    const datesPop = A2.dOpen && op && ed ? `<div class="a2FPanel a2DP"><div class="a2TH">Count the picks between</div><div class="a2TR"><input type="date" id="a2From" value="${d ? d.from : ''}" aria-label="From"><i>&rarr;</i><input type="date" id="a2To" value="${d ? d.to : ''}" aria-label="To"></div><div class="hrNote" style="margin:4px 0 6px;">Press Recalculate after changing the dates.</div><button type="button" class="pillBtn" data-a2="datesreset">Back to the salary month</button></div>` : '';
+    $('a2Head').innerHTML = `<div class="a2Tool">
+      <div class="a2Fl a2MnW"><span class="a2Mn"><button type="button" class="iconBtn" data-a2="prev" title="Previous month">&lsaquo;</button><b class="a2Month">${acYmLabel(A2.ym)}</b>${op && ed ? `<button type="button" class="a2Cyc a2CycB" data-a2="dates" title="Salary month. The picks are counted between these dates. Click to change.">${cyc}</button>` : `<span class="a2Cyc" title="Salary month">${cyc}</span>`}<button type="button" class="iconBtn" data-a2="next" title="Next month">&rsaquo;</button></span>${datesPop}</div>
+      ${full ? `<input type="text" id="a2Q" class="acQ a2Srch" placeholder="Search name or ID" value="${acEsc(A2.q)}" autocomplete="off">
+      <div class="a2Fl"><button type="button" class="pillBtn${fCnt ? ' ok' : ''}" data-a2="filt" title="Filter the list">${a2Svg('filter', 13)}Filter${fCnt ? ' ' + fCnt : ''}</button>${panel}</div>` : ''}
+      ${ed && op ? `<span class="a2Grp"><button type="button" class="pillBtn${needCalc ? ' ok' : ' ok'}" data-a2="calc" ${A2.busy ? 'disabled' : ''} title="${d && d.calcAt ? 'Picks counted ' + a2Stamp(d.calcAt) + '. ' : ''}Count the picks again for the dates shown">${A2.busy ? 'Calculating…' : (d && d.calcAt ? 'Recalculate' : 'Calculate picks')}</button>${full ? `<button type="button" class="pillBtn" data-a2="recalc" title="Apply the latest settings to the saved picks and amounts">Update rates</button>` : ''}${full ? `<button type="button" class="pillBtn a2Ic" data-a2="refresh" title="Refresh: add new operators" aria-label="Refresh">${a2Svg('refresh', 14)}</button>` : ''}</span>` : ''}
+      ${ed && full && !op ? `<span class="a2Grp"><button type="button" class="pillBtn" data-a2="refresh" title="Add new people and update from profiles">${a2Svg('refresh', 13)}Refresh</button>${sec === 'sponsor' ? `<button type="button" class="pillBtn${A2.tyOpen ? ' ok' : ''}" data-ty="toggle" title="Beaming / Tying commission">Tying commission</button>` : ''}</span>` : ''}
+      <span class="a2StW">${full ? `<span class="a2Stat">${status}</span>` : ''}</span>
+      ${full ? `<div class="a2Sv"><div class="a2SvRow"><button type="button" class="pillBtn" data-a2="dl" title="Download PDF or Excel">${DL_ICON}Download</button>${ed ? `<button type="button" class="pillBtn ok" data-a2="save" ${d.dirty && !A2.busy ? '' : 'disabled'}>Save sheet</button>` : ''}</div></div>` : ''}</div>`; }
   if(!d || !rows.length){
     $('acMain').innerHTML = `<div class="a2Empty"><div class="a2EmptyT">No ${A2_SEC[sec].n.toLowerCase()} sheet for ${acYmLabel(A2.ym)} yet</div>
       <div class="hrNote">${op ? 'Press Calculate picks above. It makes the operator list and counts the picks once. Nothing is read until you press it.' : 'Create the sheet to list everyone and start from the profile salary.'}</div>
@@ -22634,7 +22725,7 @@ function a2RefreshRow(r){
   const f = document.querySelector('#a2Tbl tfoot'); if(f) f.innerHTML = a2FootHtml(cols, a2Filtered(), ed);
   const t = $('a2Tiles'); if(t) t.outerHTML = a2TilesHtml();
 }
-function a2DirtyUi(){ const d = a2Doc(); const s = document.querySelector('[data-a2="save"]'); if(s && d) s.disabled = !d.dirty; const st = document.querySelector('.a2Stat'); if(st && d && d.dirty) st.innerHTML = '<span class="a2Warn">Not saved</span>' + (A2.sec === 'operator' ? (d.calcAt ? ' &middot; Picks calculated ' + a2Stamp(d.calcAt) : '') : ''); }
+function a2DirtyUi(){ const d = a2Doc(); const s = document.querySelector('[data-a2="save"]'); if(s && d) s.disabled = !d.dirty; const st = document.querySelector('.a2Stat'); if(st && d && d.dirty) st.innerHTML = '<span class="a2Warn">Not saved</span>'; }
 
 /* ---------- saved list ---------- */
 async function a2DrawSaved(){
@@ -22767,7 +22858,7 @@ document.addEventListener('click', async (e) => {
   else if(a === 'guide'){ A2.view = 'guide'; a2Draw(); }
   else if(a === 'prev' || a === 'next'){ A2.ym = acYmShift(A2.ym, a === 'next' ? 1 : -1); try{ await a2LoadDoc(A2.sec, A2.ym); a2Draw(); }catch(err){ console.error(err); toast('Could not load that month'); } }
   else if(a === 'open'){ A2.sec = t.dataset.v; A2.ym = t.dataset.ym; A2.view = 'sheet'; try{ await a2LoadDoc(A2.sec, A2.ym); a2Draw(); }catch(err){ console.error(err); toast('Could not open'); } }
-  else if(a === 'calc'){ a2CalcPicks(); }
+  else if(a === 'calc'){ A2.tOpen = false; a2CalcPicks(); }
   else if(a === 'create'){ a2Create(); }
   else if(a === 'refresh'){ a2Refresh(); }
   else if(a === 'recalc'){ a2Recalc(); }
@@ -22788,11 +22879,14 @@ document.addEventListener('click', async (e) => {
   else if(a === 'grpx'){ const ov = document.getElementById('dlOv'); if(ov) ov.remove(); A2.popId = null; }
   else if(a === 'grpset'){ const d = a2Doc(), r = d && d.rows.find(x => x.id === A2.popId); if(!r) return; r.gid = t.dataset.g || ''; a2OpRates(r); a2Touch(); a2DrawTable(); a2DirtyUi(); a2GroupPop(); }
   else if(a === 'peekx'){ const ov = document.getElementById('dlOv'); if(ov) ov.remove(); }
-  else if(a === 'filt'){ A2.fOpen = !A2.fOpen; a2DrawSheet(); }
+  else if(a === 'filt'){ A2.fOpen = !A2.fOpen; A2.tOpen = false; A2.dOpen = false; a2DrawSheet(); }
+  else if(a === 'tools'){ A2.tOpen = !A2.tOpen; A2.fOpen = false; a2DrawSheet(); }
+  else if(a === 'dates'){ A2.dOpen = !A2.dOpen; A2.fOpen = false; a2DrawSheet(); }
+  else if(a === 'datesreset'){ const d = a2Doc(); if(d){ const g = acDefaultRange(A2.ym); d.from = g.from; d.to = g.to; a2Touch(); } A2.dOpen = false; a2DrawSheet(); }
   else if(a === 'fclear'){ A2.q = A2.dept = A2.pos = A2.shift = A2.nat = ''; A2.hideNj = false; a2DrawSheet(); }
   else if(a === 'del'){ const d = a2Doc(), r = d && d.rows.find(x => x.id === t.dataset.id); if(!r || !confirm('Take ' + r.name + ' out of this month\'s sheet? Their profile is not changed.')) return; d.rows = d.rows.filter(x => x.id !== r.id); a2Touch(); a2DrawSheet(); }
 });
-document.addEventListener('mousedown', (e) => { if(A2.fOpen && !e.target.closest('.a2Fl') && document.getElementById('a2Top')){ A2.fOpen = false; if(A2.view === 'sheet') a2DrawSheet(); } });
+document.addEventListener('mousedown', (e) => { if((A2.fOpen || A2.tOpen || A2.dOpen) && !e.target.closest('.a2Fl') && document.getElementById('a2Top')){ A2.fOpen = false; A2.tOpen = false; A2.dOpen = false; if(A2.view === 'sheet') a2DrawSheet(); } });
 document.addEventListener('input', (e) => {
   const t = e.target; if(!$('accountsBody') || !$('accountsBody').contains(t)) return;
   if(t.id === 'a2Q'){ A2.q = t.value; a2DrawTable(); const t2 = $('a2Tiles'); if(t2) t2.outerHTML = a2TilesHtml(); const q = $('a2Q'); if(q){ q.focus(); q.setSelectionRange(q.value.length, q.value.length); } return; }
@@ -22804,7 +22898,7 @@ document.addEventListener('input', (e) => {
 });
 document.addEventListener('change', async (e) => {
   const t = e.target; if(!$('accountsBody') || !$('accountsBody').contains(t)) return;
-  if(t.id === 'a2From' || t.id === 'a2To'){ const d = a2Doc(); if(d){ d.from = $('a2From').value || d.from; d.to = $('a2To').value || d.to; a2Touch(); a2DirtyUi(); } return; }
+  if(t.id === 'a2From' || t.id === 'a2To'){ const d = a2Doc(); if(d){ d.from = $('a2From').value || d.from; d.to = $('a2To').value || d.to; a2Touch(); a2DirtyUi(); const cb = document.querySelector('.a2CycB'); if(cb && typeof pdDayTxt === 'function') cb.innerHTML = pdDayTxt(d.from) + ' &ndash; ' + pdDayTxt(d.to); } return; }
   if(t.id === 'a2Hnj'){ A2.hideNj = t.checked; a2DrawSheet(); return; }
   if(t.id === 'a2Det'){ A2.det = t.checked; a2DrawSheet(); return; }
   if(t.id === 'a2Tp'){ A2.tp = t.checked; a2DrawSheet(); return; }
@@ -24896,7 +24990,7 @@ function pdDraw(){
   const opt = (arr, cur, any) => `<option value="">${any}</option>` + arr.map(v => `<option value="${acEsc(v)}"${v === cur ? ' selected' : ''}>${acEsc(v)}</option>`).join('');
   host.innerHTML = `
     <div class="pdBar">
-      <span class="pdMonth"><button type="button" class="iconBtn" data-pd="prev" title="Previous month">&lsaquo;</button><b>${acYmLabel(PD.ym)}<small>${pdDayTxt(r.from)} – ${pdDayTxt(r.to)}</small></b><button type="button" class="iconBtn" data-pd="next" title="Next month">&rsaquo;</button></span>
+      <span class="pdMonth" title="Salary month ${pdDayTxt(r.from)} - ${pdDayTxt(r.to)}"><button type="button" class="iconBtn" data-pd="prev" title="Previous month">&lsaquo;</button><b>${acYmLabel(PD.ym)}<small>${pdDayTxt(r.from)} – ${pdDayTxt(r.to)}</small></b><button type="button" class="iconBtn" data-pd="next" title="Next month">&rsaquo;</button></span>
       <input type="text" class="pdQ" id="pdQ" placeholder="Search name or ID" value="${acEsc(PD.q)}">
       <button type="button" class="pillBtn${fN ? ' ok' : ''}" data-pd="ftog">${a2Svg('filter', 13)}Filter${fN ? ' ' + fN : ''}</button>
       <span class="pdSeg">${[['all', 'All'], ['no', 'Not paid'], ['paid', 'Paid']].map(x => `<button type="button" data-pd="st" data-v="${x[0]}" class="${PD.st === x[0] ? 'on' : ''}">${x[1]}</button>`).join('')}</span>
@@ -25468,21 +25562,25 @@ function a2DrawUsers(){
   const base = acuBase(), uniq = (f) => Array.from(new Set(base.map(f).filter(Boolean))).sort();
   const opt = (list, cur, all, unset) => `<option value="">${all}</option>` + list.map(v => { const val = Array.isArray(v) ? v[0] : v, lb = Array.isArray(v) ? v[1] : v; return `<option value="${acEsc(val)}" ${val === cur ? 'selected' : ''}>${acEsc(lb)}</option>`; }).join('') + (unset ? `<option value="__unset__" ${cur === '__unset__' ? 'selected' : ''}>Not set</option>` : '');
   const n = [ACU.sheet, ACU.dept, ACU.pos, ACU.et, ACU.shift].filter(Boolean).length;
-  $('acMain').innerHTML = `<div class="hrNote" style="margin-bottom:8px;">Search a person and open the profile to change anything in it. Every change you save is written to a history that the Admin can read.</div>
-    <div class="acuTabs"><button type="button" class="pillBtn${ACU.st === 'running' ? ' ok' : ''}" data-acu="st" data-v="running">Running</button><button type="button" class="pillBtn${ACU.st === 'exited' ? ' ok' : ''}" data-acu="st" data-v="exited">Exit / Terminated</button>${n ? '<button type="button" class="pillBtn" data-acu="clear">Clear filters (' + n + ')</button>' : ''}</div>
-    <div class="acuBar"><input type="text" id="acuQ" class="a2In" placeholder="Search name, ID, department, position" value="${acEsc(ACU.q)}" autocomplete="off">
-    <select id="acuSheet" title="Salary sheet">${opt([['operator', 'Operator'], ['sponsor', 'Sponsor'], ['nonsponsor', 'Non Sponsor'], ['left', 'Left out of sheets']], ACU.sheet, 'All salary sheets')}</select>
-    <select id="acuDept">${opt(uniq(u => u.department || ''), ACU.dept, 'All departments')}</select>
-    <select id="acuPos">${opt(uniq(a2PosOf), ACU.pos, 'All positions')}</select>
-    <select id="acuEt">${opt(['Sponsor', 'Non-Sponsor'], ACU.et, 'Any employment type', 1)}</select>
-    <select id="acuShift">${opt(['Day', 'Night'], ACU.shift, 'Any shift', 1)}</select></div><div id="acuList">${acuRows()}</div>`;
+  const panel = ACU.fOpen ? `<div class="a2FPanel">
+      <select id="acuSheet" title="Salary sheet">${opt([['operator', 'Operator'], ['sponsor', 'Sponsor'], ['nonsponsor', 'Non Sponsor'], ['left', 'Left out of sheets']], ACU.sheet, 'All salary sheets')}</select>
+      <select id="acuDept">${opt(uniq(u => u.department || ''), ACU.dept, 'All departments')}</select>
+      <select id="acuPos">${opt(uniq(a2PosOf), ACU.pos, 'All positions')}</select>
+      <select id="acuEt">${opt(['Sponsor', 'Non-Sponsor'], ACU.et, 'Any employment type', 1)}</select>
+      <select id="acuShift">${opt(['Day', 'Night'], ACU.shift, 'Any shift', 1)}</select>${n ? '<button type="button" class="pillBtn" data-acu="clear">Clear</button>' : ''}</div>` : '';
+  $('acMain').innerHTML = `<div class="a2Tool">
+      <span class="pdSeg"><button type="button" data-acu="st" data-v="running" class="${ACU.st === 'running' ? 'on' : ''}">Running</button><button type="button" data-acu="st" data-v="exited" class="${ACU.st === 'exited' ? 'on' : ''}">Exit / Terminated</button></span>
+      <input type="text" id="acuQ" class="acQ a2Srch" placeholder="Search name, ID, department, position" value="${acEsc(ACU.q)}" autocomplete="off">
+      <div class="a2Fl"><button type="button" class="pillBtn${n ? ' ok' : ''}" data-acu="ftog">${a2Svg('filter', 13)}Filter${n ? ' ' + n : ''}</button>${panel}</div></div>
+    <div class="hrNote" style="margin-bottom:8px;">Open a person's profile to change anything in it. Every change you save is written to a history that the Admin can read.</div><div id="acuList">${acuRows()}</div>`;
 }
 document.addEventListener('change', (e) => { const t = e.target; if(!t || !t.id) return; const m = { acuSheet: 'sheet', acuPos: 'pos', acuEt: 'et', acuShift: 'shift' }[t.id]; if(!m) return; ACU[m] = t.value; const l = $('acuList'); if(l) l.innerHTML = acuRows(); });
 document.addEventListener('click', (e) => {
-  const t = e.target.closest && e.target.closest('[data-acu="st"],[data-acu="clear"]'); if(!t) return;
-  if(t.dataset.acu === 'st') ACU.st = t.dataset.v; else Object.assign(ACU, { sheet: '', dept: '', pos: '', et: '', shift: '' });
+  const t = e.target.closest && e.target.closest('[data-acu="st"],[data-acu="clear"],[data-acu="ftog"]'); if(!t) return;
+  if(t.dataset.acu === 'st') ACU.st = t.dataset.v; else if(t.dataset.acu === 'ftog') ACU.fOpen = !ACU.fOpen; else Object.assign(ACU, { sheet: '', dept: '', pos: '', et: '', shift: '' });
   a2DrawUsers();
 });
+document.addEventListener('mousedown', (e) => { if(ACU.fOpen && A2.view === 'users' && !e.target.closest('.a2Fl')){ ACU.fOpen = false; a2DrawUsers(); } });
 
 /* ===== sheet always fits the width of the screen ===== */
 function a2Fit(){
