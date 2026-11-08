@@ -3799,6 +3799,59 @@ table.mpcSumT th{ background:transparent; position:static; }
 .acgTag{ font-size:10.5px; color:#64748b; border:1px solid #e3e6ef; border-radius:8px; padding:0 6px; margin-left:4px; }
 .acgBar{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:6px; }
 @media print{ body.acgPrinting > *:not(#app):not(main){ } body.acgPrinting .screen:not(#screen-accounts), body.acgPrinting header, body.acgPrinting nav, body.acgPrinting .hrTabs, body.acgPrinting .a2TabRow, body.acgPrinting .acgBar button{ display:none !important; } body.acgPrinting .acg details{ break-inside:avoid; } }
+.acuTabs{ display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px; } .acuBar{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:10px; }
+.acuBar .a2In{ flex:1 1 220px; max-width:280px; } .acuBar select{ flex:0 1 170px; min-width:130px; height:34px; border-radius:999px; border:1px solid var(--line); background:#fff; padding:0 12px; font:inherit; font-size:12px; }
+.pdAct{ display:flex; gap:6px; align-items:center; justify-content:flex-end; } .pdBtn.pdAlt{ background:#fff; color:var(--muted); border-color:var(--line-strong); font-weight:400; min-width:0; }
+@media(max-width:620px){ .pdAct{ grid-column:3 / 5; justify-content:flex-start; } }
+
+/* sheets fit the screen: tighter cells, text may wrap, a small shrink is the last step */
+.a2Box .table-scroll{ overflow-x:auto; }
+table.a2T{ table-layout:auto; }
+table.a2T td, table.a2T th{ padding-left:5px; padding-right:5px; }
+table.a2T td.a2Rm, table.a2T td:last-child{ white-space:normal; }
+table.a2T.a2Wide td{ padding-left:3px; padding-right:3px; }
+table.a2T td .a2In{ width:100%; min-width:36px; }
+
+/* ---- Rules guide (screen) ---- */
+.acg{ max-width:920px; }
+.acgCover{ border:1px solid var(--line); border-radius:12px; padding:14px 16px; background:#fff; margin-bottom:10px; }
+.acgCover h2{ margin:0 0 2px; font-size:20px; font-weight:500; color:var(--text-strong,#111827); }
+.acgMeta{ display:flex; gap:14px; flex-wrap:wrap; font-size:11.5px; color:var(--muted); margin-top:8px; }
+.acgMeta b{ font-weight:500; color:var(--text); }
+.acg details{ border:1px solid var(--line); border-radius:12px; margin:8px 0; background:#fff; }
+.acg summary{ padding:11px 14px; cursor:pointer; font-size:14.5px; color:var(--text-strong,#111827); list-style:none; display:flex; gap:10px; align-items:center; }
+.acg summary .acgN{ width:22px; height:22px; border-radius:50%; background:#eef0fb; color:var(--accent,#4f46e5); font-size:12px; display:flex; align-items:center; justify-content:center; flex:none; }
+.acgB{ padding:2px 16px 14px 16px; font-size:13px; line-height:1.55; color:var(--text); font-weight:400; }
+.acgB h4{ margin:14px 0 5px; font-size:12px; font-weight:500; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; }
+.acgB p{ margin:5px 0; } .acgB ul, .acgB ol{ margin:4px 0 6px 18px; padding:0; } .acgB li{ margin:3px 0; }
+.acgEx{ background:#f7f8fc; border-left:3px solid var(--accent,#4f46e5); padding:8px 12px; margin:8px 0; border-radius:6px; }
+.acgF{ background:#f7f8fc; border:1px solid #e3e6ef; padding:8px 12px; border-radius:8px; margin:8px 0; font-size:13px; }
+.acgNow{ border:1px dashed #c9cff0; border-radius:8px; padding:8px 12px; margin:8px 0; background:#fcfcff; }
+.acgNow > .acgNowT{ font-size:10.5px; letter-spacing:.05em; text-transform:uppercase; color:var(--accent,#4f46e5); margin-bottom:4px; }
+.acgB table{ border-collapse:collapse; margin:6px 0; font-size:12.5px; width:100%; } .acgB th, .acgB td{ border:1px solid #e3e6ef; padding:5px 9px; text-align:left; vertical-align:top; } .acgB th{ background:#f7f8fc; color:#64748b; font-weight:500; }
+.acgB td.n, .acgB th.n{ text-align:right; }
+.acgRates{ font-size:11.5px; } .acgRates td{ padding:3px 7px; }
+.acgBar{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:8px; }
+.acgSign{ display:grid; grid-template-columns:repeat(3,1fr); gap:18px; margin-top:26px; }
+.acgSign div{ border-top:1px solid #6b7280; padding-top:6px; font-size:12px; color:var(--muted); min-height:46px; }
+.acgSign span{ display:block; color:var(--text); }
+#acgPrint{ display:none; }
+@media print{
+  body.acgPrinting > *:not(#acgPrint){ display:none !important; }
+  body.acgPrinting #acgPrint{ display:block !important; }
+  body.acgPrinting{ background:#fff !important; }
+  #acgPrint .acgBar{ display:none !important; }
+  #acgPrint .acg{ max-width:none; }
+  #acgPrint details{ border:0; border-bottom:1px solid #d6dae6; border-radius:0; page-break-inside:avoid; }
+  #acgPrint summary{ padding:8px 0; font-size:15px; } #acgPrint .acgB{ padding:0 0 10px; font-size:11.5px; }
+  #acgPrint .acgSign{ page-break-inside:avoid; }
+  @page{ size:A4; margin:14mm; }
+}
+.pdHov{ position:fixed; z-index:9999; width:230px; border-radius:14px; background:#fff; border:1px solid var(--line); box-shadow:0 14px 40px rgba(15,23,42,.28); padding:6px; pointer-events:none; }
+.pdHov img{ display:block; width:100%; max-height:300px; object-fit:cover; border-radius:10px; }
+.pdHov div{ font-size:11.5px; color:var(--muted); text-align:center; padding:5px 2px 1px; }
+.pdPh[data-pd=big]{ cursor:zoom-in; }
+@media (hover:none){ .pdHov{ display:none !important; } }
 </style>
 </head>
 <body>
@@ -21637,9 +21690,12 @@ function astRing(due){
     if(r === 'close' || r === 'open'){ ov.remove(); AST.ringing = false; if(r === 'open'){ hrUI.tab = 'tasks'; goTo('employees'); hrUI.tab = 'tasks'; hrRender(); setTimeout(() => { if(hrUI.tab !== 'tasks'){ hrUI.tab = 'tasks'; hrRender(); } }, 500); } return; }
     if(!t) return;
     if(r === 'peek'){ if(AST.rev.has(id)) AST.rev.delete(id); else AST.rev.add(id); const row = b.closest('.astRingT'); if(row){ row.querySelector('b').textContent = astMasked(t) ? AST_MASK : t.title; row.querySelector('span').textContent = astMasked(t) ? astWhen(t.remind) : (t.by ? 'Given by ' + t.by + ' · ' : '') + astWhen(t.remind); } return; }
+    { const row0 = b.closest('.astRingT'); if(row0) row0.remove(); if(!ov.querySelector('.astRingT')){ ov.remove(); AST.ringing = false; } }   // the card goes at once, the saving carries on behind it
+    try{
     if(r === 'ack'){ await astAck(id); } else if(r === 'done') await astSetStatus(id, 'done'); else if(r === 'work') await astSetStatus(id, 'working');
     else { const n = new Date(); const w = r === 'snz' ? new Date(n.getTime() + 3600000) : new Date(n.getFullYear(), n.getMonth(), n.getDate() + 1, 9, 0); t.remind = astLocal(w.getTime()); await astSave(); toast('Reminder moved to ' + astWhen(t.remind)); }
-    const row = b.closest('.astRingT'); if(row) row.remove(); if(!ov.querySelector('.astRingT')){ ov.remove(); AST.ringing = false; } hrRenderTabs(); if(hrUI.tab === 'tasks') astRender(); });
+    }catch(err){ console.error(err); }
+    hrRenderTabs(); if(hrUI.tab === 'tasks') astRender(); });
 }
 async function astTick(){
   if(!astOn()){ return; } astReset();
@@ -24865,8 +24921,8 @@ function pdDrawBody(){
       <div class="pdPh${p.photoDataUrl ? '' : ' none'}" ${p.photoDataUrl ? 'data-pd="big"' : ''} data-id="${acEsc(u.loginId)}">${p.photoDataUrl ? `<img src="${p.photoDataUrl}" alt="">` : acEsc(ini)}${PD.edit && ed ? `<label class="pdCam" title="Take or change the photo">${pdSvg('cam', 11)}<input type="file" accept="image/*" capture="environment" data-pd="photo" data-id="${acEsc(u.loginId)}"></label>` : ''}</div>
       <div style="min-width:0;"><div class="pdNm">${acEsc(u.name)}<span class="pdCat">${acEsc(pdCatOf(u) || '-')}</span></div><div class="pdMeta">ID ${acEsc(u.loginId)} &middot; ${acEsc(u.department || '-')} &middot; ${acEsc(p.position || '-')}</div></div>
       <div class="pdDocs">${doc('iqama', 'Iqama')}${doc('passport', 'Passport')}</div>
-      ${ed && !pd ? `<button type="button" class="pdBtn" style="background:#fff;color:var(--muted);" data-pd="payo" data-id="${acEsc(u.loginId)}" title="Paid outside the salary sheet (at exit, in hand, by transfer). He is left out of this month's sheet.">Other way</button>` : ''}
-      ${ed ? `<button type="button" class="pdBtn${pd ? ' done' : ''}" data-pd="pay" data-id="${acEsc(u.loginId)}" title="${pd ? 'Tap to undo' : 'Mark as paid (' + pdMethodOf(u) + ')'}">${pd ? 'Paid · ' + pdHow(pd.h) + ' · ' + pdDayTxt(pd.d) : 'Mark paid'}</button>` : `<span class="pdBtn done" style="cursor:default;">${pd ? 'Paid · ' + pdHow(pd.h) : 'Not paid'}</span>`}
+      <div class="pdAct">${ed && !pd ? `<button type="button" class="pdBtn pdAlt" data-pd="payo" data-id="${acEsc(u.loginId)}" title="Paid outside the salary sheet (at exit, in hand, by transfer). He is left out of this month's sheet.">Other way</button>` : ''}
+${ed ? `<button type="button" class="pdBtn${pd ? ' done' : ''}" data-pd="pay" data-id="${acEsc(u.loginId)}" title="${pd ? 'Tap to undo' : 'Mark as paid (' + pdMethodOf(u) + ')'}">${pd ? 'Paid · ' + pdHow(pd.h) + ' · ' + pdDayTxt(pd.d) : 'Mark paid'}</button>` : `<span class="pdBtn done" style="cursor:default;">${pd ? 'Paid · ' + pdHow(pd.h) : 'Not paid'}</span>`}</div>
     </div>`;
   };
   body.innerHTML = `
@@ -25382,8 +25438,251 @@ document.addEventListener('click', (e) => {
   const t = e.target.closest && e.target.closest('button[data-acg]'); if(!t) return;
   const a = t.dataset.acg;
   if(a === 'all' || a === 'none'){ ACG.open = a === 'all'; document.querySelectorAll('.acg details').forEach(d => { d.open = a === 'all'; }); }
-  else if(a === 'print'){ document.querySelectorAll('.acg details').forEach(d => { d.open = true; }); document.body.classList.add('acgPrinting'); setTimeout(() => { window.print(); document.body.classList.remove('acgPrinting'); }, 100); }
+  else if(a === 'print'){ acgPrint(); }
 });
+
+/* ===== Users page: filters like the Admin page, plus the salary sheet ===== */
+Object.assign(ACU, { st: 'running', sheet: '', pos: '', et: '', shift: '' });
+const acuSheetOf = (u) => a2Skip(u) ? 'left' : a2Group(u);
+const acuSheetName = (k) => ({ operator: 'Operator', sponsor: 'Sponsor', nonsponsor: 'Non Sponsor', left: 'Left out of sheets' }[k] || '');
+const acuShiftOf = (u) => { const p = u.profile || {}, pf = (p.shiftPref === 'Day' || p.shiftPref === 'Night') ? p.shiftPref : ''; return (u.assignedShift === 'Day' || u.assignedShift === 'Night') ? u.assignedShift : pf; };
+function acuBase(){ const admin = state.user && state.user.role === 'admin'; return (state.users || []).filter(u => u.role !== 'pending' && (admin || u.role !== 'admin')); }
+function acuList(){
+  const q = ACU.q.trim().toLowerCase();
+  return acuBase().filter(u => (isExitedEmployee(u) === (ACU.st === 'exited'))
+    && (!ACU.sheet || acuSheetOf(u) === ACU.sheet)
+    && (!ACU.dept || (u.department || '') === ACU.dept)
+    && (!ACU.pos || a2PosOf(u) === ACU.pos)
+    && (!ACU.et || (ACU.et === '__unset__' ? !(u.profile || {}).employmentType : (u.profile || {}).employmentType === ACU.et))
+    && (!ACU.shift || (ACU.shift === '__unset__' ? !acuShiftOf(u) : acuShiftOf(u) === ACU.shift))
+    && (!q || ((u.name || '') + ' ' + u.loginId + ' ' + (u.department || '') + ' ' + a2PosOf(u)).toLowerCase().includes(q))).sort((a, b) => a2Num(a.loginId, b.loginId));
+}
+function acuRows(){
+  const l = acuList(), show = l.slice(0, 80);
+  if(!l.length) return '<div class="a2Empty"><div class="hrNote">No one matches.</div></div>';
+  return `<div class="hrNote" style="margin-bottom:6px;">${l.length} ${l.length === 1 ? 'person' : 'people'}</div><div class="table-scroll"><table class="report-table ovTbl a2T"><thead><tr><th>ID</th><th>Name</th><th>Department</th><th>Position</th><th>Salary sheet</th><th>Status</th><th></th></tr></thead><tbody>${show.map(u => `<tr><td>${acEsc(u.loginId)}</td><td>${acEsc(u.name)}</td><td>${acEsc(u.department || '')}</td><td>${acEsc(a2PosOf(u))}</td><td>${acEsc(acuSheetName(acuSheetOf(u)))}</td><td>${acEsc(String((u.profile || {}).employmentStatus || '').replace(/_/g, ' '))}</td><td><button type="button" class="pillBtn ok" data-acu="open" data-id="${acEsc(u.loginId)}">Edit profile</button></td></tr>`).join('')}</tbody></table></div>${l.length > show.length ? `<div class="hrNote" style="margin-top:6px;">Showing ${show.length} of ${l.length}. Use the filters or type a name or ID to narrow the list.</div>` : ''}`;
+}
+function a2DrawUsers(){
+  $('a2Top').innerHTML = ''; $('a2Head').innerHTML = '';
+  const base = acuBase(), uniq = (f) => Array.from(new Set(base.map(f).filter(Boolean))).sort();
+  const opt = (list, cur, all, unset) => `<option value="">${all}</option>` + list.map(v => { const val = Array.isArray(v) ? v[0] : v, lb = Array.isArray(v) ? v[1] : v; return `<option value="${acEsc(val)}" ${val === cur ? 'selected' : ''}>${acEsc(lb)}</option>`; }).join('') + (unset ? `<option value="__unset__" ${cur === '__unset__' ? 'selected' : ''}>Not set</option>` : '');
+  const n = [ACU.sheet, ACU.dept, ACU.pos, ACU.et, ACU.shift].filter(Boolean).length;
+  $('acMain').innerHTML = `<div class="hrNote" style="margin-bottom:8px;">Search a person and open the profile to change anything in it. Every change you save is written to a history that the Admin can read.</div>
+    <div class="acuTabs"><button type="button" class="pillBtn${ACU.st === 'running' ? ' ok' : ''}" data-acu="st" data-v="running">Running</button><button type="button" class="pillBtn${ACU.st === 'exited' ? ' ok' : ''}" data-acu="st" data-v="exited">Exit / Terminated</button>${n ? '<button type="button" class="pillBtn" data-acu="clear">Clear filters (' + n + ')</button>' : ''}</div>
+    <div class="acuBar"><input type="text" id="acuQ" class="a2In" placeholder="Search name, ID, department, position" value="${acEsc(ACU.q)}" autocomplete="off">
+    <select id="acuSheet" title="Salary sheet">${opt([['operator', 'Operator'], ['sponsor', 'Sponsor'], ['nonsponsor', 'Non Sponsor'], ['left', 'Left out of sheets']], ACU.sheet, 'All salary sheets')}</select>
+    <select id="acuDept">${opt(uniq(u => u.department || ''), ACU.dept, 'All departments')}</select>
+    <select id="acuPos">${opt(uniq(a2PosOf), ACU.pos, 'All positions')}</select>
+    <select id="acuEt">${opt(['Sponsor', 'Non-Sponsor'], ACU.et, 'Any employment type', 1)}</select>
+    <select id="acuShift">${opt(['Day', 'Night'], ACU.shift, 'Any shift', 1)}</select></div><div id="acuList">${acuRows()}</div>`;
+}
+document.addEventListener('change', (e) => { const t = e.target; if(!t || !t.id) return; const m = { acuSheet: 'sheet', acuPos: 'pos', acuEt: 'et', acuShift: 'shift' }[t.id]; if(!m) return; ACU[m] = t.value; const l = $('acuList'); if(l) l.innerHTML = acuRows(); });
+document.addEventListener('click', (e) => {
+  const t = e.target.closest && e.target.closest('[data-acu="st"],[data-acu="clear"]'); if(!t) return;
+  if(t.dataset.acu === 'st') ACU.st = t.dataset.v; else Object.assign(ACU, { sheet: '', dept: '', pos: '', et: '', shift: '' });
+  a2DrawUsers();
+});
+
+/* ===== sheet always fits the width of the screen ===== */
+function a2Fit(){
+  const ts = document.querySelector('.a2Box .table-scroll'), t = ts && ts.querySelector('table.a2T'); if(!t) return;
+  t.style.zoom = ''; const W = ts.clientWidth; if(!(W > 0)) return;
+  let z = 1;
+  for(let i = 0; i < 6; i++){ const w = t.getBoundingClientRect().width; if(w <= W + 0.5 || z <= 0.62) break; z = Math.max(0.62, z * (W / w) * 0.995); t.style.zoom = z.toFixed(3); }
+}
+{ const f = a2DrawTable; a2DrawTable = function(){ f.apply(this, arguments); try{ a2Fit(); }catch(e){} }; }
+{ let tm = 0; window.addEventListener('resize', () => { clearTimeout(tm); tm = setTimeout(() => { try{ a2Fit(); }catch(e){} }, 120); }); }
+
+/* ===== Accounts > Rules, second edition: plain words, every setting shown, printable, signed ===== */
+/* KEEP IT TRUE: everything from Settings, the Calendar and Admin is read live. A rule that lives inside the app code is written once in ACG_LOG
+   (month + one short sentence). The printed "Rules code" changes when any setting or any log line changes, so a printed copy can be checked against the screen. */
+ACG_LOG.push(['2026-11', 'Rules page shows every setting; the printed copy carries a Rules code, the date and the signatures.']);
+function acgHash(str){ let h = 5381; for(let i = 0; i < str.length; i++) h = ((h << 5) + h + str.charCodeAt(i)) >>> 0; return h.toString(16).toUpperCase().padStart(8, '0').slice(0, 8); }
+function acgCode(){ try{ return acgHash(JSON.stringify([AC.set, (AC.tbl || {}).tables, state.salaryCycleStartDay, ACG_LOG])); }catch(e){ return '--------'; } }
+function acgVer(){ const l = ACG_LOG[ACG_LOG.length - 1]; return l ? l[0] : ''; }
+const acgTbl = (head, rows, cls) => `<table${cls ? ' class="' + cls + '"' : ''}><thead><tr>${head.map(h => `<th${h[1] ? ' class="n"' : ''}>${h[0]}</th>`).join('')}</tr></thead><tbody>${rows.map(r => `<tr>${r.map((c, i) => `<td${head[i] && head[i][1] ? ' class="n"' : ''}>${c}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+const acgNow = (t, inner) => `<div class="acgNow"><div class="acgNowT">${t} &middot; from Settings, updates by itself</div>${inner}</div>`;
+const acgNum = (x) => acMoney(x).replace(/\.00$/, '');
+function acgSection(n, title, body){ return `<details data-acg="${n}"${ACG.open === true || (ACG.open == null && n === 1) ? ' open' : ''}><summary><span class="acgN">${n}</span>${acgE(title)}</summary><div class="acgB">${body}</div></details>`; }
+function acgHtml(){
+  const S = AC.set || {}, ym = A2.jym || A2.ym || acYmNow(), dy = acgDays(ym), per = dy.n, rg = dy.r, M = acgNum;
+  const rnd = S.round || {}, step = Math.max(1, acNum(rnd.step) || 100), from = acNum(rnd.from) || step / 2, cut = acNum(S.premCut), wh = a2WorkHours(), tyr = a2TyRate();
+  const reasons = Array.isArray(S.dedReasons) ? S.dedReasons : [], inst = Array.isArray(S.instTypes) ? S.instTypes : [], opPos = Array.isArray(S.opPos) ? S.opPos : [];
+  const tables = ((AC.tbl && AC.tbl.tables) || []), LD = S.ladders || { groups: [], rows: [], every: 0 }, groups = LD.groups || [], sd = Number(state.salaryCycleStartDay) || 1;
+  const cnt = {}; try{ ['operator', 'sponsor', 'nonsponsor'].forEach(k => { cnt[k] = a2People(k).length; }); cnt.left = (state.users || []).filter(u => u.role !== 'pending' && !isExitedEmployee(u) && a2Skip(u)).length; }catch(e){}
+  const mname = (id) => { try{ return a2McName(id); }catch(e){ return String(id); } };
+  const daysReasons = reasons.filter(x => x.kind === 'days');
+  // ---- a worked example from the real tables ----
+  let exOp = '';
+  { const t = tables.find(x => (x.rows || []).length && (x.machines || []).length), picks = 4174;
+    if(t){ const lv = (() => { try{ return acLevel(picks); }catch(e){ return picks; } })(), rate = acRateAt(t, '', lv), prem = Math.round(picks * rate), ct = Math.round(prem * cut / 100), np = prem - ct, g0 = groups[0], ax = g0 ? (() => { try{ return acLadderExtra(g0, picks); }catch(e){ return 0; } })() : 0;
+      exOp = `<div class="acgEx"><b>Example (sample numbers).</b> An operator ran machine ${acgE(mname(t.machines[0]))} and made <b>${M(picks)}</b> picks.<br>
+        1. Level: ${M(picks)} moves to <b>${M(lv)}</b>.<br>2. Rate for ${M(lv)} in table "${acgE(t.name)}": <b>${rate}</b>.<br>3. Premium: ${M(picks)} x ${rate} = <b>${M(prem)}</b>.<br>
+        4. ${cut > 0 ? 'Cut ' + acgE(cut) + '%: ' + M(ct) + ' is taken, he keeps <b>' + M(np) + '</b>.' : 'No cut is set, he keeps <b>' + M(prem) + '</b>.'}${g0 ? '<br>5. Extra money (group "' + acgE(g0.name) + '", ' + M(picks) + ' real picks): <b>' + M(ax) + '</b>.' : ''}</div>`; } }
+  const otD = 1.5, nh = wh - otD > 0 ? wh - otD : 8, rate1 = 1250 / 30 / nh * 1.5, wd = (() => { try{ return countWorkingDays(rg.from, rg.to) || per; }catch(e){ return per; } })();
+  const dayV = 1300 / per, dR = daysReasons[0];
+  const b = [];
+  // 1
+  b.push(acgSection(1, 'The big picture', `
+    <p>Every month Accounts makes <b>three salary sheets</b>. Each person is on <b>one</b> sheet only.</p>
+    ${acgTbl([['Sheet'], ['Who is on it'], ['How the net pay is made']], [
+      ['<b>Operator</b>', opPos.length ? 'People whose position is ticked: ' + opPos.map(acgE).join(', ') : 'People with the operator role', 'Basic + Fixed overtime + Premium + Extra money - Deductions'],
+      ['<b>Sponsor</b>', 'Sponsor staff who are not operators', 'Basic + Overtime + Extra money + Tying commission - Deductions'],
+      ['<b>Non Sponsor</b>', 'Non Sponsor people who are not operators', 'Fixed salary - Deductions']])}
+    <ul><li>Total salary and Net pay are <b>whole riyals</b>. Deductions keep the halalas.</li>
+    <li>Changes made inside a sheet are for that month only. The profile is not changed.</li>
+    <li>Money amounts are in Saudi riyals (SAR).</li></ul>`));
+  // 2
+  b.push(acgSection(2, 'The salary month', `
+    <ul><li>The salary month starts on day <b>${sd}</b>${sd > 1 ? ' and ends on day <b>' + (sd - 1) + '</b> of the next month' : ' and ends on the last day of the month'}.</li>
+    <li>It is named after the month it <b>ends</b> in.</li>
+    <li>Working days are the days that are <b>not marked as a holiday</b> in Admin > Calendar. They are used only for overtime paid by the hour.</li></ul>
+    <div class="acgEx"><b>${acgE(acYmLabel(ym))}</b>: ${acgE(fmtDate(rg.from))} to ${acgE(fmtDate(rg.to))}. That is <b>${per}</b> days, and <b>${wd}</b> working days.</div>
+    ${acgNow('Salary month', '<p>Starts on day <b>' + sd + '</b> (Admin > Salary Month).</p>')}`));
+  // 3
+  b.push(acgSection(3, 'Which sheet is a person on?', `
+    <p>The app checks these in order. The first one that fits decides.</p>
+    <ol><li><b>Left out</b>: "Leave out of all salary sheets" is ticked in his profile. He is never listed.</li>
+    <li><b>Operator</b>: his position is ticked under <i>Settings > Who is an operator</i>${opPos.length ? '' : ' (nothing is ticked now, so everyone with the operator role)'}.</li>
+    <li><b>Non Sponsor</b>: his Employment type is Non-Sponsor.</li>
+    <li><b>Sponsor</b>: everyone else.</li></ol>
+    ${acgNow('Operator positions', (opPos.length ? '<p>' + opPos.map(acgE).join(', ') + '</p>' : '<p>No position ticked. Everyone with the operator role is an operator.</p>') + (cnt.operator != null ? '<p>People on the sheets now: Operator <b>' + cnt.operator + '</b> &middot; Sponsor <b>' + cnt.sponsor + '</b> &middot; Non Sponsor <b>' + cnt.nonsponsor + '</b> &middot; Left out <b>' + cnt.left + '</b>.</p>' : ''))}
+    <p>If you change a person's position or employment type, he leaves the old sheet and is added to the new one when you open it. Press the refresh button if he is not listed yet.</p>`));
+  // 4
+  const rateTables = tables.length ? tables.map(t => {
+    const rows = (t.rows || []).slice().sort((a, c) => c[0] - a[0]), per3 = Math.ceil(rows.length / 3), cells = [];
+    for(let i = 0; i < per3; i++) cells.push([0, 1, 2].map(k => rows[i + k * per3] ? `<td class="n">${M(rows[i + k * per3][0])}</td><td class="n">${rows[i + k * per3][1]}</td>` : '<td></td><td></td>').join(''));
+    return `<p><b>${acgE(t.name || 'Table')}</b> &middot; machines: ${(t.machines || []).length ? (t.machines || []).map(m => acgE(mname(m))).join(', ') : 'none'}</p>${rows.length ? `<table class="acgRates"><thead><tr>${'<th class="n">Level</th><th class="n">Rate</th>'.repeat(3)}</tr></thead><tbody>${cells.map(c => '<tr>' + c + '</tr>').join('')}</tbody></table>` : '<p>No rates yet.</p>'}`; }).join('') : '<p>No rate table is made yet.</p>';
+  const grpRows = groups.map(g => { const mode = (typeof acGroupMode === 'function') ? acGroupMode(g) : 'any';
+    return [acgE(g.name || 'Group'), (g.depts || []).length ? (g.depts || []).map(acgE).join(', ') : 'Any department', mode === 'any' ? 'Any machines' : (mode === 'vip' ? 'VIP machines' : (g.machines || []).map(m => acgE(mname(m))).join(', ')), mode === 'any' ? '-' : 'At least ' + acgE(g.min == null || g.min === '' ? 1 : g.min) + ' of those machines and ' + acgE(g.share == null || g.share === '' ? 50 : g.share) + '% of his picks']; });
+  const stepRows = (LD.rows || []).filter(r => acNum(r.p) > 0).slice().sort((a, c) => acNum(a.p) - acNum(c.p)).map(r => [M(acNum(r.p))].concat(groups.map(g => { const x = (r.v || {})[g.id]; return x == null || String(x).trim() === '' ? '-' : M(acNum(x)); })));
+  const ladNow = groups.length ? `${acgTbl([['Group'], ['Department'], ['Machines'], ['He must have']], grpRows)}
+    ${stepRows.length ? acgTbl([['Real picks reached', 1]].concat(groups.map(g => [acgE(g.name || 'Group'), 1])), stepRows) : ''}
+    ${acNum(LD.every) > 0 ? '<p>After the last step: for every further <b>' + M(acNum(LD.every)) + '</b> picks add ' + groups.map(g => acNum(g.add) > 0 ? acgE(g.name) + ' <b>' + M(acNum(g.add)) + '</b>' : '').filter(Boolean).join(', ') + '.</p>' : ''}` : ((S.rules || []).length ? acgTbl([['Departments'], ['Machines'], ['Picks reached', 1], ['Extra money', 1]], S.rules.map(r => [(r.depts || []).length ? r.depts.map(acgE).join(', ') : 'Any', r.mc ? (acNum(r.mc) >= 4 ? '4 or more' : r.mc) : 'Any number', M(acNum(r.min)), M(acNum(r.amount))])) : '<p>No extra money rule is set.</p>');
+  b.push(acgSection(4, 'Operator sheet', `
+    <div class="acgF">Net pay = Basic + Fixed overtime + Premium (after the cut) + Extra money - Deductions</div>
+    <h4>Step by step</h4>
+    <ol><li><b>Basic and fixed overtime</b> come from his profile (Salary Info).</li>
+    <li><b>Picks.</b> The approved daily picks of the salary month, plus picks counted for stop time. They are counted for each machine.</li>
+    <li><b>Level.</b> His total picks are moved to the nearest level of <b>${M(step)}</b>. If the picks above a level are <b>${M(from)}</b> or more, he moves up to the next level. The total picks shown in the sheet never change.</li>
+    <li><b>Rate.</b> Each machine has a rate table (below). The app takes the rate of his level for each machine he ran. If he ran several machines, it uses the <b>average</b> of those rates. A VIP group uses the VIP table for all of its machines.</li>
+    <li><b>Premium</b> = total picks x rate.</li>
+    <li><b>Cut.</b> ${cut > 0 ? '<b>' + acgE(cut) + '%</b> of the premium is taken. He gets the rest.' : 'No cut is set now.'}</li>
+    <li><b>Extra money.</b> His group is found first (see the groups below). Then the app reads the highest step he reached with his <b>real</b> picks (not the level).</li>
+    <li><b>Who gets premium.</b> Every operator. Anyone else only if "Eligible for premium money" is ticked in the profile.</li></ol>
+    ${exOp}
+    ${acgNow('Rounding and cut', '<p>Levels every <b>' + M(step) + '</b> &middot; move up from <b>' + M(from) + '</b> extra picks &middot; cut <b>' + acgE(cut || 0) + '%</b></p>')}
+    ${acgNow('Premium rate tables', rateTables)}
+    ${acgNow('Extra money groups and steps', ladNow)}
+    <p>The group can be changed by hand for one month inside the sheet. If more than one group fits, the most specific one wins (a machine list beats a department).</p>`));
+  // 5
+  b.push(acgSection(5, 'Sponsor sheet', `
+    <div class="acgF">Total salary = Basic + Overtime + Extra money + Tying commission<br>Net pay = Total salary - Deductions</div>
+    <ul><li><b>Basic, fixed overtime and extra money</b> come from his profile. Extra money is added every month.</li>
+    <li><b>Overtime paid by the hour</b> is used only for people who have "Overtime depends on hours worked" ticked. You write his overtime hours per day in the profile.</li>
+    <li>For these people the overtime is <b>not</b> the fixed amount. It is worked out like this:</li></ul>
+    <div class="acgF">Normal hours = total working hours - his overtime hours a day<br>1 hour of overtime = Basic / 30 / normal hours x 1.5<br>Overtime = overtime hours a day x working days x 1 hour of overtime</div>
+    <div class="acgEx"><b>Example (sample numbers).</b> Basic 1,250. Overtime ${otD} hours a day. Working hours ${acgE(wh)}. Normal hours = ${acgE(wh)} - ${otD} = ${acgE(nh)}. One hour = 1,250 / 30 / ${acgE(nh)} x 1.5 = ${rate1.toFixed(4)}. With ${wd} working days: ${otD} x ${wd} x ${rate1.toFixed(4)} = <b>${M(otD * wd * rate1)}</b>. Hold the mouse on an overtime amount in the sheet to see the working for that person.</div>
+    <ul><li><b>Tying (beaming) commission.</b> Each tying is paid at the rate below. The total of a department is shared equally by its tying team. A person marked <i>Fixed</i> is counted in the team but gets no share (he has a fixed amount). Press <i>Calculate and add to Extra</i> after writing the counts.</li></ul>
+    ${acgNow('Overtime and tying', '<p>Total working hours a day: <b>' + acgE(wh) + '</b> &middot; Pay for one tying: <b>' + M(tyr) + ' SAR</b></p>')}`));
+  // 6
+  b.push(acgSection(6, 'Non Sponsor sheet', `
+    <div class="acgF">Net pay = Fixed salary - Deductions</div>
+    <ul><li>The fixed salary is the <b>Basic salary</b> in his profile.</li><li>There is no overtime, premium or commission on this sheet.</li></ul>`));
+  // 7
+  const rTab = reasons.length ? acgTbl([['No.'], ['Reason'], ['Type'], ['Days of pay: Sponsor', 1], ['Days of pay: Non Sponsor', 1]], reasons.map(x => [acgE(x.id), acgE(x.name), x.kind === 'days' ? 'Days of pay' : 'Amount typed by hand', x.kind === 'days' ? acgE(x.sp) : '-', x.kind === 'days' ? acgE(x.ns) : '-'])) : '<p>No reason is set yet.</p>';
+  b.push(acgSection(7, 'Deductions', `
+    <p>Press the small minus button at the end of a person's row. Choose a <b>reason</b> from the list. There are two kinds:</p>
+    <ul><li><b>Amount typed by hand.</b> You write the amount.</li><li><b>Days of pay.</b> You write the days. The app works out the money.</li></ul>
+    <div class="acgF">1 day of pay = fixed pay / days of the salary month<br>Deduction = days x (days of pay set for the reason) x 1 day of pay</div>
+    <p><b>Fixed pay</b> = Basic + fixed overtime (Non Sponsor: the fixed salary). These are <b>never</b> cut: premium, overtime by the hour, tying commission, extra money.</p>
+    <div class="acgEx"><b>Example (sample numbers).</b> Basic 760 + fixed overtime 540 = 1,300. ${acgE(acYmLabel(ym))} has ${per} days, so 1 day of pay = 1,300 / ${per} = <b>${acMoney(dayV)}</b>.${dR ? ' One day of "' + acgE(dR.name) + '" (' + acgE(dR.sp) + ' day of pay for Sponsor) = <b>' + acMoney(acNum(dR.sp) * dayV) + '</b>.' : ''}</div>
+    ${acgNow('Deduction reasons', rTab + '<p>An operator follows the column of his own employment type.</p>')}
+    <h4>Instalments (loan, advance, iqama transfer)</h4>
+    <ul><li>Written once in the profile (Salary Info): total, number of months, first month.</li><li>The sheet takes one part every month by itself. The last month takes what is left.</li></ul>
+    ${acgNow('Instalment types', inst.length ? '<p>' + inst.map(x => acgE(x.name)).join(' &middot; ') + '</p>' : '<p>No type is set.</p>')}
+    <h4>Violations</h4>
+    <ul><li>An amount from a violation waits at the top of the sheet. It is added only after you approve it.</li></ul>`));
+  // 8
+  b.push(acgSection(8, 'Joining, leaving and vacation', `
+    <p>A person who is not here for the whole month is paid <b>day by day</b>: fixed pay / days of the salary month, for each day he was away.</p>
+    ${acgTbl([['What happened'], ['What the sheet does']], [
+      ['Joined during the month', 'Paid from his joining date. Remarks shows, for example, "From 10 Oct - 30-14=16W": 30 days, 14 before joining, 16 worked.'],
+      ['Joined after the salary month', 'Not in the sheet. Listed at the top so you decide.'],
+      ['Left (exit or terminated)', 'Settled when he left, so he is not in the sheet. If that month is already marked paid for him (Bank or Cash) he stays as the record.'],
+      ['Left after the salary month', 'Not in the sheet. Listed at the top so you decide.'],
+      ['On vacation the whole month', 'Not in the sheet. A line at the top says who.'],
+      ['On vacation part of the month', 'Paid up to his <b>last working day</b> and again from his <b>work start date</b>. The days between are not paid. The vacation form asks the last working day. The work start date is asked when he comes back to work.'],
+      ['Paid another way', 'Mark him <b>Paid - Other way</b> in the Pay desk. He leaves that month\'s sheet and is listed at the top. Mark him not paid to put him back.']])}
+    <p>The app never removes anyone silently. It shows the change at the top and you press <b>Apply changes</b>. Sheets older than last month are history and are not changed.</p>`));
+  // 9
+  b.push(acgSection(9, 'Paying (Pay desk)', `
+    <p>The Pay desk records who was paid. It does <b>not</b> change any amount.</p>
+    ${acgTbl([['Mark'], ['Use it when']], [['Bank', 'Paid into the bank. This is the usual way for Sponsor staff.'], ['Cash', 'Paid in cash. This is the usual way for Non Sponsor people.'], ['Other way', 'Paid outside the sheet (at exit, in hand, by transfer). He is left out of that month\'s sheet.']])}
+    <ul><li>People who have left are hidden until you search for their name.</li><li>Tick many people and use the buttons on top to mark them together.</li></ul>`));
+  // 10
+  const cust = (() => { try{ return acCols().filter(c => !c.builtin); }catch(e){ return []; } })();
+  b.push(acgSection(10, 'Setting up a person (Salary Info)', `
+    <p>Open <b>Accounts > Users</b>, find the person, press <i>Edit profile</i>. Salary Info decides how he is paid.</p>
+    ${acgTbl([['Field'], ['What it does']], [
+      ['Employment type', 'Sponsor or Non-Sponsor. Decides his sheet (an operator position comes first).'],
+      ['Position', 'If the position is ticked in Settings as an operator position, he is on the Operator sheet.'],
+      ['Basic salary', 'His fixed monthly pay. Base for overtime by the hour and for leave deductions. Non Sponsor: the whole fixed salary.'],
+      ['Overtime (fixed)', 'A fixed monthly amount. Counts as fixed pay.'],
+      ['Overtime depends on hours worked + hours a day', 'Overtime is paid by the hour instead of the fixed amount.'],
+      ['Extra money (every month)', 'Added every month. Never cut for leave.'],
+      ['Eligible for premium money', 'Operators always get premium. Anyone else only when ticked.'],
+      ['In the Beaming / Tying team (+ Fixed)', 'Shares the tying commission. Fixed: counted in the team, gets no share.'],
+      ['Instalments (loan, advance, iqama transfer)', 'Total, months and first month. The sheet takes a part every month.'],
+      ['Leave out of all salary sheets', 'For backup or unpaid profiles. Never listed.']].concat(cust.map(c => [acgE(c.name), 'An extra column made in Settings.'])))}
+    <h4>How to change a person's category</h4>
+    <ul><li><b>Move to another sheet:</b> change Employment type or Position, save, then open the sheets.</li>
+    <li><b>Pay overtime by the hour:</b> tick "Overtime depends on hours worked" and write his hours a day.</li>
+    <li><b>Give a fixed extra amount every month:</b> write it in Extra money.</li>
+    <li><b>Add him to tying commission:</b> tick "In the Beaming / Tying team".</li>
+    <li><b>Take a loan back in parts:</b> add an instalment (type, total, months, first month).</li>
+    <li><b>Do not list him at all:</b> tick "Leave out of all salary sheets".</li></ul>`));
+  // 11
+  b.push(acgSection(11, 'Who can do what', `
+    <ul><li>Anyone with the <b>Accounts</b> page can open the sheets, deduct, mark paid and save.</li>
+    <li>The same people can edit a profile from <b>Accounts > Users</b>. Roles, page access and the Employee ID stay with the Admin.</li>
+    <li>Every profile change is written in <b>Admin > People > Profile changes</b>: who, when, old and new value.</li>
+    <li>Saved sheets are kept in <b>Saved</b>. Opening an old month does not recalculate it.</li></ul>`));
+  // 12
+  b.push(acgSection(12, 'Rule history', `<p>When a rule inside the app is added or changed, one line is written here.</p>${acgTbl([['Month'], ['Rule']], ACG_LOG.slice().reverse().map(x => [acgE(x[0]), acgE(x[1])]))}`));
+  const now = new Date(), stamp = now.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) + ' ' + now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+  return `<div class="acg"><div class="acgBar"><span style="flex:1"></span><button type="button" class="pillBtn" data-acg="all">Open all</button><button type="button" class="pillBtn" data-acg="none">Close all</button><button type="button" class="pillBtn ok" data-acg="print" title="Print or save as PDF (all sections open, with the signature page)">Print</button></div>
+    <div class="acgCover"><h2>Salary Rules</h2><div style="color:var(--muted);font-size:13px;">Riyadh Velvet Factory &middot; how the salary sheets work</div>
+      <div class="acgMeta"><span>Rules code <b>${acgCode()}</b></span><span>Last rule change <b>${acgE(acgVer())}</b></span><span>Printed <b>${stamp}</b></span></div>
+      <div class="hrNote" style="margin-top:8px;">Boxes marked "from Settings" are read live, so this page is always the same as the app. If the Rules code on a printed copy is the same as the code on the screen, the rules have not changed since it was printed.</div></div>
+    ${b.join('')}
+    <div class="acgB" style="margin-top:10px;"><div class="acgSign"><div><span>Prepared by (Accounts)</span>Name and signature</div><div><span>Checked by</span>Name and signature</div><div><span>Approved by (Boss)</span>Signature and date</div></div></div></div>`;
+}
+function acgPrint(){
+  document.querySelectorAll('.acg details').forEach(d => { d.open = true; });
+  let box = document.getElementById('acgPrint'); if(box) box.remove();
+  box = document.createElement('div'); box.id = 'acgPrint'; box.innerHTML = acgHtml(); box.querySelectorAll('details').forEach(d => { d.open = true; }); document.body.appendChild(box);
+  document.body.classList.add('acgPrinting');
+  const done = () => { document.body.classList.remove('acgPrinting'); const x = document.getElementById('acgPrint'); if(x) x.remove(); window.removeEventListener('afterprint', done); };
+  window.addEventListener('afterprint', done); setTimeout(() => { window.print(); setTimeout(done, 1500); }, 120);
+}
+
+/* Pay desk: a larger photo while the mouse is on the small one; a click opens it big */
+(function(){
+  let box = null;
+  const hide = () => { if(box){ box.remove(); box = null; } };
+  document.addEventListener('mouseover', (e) => {
+    const t = e.target.closest && e.target.closest('.pdPh[data-pd="big"]'); if(!t){ return; }
+    if(t.contains(e.relatedTarget) || e.target.closest('.pdCam')) return;
+    const u = (state.users || []).find(x => x.loginId === t.dataset.id), p = u && u.profile; if(!(p && p.photoDataUrl)) return;
+    hide(); box = document.createElement('div'); box.className = 'pdHov'; box.innerHTML = `<img src="${p.photoDataUrl}" alt=""><div>${acEsc(u.name || '')} &middot; click to enlarge</div>`; document.body.appendChild(box);
+    const r = t.getBoundingClientRect(), h = box.offsetHeight, w = box.offsetWidth;
+    let x = r.right + 10, y = r.top - 6; if(x + w > window.innerWidth - 8) x = Math.max(8, r.left - w - 10); if(y + h > window.innerHeight - 8) y = Math.max(8, window.innerHeight - h - 8); if(y < 8) y = 8;
+    box.style.left = x + 'px'; box.style.top = y + 'px';
+  });
+  document.addEventListener('mouseout', (e) => { const t = e.target.closest && e.target.closest('.pdPh[data-pd="big"]'); if(t && !t.contains(e.relatedTarget)) hide(); });
+  document.addEventListener('click', hide, true); window.addEventListener('scroll', hide, true);
+})();
 </script>
 </body>
 </html>
