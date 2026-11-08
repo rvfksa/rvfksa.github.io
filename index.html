@@ -3611,7 +3611,7 @@ details.admD{margin:0 0 10px;}
 .pcFR .pcLpN b{ font-weight:500; color:var(--text); margin-left:6px; }
 .pcFR textarea.pcNote::placeholder{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .pcFR textarea.pcNote{ box-sizing:border-box; }
-.a2Jn{font-size:10.5px;font-weight:400;line-height:1.25;white-space:nowrap;color:var(--muted);}
+.a2Jn{font-size:10.5px;font-weight:400;line-height:1.25;white-space:normal;overflow-wrap:anywhere;color:var(--muted);}
 .a2Chg{border:1px solid #fcd34d;background:#fffbeb;border-radius:14px;padding:10px 14px;margin:0 0 12px;font-size:13px;color:#78350f;}
 .a2ChgH{display:flex;align-items:center;gap:10px;} .a2ChgH b{font-weight:600;color:#92400e;}
 .a2Chg ul{margin:6px 0 0;padding-left:18px;} .a2Chg li{margin:3px 0;line-height:1.4;font-weight:400;} .a2Chg li b{font-weight:500;}
@@ -3852,6 +3852,7 @@ table.a2T td .a2In{ width:100%; min-width:36px; }
 .pdHov div{ font-size:11.5px; color:var(--muted); text-align:center; padding:5px 2px 1px; }
 .pdPh[data-pd=big]{ cursor:zoom-in; }
 @media (hover:none){ .pdHov{ display:none !important; } }
+#a2Tbl td[data-c="rm"]{ width:140px; max-width:170px; }
 </style>
 </head>
 <body>
@@ -22726,7 +22727,7 @@ async function a2Export(o){
   items.forEach(r => { const rows = a2TrsOf(cols, r, ++n, false, false); groups.push(rows); });
   const foot = `<tr class="a2Tot"><td></td>${cols.map(c => { const t = tot(c); return `<td class="${c.num ? 'a2N a2B' : ''}">${t === '' ? '' : (typeof t === 'number' ? ((c.k === 'total' || c.k === 'tot' || c.k === 'net' || sec === 'operator') ? a2I(t) : acMoney(t)) : '<b>' + acEsc(t) + '</b>')}</td>`; }).join('')}</tr>`;
   const head0 = rvfPdfHeader(o.title, [o.headLines[0]].concat(sec === 'operator' && d ? ['Picks counted ' + d.from + ' to ' + d.to] : []).concat(a2VacNoteText() ? [a2VacNoteText()] : [])), blocks = [head0];
-  const WPC = { id: 5, name: 15, ds: 6, bs: 6, otm: 6.5, mc: 8, mcp: 6.5, total: 7, mcr: 5.5, avg: 6.5, prem: 7, cut: 6.5, np: 7, extra: 6.5, gt: 7, ded: 7, net: 7.5, rm: 5 };
+  const WPC = { id: 5, name: 13, ds: 6, bs: 6, otm: 6.5, mc: 8, mcp: 6.5, total: 7, mcr: 5.5, avg: 6.5, prem: 7, cut: 6.5, np: 7, extra: 6.5, gt: 7, ded: 7, net: 7.5, rm: 9 };
   const cg = sec === 'operator' ? (() => { const w = [3].concat(cols.map(c => WPC[c.k] || 8)), t = w.reduce((a, b) => a + b, 0); return '<colgroup>' + w.map(x => `<col style="width:${(x / t * 100).toFixed(2)}%">`).join('') + '</colgroup>'; })() : '';
   const tblHtml = (rowsHtml) => `<div class="table-scroll"><table class="report-table ${cls}">${cg}<thead>${hd}</thead><tbody>${rowsHtml}</tbody></table></div>`;
   // measure every row once (same width and style as the PDF sheet), then fill each page to the bottom
