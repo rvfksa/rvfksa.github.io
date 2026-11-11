@@ -1464,9 +1464,12 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
 .flrHd{ font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); margin:2px 0 8px; }
 .flrScroll{ overflow-x:auto; }
 .flrSvg{ display:block; width:100%; min-width:640px; height:auto; font-family:inherit; }
-.flrFoot{ margin-top:10px; padding-top:9px; border-top:1px solid var(--line); font-size:11px; color:var(--muted); line-height:1.5; }
-.flrFacts, .flrLeg{ display:flex; flex-wrap:wrap; gap:3px 16px; }
-.flrLeg{ margin-top:4px; } .flrLeg .warn{ color:#b7791f; }
+.flrFoot{ margin-top:12px; padding-top:10px; border-top:1px solid var(--line); font-size:11.5px; color:#4b5563; display:flex; flex-wrap:wrap; align-items:center; gap:4px 16px; }
+.flrFoot .warn{ color:#b7791f; } .flrDiv{ width:1px; height:12px; background:var(--line); }
+.flrStar{ color:#d99a06; font-style:normal; margin-right:5px; font-size:12px; }
+.flrInfo{ display:flex; flex-wrap:wrap; align-items:center; gap:4px 14px; background:var(--panel-2); border-radius:10px; padding:7px 8px 7px 12px; margin:0 0 10px; font-size:12px; color:var(--muted); }
+.flrInfoN{ color:var(--text-strong); font-size:13px; } .flrInfo button{ margin-left:auto; border:0; background:transparent; color:var(--muted); font-size:18px; line-height:1; width:24px; height:24px; border-radius:50%; cursor:pointer; padding:0; }
+.flrSvg [data-c]{ cursor:pointer; } .flrSvg [data-k]{ transition:opacity .12s; } .flrSvg.hl [data-k]:not(.hit){ opacity:.35; }
 .flrSw{ display:inline-block; width:11px; height:11px; border-radius:3px; border:1px solid #d3d9e6; margin-right:6px; vertical-align:-2px; }
 .flrSw.off{ border-style:dashed; background:#fafbfc; }
   .asumTop{ display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-bottom:12px; }
@@ -25309,12 +25312,13 @@ function dsPerf(kind){
 }
 /* ===== Machine Layout (Dashboard): one drawing model, used for the screen (SVG) and the PDF (vector) ===== */
 const FLR_KEY = 'rvfFloorLayoutV2';
-const FLR_DET = [['type', 'Type'], ['width', 'Width'], ['picks', 'Picks / cm'], ['speed', 'Speed'], ['cart', 'Cart picks'], ['brand', 'Brand'], ['model', 'Model'], ['jac', 'Jacquard'], ['note', 'Note']];
+const FLR_DET = [['width', 'Width'], ['picks', 'Picks / cm'], ['speed', 'Speed'], ['cart', 'Cart picks'], ['brand', 'Brand'], ['model', 'Model'], ['jac', 'Jacquard'], ['note', 'Note']];
 const flr = { dept: 'RVF', shift: 'Day', op: true, id: true, det: [], color: 'load', sups: [], showSup: false, open: false };
-(function(){ try{ const s = JSON.parse(localStorage.getItem(FLR_KEY) || 'null'); if(s && typeof s === 'object'){ Object.keys(flr).forEach(k => { if(k !== 'open' && s[k] !== undefined) flr[k] = s[k]; }); } }catch(e){} if(!Array.isArray(flr.sups)) flr.sups = []; if(!Array.isArray(flr.det)) flr.det = []; if(flr.dept !== 'SSTM') flr.dept = 'RVF'; })();
+(function(){ try{ const s = JSON.parse(localStorage.getItem(FLR_KEY) || 'null'); if(s && typeof s === 'object'){ Object.keys(flr).forEach(k => { if(k !== 'open' && s[k] !== undefined) flr[k] = s[k]; }); } }catch(e){} if(!Array.isArray(flr.sups)) flr.sups = []; if(!Array.isArray(flr.det)) flr.det = []; flr.det = flr.det.filter(k => k !== 'type'); if(flr.dept !== 'SSTM') flr.dept = 'RVF'; })();
 function flrSave(){ try{ localStorage.setItem(FLR_KEY, JSON.stringify({ dept: flr.dept, shift: flr.shift, op: flr.op, id: flr.id, det: flr.det, color: flr.color, sups: flr.sups, showSup: flr.showSup })); }catch(e){} }
-const FLR_SP = [['#e6e9fb', '#c9cff0'], ['#dff1e8', '#bfe0cf'], ['#faefd6', '#ecd9a8'], ['#f7e4ec', '#e8c6d4'], ['#dfeef7', '#bcd8ea'], ['#ebe5f7', '#d3c8ec'], ['#dbf1ef', '#b7e0dc'], ['#f9e8dc', '#ebcdb6']];
-const FLR_C = { c3: ['#dfe4ff', '#bcc5f5'], c2: ['#edf0ff', '#d0d7f8'], c1: ['#ffffff', '#d3d9e6'], ink: '#111827', mute: '#6b7280', off: '#b9c1cd', dim: '#c9d0da', acc: '#4f46e5', walk: '#f5f6fa', walkT: '#a7afc6', aisle: '#f5f6fa', warn: '#b7791f', noop: '#c2a36b' };
+const FLR_PAD = 12;
+const FLR_SP = [['#4f6bed', '#4f6bed'], ['#10a37f', '#10a37f'], ['#f0a020', '#f0a020'], ['#e5586b', '#e5586b'], ['#14a3b8', '#14a3b8'], ['#7b8794', '#7b8794'], ['#f0782c', '#f0782c'], ['#8aa626', '#8aa626']];
+const FLR_C = { c3: ['#4f6bed', '#4f6bed'], c2: ['#10a37f', '#10a37f'], c1: ['#f0a020', '#f0a020'], ink: '#0b1220', mute: '#1f2937', off: '#7b8696', dim: '#a3acba', acc: '#4338ca', walk: '#e6e9f2', walkT: '#6b7694', aisle: '#e6e9f2', floor: '#f1f3f8', warn: '#a16207', noop: '#a16207', star: '#e0a000' };
 
 function flrSpec(dept){
   if(dept === 'RVF'){
@@ -25349,13 +25353,13 @@ function flrPack(items, size, w){
 }
 // everything drawn is a plain shape or a line of text, so the screen and the PDF come from the same list
 function flrSection(dept, cfg, D){
-  const sp = flrSpec(dept), W = dept === 'SSTM' ? 112 : 120, AW = 44, WG = 24, BG = 6, SZ = { t: 9, n: 11.5, i: 9, s: 8.5, d: 8.5 };
+  const sp = flrSpec(dept), W = dept === 'SSTM' ? 116 : 124, G = 12, AW = 44, WG = 28, BG = 12, SZ = { t: 9.5, n: 12.5, i: 9.5, s: 9, d: 9 };
   const supCol = { '__none__': FLR_C.c1 }; D.sups.slice().sort((a, b) => a.name.localeCompare(b.name)).forEach((x, i) => { supCol[x.id] = FLR_SP[i % FLR_SP.length]; });
   const sel = cfg.sups || [];
   const blank = !cfg.op && !cfg.id && !cfg.showSup && !cfg.det.length;
   const map = cfg.shift === 'Night' ? D.night : D.day;
   const load = {}; Object.keys(map).forEach(mid => (map[mid] || []).forEach(o => { load[o.id] = (load[o.id] || 0) + 1; }));
-  const grouping = !blank && (cfg.op || cfg.id || cfg.showSup || cfg.color !== 'none');
+  const first = (n) => String(n == null ? '' : n).trim().split(/\s+/)[0] || '';
   const cell = (id) => {
     const m = state.machines.find(x => String(x.id) === String(id));
     const c = { id, m, op: null, off: '', opL: [], detL: [] };
@@ -25386,17 +25390,17 @@ function flrSection(dept, cfg, D){
     const out = [];
     if(!c.run) return c.opL;
     const ops = c.op ? [c.op] : [];
-    if(cfg.op) out.push(c.op ? { s: flrFit(c.op.name + (c.lines > 1 ? ' +' + (c.lines - 1) : ''), SZ.n, false, w), size: SZ.n, color: c.dim ? FLR_C.dim : FLR_C.ink } : { s: 'No operator', size: SZ.s, color: c.dim ? FLR_C.dim : FLR_C.noop });
+    if(cfg.op) out.push(c.op ? { s: flrFit(first(c.op.name) + (c.lines > 1 ? ' +' + (c.lines - 1) : ''), SZ.n, false, w), size: SZ.n, color: c.dim ? FLR_C.dim : FLR_C.ink } : { s: 'No operator', size: SZ.s, color: c.dim ? FLR_C.dim : FLR_C.noop });
     if(cfg.id && c.op) out.push({ s: 'ID ' + c.op.id, size: SZ.i, color: c.dim ? FLR_C.dim : FLR_C.mute });
     if(cfg.showSup && c.op){ const lead = !cfg.op; out.push({ s: flrFit((lead ? '' : 'Sup. ') + c.supTxt, lead ? SZ.n : SZ.s, false, w), size: lead ? SZ.n : SZ.s, color: c.dim ? FLR_C.dim : (c.supWarn ? FLR_C.warn : (lead ? FLR_C.ink : FLR_C.acc)) }); }
     return out;
   };
-  const mwCell = W - 16;
+  const mwCell = W - G - 14;
   allCells.forEach(c => { c.detL = c.detRaw ? flrPack(c.detRaw, SZ.d, mwCell).map(s => ({ s, size: SZ.d, color: (c.off || c.dim) ? FLR_C.off : FLR_C.mute })) : []; });
   const lh = (l) => l.size + 3.4;
   const maxOp = blank ? 0 : Math.max(0, ...allCells.map(c => opLines(c, mwCell).reduce((a, l) => a + lh(l), 0)));
   const maxDet = Math.max(0, ...allCells.map(c => c.detL.reduce((a, l) => a + lh(l), 0)));
-  const H = blank ? 40 : Math.max(38, Math.ceil(17 + maxOp + (maxDet ? maxDet + 4 : 0) + 8));
+  const H = blank ? 42 : Math.max(44, Math.ceil(26 + maxOp + (maxDet ? maxDet + 4 : 0) + 8));
   const lw = sp.lc * W, rw = sp.rc * W, totalW = lw + AW + rw, rx = lw + AW;
   const prims = [];
   const rect = (x, y, w, h, o) => prims.push(Object.assign({ k: 'rect', x, y, w, h }, o));
@@ -25405,43 +25409,39 @@ function flrSection(dept, cfg, D){
   rows.forEach((r, t) => { ys.push(y); y += H; if(t < rows.length - 1) y += sp.back(t) ? BG : WG; });
   const totalH = y;
   const topPad = sp.dept === 'SSTM' ? 30 : 0, OY = topPad, aisleH = totalH + topPad * 2;
-  rect(lw + 4, 0, AW - 8, aisleH, { fill: FLR_C.aisle, r: 6 });
-  text(lw + AW / 2, aisleH / 2, 'MIDDLE AISLE', { size: 7.5, color: FLR_C.walkT, anchor: 'middle', spacing: 3, rot: -90 });
+  rect(-FLR_PAD, -FLR_PAD, totalW + 2 * FLR_PAD, aisleH + 2 * FLR_PAD, { fill: FLR_C.floor, r: 14 });
+  rect(lw + 2, 0, AW - 4, aisleH, { fill: FLR_C.aisle, r: 6 });
+  text(lw + AW / 2, aisleH / 2, 'MIDDLE AISLE', { size: 8, color: FLR_C.walkT, anchor: 'middle', spacing: 3, rot: -90 });
   rows.forEach((r, t) => {
     if(t < rows.length - 1 && !sp.back(t)){
       const gy = OY + ys[t] + H;
-      [[0, lw], [rx, rw]].forEach(b => { rect(b[0], gy + 4, b[1] - 2, WG - 8, { fill: FLR_C.walk, r: 4 }); text(b[0] + (b[1] - 2) / 2, gy + WG / 2 + 2.6, 'WALKWAY', { size: 7, color: FLR_C.walkT, anchor: 'middle', spacing: 2.4 }); });
+      [[0, lw], [rx, rw]].forEach(b => { rect(b[0], gy + 5, b[1] - G, WG - 10, { fill: FLR_C.walk, r: 4 }); text(b[0] + (b[1] - G) / 2, gy + WG / 2 + 2.6, 'WALKWAY', { size: 7.5, color: FLR_C.walkT, anchor: 'middle', spacing: 2.4 }); });
     }
   });
+  const CW = W - G;
   const blockDraw = (cells, x0, t) => {
     const y0 = OY + ys[t];
-    let i = 0;
-    while(i < cells.length){
-      let j = i;
-      const c = cells[i];
-      if(grouping && c.op && !c.dim){ while(j + 1 < cells.length && cells[j + 1].op && !cells[j + 1].dim && cells[j + 1].op.id === c.op.id) j++; }
-      const n = j - i + 1, x = x0 + i * W, w = n * W - 2;
-      const seg = cells.slice(i, j + 1);
-      let fill = '#ffffff', stroke = '#dfe3ec', dash = '';
-      if(!c.m || c.off){ fill = '#fafbfc'; stroke = '#d9dee6'; dash = '3.5 3'; }
-      else if(c.dim){ fill = '#fcfcfd'; stroke = '#eceff4'; }
+    cells.forEach((c, i) => {
+      const x = x0 + i * W, off = !c.m || c.off, quiet = off || c.dim, cid = (c.op && !c.dim && c.run) ? String(c.op.id) : '';
+      let fill = '#ffffff', stroke = '#cdd4e0', dash = '', bar = '';
+      if(off){ fill = FLR_C.floor; stroke = '#aab3c2'; dash = '3.5 3'; }
+      else if(c.dim){ fill = '#f7f8fb'; stroke = '#e1e5ec'; }
       else if(c.op){
         const tn = cfg.color === 'load' ? FLR_C[c.cls] : cfg.color === 'sup' ? (supCol[c.supId] || FLR_C.c1) : null;
-        if(tn){ fill = tn[0]; stroke = tn[1]; } else stroke = '#cfd5e0';
+        if(tn) bar = tn[0];
       }
-      if(seg.some(q => q.conf) && !c.dim) stroke = FLR_C.warn;
-      rect(x, y0, w, H, { fill, stroke, sw: 0.8, dash: dash || undefined, r: 6 });
-      for(let q = 1; q < n; q++) rect(x + q * W - 1.4, y0 + 5, 0.8, 12, { fill: stroke });
-      const off = !c.m || c.off, quiet = off || c.dim;
-      seg.forEach((q, qi) => {
-        const cx = x0 + (i + qi) * W;
-        if(blank) text(cx + (W - 2) / 2, y0 + H / 2 + 4.2, 'M/C ' + String(q.id), { size: 11.5, color: quiet ? FLR_C.off : FLR_C.ink, anchor: 'middle' });
-        else text(cx + 8, y0 + 13, 'M/C ' + String(q.id), { size: SZ.t, color: quiet ? FLR_C.off : FLR_C.mute });
-        if(!blank){ let ty = y0 + 17 + maxOp + 4; q.detL.forEach(l => { text(cx + (W - 2) / 2, ty + l.size, l.s, { size: l.size, color: l.color, anchor: 'middle' }); ty += lh(l); }); }
-      });
-      if(!blank){ let ty = y0 + 17; opLines(c, w - 18).forEach(l => { text(x + w / 2, ty + l.size, l.s, { size: l.size, color: l.color, anchor: 'middle' }); ty += lh(l); }); }
-      i = j + 1;
-    }
+      if(c.conf && !c.dim) stroke = FLR_C.warn;
+      const tag = { cell: 1, c: cid };
+      rect(x, y0, CW, H, Object.assign({ fill, stroke, sw: c.conf && !c.dim ? 1.6 : 1, dash: dash || undefined, r: 7 }, tag));
+      if(bar) rect(x + 9, y0 + 5, CW - 18, 4, Object.assign({ fill: bar, r: 2 }, tag));
+      if(blank) text(x + CW / 2, y0 + H / 2 + 4.2, 'M/C ' + String(c.id), Object.assign({ size: 11.5, color: quiet ? FLR_C.off : FLR_C.ink, anchor: 'middle' }, tag));
+      else text(x + 9, y0 + 21, 'M/C ' + String(c.id), Object.assign({ size: SZ.t, color: quiet ? FLR_C.off : FLR_C.mute }, tag));
+      if(c.m && c.m.vip && !off) prims.push({ k: 'star', x: x + CW - 13, y: y0 + 18.5, r: 5.2, color: c.dim ? FLR_C.dim : FLR_C.star, cell: 1, c: cid });
+      if(!blank){
+        let ty = y0 + 25; opLines(c, CW - 16).forEach(l => { text(x + CW / 2, ty + l.size, l.s, Object.assign({ size: l.size, color: l.color, anchor: 'middle' }, tag)); ty += lh(l); });
+        ty = y0 + 25 + maxOp + 4; c.detL.forEach(l => { text(x + CW / 2, ty + l.size, l.s, Object.assign({ size: l.size, color: l.color, anchor: 'middle' }, tag)); ty += lh(l); });
+      }
+    });
   };
   rows.forEach((r, t) => { blockDraw(r.L, 0, t); blockDraw(r.R, rx, t); });
   const running = allCells.filter(c => c.run), noOp = running.filter(c => !c.op);
@@ -25450,9 +25450,10 @@ function flrSection(dept, cfg, D){
   running.forEach(c => { if(c.op && c.supId){ let e = slm[c.supId]; if(!e){ const sp2 = D.sups.find(x => x.id === c.supId); e = slm[c.supId] = { id: c.supId, name: sp2 ? sp2.name : 'No supervisor', col: supCol[c.supId] || FLR_C.c1, machines: 0, ops: {} }; sl.push(e); } if(!c.dim){ e.machines++; e.ops[c.op.id] = 1; } } });
   sl.forEach(e => { e.opsN = Object.keys(e.ops).length; }); sl.sort((a, b) => a.name.localeCompare(b.name));
   const conf = running.filter(c => c.conf && !c.dim).length;
+  const info = {}; running.forEach(c => { if(c.op && !c.dim){ const e = info[c.op.id] || (info[c.op.id] = { id: c.op.id, name: c.op.name, sup: c.op.sup ? c.op.sup.name : '', ms: [] }); e.ms.push(c.id); } });
   const opIds = {}; running.forEach(c => { if(c.op && !c.dim) opIds[c.op.id] = 1; });
   const cnt = { c3: 0, c2: 0, c1: 0 }; Object.keys(opIds).forEach(id => { cnt[load[id] >= 3 ? 'c3' : load[id] === 2 ? 'c2' : 'c1']++; });
-  return { dept: sp.dept, shift: cfg.shift, w: totalW, h: aisleH, prims, cells: allCells, stats: { sup: sel.length ? mine.length : -1, sl: sl.filter(e => e.machines > 0), conf, total: allCells.length, running: running.length, off: allCells.length - running.length, noOp: noOp.length, ops: Object.keys(opIds).length, cnt } };
+  return { info, dept: sp.dept, shift: cfg.shift, w: totalW, h: aisleH, prims, cells: allCells, stats: { sup: sel.length ? mine.length : -1, sl: sl.filter(e => e.machines > 0), conf, total: allCells.length, running: running.length, off: allCells.length - running.length, noOp: noOp.length, ops: Object.keys(opIds).length, cnt } };
 }
 function flrScope(){
   const D = asumBuild(false), out = [];
@@ -25461,11 +25462,14 @@ function flrScope(){
   return out;
 }
 function flrEsc(t){ return String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;'); }
+function flrStarPts(cx, cy, r){ const o = []; for(let i = 0; i < 10; i++){ const a = -Math.PI / 2 + i * Math.PI / 5, rr = i % 2 ? r * 0.45 : r; o.push([cx + rr * Math.cos(a), cy + rr * Math.sin(a)]); } return o; }
 function flrSvg(S){
-  const pad = 4, body = S.prims.map(p => {
-    if(p.k === 'rect') return `<rect x="${p.x + pad}" y="${p.y + pad}" width="${p.w}" height="${p.h}" rx="${p.r || 0}" fill="${p.fill || 'none'}"${p.stroke ? ` stroke="${p.stroke}" stroke-width="${p.sw || 1}"` : ''}${p.dash ? ` stroke-dasharray="${p.dash}"` : ''}/>`;
+  const pad = FLR_PAD, body = S.prims.map(p => {
+    const dc = p.cell ? ` data-k="1"${p.c ? ` data-c="${flrEsc(p.c)}"` : ''}` : '';
+    if(p.k === 'star'){ const pts = flrStarPts(p.x, p.y, p.r).map(q => (q[0] + pad).toFixed(2) + ',' + (q[1] + pad).toFixed(2)).join(' '); return `<polygon points="${pts}" fill="${p.color}"${dc}/>`; }
+    if(p.k === 'rect') return `<rect${dc} x="${p.x + pad}" y="${p.y + pad}" width="${p.w}" height="${p.h}" rx="${p.r || 0}" fill="${p.fill || 'none'}"${p.stroke ? ` stroke="${p.stroke}" stroke-width="${p.sw || 1}"` : ''}${p.dash ? ` stroke-dasharray="${p.dash}"` : ''}/>`;
     const tr = p.rot ? ` transform="rotate(${p.rot} ${p.x + pad} ${p.y + pad})"` : '';
-    return `<text x="${p.x + pad}" y="${p.y + pad}" font-size="${p.size}" font-weight="400" fill="${p.color}" text-anchor="${p.anchor || 'start'}"${p.spacing ? ` letter-spacing="${p.spacing}"` : ''}${tr}>${flrEsc(p.s)}</text>`;
+    return `<text${dc} x="${p.x + pad}" y="${p.y + pad}" font-size="${p.size}" font-weight="400" fill="${p.color}" text-anchor="${p.anchor || 'start'}"${p.spacing ? ` letter-spacing="${p.spacing}"` : ''}${tr}>${flrEsc(p.s)}</text>`;
   }).join('');
   return `<svg class="flrSvg" viewBox="0 0 ${S.w + pad * 2} ${S.h + pad * 2}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${S.dept} floor layout">${body}</svg>`;
 }
@@ -25477,17 +25481,17 @@ function flrSupName(){ if(!flr.sups.length) return ''; const L = flrSupList(); r
 // the small line(s) under the layout: numbers first, then what the colours mean (shared by the screen and the PDF)
 function flrFoot(S){
   const s = S.stats, facts = [];
-  if(s.sup >= 0) facts.push('Selected supervisors: ' + s.sup + ' machines');
-  facts.push('Operators ' + s.ops, 'Machines running ' + s.running + ' of ' + s.total, 'Off ' + s.off, 'Running without operator ' + s.noOp);
+  if(s.sup >= 0) facts.push('Selected supervisors ' + s.sup + ' machines');
+  facts.push('Operators ' + s.ops, 'Running ' + s.running + ' of ' + s.total, 'Off ' + s.off, 'No operator ' + s.noOp);
   const leg = [];
-  if(flr.color === 'load') leg.push({ sw: FLR_C.c3, t: '3 machines · ' + s.cnt.c3 }, { sw: FLR_C.c2, t: '2 machines · ' + s.cnt.c2 }, { sw: FLR_C.c1, t: '1 machine · ' + s.cnt.c1 });
-  if(flr.color === 'sup'){ s.sl.forEach(e => leg.push({ sw: e.col, t: e.name + ' · ' + e.machines + ' machines · ' + e.opsN + ' operators' })); leg.push(s.conf ? { t: s.conf + ' machines with 2 supervisors', warn: true } : { t: 'No overlap between supervisors' }); }
-  leg.push({ sw: 'off', t: 'Machine off' });
+  if(flr.color === 'load') leg.push({ sw: FLR_C.c3, t: '3 machines ' + s.cnt.c3 }, { sw: FLR_C.c2, t: '2 machines ' + s.cnt.c2 }, { sw: FLR_C.c1, t: '1 machine ' + s.cnt.c1 });
+  if(flr.color === 'sup'){ s.sl.forEach(e => leg.push({ sw: e.col, t: e.name + ' ' + e.machines + ' / ' + e.opsN })); leg.push(s.conf ? { t: s.conf + ' machines with 2 supervisors', warn: true } : { t: 'No overlap' }); }
+  leg.push({ sw: 'star', t: 'VIP machine' }, { sw: 'off', t: 'Machine off' });
   return { facts, leg };
 }
 function flrFootHtml(S){
-  const f = flrFoot(S), sw = (c) => c === 'off' ? '<i class="flrSw off"></i>' : c ? `<i class="flrSw" style="background:${c[0]};border-color:${c[1]};"></i>` : '';
-  return `<div class="flrFoot"><div class="flrFacts">${f.facts.map(x => `<span>${flrEsc(x)}</span>`).join('')}</div><div class="flrLeg">${f.leg.map(l => `<span${l.warn ? ' class="warn"' : ''}>${sw(l.sw)}${flrEsc(l.t)}</span>`).join('')}</div></div>`;
+  const f = flrFoot(S), sw = (c) => c === 'off' ? '<i class="flrSw off"></i>' : c === 'star' ? '<i class="flrStar">&#9733;</i>' : c ? `<i class="flrSw" style="background:${c[0]};border-color:${c[1]};"></i>` : '';
+  return `<div class="flrFoot">${f.facts.map(x => `<span>${flrEsc(x)}</span>`).join('')}<span class="flrDiv"></span>${f.leg.map(l => `<span${l.warn ? ' class="warn"' : ''}>${sw(l.sw)}${flrEsc(l.t)}</span>`).join('')}</div>`;
 }
 function flrViewKey(){
   if(!flr.op && !flr.id && !flr.showSup && !flr.det.length && flr.color === 'none') return 'blank';
@@ -25515,6 +25519,13 @@ function flrPanelHtml(){
     </div>
   </div>`;
 }
+function flrInfoHtml(secs){
+  if(!flrPick) return '';
+  for(const S of secs){ const e = S.info[flrPick]; if(e) return `<div class="flrInfo"><span class="flrInfoN">${flrEsc(e.name)}</span><span>ID ${flrEsc(e.id)}</span>${e.sup ? `<span>Sup. ${flrEsc(e.sup)}</span>` : ''}<span>${S.dept} · ${S.shift}: machines ${e.ms.map(flrEsc).join(', ')}</span><button type="button" data-flr="unpick" aria-label="Close">&times;</button></div>`; }
+  return '';
+}
+let flrPick = '';
+function flrHl(id){ document.querySelectorAll('#flrBox .flrSvg').forEach(svg => { svg.classList.toggle('hl', !!id); svg.querySelectorAll('[data-k]').forEach(e => e.classList.toggle('hit', !!id && e.getAttribute('data-c') === id)); }); }
 function flrRender(){
   const box = document.getElementById('flrBox'); if(!box) return;
   let secs;
@@ -25528,12 +25539,14 @@ function flrRender(){
       <span style="flex:1;"></span>
       <button type="button" class="pillBtn" data-flr="pdf" title="Download as PDF" aria-label="Download PDF">${FLR_IC_DL}PDF</button>
       <button type="button" class="pillBtn" data-flr="xls" title="Download as Excel" aria-label="Download Excel">${FLR_IC_DL}Excel</button>
-    </div>${chips.length ? `<div class="asumActive">${chips.join('')}</div>` : ''}${flr.open ? flrPanelHtml() : ''}
+    </div>${flrInfoHtml(secs)}${chips.length ? `<div class="asumActive">${chips.join('')}</div>` : ''}${flr.open ? flrPanelHtml() : ''}
     ${secs.map(S => `<div class="flrSec">${secs.length > 1 ? `<div class="flrHd">${S.shift} shift</div>` : ''}<div class="flrScroll">${flrSvg(S)}</div>${flrFootHtml(S)}</div>`).join('')}`;
+  flrHl(flrPick);
 }
 function flrAct(a){
   const ci = a.indexOf(':'), k = ci < 0 ? a : a.slice(0, ci), v = ci < 0 ? '' : a.slice(ci + 1);
   if(k === 'open'){ flr.open = !flr.open; flrRender(); return; }
+  if(k === 'unpick'){ flrPick = ''; flrRender(); return; }
   if(k === 'pdf'){ flrPdf(); return; }
   if(k === 'xls'){ flrXls(); return; }
   if(k === 'shift') flr.shift = v;
@@ -25547,8 +25560,8 @@ function flrSel(n, v){
   if(n === 'view'){
     if(v === 'blank'){ flr.op = false; flr.id = false; flr.showSup = false; flr.det = []; flr.color = 'none'; }
     else if(v === 'ops'){ flr.op = true; flr.id = true; flr.showSup = false; flr.det = []; flr.color = 'load'; }
-    else if(v === 'det'){ flr.op = false; flr.id = false; flr.showSup = false; flr.det = ['type', 'width', 'picks', 'brand', 'jac']; flr.color = 'none'; }
-    else if(v === 'both'){ flr.op = true; flr.id = true; flr.showSup = false; flr.det = ['type', 'brand', 'jac']; flr.color = 'load'; }
+    else if(v === 'det'){ flr.op = false; flr.id = false; flr.showSup = false; flr.det = ['width', 'picks', 'brand', 'jac']; flr.color = 'none'; }
+    else if(v === 'both'){ flr.op = true; flr.id = true; flr.showSup = false; flr.det = ['brand', 'jac']; flr.color = 'load'; }
   }
   else if(n === 'opmode'){ flr.op = v === 'both' || v === 'name'; flr.id = v === 'both' || v === 'id'; }
   else if(n === 'supname') flr.showSup = v === '1';
@@ -25556,7 +25569,13 @@ function flrSel(n, v){
   flrSave(); flrRender();
 }
 document.addEventListener('change', (e) => { const s = e.target.closest && e.target.closest('#flrBox [data-flrsel]'); if(s) flrSel(s.getAttribute('data-flrsel'), s.value); });
-document.addEventListener('click', (e) => { const b = e.target.closest && e.target.closest('#flrBox [data-flr]'); if(b) flrAct(b.getAttribute('data-flr')); });
+document.addEventListener('click', (e) => {
+  const b = e.target.closest && e.target.closest('#flrBox [data-flr]'); if(b){ flrAct(b.getAttribute('data-flr')); return; }
+  const c = e.target.closest && e.target.closest('#flrBox .flrSvg [data-c]');
+  if(c && c.getAttribute('data-c')){ const id = c.getAttribute('data-c'); flrPick = flrPick === id ? '' : id; flrRender(); }
+});
+document.addEventListener('mouseover', (e) => { const c = e.target.closest && e.target.closest('#flrBox .flrSvg [data-c]'); if(c && c.getAttribute('data-c')) flrHl(c.getAttribute('data-c')); else if(e.target.closest && e.target.closest('#flrBox')) flrHl(flrPick); });
+document.addEventListener('mouseout', (e) => { if(e.target.closest && e.target.closest('#flrBox') && (!e.relatedTarget || !e.relatedTarget.closest || !e.relatedTarget.closest('#flrBox'))) flrHl(flrPick); });
 
 // ---- PDF: shapes and text (not a picture), one A4 landscape page per department and shift
 function flrRgb(h){ h = String(h || '#000000').replace('#', ''); return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)]; }
@@ -25566,17 +25585,21 @@ async function flrPdf(){
   try{ if(!(window.jspdf && window.jspdf.jsPDF)) await rvfLoadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'); }catch(err){ console.error(err); toast('Could not load the PDF tool — check your connection'); return; }
   try{
     const pdf = new window.jspdf.jsPDF({ unit: 'mm', format: 'a4', orientation: 'landscape' });
-    const PW = 297, PH = 210, M = 10, HD = 17, FT = 14;
+    const PW = 297, PH = 210, M = 10, HD = 17, FT = 9;
     secs.forEach((S, i) => {
       if(i) pdf.addPage();
       pdf.setFont('helvetica', 'normal'); pdf.setFontSize(7); pdf.setTextColor(79, 70, 229); pdf.text('RIYADH VELVET FACTORY', M, M + 2, { charSpace: 0.6 });
       pdf.setFontSize(13); pdf.setTextColor(17, 24, 39); pdf.text('Machine Layout · ' + S.dept + ' · ' + S.shift + ' shift' + (flr.sups.length ? ' · ' + flrSupName() : ''), M, M + 9);
       pdf.setFontSize(7.5); pdf.setTextColor(107, 114, 128); pdf.text('Created ' + rvfNowText(), PW - M, M + 9, { align: 'right' });
+      if(flrPick && S.info[flrPick]){ const e = S.info[flrPick]; pdf.setFontSize(8); pdf.setTextColor(75, 85, 99); pdf.text('Highlighted: ' + e.name + ' · ID ' + e.id + (e.sup ? ' · Sup. ' + e.sup : '') + ' · machines ' + e.ms.join(', '), M, M + 14); }
       const availW = PW - 2 * M, availH = PH - M - (M + HD) - FT;
-      const k = Math.min(availW / (S.w + 8), availH / (S.h + 8)), ox = M + (availW - (S.w + 8) * k) / 2, oy = M + HD;
+      const k = Math.min(availW / (S.w + 2 * FLR_PAD), availH / (S.h + 2 * FLR_PAD)), ox = M + (availW - (S.w + 2 * FLR_PAD) * k) / 2, oy = M + HD;
+      const GS = pdf.GState ? { lo: new pdf.GState({ opacity: 0.25 }), hi: new pdf.GState({ opacity: 1 }) } : null;
       S.prims.forEach(p => {
-        if(p.k === 'rect'){
-          const x = ox + (p.x + 4) * k, y = oy + (p.y + 4) * k, w = p.w * k, h = p.h * k, r = (p.r || 0) * k;
+        if(GS) pdf.setGState(flrPick && p.cell && p.c !== flrPick ? GS.lo : GS.hi);
+        if(p.k === 'star'){ const pts = flrStarPts(p.x + FLR_PAD, p.y + FLR_PAD, p.r).map(q => [ox + q[0] * k, oy + q[1] * k]); const c = flrRgb(p.color); pdf.setFillColor(c[0], c[1], c[2]); pdf.lines(pts.slice(1).map((q, i) => [q[0] - pts[i][0], q[1] - pts[i][1]]), pts[0][0], pts[0][1], [1, 1], 'F', true); }
+        else if(p.k === 'rect'){
+          const x = ox + (p.x + FLR_PAD) * k, y = oy + (p.y + FLR_PAD) * k, w = p.w * k, h = p.h * k, r = (p.r || 0) * k;
           if(p.fill){ const c = flrRgb(p.fill); pdf.setFillColor(c[0], c[1], c[2]); }
           if(p.stroke && !(p.fill && p.stroke === p.fill && p.w < 2)){ const c = flrRgb(p.stroke); pdf.setDrawColor(c[0], c[1], c[2]); pdf.setLineWidth((p.sw || 1) * k); }
           if(p.dash){ const d = p.dash.split(' ').map(Number); pdf.setLineDashPattern([d[0] * k, (d[1] || d[0]) * k], 0); } else pdf.setLineDashPattern([], 0);
@@ -25584,22 +25607,29 @@ async function flrPdf(){
           if(r > 0) pdf.roundedRect(x, y, w, h, r, r, st); else pdf.rect(x, y, w, h, st);
         } else {
           const c = flrRgb(p.color); pdf.setTextColor(c[0], c[1], c[2]); pdf.setFont('helvetica', 'normal'); pdf.setFontSize(p.size * k * 2.835);
-          const opt = { align: p.anchor === 'middle' ? 'center' : 'left' }; if(p.spacing) opt.charSpace = p.spacing * k; if(p.rot) opt.angle = -p.rot;
-          pdf.text(String(p.s), ox + (p.x + 4) * k, oy + (p.y + 4) * k, opt);
+          const opt = { align: p.anchor === 'middle' ? 'center' : 'left' }; if(p.spacing) opt.charSpace = p.spacing * k;
+          let tx = ox + (p.x + FLR_PAD) * k, ty = oy + (p.y + FLR_PAD) * k;
+          if(p.rot){ opt.align = 'left'; opt.angle = -p.rot; if(p.spacing) pdf.setCharSpace(p.spacing * k); const tw = pdf.getTextWidth(String(p.s)); if(p.spacing) pdf.setCharSpace(0); ty += tw / 2; }
+          pdf.text(String(p.s), tx, ty, opt);
         }
       });
+      if(GS) pdf.setGState(GS.hi);
       pdf.setLineDashPattern([], 0);
       // small print under the layout: numbers, then what the colours mean
-      const f = flrFoot(S); let fy = PH - M - 7;
-      pdf.setFont('helvetica', 'normal'); pdf.setFontSize(8); pdf.setTextColor(75, 85, 99);
-      pdf.text(f.facts.join('   ·   '), M, fy);
-      fy += 5.2; let fx = M;
-      f.leg.forEach(l => {
-        const tw = pdf.getTextWidth(l.t) + (l.sw ? 6.4 : 0) + 6;
-        if(fx + tw > PW - M){ fx = M; fy += 4.4; }
-        if(l.sw === 'off'){ pdf.setLineDashPattern([0.7, 0.7], 0); pdf.setDrawColor(185, 193, 205); pdf.setFillColor(250, 251, 252); pdf.setLineWidth(0.2); pdf.roundedRect(fx, fy - 2.7, 3.4, 3.4, 0.8, 0.8, 'FD'); pdf.setLineDashPattern([], 0); }
-        else if(l.sw){ const a = flrRgb(l.sw[0]), b = flrRgb(l.sw[1]); pdf.setFillColor(a[0], a[1], a[2]); pdf.setDrawColor(b[0], b[1], b[2]); pdf.setLineWidth(0.2); pdf.roundedRect(fx, fy - 2.7, 3.4, 3.4, 0.8, 0.8, 'FD'); }
-        if(l.warn) pdf.setTextColor(183, 121, 31); else pdf.setTextColor(107, 114, 128);
+      const f = flrFoot(S); let fy = PH - M - 3;
+      const items = f.facts.map(t => ({ t, plain: 1 })).concat([{ gap: 1 }], f.leg);
+      let fs = 8; const wid = () => items.reduce((a, l) => a + (l.gap ? 6 : pdf.getTextWidth(l.t) + (l.sw ? 5.2 : 0) + 5), 0);
+      pdf.setFont('helvetica', 'normal');
+      while(fs > 6) { pdf.setFontSize(fs); if(wid() <= PW - 2 * M) break; fs -= 0.25; }
+      pdf.setFontSize(fs); let fx = M;
+      items.forEach(l => {
+        if(l.gap){ fx += 6; return; }
+        const tw = pdf.getTextWidth(l.t) + (l.sw ? 5.2 : 0) + 5;
+        if(fx + tw > PW - M + 1){ fx = M; fy += 4; }
+        if(l.sw === 'off'){ pdf.setLineDashPattern([0.7, 0.7], 0); pdf.setDrawColor(185, 193, 205); pdf.setFillColor(250, 251, 252); pdf.setLineWidth(0.2); pdf.roundedRect(fx, fy - 2.6, 3.2, 3.2, 0.8, 0.8, 'FD'); pdf.setLineDashPattern([], 0); }
+        else if(l.sw === 'star'){ const pts = flrStarPts(fx + 1.6, fy - 1, 1.8).map(q => [q[0], q[1]]); const c = flrRgb(FLR_C.star); pdf.setFillColor(c[0], c[1], c[2]); pdf.lines(pts.slice(1).map((q, i) => [q[0] - pts[i][0], q[1] - pts[i][1]]), pts[0][0], pts[0][1], [1, 1], 'F', true); }
+        else if(l.sw){ const a2 = flrRgb(l.sw[0]), b2 = flrRgb(l.sw[1]); pdf.setFillColor(a2[0], a2[1], a2[2]); pdf.setDrawColor(b2[0], b2[1], b2[2]); pdf.setLineWidth(0.2); pdf.roundedRect(fx, fy - 2.6, 3.2, 3.2, 0.8, 0.8, 'FD'); }
+        if(l.warn) pdf.setTextColor(183, 121, 31); else if(l.plain) pdf.setTextColor(75, 85, 99); else pdf.setTextColor(75, 85, 99);
         pdf.text(l.t, fx + (l.sw ? 5.2 : 0), fy); fx += tw;
       });
     });
@@ -25610,14 +25640,14 @@ async function flrPdf(){
 function flrXls(){
   if(typeof XLSX === 'undefined'){ toast('Excel tool not loaded — check your connection'); return; }
   let secs; try{ secs = flrScope(); }catch(err){ toast('Nothing to download yet'); return; }
-  const hdr = ['Department', 'Shift', 'Machine', 'Status'].concat(flr.op ? ['Operator'] : [], flr.id ? ['Operator ID'] : [], flr.showSup ? ['Supervisor'] : [], flr.det.map(k => (FLR_DET.find(q => q[0] === k) || [0, k])[1]));
+  const hdr = ['Department', 'Shift', 'Machine', 'Type', 'Status'].concat(flr.op ? ['Operator'] : [], flr.id ? ['Operator ID'] : [], flr.showSup ? ['Supervisor'] : [], flr.det.map(k => (FLR_DET.find(q => q[0] === k) || [0, k])[1]));
   const rows = [hdr];
   const dv = (m, k) => k === 'type' ? (m ? (m.vip ? 'VIP' : 'Normal') : '') : !m ? '' : ({ width: m.widthCm, picks: m.picksPerCm, speed: m.speed, cart: m.cartPicks, brand: m.brand, model: m.model, jac: m.jacquard, note: m.note }[k] || '');
   secs.forEach(S => S.cells.slice().sort((a, b) => a.id - b.id).forEach(c => {
     const st = !c.m ? 'Not in the app' : c.off ? c.off : c.op || !flr.op ? 'Running' : 'Running, no operator';
-    rows.push([S.dept, S.shift, c.m ? c.m.name : 'M/C ' + c.id, st].concat(flr.op ? [c.op ? c.op.name : ''] : [], flr.id ? [c.op ? c.op.id : ''] : [], flr.showSup ? [c.op && c.op.sup ? c.op.sup.name : ''] : [], flr.det.map(k => dv(c.m, k))));
+    rows.push([S.dept, S.shift, c.m ? c.m.name : 'M/C ' + c.id, c.m ? (c.m.vip ? 'VIP' : 'Normal') : '', st].concat(flr.op ? [c.op ? c.op.name : ''] : [], flr.id ? [c.op ? c.op.id : ''] : [], flr.showSup ? [c.op && c.op.sup ? c.op.sup.name : ''] : [], flr.det.map(k => dv(c.m, k))));
   }));
-  const wb = XLSX.utils.book_new(); dsSheet(wb, 'Layout ' + flr.shift, rvfNumRows(rows), [5, 11, 8, 14, 20].concat(flr.op ? [26] : [], flr.id ? [12] : [], flr.showSup ? [24] : [], flr.det.map(() => 14)));
+  const wb = XLSX.utils.book_new(); dsSheet(wb, 'Layout ' + flr.shift, rvfNumRows(rows), [5, 11, 8, 8, 14, 20].concat(flr.op ? [26] : [], flr.id ? [12] : [], flr.showSup ? [24] : [], flr.det.map(() => 14)));
   XLSX.writeFile(wb, 'machine-layout-' + flr.dept.toLowerCase() + '-' + (flr.shift === 'Both' ? 'day-night' : flr.shift.toLowerCase()) + '-' + rvfDateStamp() + '.xlsx'); toast('Excel file downloaded');
 }
 
