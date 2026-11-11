@@ -5144,10 +5144,8 @@ table.a2T td .a2In{ width:100%; min-width:36px; }
         </div>
         <div id="mpc" style="display:none; margin-top:10px;"></div>
       </div>
-      <p class="sub" style="margin-top:2px; margin-bottom:20px;">Tap the filter icon to change date, department, or machine. Tap Total/Running/Stopped for the list.</p>
 
       <h2>Team &amp; Machine Summary</h2>
-      <p class="sub" style="margin:-4px 0 10px;">Who runs which machine, and who answers to which supervisor. Tap a number or a tab to see the details.</p>
       <div class="card" style="margin-bottom:22px;"><div id="asumDash"></div></div>
 
       <!-- ============ BOX 3: PERFORMANCE & STATISTICS (own filter) ============ -->
@@ -5179,7 +5177,7 @@ table.a2T td .a2In{ width:100%; min-width:36px; }
           <div class="field" style="margin-bottom:0;"><label>Machine</label><select id="perfMachineFilter"><option value="">All</option></select></div>
         </div>
         <div class="grid-2" style="margin-top:12px;">
-          <div class="field" style="margin-bottom:0;"><label>Rank operators by</label><select id="perfMetric"><option value="score">Performance score (fair comparison)</option><option value="avg">Average picks per day</option><option value="total">Total picks</option></select></div>
+          <div class="field" style="margin-bottom:0;"><label>Rank operators by</label><select id="perfMetric"><option value="score">Performance score (efficiency + output)</option><option value="avg">Average picks per day</option><option value="total">Total picks</option></select></div>
           <div class="field" style="margin-bottom:0;"><label>Stop time</label><select id="perfStop"><option value="no">Not counted (running picks only)</option><option value="yes">Counted (add stop picks)</option></select></div>
         </div>
       </div>
@@ -15555,31 +15553,40 @@ async function renderPerformanceBox(ev){
   let scoped = summaries.filter(s => s.date >= range.fromDate && s.date <= range.toDate);
   if(range.machine) scoped = scoped.filter(s => String(s.machine) === String(range.machine));
   if(range.department) scoped = scoped.filter(s => { const m = state.machines.find(x => String(x.id) === String(s.machine)); return m && m.department === range.department; });
-  // How operators are compared (fair for 3, 2 or 1 machines, VIP or normal, fast or slow):
-  //  * a person sits in ONE column: the number of machines they ran on most of their days (ties: the higher number);
-  //  * score = their picks / the picks a typical operator makes on the SAME machine type on the same days x 100,
-  //    so 100% = average, above 100% = stronger, below 100% = weaker, whatever machines they ran;
-  //  * people with fewer than 3 working days in the period are not ranked (too little to judge).
+  // How operators are compared. Every machine is different, so nothing is compared across machines directly:
+  //  * Efficiency = running time / machine hours (the same efficiency shown on the operator's own page): how little the machine stood still.
+  //  * Output = picks per running hour compared with the normal good pace OF THAT SAME MACHINE (its 90th-percentile day, from this period's data),
+  //    never more than 100%. A slow machine and a fast machine are each measured against their own pace.
+  //  * Score = half Efficiency + half Output (0 to 100%). A person sits in ONE column: the number of machines they ran on most days.
+  //  * People with fewer than 3 working days are not ranked.
   const mv = ($('perfMetric') || {}).value, metric = mv === 'total' ? 'total' : mv === 'avg' ? 'avg' : 'score', withStop = ($('perfStop') || {}).value === 'yes';
-  const stopOf = (s) => withStop ? (s.stopBreakdown || []).reduce((a, b) => a + (Number(b.hours) || 0) * stopReasonRate(b.reason), 0) : 0;
+  const stopPk = (s) => (s.stopBreakdown || []).reduce((a, b) => a + (Number(b.hours) || 0) * stopReasonRate(b.reason), 0);
+  const stopHr = (s) => (s.stopBreakdown || []).reduce((a, b) => a + (Number(b.hours) || 0), 0);
+  const calc = (s) => {
+    let sh = (s.shifts || []).filter(x => x === 'Day' || x === 'Night'); if(!sh.length) sh = ['Day'];
+    const h = sh.reduce((a, x) => a + machineHoursForDate(s.date, x), 0), st = Math.min(stopHr(s), h);
+    const v = s.picks + (withStop ? stopPk(s) : 0), run = Math.max(0, withStop ? h : h - st);
+    return { h, st, v, run, rate: run >= 1 ? v / run : null };
+  };
   const inRange = summaries.filter(s => s.date >= range.fromDate && s.date <= range.toDate && s.picks > 0 && s.operatorId);
   const dayMach = {};
   inRange.forEach(s => { const k = s.operatorId + '|' + s.date; (dayMach[k] = dayMach[k] || new Set()).add(String(s.machine)); });
   const clsKey = (id) => { const m = state.machines.find(x => String(x.id) === String(id)); return m ? [m.vip ? 1 : 0, m.widthCm || '', m.picksPerCm || '', m.speed || ''].join('|') : '?'; };
-  const cs = {}; let gs = 0, gn = 0;
-  inRange.forEach(s => { const v = s.picks + stopOf(s), k = clsKey(s.machine), c = cs[k] || (cs[k] = { sum: 0, n: 0 }); c.sum += v; c.n++; gs += v; gn++; });
-  const expOf = (id) => { const c = cs[clsKey(id)]; return c && c.n >= 8 ? c.sum / c.n : (gn ? gs / gn : 1); };
+  const p90 = (arr) => { if(!arr.length) return 0; const a = arr.slice().sort((x, y) => x - y); return a[Math.min(a.length - 1, Math.floor(0.9 * (a.length - 1) + 0.5))]; };
+  const byM = {}, byC = {}, all = [];
+  inRange.forEach(s => { const c = calc(s); if(c.rate == null) return; (byM[s.machine] = byM[s.machine] || []).push(c.rate); (byC[clsKey(s.machine)] = byC[clsKey(s.machine)] || []).push(c.rate); all.push(c.rate); });
+  const bm = {};
+  const benchOf = (id) => { if(bm[id] != null) return bm[id]; const m = byM[id], c = byC[clsKey(id)]; return bm[id] = m && m.length >= 5 ? p90(m) : c && c.length >= 8 ? p90(c) : p90(all); };
   const rangeDays = Math.max(1, Math.round((new Date(range.toDate) - new Date(range.fromDate)) / 86400000) + 1), minDays = Math.min(3, rangeDays);
-  const per = {};
+  const per = {}, mk = () => ({ h: 0, st: 0, v: 0, exp: 0, days: new Set() });
   scoped.forEach(s => {
     if(s.picks <= 0 || !s.operatorId) return;
     const op = (state.users || []).find(u => u.loginId === s.operatorId);
     if(op && isExitedEmployee(op)) return; // excluded everywhere, including past performance history
-    const v = s.picks + stopOf(s), x = expOf(s.machine);
-    const n = Math.min(3, (dayMach[s.operatorId + '|' + s.date] || { size: 1 }).size) || 1;
-    const e = per[s.operatorId] || (per[s.operatorId] = { by: {}, all: { act: 0, exp: 0, days: new Set() } });
-    const b = e.by[n] || (e.by[n] = { act: 0, exp: 0, days: new Set() });
-    b.act += v; b.exp += x; b.days.add(s.date); e.all.act += v; e.all.exp += x; e.all.days.add(s.date);
+    const c = calc(s), n = Math.min(3, (dayMach[s.operatorId + '|' + s.date] || { size: 1 }).size) || 1;
+    const e = per[s.operatorId] || (per[s.operatorId] = { by: {}, all: mk() });
+    const b = e.by[n] || (e.by[n] = mk());
+    [b, e.all].forEach(t => { t.h += c.h; t.st += c.st; t.v += c.v; t.exp += benchOf(s.machine) * c.run; t.days.add(s.date); });
   });
   const cats = { 3: [], 2: [], 1: [] };
   Object.keys(per).forEach(id => {
@@ -15589,8 +15596,9 @@ async function renderPerformanceBox(ev){
     const b = e.by[best], d = b.days.size;
     if(d < minDays) return;
     const dist = [3, 2, 1].filter(n => e.by[n]).map(n => n + ' machine' + (n > 1 ? 's' : '') + ': ' + e.by[n].days.size + ' day' + (e.by[n].days.size === 1 ? '' : 's')).join(' · ');
-    const value = metric === 'score' ? (b.exp ? b.act / b.exp * 100 : 0) : metric === 'avg' ? b.act / d : e.all.act;
-    cats[best].push({ id, value, days: metric === 'total' ? e.all.days.size : d, perDay: metric === 'total' ? e.all.act / e.all.days.size : b.act / d, dist });
+    const eff = b.h ? Math.max(0, (b.h - b.st) / b.h * 100) : 0, out = b.exp ? Math.min(100, b.v / b.exp * 100) : 0, score = (eff + out) / 2;
+    const value = metric === 'score' ? score : metric === 'avg' ? b.v / d : e.all.v;
+    cats[best].push({ id, value, eff, out, days: metric === 'total' ? e.all.days.size : d, perDay: metric === 'total' ? e.all.v / e.all.days.size : b.v / d, dist });
   });
   const nameFor = (id) => { const u = (state.users||[]).find(x => x.loginId === id); return u ? u.name : id; };
   const catLabel = { 3: '3 machines', 2: '2 machines', 1: '1 machine' };
@@ -15602,12 +15610,12 @@ async function renderPerformanceBox(ev){
     rank.cats[n] = { label: catLabel[n], count: list.length, top: list.slice(0, 5), low: list.length > 5 ? list.slice(-Math.min(3, list.length - 5)).reverse() : [] };
   });
   state.perfRank = rank;
-  const row = (r, i) => `<div class="perfRow" title="${assignEsc(r.dist)} · ${r.days} day${r.days === 1 ? '' : 's'} · ${Math.round(r.perDay).toLocaleString()} picks/day"><span class="perfNo">${i + 1}</span><span class="perfNm"><span class="perfN1">${assignEsc(nameFor(r.id))}</span><span class="perfN2">${assignEsc(r.id)} · ${r.days}d</span></span><span class="perfV">${fmtV(r.value)}</span></div>`;
+  const row = (r, i) => `<div class="perfRow" title="${assignEsc(nameFor(r.id))} (${assignEsc(r.id)}) · ${assignEsc(r.dist)} · Efficiency ${Math.round(r.eff)}% · Output ${Math.round(r.out)}% of the normal pace of the same machines · ${Math.round(r.perDay).toLocaleString()} picks/day"><span class="perfNo">${i + 1}</span><span class="perfNm"><span class="perfN1">${assignEsc(nameFor(r.id))}</span><span class="perfN2">Eff ${Math.round(r.eff)}% · ${Math.round(r.perDay).toLocaleString()}/d</span></span><span class="perfV">${fmtV(r.value)}</span></div>`;
   const cols = Object.keys(rank.cats).sort((a, b) => b - a).map(n => { const c = rank.cats[n];
     return `<div class="perfCol"><div class="perfColHd"><span>${c.label}</span><em>${c.count} operator${c.count === 1 ? '' : 's'}</em></div>
       <div class="perfSub">Top ${c.top.length}</div><div class="perfBox">${c.top.map(row).join('')}</div>
       ${c.low.length ? `<div class="perfSub low">Lowest ${c.low.length}</div><div class="perfBox">${c.low.map(row).join('')}</div>` : ''}</div>`; }).join('');
-  $('perfRankTitle').textContent = 'Top and lowest performers · ' + (metric === 'score' ? 'performance score (100% = average for the same machine type)' : metric === 'avg' ? 'average picks per day' : 'total picks') + ' · stop time ' + (withStop ? 'counted' : 'not counted') + ' · min ' + minDays + ' day' + (minDays === 1 ? '' : 's');
+  $('perfRankTitle').textContent = 'Top and lowest performers · ' + (metric === 'score' ? 'score = half efficiency + half output (each machine against its own normal pace)' : metric === 'avg' ? 'average picks per day' : 'total picks') + ' · stop time ' + (withStop ? 'counted' : 'not counted') + ' · min ' + minDays + ' day' + (minDays === 1 ? '' : 's');
   $('perfTopOperators').innerHTML = cols ? `<div class="perfCols">${cols}</div>` : '<div class="empty-state">No approved readings in this range yet.</div>';
 
   // Top 5 reasons for stops, same scope — tallied from each summary's own
@@ -25349,9 +25357,9 @@ function dsPerf(kind){
       [[document.getElementById('perfRankTitle').textContent, 'perfTopOperators'], ['Top 3 reasons for stops', 'ceoTopStopReason']].map(x => mpBox(dsTitle(x[0]) + dsClone(document.getElementById(x[1]))))),
     (wb) => {
       dsSheet(wb, 'Summary', [['Performance & Statistics'], ['Period', r.label + ' (' + per + ')'], ['Department', r.department || 'All departments'], ['Machine', mach], ['Running machine efficiency', eff]], [28, 44]);
-      const pr = state.perfRank || { cats: {}, metric: 'avg' }, vh = pr.metric === 'avg' ? 'Average picks per day' : pr.metric === 'total' ? 'Total picks' : 'Performance score %';
-      const rk = (key) => { const out = []; Object.keys(pr.cats).sort((x, y) => y - x).forEach(n => pr.cats[n][key].forEach((r, i) => out.push([pr.cats[n].label, i + 1, ((state.users || []).find(u => u.loginId === r.id) || {}).name || r.id, r.id, Math.round(r.value), r.days]))); return out; };
-      [['Top performers', 'top'], ['Lowest performers', 'low']].forEach(x => { const rows = rk(x[1]); if(rows.length) dsSheet(wb, x[0], rvfNumRows([['Machines run', 'Rank', 'Operator', 'Operator ID', vh, 'Days']].concat(rows)), [14, 6, 26, 12, 22, 8]); });
+      const pr = state.perfRank || { cats: {}, metric: 'avg' }, vh = pr.metric === 'avg' ? 'Average picks per day' : pr.metric === 'total' ? 'Total picks' : 'Performance score % (half efficiency, half output)';
+      const rk = (key) => { const out = []; Object.keys(pr.cats).sort((x, y) => y - x).forEach(n => pr.cats[n][key].forEach((r, i) => out.push([pr.cats[n].label, i + 1, ((state.users || []).find(u => u.loginId === r.id) || {}).name || r.id, r.id, Math.round(r.value), Math.round(r.eff) + '%', Math.round(r.out) + '%', Math.round(r.perDay), r.days]))); return out; };
+      [['Top performers', 'top'], ['Lowest performers', 'low']].forEach(x => { const rows = rk(x[1]); if(rows.length) dsSheet(wb, x[0], rvfNumRows([['Machines run', 'Rank', 'Operator', 'Operator ID', vh, 'Efficiency', 'Output vs machine normal', 'Picks per day', 'Days']].concat(rows)), [14, 6, 26, 12, 22, 12, 22, 12, 8]); });
       { const rows = (state.perfStops || []).map(x => [x[0], x[1].hours.toFixed(1) + ' stop hours across ' + x[1].count + ' entries']); if(rows.length) dsSheet(wb, 'Stop reasons', rvfNumRows([['Reason', 'Details']].concat(rows)), [5, 26, 44]); }
     });
 }
