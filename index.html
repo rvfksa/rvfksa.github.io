@@ -1473,15 +1473,18 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
 .flrSvg [data-c]{ cursor:pointer; } .flrSvg [data-k]{ transition:opacity .12s; } .flrSvg.hl [data-k]:not(.hit){ opacity:.35; }
 .flrSw{ display:inline-block; width:11px; height:11px; border-radius:3px; border:1px solid #d3d9e6; margin-right:6px; vertical-align:-2px; }
 .flrSw.off{ border-style:dashed; background:#fafbfc; }
-  .perfCols{ display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:10px 22px; }
+  .perfCols{ display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:10px 48px; }
   .perfCol{ min-width:0; }
-  .perfColHd{ display:flex; align-items:baseline; justify-content:space-between; gap:8px; padding-bottom:6px; border-bottom:1px solid var(--line); margin-bottom:4px; }
-  .perfColHd span{ font-size:12.5px; color:var(--amber); font-weight:600; } .perfColHd em{ font-style:normal; font-size:11px; color:var(--muted); }
-  .perfSub{ font-size:9.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); margin:8px 0 2px; } .perfSub.low{ margin-top:12px; }
-  .perfRow{ display:flex; align-items:center; gap:9px; padding:5px 0; border-bottom:1px solid var(--line); }
-  .perfNo{ flex:none; width:20px; height:20px; border-radius:50%; background:var(--amber-soft); color:var(--amber); font-size:10.5px; display:flex; align-items:center; justify-content:center; }
-  .perfNm{ flex:1; min-width:0; display:flex; flex-direction:column; } .perfN1{ font-size:12.5px; color:var(--text-strong); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; } .perfN2{ font-size:10.5px; color:var(--muted); }
-  .perfV{ flex:none; font-size:13px; color:var(--text-strong); font-family:'JetBrains Mono',monospace; }
+  .perfColHd{ display:flex; align-items:baseline; justify-content:space-between; gap:8px; padding-bottom:2px; }
+  .perfColHd span{ font-size:13px; color:var(--amber); } .perfColHd em{ font-style:normal; font-size:11px; color:var(--muted); }
+  .perfSub{ font-size:9.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); margin:4px 0 3px; } .perfSub.low{ margin-top:8px; }
+  .perfBox, .stopBox{ background:#fff; border:1px solid var(--line); border-radius:12px; }
+  .perfBox{ padding:1px 10px; }
+  .perfRow{ display:flex; align-items:center; gap:9px; padding:5px 0; border-bottom:1px solid var(--line); } .perfRow:last-child{ border-bottom:0; }
+  .perfNo{ flex:none; width:18px; height:18px; border-radius:50%; background:var(--amber-soft); color:var(--amber); font-size:10px; display:flex; align-items:center; justify-content:center; }
+  .perfNm{ flex:1; min-width:0; display:flex; align-items:baseline; gap:8px; } .perfN1{ font-size:12.5px; color:var(--text-strong); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; } .perfN2{ flex:none; font-size:10.5px; color:var(--muted); white-space:nowrap; margin-left:auto; }
+  .perfV{ flex:none; min-width:44px; text-align:center; font-size:12px; color:var(--amber); background:var(--amber-soft); border-radius:9999px; padding:1px 8px; font-family:'JetBrains Mono',monospace; }
+  .perfStops{ display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:6px 12px; } .stopBox{ display:flex; align-items:center; gap:9px; padding:5px 10px; }
   .asumTop{ display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-bottom:12px; }
   .asumActive{ display:flex; flex-wrap:wrap; gap:6px; margin:-4px 0 12px; }
   .asumActive:empty{ display:none; }
@@ -5176,23 +5179,23 @@ table.a2T td .a2In{ width:100%; min-width:36px; }
           <div class="field" style="margin-bottom:0;"><label>Machine</label><select id="perfMachineFilter"><option value="">All</option></select></div>
         </div>
         <div class="grid-2" style="margin-top:12px;">
-          <div class="field" style="margin-bottom:0;"><label>Rank operators by</label><select id="perfMetric"><option value="avg">Average picks per day</option><option value="total">Total picks</option></select></div>
+          <div class="field" style="margin-bottom:0;"><label>Rank operators by</label><select id="perfMetric"><option value="score">Performance score (fair comparison)</option><option value="avg">Average picks per day</option><option value="total">Total picks</option></select></div>
           <div class="field" style="margin-bottom:0;"><label>Stop time</label><select id="perfStop"><option value="no">Not counted (running picks only)</option><option value="yes">Counted (add stop picks)</option></select></div>
         </div>
       </div>
       <div class="card" style="margin-bottom:22px;">
-        <div class="row" style="padding:8px 0;">
+        <div class="row" style="padding:2px 0;">
           <span class="k">Running Machine Efficiency</span>
           <b id="kpiEfficiency" style="font-family:'JetBrains Mono',monospace; font-size:16px;">0%</b>
         </div>
         <div id="perfShowWrap" style="text-align:center; padding:12px 0 6px;"><button type="button" class="pillBtn" id="perfShowBtn">Show data</button><div class="hint">Top and lowest performers and stop reasons for the chosen period. Loaded only when you press this.</div></div>
 
-        <div style="border-top:1px solid var(--line); padding-top:12px; margin-top:6px;">
+        <div style="border-top:1px solid var(--line); padding-top:8px; margin-top:4px;">
           <div id="perfRankTitle" style="font-size:9px; text-transform:uppercase; color:var(--muted); font-weight:600; letter-spacing:.04em; margin-bottom:8px;">Top and lowest performers</div>
           <div id="perfTopOperators"></div>
         </div>
-        <div style="border-top:1px solid var(--line); padding-top:12px; margin-top:12px;">
-          <div style="font-size:9px; text-transform:uppercase; color:var(--muted); font-weight:600; letter-spacing:.04em; margin-bottom:6px;">Top 5 Reasons for Stops</div>
+        <div style="border-top:1px solid var(--line); padding-top:8px; margin-top:6px;">
+          <div style="font-size:9px; text-transform:uppercase; color:var(--muted); font-weight:600; letter-spacing:.04em; margin-bottom:5px;">Top 3 Reasons for Stops</div>
           <div id="ceoTopStopReason"></div>
         </div>
       </div>
@@ -15553,35 +15556,46 @@ async function renderPerformanceBox(ev){
   let scoped = summaries.filter(s => s.date >= range.fromDate && s.date <= range.toDate);
   if(range.machine) scoped = scoped.filter(s => String(s.machine) === String(range.machine));
   if(range.department) scoped = scoped.filter(s => { const m = state.machines.find(x => String(x.id) === String(s.machine)); return m && m.department === range.department; });
-  // Operators are compared only with people who run the same number of machines (3, 2 or 1).
-  // A person sits in ONE group: the one they worked most days in the period (the day's machine count
-  // comes from ALL machines that day, whatever the machine filter says), so nobody is ranked twice.
-  const metric = ($('perfMetric') || {}).value === 'total' ? 'total' : 'avg', withStop = ($('perfStop') || {}).value === 'yes';
+  // How operators are compared (fair for 3, 2 or 1 machines, VIP or normal, fast or slow):
+  //  * a person sits in ONE column: the number of machines they ran on most of their days (ties: the higher number);
+  //  * score = their picks / the picks a typical operator makes on the SAME machine type on the same days x 100,
+  //    so 100% = average, above 100% = stronger, below 100% = weaker, whatever machines they ran;
+  //  * people with fewer than 3 working days in the period are not ranked (too little to judge).
+  const mv = ($('perfMetric') || {}).value, metric = mv === 'total' ? 'total' : mv === 'avg' ? 'avg' : 'score', withStop = ($('perfStop') || {}).value === 'yes';
+  const stopOf = (s) => withStop ? (s.stopBreakdown || []).reduce((a, b) => a + (Number(b.hours) || 0) * stopReasonRate(b.reason), 0) : 0;
+  const inRange = summaries.filter(s => s.date >= range.fromDate && s.date <= range.toDate && s.picks > 0 && s.operatorId);
   const dayMach = {};
-  summaries.forEach(s => { if(s.date >= range.fromDate && s.date <= range.toDate && s.picks > 0 && s.operatorId){ const k = s.operatorId + '|' + s.date; (dayMach[k] = dayMach[k] || new Set()).add(String(s.machine)); } });
+  inRange.forEach(s => { const k = s.operatorId + '|' + s.date; (dayMach[k] = dayMach[k] || new Set()).add(String(s.machine)); });
+  const clsKey = (id) => { const m = state.machines.find(x => String(x.id) === String(id)); return m ? [m.vip ? 1 : 0, m.widthCm || '', m.picksPerCm || '', m.speed || ''].join('|') : '?'; };
+  const cs = {}; let gs = 0, gn = 0;
+  inRange.forEach(s => { const v = s.picks + stopOf(s), k = clsKey(s.machine), c = cs[k] || (cs[k] = { sum: 0, n: 0 }); c.sum += v; c.n++; gs += v; gn++; });
+  const expOf = (id) => { const c = cs[clsKey(id)]; return c && c.n >= 8 ? c.sum / c.n : (gn ? gs / gn : 1); };
+  const rangeDays = Math.max(1, Math.round((new Date(range.toDate) - new Date(range.fromDate)) / 86400000) + 1), minDays = Math.min(3, rangeDays);
   const per = {};
   scoped.forEach(s => {
     if(s.picks <= 0 || !s.operatorId) return;
     const op = (state.users || []).find(u => u.loginId === s.operatorId);
     if(op && isExitedEmployee(op)) return; // excluded everywhere, including past performance history
-    const stopP = withStop ? (s.stopBreakdown || []).reduce((a, b) => a + (Number(b.hours) || 0) * stopReasonRate(b.reason), 0) : 0;
-    const val = s.picks + stopP;
+    const v = s.picks + stopOf(s), x = expOf(s.machine);
     const n = Math.min(3, (dayMach[s.operatorId + '|' + s.date] || { size: 1 }).size) || 1;
-    const e = per[s.operatorId] || (per[s.operatorId] = { by: {}, all: { picks: 0, days: new Set() } });
-    const b = e.by[n] || (e.by[n] = { picks: 0, days: new Set() });
-    b.picks += val; b.days.add(s.date); e.all.picks += val; e.all.days.add(s.date);
+    const e = per[s.operatorId] || (per[s.operatorId] = { by: {}, all: { act: 0, exp: 0, days: new Set() } });
+    const b = e.by[n] || (e.by[n] = { act: 0, exp: 0, days: new Set() });
+    b.act += v; b.exp += x; b.days.add(s.date); e.all.act += v; e.all.exp += x; e.all.days.add(s.date);
   });
   const cats = { 3: [], 2: [], 1: [] };
   Object.keys(per).forEach(id => {
     const e = per[id]; let best = 0;
     [3, 2, 1].forEach(n => { if(e.by[n] && (!best || e.by[n].days.size > e.by[best].days.size)) best = n; });
     if(!best) return;
-    const b = e.by[best];
-    cats[best].push(metric === 'avg' ? { id, value: b.picks / b.days.size, days: b.days.size } : { id, value: e.all.picks, days: e.all.days.size });
+    const b = e.by[best], d = b.days.size;
+    if(d < minDays) return;
+    const dist = [3, 2, 1].filter(n => e.by[n]).map(n => n + ' machine' + (n > 1 ? 's' : '') + ': ' + e.by[n].days.size + ' day' + (e.by[n].days.size === 1 ? '' : 's')).join(' · ');
+    const value = metric === 'score' ? (b.exp ? b.act / b.exp * 100 : 0) : metric === 'avg' ? b.act / d : e.all.act;
+    cats[best].push({ id, value, days: metric === 'total' ? e.all.days.size : d, perDay: metric === 'total' ? e.all.act / e.all.days.size : b.act / d, dist });
   });
   const nameFor = (id) => { const u = (state.users||[]).find(x => x.loginId === id); return u ? u.name : id; };
   const catLabel = { 3: '3 machines', 2: '2 machines', 1: '1 machine' };
-  const fmtV = (v) => Math.round(v).toLocaleString();
+  const fmtV = (v) => metric === 'score' ? Math.round(v) + '%' : Math.round(v).toLocaleString();
   const rank = { metric, withStop, cats: {} };
   [3, 2, 1].forEach(n => {
     const list = cats[n].sort((x, y) => y.value - x.value);
@@ -15589,12 +15603,12 @@ async function renderPerformanceBox(ev){
     rank.cats[n] = { label: catLabel[n], count: list.length, top: list.slice(0, 5), low: list.length > 5 ? list.slice(-Math.min(3, list.length - 5)).reverse() : [] };
   });
   state.perfRank = rank;
-  const row = (r, i) => `<div class="perfRow"><span class="perfNo">${i + 1}</span><span class="perfNm"><span class="perfN1">${assignEsc(nameFor(r.id))}</span><span class="perfN2">${assignEsc(r.id)} · ${r.days} day${r.days === 1 ? '' : 's'}</span></span><span class="perfV">${fmtV(r.value)}</span></div>`;
+  const row = (r, i) => `<div class="perfRow" title="${assignEsc(r.dist)} · ${r.days} day${r.days === 1 ? '' : 's'} · ${Math.round(r.perDay).toLocaleString()} picks/day"><span class="perfNo">${i + 1}</span><span class="perfNm"><span class="perfN1">${assignEsc(nameFor(r.id))}</span><span class="perfN2">${assignEsc(r.id)} · ${r.days}d</span></span><span class="perfV">${fmtV(r.value)}</span></div>`;
   const cols = Object.keys(rank.cats).sort((a, b) => b - a).map(n => { const c = rank.cats[n];
     return `<div class="perfCol"><div class="perfColHd"><span>${c.label}</span><em>${c.count} operator${c.count === 1 ? '' : 's'}</em></div>
-      <div class="perfSub">Top ${c.top.length}</div>${c.top.map(row).join('')}
-      ${c.low.length ? `<div class="perfSub low">Lowest ${c.low.length}</div>${c.low.map(row).join('')}` : ''}</div>`; }).join('');
-  $('perfRankTitle').textContent = 'Top and lowest performers · ' + (metric === 'avg' ? 'average picks per day' : 'total picks') + ' · stop time ' + (withStop ? 'counted' : 'not counted') + ' · by machines run';
+      <div class="perfSub">Top ${c.top.length}</div><div class="perfBox">${c.top.map(row).join('')}</div>
+      ${c.low.length ? `<div class="perfSub low">Lowest ${c.low.length}</div><div class="perfBox">${c.low.map(row).join('')}</div>` : ''}</div>`; }).join('');
+  $('perfRankTitle').textContent = 'Top and lowest performers · ' + (metric === 'score' ? 'performance score (100% = average for the same machine type)' : metric === 'avg' ? 'average picks per day' : 'total picks') + ' · stop time ' + (withStop ? 'counted' : 'not counted') + ' · min ' + minDays + ' day' + (minDays === 1 ? '' : 's');
   $('perfTopOperators').innerHTML = cols ? `<div class="perfCols">${cols}</div>` : '<div class="empty-state">No approved readings in this range yet.</div>';
 
   // Top 5 reasons for stops, same scope — tallied from each summary's own
@@ -15609,14 +15623,9 @@ async function renderPerformanceBox(ev){
       byReason[b.reason].hours += Number(b.hours) || 0;
     });
   });
-  if(Object.keys(byReason).length === 0){
-    reasonBox.innerHTML = '<div class="empty-state">No stop entries in this range.</div>';
-    return;
-  }
-  const ranked = Object.entries(byReason).sort((a,b) => b[1].hours - a[1].hours).slice(0, 5);
-  renderRankedList('ceoTopStopReason', ranked, ([reason, stats]) => ({
-    title: reason, sub: `${stats.hours.toFixed(1)} stop hours across ${stats.count} entr${stats.count===1?'y':'ies'}`
-  }), 'No stop entries in this range.');
+  const ranked = Object.entries(byReason).sort((a,b) => b[1].hours - a[1].hours).slice(0, 3);
+  state.perfStops = ranked;
+  reasonBox.innerHTML = ranked.length ? `<div class="perfStops">${ranked.map(([reason, st], i) => `<div class="stopBox" title="${assignEsc(reason)}: ${st.hours.toFixed(1)} stop hours across ${st.count} entries"><span class="perfNo">${i + 1}</span><span class="perfNm"><span class="perfN1">${assignEsc(reason)}</span><span class="perfN2">${Math.round(st.hours).toLocaleString()} h · ${st.count}</span></span></div>`).join('')}</div>` : '<div class="empty-state">No stop entries in this range.</div>';
 }
 
 // Shared numbered-list renderer (1,2,3,4,5) used for Top/Lowest Performers
@@ -25328,13 +25337,13 @@ function dsPerf(kind){
   const mach = r.machine ? ((state.machines.find(x => String(x.id) === String(r.machine)) || {}).name || r.machine) : 'All machines';
   dsGo(kind, 'performance-statistics', 'Performance & Statistics', [r.label + ' · ' + per, 'Department: ' + (r.department || 'All departments') + ' · Machine: ' + mach],
     () => [mpBox(`<div class="row" style="padding:4px 0;"><span class="k">Running Machine Efficiency</span><b style="font-family:'JetBrains Mono',monospace;font-size:16px;">${eff}</b></div>`)].concat(
-      [[document.getElementById('perfRankTitle').textContent, 'perfTopOperators'], ['Top 5 reasons for stops', 'ceoTopStopReason']].map(x => mpBox(dsTitle(x[0]) + dsClone(document.getElementById(x[1]))))),
+      [[document.getElementById('perfRankTitle').textContent, 'perfTopOperators'], ['Top 3 reasons for stops', 'ceoTopStopReason']].map(x => mpBox(dsTitle(x[0]) + dsClone(document.getElementById(x[1]))))),
     (wb) => {
       dsSheet(wb, 'Summary', [['Performance & Statistics'], ['Period', r.label + ' (' + per + ')'], ['Department', r.department || 'All departments'], ['Machine', mach], ['Running machine efficiency', eff]], [28, 44]);
-      const pr = state.perfRank || { cats: {}, metric: 'avg' }, vh = pr.metric === 'avg' ? 'Average picks per day' : 'Total picks';
+      const pr = state.perfRank || { cats: {}, metric: 'avg' }, vh = pr.metric === 'avg' ? 'Average picks per day' : pr.metric === 'total' ? 'Total picks' : 'Performance score %';
       const rk = (key) => { const out = []; Object.keys(pr.cats).sort((x, y) => y - x).forEach(n => pr.cats[n][key].forEach((r, i) => out.push([pr.cats[n].label, i + 1, ((state.users || []).find(u => u.loginId === r.id) || {}).name || r.id, r.id, Math.round(r.value), r.days]))); return out; };
       [['Top performers', 'top'], ['Lowest performers', 'low']].forEach(x => { const rows = rk(x[1]); if(rows.length) dsSheet(wb, x[0], rvfNumRows([['Machines run', 'Rank', 'Operator', 'Operator ID', vh, 'Days']].concat(rows)), [14, 6, 26, 12, 22, 8]); });
-      { const rows = dsRank('ceoTopStopReason'); if(rows.length) dsSheet(wb, 'Stop reasons', rvfNumRows([['Reason', 'Details']].concat(rows)), [5, 26, 44]); }
+      { const rows = (state.perfStops || []).map(x => [x[0], x[1].hours.toFixed(1) + ' stop hours across ' + x[1].count + ' entries']); if(rows.length) dsSheet(wb, 'Stop reasons', rvfNumRows([['Reason', 'Details']].concat(rows)), [5, 26, 44]); }
     });
 }
 /* ===== Machine Layout (Dashboard): one drawing model, used for the screen (SVG) and the PDF (vector) ===== */
