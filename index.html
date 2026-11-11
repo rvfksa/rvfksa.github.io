@@ -5029,7 +5029,7 @@ table.a2T td .a2In{ width:100%; min-width:36px; }
 
       <div id="employeeOverviewMountCeo"></div>
 
-      <div id="documentRenewalsMountCeo">
+      <div id="documentRenewalsMountCeo" style="display:none;">
       <div id="documentRenewalsBlock">
       <!-- ============ BOX 1: DOCUMENT RENEWALS (own filter) ============ -->
       <h2>Document Renewals</h2>
@@ -13538,7 +13538,6 @@ async function loadCeoDashboard(){
   try{ pcRenderDash(); }catch(e){}
   try{
     mountEmployeeOverview('employeeOverviewMountCeo');
-    mountDocumentRenewals('documentRenewalsMountCeo');
     $('ceoWelcomeH1').textContent = `Welcome Back, ${(state.user.name||'').split(' ')[0]}! \uD83D\uDC4B`;
 
     const users = await window.__db.listUsersOnce();
@@ -20925,6 +20924,7 @@ function mpInitToolbar(){
   const d = document.createElement('div'); d.className = 'asumTop'; d.id = 'mpTop';
   d.innerHTML = `<span class="hrNote" style="margin:0;">Download this report (follows the date, department and machine filter)</span><span style="flex:1;"></span><button type="button" class="pillBtn" id="mpPdfBtn" title="Download as PDF">${MP_DL}PDF</button><button type="button" class="pillBtn" id="mpXlsBtn" title="Download as Excel">${MP_DL}Excel</button>`;
   card.insertBefore(d, card.firstChild);
+  dsMoveAll();
 }
 function mpInfo(){
   const r = computeDashboardRange(), m = r.machine ? (state.machines.find(x => String(x.id) === String(r.machine)) || {}) : null;
@@ -25282,12 +25282,21 @@ function mpcSheets(wb){
    ============================================================ */
 function dsBtns(id){ return `<span style="flex:1;"></span><button type="button" class="pillBtn" data-ds="${id}" data-k="pdf" title="Download as PDF">${MP_DL}PDF</button><button type="button" class="pillBtn" data-ds="${id}" data-k="xlsx" title="Download as Excel">${MP_DL}Excel</button>`; }
 function dsBar(id, note, hidden){ const d = document.createElement('div'); d.className = 'asumTop dsBar'; d.id = 'dsBar_' + id; if(hidden) d.style.display = 'none'; d.innerHTML = (note ? `<span class="hrNote" style="margin:0;">${note}</span>` : '') + dsBtns(id); return d; }
+function dsMoveFilter(btnId, popId, barId){
+  const b = document.getElementById(btnId), p = document.getElementById(popId), bar = document.getElementById(barId);
+  if(!b || !p || !bar || bar.contains(b)) return;
+  bar.insertBefore(b, bar.firstChild); bar.insertAdjacentElement('afterend', p);
+  p.style.margin = '0 0 10px';
+  const h = b.closest('h2'); if(h) h.style.display = '';
+}
+function dsMoveAll(){ dsMoveFilter('dashFilterToggle', 'dashFilterPopover', 'mpTop'); dsMoveFilter('perfFilterToggle', 'perfFilterPopover', 'dsBar_perf'); }
 function dsInit(){
   if(document.getElementById('dsBar_ren')) return;
   const ren = document.querySelector('#documentRenewalsBlock > .card'); if(ren) ren.insertBefore(dsBar('ren', 'Download the passport and iqama lists'), ren.firstChild);
   const pop = document.getElementById('perfFilterPopover'), pc = pop && pop.nextElementSibling; if(pc) pc.insertBefore(dsBar('perf', 'Download this section (follows its date, department and machine filter)'), pc.firstChild);
   const md = document.getElementById('ceoMachinesByDept'); if(md) md.parentNode.insertBefore(dsBar('dept', 'Download machines by department'), md);
   [['prodByDept', 'fdept'], ['prod12Month', 'f12'], ['mpc', 'cmp']].forEach(([box, id]) => { const b = document.getElementById(box); if(b) b.parentNode.insertBefore(dsBar(id, '', true), b); });
+  dsMoveAll();
 }
 if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', dsInit); else dsInit();
 document.addEventListener('click', (e) => {
