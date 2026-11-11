@@ -5177,7 +5177,7 @@ table.a2T td .a2In{ width:100%; min-width:36px; }
           <div class="field" style="margin-bottom:0;"><label>Machine</label><select id="perfMachineFilter"><option value="">All</option></select></div>
         </div>
         <div class="grid-2" style="margin-top:12px;">
-          <div class="field" style="margin-bottom:0;"><label>Rank operators by</label><select id="perfMetric"><option value="score">Performance score (efficiency + output)</option><option value="avg">Average picks per day</option><option value="total">Total picks</option></select></div>
+          <div class="field" style="margin-bottom:0;"><label>Rank operators by</label><select id="perfMetric"><option value="score">Performance score (80% picks, 20% efficiency)</option><option value="avg">Average picks per day</option><option value="total">Total picks</option></select></div>
           <div class="field" style="margin-bottom:0;"><label>Stop time</label><select id="perfStop"><option value="no">Not counted (running picks only)</option><option value="yes">Counted (add stop picks)</option></select></div>
         </div>
       </div>
@@ -15557,7 +15557,7 @@ async function renderPerformanceBox(ev){
   //  * Efficiency = running time / machine hours (the same efficiency shown on the operator's own page): how little the machine stood still.
   //  * Output = picks per running hour compared with the normal good pace OF THAT SAME MACHINE (its 90th-percentile day, from this period's data),
   //    never more than 100%. A slow machine and a fast machine are each measured against their own pace.
-  //  * Score = half Efficiency + half Output (0 to 100%). A person sits in ONE column: the number of machines they ran on most days.
+  //  * Score = 80% Output (picks) + 20% Efficiency (0 to 100%). A person sits in ONE column: the number of machines they ran on most days.
   //  * People with fewer than 3 working days are not ranked.
   const mv = ($('perfMetric') || {}).value, metric = mv === 'total' ? 'total' : mv === 'avg' ? 'avg' : 'score', withStop = ($('perfStop') || {}).value === 'yes';
   const stopPk = (s) => (s.stopBreakdown || []).reduce((a, b) => a + (Number(b.hours) || 0) * stopReasonRate(b.reason), 0);
@@ -15596,7 +15596,7 @@ async function renderPerformanceBox(ev){
     const b = e.by[best], d = b.days.size;
     if(d < minDays) return;
     const dist = [3, 2, 1].filter(n => e.by[n]).map(n => n + ' machine' + (n > 1 ? 's' : '') + ': ' + e.by[n].days.size + ' day' + (e.by[n].days.size === 1 ? '' : 's')).join(' · ');
-    const eff = b.h ? Math.max(0, (b.h - b.st) / b.h * 100) : 0, out = b.exp ? Math.min(100, b.v / b.exp * 100) : 0, score = (eff + out) / 2;
+    const eff = b.h ? Math.max(0, (b.h - b.st) / b.h * 100) : 0, out = b.exp ? Math.min(100, b.v / b.exp * 100) : 0, score = 0.8 * out + 0.2 * eff;
     const value = metric === 'score' ? score : metric === 'avg' ? b.v / d : e.all.v;
     cats[best].push({ id, value, eff, out, days: metric === 'total' ? e.all.days.size : d, perDay: metric === 'total' ? e.all.v / e.all.days.size : b.v / d, dist });
   });
@@ -15615,7 +15615,7 @@ async function renderPerformanceBox(ev){
     return `<div class="perfCol"><div class="perfColHd"><span>${c.label}</span><em>${c.count} operator${c.count === 1 ? '' : 's'}</em></div>
       <div class="perfSub">Top ${c.top.length}</div><div class="perfBox">${c.top.map(row).join('')}</div>
       ${c.low.length ? `<div class="perfSub low">Lowest ${c.low.length}</div><div class="perfBox">${c.low.map(row).join('')}</div>` : ''}</div>`; }).join('');
-  $('perfRankTitle').textContent = 'Top and lowest performers · ' + (metric === 'score' ? 'score = half efficiency + half output (each machine against its own normal pace)' : metric === 'avg' ? 'average picks per day' : 'total picks') + ' · stop time ' + (withStop ? 'counted' : 'not counted') + ' · min ' + minDays + ' day' + (minDays === 1 ? '' : 's');
+  $('perfRankTitle').textContent = 'Top and lowest performers · ' + (metric === 'score' ? 'score = 80% picks output + 20% efficiency (each machine against its own normal pace)' : metric === 'avg' ? 'average picks per day' : 'total picks') + ' · stop time ' + (withStop ? 'counted' : 'not counted') + ' · min ' + minDays + ' day' + (minDays === 1 ? '' : 's');
   $('perfTopOperators').innerHTML = cols ? `<div class="perfCols">${cols}</div>` : '<div class="empty-state">No approved readings in this range yet.</div>';
 
   // Top 5 reasons for stops, same scope — tallied from each summary's own
@@ -25357,7 +25357,7 @@ function dsPerf(kind){
       [[document.getElementById('perfRankTitle').textContent, 'perfTopOperators'], ['Top 3 reasons for stops', 'ceoTopStopReason']].map(x => mpBox(dsTitle(x[0]) + dsClone(document.getElementById(x[1]))))),
     (wb) => {
       dsSheet(wb, 'Summary', [['Performance & Statistics'], ['Period', r.label + ' (' + per + ')'], ['Department', r.department || 'All departments'], ['Machine', mach], ['Running machine efficiency', eff]], [28, 44]);
-      const pr = state.perfRank || { cats: {}, metric: 'avg' }, vh = pr.metric === 'avg' ? 'Average picks per day' : pr.metric === 'total' ? 'Total picks' : 'Performance score % (half efficiency, half output)';
+      const pr = state.perfRank || { cats: {}, metric: 'avg' }, vh = pr.metric === 'avg' ? 'Average picks per day' : pr.metric === 'total' ? 'Total picks' : 'Performance score % (80% output, 20% efficiency)';
       const rk = (key) => { const out = []; Object.keys(pr.cats).sort((x, y) => y - x).forEach(n => pr.cats[n][key].forEach((r, i) => out.push([pr.cats[n].label, i + 1, ((state.users || []).find(u => u.loginId === r.id) || {}).name || r.id, r.id, Math.round(r.value), Math.round(r.eff) + '%', Math.round(r.out) + '%', Math.round(r.perDay), r.days]))); return out; };
       [['Top performers', 'top'], ['Lowest performers', 'low']].forEach(x => { const rows = rk(x[1]); if(rows.length) dsSheet(wb, x[0], rvfNumRows([['Machines run', 'Rank', 'Operator', 'Operator ID', vh, 'Efficiency', 'Output vs machine normal', 'Picks per day', 'Days']].concat(rows)), [14, 6, 26, 12, 22, 12, 22, 12, 8]); });
       { const rows = (state.perfStops || []).map(x => [x[0], x[1].hours.toFixed(1) + ' stop hours across ' + x[1].count + ' entries']); if(rows.length) dsSheet(wb, 'Stop reasons', rvfNumRows([['Reason', 'Details']].concat(rows)), [5, 26, 44]); }
