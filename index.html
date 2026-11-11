@@ -1484,6 +1484,7 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
   .perfNo{ flex:none; width:18px; height:18px; border-radius:50%; background:var(--amber-soft); color:var(--amber); font-size:10px; display:flex; align-items:center; justify-content:center; }
   .perfNm{ flex:1; min-width:0; display:flex; align-items:baseline; gap:8px; } .perfN1{ font-size:12.5px; color:var(--text-strong); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; } .perfN2{ flex:none; font-size:10.5px; color:var(--muted); white-space:nowrap; margin-left:auto; }
   .perfV{ flex:none; min-width:44px; text-align:center; font-size:12px; color:var(--amber); background:var(--amber-soft); border-radius:9999px; padding:1px 8px; font-family:'JetBrains Mono',monospace; }
+  .perfPend{ margin-top:8px; font-size:10.5px; color:var(--muted); }
   .perfStops{ display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:6px 12px; } .stopBox{ display:flex; align-items:center; gap:9px; padding:5px 10px; }
   .asumTop{ display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-bottom:12px; }
   .asumActive{ display:flex; flex-wrap:wrap; gap:6px; margin:-4px 0 12px; }
@@ -15584,23 +15585,26 @@ async function renderPerformanceBox(ev){
     const op = (state.users || []).find(u => u.loginId === s.operatorId);
     if(op && isExitedEmployee(op)) return; // excluded everywhere, including past performance history
     const c = calc(s), n = Math.min(3, (dayMach[s.operatorId + '|' + s.date] || { size: 1 }).size) || 1;
-    const e = per[s.operatorId] || (per[s.operatorId] = { by: {}, all: mk() });
+    const e = per[s.operatorId] || (per[s.operatorId] = { by: {}, dn: {}, all: mk() }); e.dn[s.date] = Math.max(e.dn[s.date] || 0, n);
     const b = e.by[n] || (e.by[n] = mk());
     [b, e.all].forEach(t => { t.h += c.h; t.st += c.st; t.v += c.v; t.exp += benchOf(s.machine) * c.run; t.days.add(s.date); });
   });
-  const cats = { 3: [], 2: [], 1: [] };
+  const cats = { 3: [], 2: [], 1: [] }, pending = [];
+  const nameFor = (id) => { const u = (state.users||[]).find(x => x.loginId === id); return u ? u.name : id; };
   Object.keys(per).forEach(id => {
+    // The WHOLE selected period counts, every day and every machine. Each machine record is already measured against that machine's own
+    // normal pace, so a day on 1 machine and a day on 3 machines are both judged fairly. He is listed in the column where he ran
+    // most of his days (a tie goes to the higher number); the tooltip shows his split. Fewer than 3 working days = not ranked.
     const e = per[id]; let best = 0;
     [3, 2, 1].forEach(n => { if(e.by[n] && (!best || e.by[n].days.size > e.by[best].days.size)) best = n; });
     if(!best) return;
-    const b = e.by[best], d = b.days.size;
+    const b = e.all, d = b.days.size;
     if(d < minDays) return;
     const dist = [3, 2, 1].filter(n => e.by[n]).map(n => n + ' machine' + (n > 1 ? 's' : '') + ': ' + e.by[n].days.size + ' day' + (e.by[n].days.size === 1 ? '' : 's')).join(' · ');
     const eff = b.h ? Math.max(0, (b.h - b.st) / b.h * 100) : 0, out = b.exp ? Math.min(100, b.v / b.exp * 100) : 0, score = 0.8 * out + 0.2 * eff;
     const value = metric === 'score' ? score : metric === 'avg' ? b.v / d : e.all.v;
     cats[best].push({ id, value, eff, out, days: metric === 'total' ? e.all.days.size : d, perDay: metric === 'total' ? e.all.v / e.all.days.size : b.v / d, dist });
   });
-  const nameFor = (id) => { const u = (state.users||[]).find(x => x.loginId === id); return u ? u.name : id; };
   const catLabel = { 3: '3 machines', 2: '2 machines', 1: '1 machine' };
   const fmtV = (v) => metric === 'score' ? Math.round(v) + '%' : Math.round(v).toLocaleString();
   const rank = { metric, withStop, cats: {} };
