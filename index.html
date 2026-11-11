@@ -154,7 +154,9 @@
             // before trusting it, so a fresh page load never shows an old
             // cached snapshot as if it were current data.
             offlineTimer = setTimeout(() => {
-              if(!settled){ settled = true; resolve(cachedRows); }
+              if(settled) return;
+              if(cachedRows && cachedRows.length){ settled = true; resolve(cachedRows); return; }
+              offlineTimer = setTimeout(() => { if(!settled){ settled = true; resolve(cachedRows || []); } }, 9500);
             }, 2500);
           }
         }, (err) => {
@@ -6294,6 +6296,7 @@ async function loadUsersForAdmin(){
   try{
     const [users, authIndex] = await Promise.all([window.__db.listUsers(), window.__db.listAuthIndex()]);
     state.users = users;
+    if(!state.users || !state.users.length){ try{ state.users = await window.__db.listUsersOnce(); }catch(err){ console.error(err); } }
     state.authIndex = authIndex;
     renderUsersList();
   }catch(err){ console.error(err); body.innerHTML = '<div class="empty-state">Could not load users.</div>'; }
@@ -11947,6 +11950,10 @@ async function renderAssignBoard(){
   if(!state.users || !state.users.length){
     body.innerHTML = '<div class="empty-state">Loading…</div>';
     try{ state.users = await window.__db.listUsers(); }catch(err){ console.error(err); body.innerHTML = '<div class="empty-state">Could not load people.</div>'; return; }
+    if(!state.users || !state.users.length){
+      try{ state.users = await window.__db.listUsersOnce(); }catch(err){ console.error(err); }
+      if(!state.users || !state.users.length){ body.innerHTML = '<div class="empty-state">The people list could not be loaded. Check the connection and open this tab again.</div>'; return; }
+    }
   }
   renderAssignChecks(); try{ renderAssignSummary('assignSummary', 'adm', true); }catch(err){ console.error(err); } renderAssignViewBar();
   if(assignUI.view === 'machines') renderAssignMachines(body); else renderAssignApprovers(body);
@@ -23669,6 +23676,10 @@ async function renderAssignBoard(){
   if(!state.users || !state.users.length){
     body.innerHTML = '<div class="empty-state">Loading\u2026</div>';
     try{ state.users = await window.__db.listUsers(); }catch(err){ console.error(err); body.innerHTML = '<div class="empty-state">Could not load people.</div>'; return; }
+    if(!state.users || !state.users.length){
+      try{ state.users = await window.__db.listUsersOnce(); }catch(err){ console.error(err); }
+      if(!state.users || !state.users.length){ body.innerHTML = '<div class="empty-state">The people list could not be loaded. Check the connection and open this tab again.</div>'; return; }
+    }
   }
   renderAssignChecks(); try{ renderAssignSummary('assignSummary', 'adm', true); }catch(err){ console.error(err); }
   asgCheckStatus(); asgRenderFind(); renderAssignViewBar();
