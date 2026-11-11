@@ -1473,10 +1473,10 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
 .flrSvg [data-c]{ cursor:pointer; } .flrSvg [data-k]{ transition:opacity .12s; } .flrSvg.hl [data-k]:not(.hit){ opacity:.35; }
 .flrSw{ display:inline-block; width:11px; height:11px; border-radius:3px; border:1px solid #d3d9e6; margin-right:6px; vertical-align:-2px; }
 .flrSw.off{ border-style:dashed; background:#fafbfc; }
-  .perfCols{ display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:10px 48px; }
+  .perfCols{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px 28px; } @media (max-width:640px){ .perfCols{ grid-template-columns:1fr; } }
   .perfCol{ min-width:0; }
   .perfColHd{ display:flex; align-items:baseline; justify-content:space-between; gap:8px; padding-bottom:2px; }
-  .perfColHd span{ font-size:13px; color:var(--amber); } .perfColHd em{ font-style:normal; font-size:11px; color:var(--muted); }
+  .perfColHd{ margin-bottom:4px; } .perfColHd span{ font-size:13px; color:var(--amber); } .perfColHd em{ font-style:normal; font-size:11px; color:var(--muted); }
   .perfSub{ font-size:9.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); margin:4px 0 3px; } .perfSub.low{ margin-top:8px; }
   .perfBox, .stopBox{ background:#fff; border:1px solid var(--line); border-radius:12px; }
   .perfBox{ padding:1px 10px; }
@@ -15608,17 +15608,13 @@ async function renderPerformanceBox(ev){
   const catLabel = { 3: '3 machines', 2: '2 machines', 1: '1 machine' };
   const fmtV = (v) => metric === 'score' ? Math.round(v) + '%' : Math.round(v).toLocaleString();
   const rank = { metric, withStop, cats: {} };
-  [3, 2, 1].forEach(n => {
-    const list = cats[n].sort((x, y) => y.value - x.value);
-    if(!list.length) return;
-    rank.cats[n] = { label: catLabel[n], count: list.length, top: list.slice(0, 5), low: list.length > 5 ? list.slice(-Math.min(3, list.length - 5)).reverse() : [] };
-  });
+  // One list for everybody: Top 5 and Lowest 5 side by side. (The score is already fair across 3, 2 and 1 machines.)
+  { const list = cats[3].concat(cats[2], cats[1]).sort((x, y) => y.value - x.value);
+    if(list.length) rank.cats[1] = { label: 'All operators', count: list.length, top: list.slice(0, 5), low: list.length > 5 ? list.slice(-Math.min(5, list.length - 5)).reverse() : [] }; }
   state.perfRank = rank;
   const row = (r, i) => `<div class="perfRow" title="${assignEsc(nameFor(r.id))} (${assignEsc(r.id)}) · ${assignEsc(r.dist)} · Efficiency ${Math.round(r.eff)}% · Output ${Math.round(r.out)}% of the normal pace of the same machines · ${Math.round(r.perDay).toLocaleString()} picks/day"><span class="perfNo">${i + 1}</span><span class="perfNm"><span class="perfN1">${assignEsc(nameFor(r.id))}</span><span class="perfN2">Eff ${Math.round(r.eff)}% · ${Math.round(r.perDay).toLocaleString()}/d</span></span><span class="perfV">${fmtV(r.value)}</span></div>`;
-  const cols = Object.keys(rank.cats).sort((a, b) => b - a).map(n => { const c = rank.cats[n];
-    return `<div class="perfCol"><div class="perfColHd"><span>${c.label}</span><em>${c.count} operator${c.count === 1 ? '' : 's'}</em></div>
-      <div class="perfSub">Top ${c.top.length}</div><div class="perfBox">${c.top.map(row).join('')}</div>
-      ${c.low.length ? `<div class="perfSub low">Lowest ${c.low.length}</div><div class="perfBox">${c.low.map(row).join('')}</div>` : ''}</div>`; }).join('');
+  const box = (title, list, sub) => `<div class="perfCol"><div class="perfColHd"><span>${title}</span><em>${sub}</em></div><div class="perfBox">${list.map(row).join('')}</div></div>`;
+  const R = rank.cats[1], cols = R ? box('Top ' + R.top.length + ' performers', R.top, R.count + ' operators ranked') + (R.low.length ? box('Lowest ' + R.low.length + ' performers', R.low, 'weakest first') : '') : '';
   $('perfRankTitle').textContent = 'Top and lowest performers · ' + (metric === 'score' ? 'score = 80% picks output + 20% efficiency (each machine against its own normal pace)' : metric === 'avg' ? 'average picks per day' : 'total picks') + ' · stop time ' + (withStop ? 'counted' : 'not counted') + ' · min ' + minDays + ' day' + (minDays === 1 ? '' : 's');
   $('perfTopOperators').innerHTML = cols ? `<div class="perfCols">${cols}</div>` : '<div class="empty-state">No approved readings in this range yet.</div>';
 
