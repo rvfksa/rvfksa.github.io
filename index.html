@@ -1482,7 +1482,7 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
   .perfBox{ padding:1px 10px; }
   .perfRow{ display:flex; align-items:center; gap:9px; padding:5px 0; border-bottom:1px solid var(--line); } .perfRow:last-child{ border-bottom:0; }
   .perfNo{ flex:none; width:18px; height:18px; border-radius:50%; background:var(--amber-soft); color:var(--amber); font-size:10px; display:flex; align-items:center; justify-content:center; }
-  .perfNm{ flex:1; min-width:0; display:flex; align-items:baseline; gap:8px; } .perfN1{ font-size:12.5px; color:var(--text-strong); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; } .perfN2{ flex:none; font-size:10.5px; color:var(--muted); white-space:nowrap; margin-left:auto; }
+  .perfNm{ flex:1; min-width:0; display:flex; align-items:baseline; gap:8px; } .perfN1{ font-size:12.5px; color:var(--text-strong); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; } .perfN2 b{ font-weight:400; color:var(--text); } .perfN2{ flex:none; font-size:10.5px; color:var(--muted); white-space:nowrap; margin-left:auto; }
   .perfV{ flex:none; min-width:44px; text-align:center; font-size:12px; color:var(--amber); background:var(--amber-soft); border-radius:9999px; padding:1px 8px; font-family:'JetBrains Mono',monospace; }
   .perfPend{ margin-top:8px; font-size:10.5px; color:var(--muted); }
   .perfStops{ display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:6px 12px; } .stopBox{ display:flex; align-items:center; gap:9px; padding:5px 10px; }
@@ -5178,7 +5178,7 @@ table.a2T td .a2In{ width:100%; min-width:36px; }
           <div class="field" style="margin-bottom:0;"><label>Machine</label><select id="perfMachineFilter"><option value="">All</option></select></div>
         </div>
         <div class="grid-2" style="margin-top:12px;">
-          <div class="field" style="margin-bottom:0;"><label>Rank operators by</label><select id="perfMetric"><option value="score">Performance score (80% picks, 20% efficiency)</option><option value="avg">Average picks per day</option><option value="total">Total picks</option></select></div>
+          <input type="hidden" id="perfMetric" value="score">
           <div class="field" style="margin-bottom:0;"><label>Stop time</label><select id="perfStop"><option value="no">Not counted (running picks only)</option><option value="yes">Counted (add stop picks)</option></select></div>
         </div>
       </div>
@@ -15603,7 +15603,7 @@ async function renderPerformanceBox(ev){
     const dist = [3, 2, 1].filter(n => e.by[n]).map(n => n + ' machine' + (n > 1 ? 's' : '') + ': ' + e.by[n].days.size + ' day' + (e.by[n].days.size === 1 ? '' : 's')).join(' · ');
     const eff = b.h ? Math.max(0, (b.h - b.st) / b.h * 100) : 0, out = b.exp ? Math.min(100, b.v / b.exp * 100) : 0, score = 0.8 * out + 0.2 * eff;
     const value = metric === 'score' ? score : metric === 'avg' ? b.v / d : e.all.v;
-    cats[best].push({ id, value, eff, out, days: metric === 'total' ? e.all.days.size : d, perDay: metric === 'total' ? e.all.v / e.all.days.size : b.v / d, dist });
+    cats[best].push({ id, value, eff, out, tot: e.all.v, days: metric === 'total' ? e.all.days.size : d, perDay: metric === 'total' ? e.all.v / e.all.days.size : b.v / d, dist });
   });
   const catLabel = { 3: '3 machines', 2: '2 machines', 1: '1 machine' };
   const fmtV = (v) => metric === 'score' ? Math.round(v) + '%' : Math.round(v).toLocaleString();
@@ -15612,7 +15612,7 @@ async function renderPerformanceBox(ev){
   { const list = cats[3].concat(cats[2], cats[1]).sort((x, y) => y.value - x.value);
     if(list.length) rank.cats[1] = { label: 'All operators', count: list.length, top: list.slice(0, 5), low: list.length > 5 ? list.slice(-Math.min(5, list.length - 5)).reverse() : [] }; }
   state.perfRank = rank;
-  const row = (r, i) => `<div class="perfRow" title="${assignEsc(nameFor(r.id))} (${assignEsc(r.id)}) · ${assignEsc(r.dist)} · Efficiency ${Math.round(r.eff)}% · Output ${Math.round(r.out)}% of the normal pace of the same machines · ${Math.round(r.perDay).toLocaleString()} picks/day"><span class="perfNo">${i + 1}</span><span class="perfNm"><span class="perfN1">${assignEsc(nameFor(r.id))}</span><span class="perfN2">Eff ${Math.round(r.eff)}% · ${Math.round(r.perDay).toLocaleString()}/d</span></span><span class="perfV">${fmtV(r.value)}</span></div>`;
+  const row = (r, i) => `<div class="perfRow" title="${assignEsc(nameFor(r.id))} (${assignEsc(r.id)}) · ${assignEsc(r.dist)} · Efficiency ${Math.round(r.eff)}% · Output ${Math.round(r.out)}% of the normal pace of the same machines · ${Math.round(r.perDay).toLocaleString()} picks/day"><span class="perfNo">${i + 1}</span><span class="perfNm"><span class="perfN1">${assignEsc(nameFor(r.id))}</span><span class="perfN2">Eff ${Math.round(r.eff)}% · ${Math.round(r.perDay).toLocaleString()}/d · <b>${Math.round(r.tot).toLocaleString()}</b> picks</span></span><span class="perfV">${fmtV(r.value)}</span></div>`;
   const box = (title, list, sub) => `<div class="perfCol"><div class="perfColHd"><span>${title}</span><em>${sub}</em></div><div class="perfBox">${list.map(row).join('')}</div></div>`;
   const R = rank.cats[1], cols = R ? box('Top ' + R.top.length + ' performers', R.top, R.count + ' operators ranked') + (R.low.length ? box('Lowest ' + R.low.length + ' performers', R.low, 'weakest first') : '') : '';
   $('perfRankTitle').textContent = 'Top and lowest performers · ' + (metric === 'score' ? 'score = 80% picks output + 20% efficiency (each machine against its own normal pace)' : metric === 'avg' ? 'average picks per day' : 'total picks') + ' · stop time ' + (withStop ? 'counted' : 'not counted') + ' · min ' + minDays + ' day' + (minDays === 1 ? '' : 's');
@@ -25358,8 +25358,8 @@ function dsPerf(kind){
     (wb) => {
       dsSheet(wb, 'Summary', [['Performance & Statistics'], ['Period', r.label + ' (' + per + ')'], ['Department', r.department || 'All departments'], ['Machine', mach], ['Running machine efficiency', eff]], [28, 44]);
       const pr = state.perfRank || { cats: {}, metric: 'avg' }, vh = pr.metric === 'avg' ? 'Average picks per day' : pr.metric === 'total' ? 'Total picks' : 'Performance score % (80% output, 20% efficiency)';
-      const rk = (key) => { const out = []; Object.keys(pr.cats).sort((x, y) => y - x).forEach(n => pr.cats[n][key].forEach((r, i) => out.push([pr.cats[n].label, i + 1, ((state.users || []).find(u => u.loginId === r.id) || {}).name || r.id, r.id, Math.round(r.value), Math.round(r.eff) + '%', Math.round(r.out) + '%', Math.round(r.perDay), r.days]))); return out; };
-      [['Top performers', 'top'], ['Lowest performers', 'low']].forEach(x => { const rows = rk(x[1]); if(rows.length) dsSheet(wb, x[0], rvfNumRows([['Machines run', 'Rank', 'Operator', 'Operator ID', vh, 'Efficiency', 'Output vs machine normal', 'Picks per day', 'Days']].concat(rows)), [14, 6, 26, 12, 22, 12, 22, 12, 8]); });
+      const rk = (key) => { const out = []; Object.keys(pr.cats).sort((x, y) => y - x).forEach(n => pr.cats[n][key].forEach((r, i) => out.push([pr.cats[n].label, i + 1, ((state.users || []).find(u => u.loginId === r.id) || {}).name || r.id, r.id, Math.round(r.value), Math.round(r.eff) + '%', Math.round(r.out) + '%', Math.round(r.perDay), Math.round(r.tot), r.days]))); return out; };
+      [['Top performers', 'top'], ['Lowest performers', 'low']].forEach(x => { const rows = rk(x[1]); if(rows.length) dsSheet(wb, x[0], rvfNumRows([['Machines run', 'Rank', 'Operator', 'Operator ID', vh, 'Efficiency', 'Output vs machine normal', 'Picks per day', 'Total picks', 'Days']].concat(rows)), [14, 6, 26, 12, 22, 12, 22, 12, 12, 8]); });
       { const rows = (state.perfStops || []).map(x => [x[0], x[1].hours.toFixed(1) + ' stop hours across ' + x[1].count + ' entries']); if(rows.length) dsSheet(wb, 'Stop reasons', rvfNumRows([['Reason', 'Details']].concat(rows)), [5, 26, 44]); }
     });
 }
