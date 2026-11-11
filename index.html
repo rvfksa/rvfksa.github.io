@@ -1455,27 +1455,20 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
   .stat-card .num{ font-family:'JetBrains Mono', monospace; font-size: 18px; font-weight:700; color: var(--amber); }
   .stat-card .lbl{ font-size: 9.5px; color: var(--muted); text-transform:uppercase; letter-spacing:0.05em; margin-top:2px; }
 
-.flrHint{ font-size:12px; color:var(--muted); }
-.flrPanel{ border:1px solid var(--line); border-radius:12px; padding:10px 12px; margin:0 0 12px; background:var(--panel-2); display:flex; flex-direction:column; gap:8px; }
-.flrRow{ display:flex; flex-wrap:wrap; align-items:center; gap:6px; }
-.flrLb{ font-size:10px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); font-weight:600; min-width:96px; }
-.flrChip{ height:28px; padding:0 11px; border-radius:9999px; border:1px solid rgba(15,23,42,.10); background:#fff; color:var(--muted); font:inherit; font-size:12px; cursor:pointer; }
+.flrTop .seg{ margin:0; display:inline-flex; width:auto; } .flrTop .seg button{ flex:none; padding:7px 14px; white-space:nowrap; }
+.flrChips{ display:flex; flex-wrap:wrap; gap:6px; }
+.flrChip{ height:28px; padding:0 12px; border-radius:9999px; border:1px solid var(--line); background:#fff; color:var(--muted); font:inherit; font-size:12px; cursor:pointer; transition:background .15s,color .15s,border-color .15s; }
 .flrChip:hover{ background:var(--amber-soft); border-color:var(--amber-dim); color:var(--amber); }
-.flrChip.on{ background:var(--amber-soft); color:var(--amber); border-color:var(--amber-dim); font-weight:600; }
-.flrSel{ width:auto; min-width:220px; max-width:100%; height:30px; border-radius:9px; border:1px solid rgba(15,23,42,.12); background:#fff; font:inherit; font-size:12.5px; padding:0 8px; }
-.flrSec{ margin:0 0 18px; } .flrSec:last-child{ margin-bottom:0; }
-.flrHd{ font-size:11px; text-transform:uppercase; letter-spacing:.06em; font-weight:600; color:var(--muted); margin:2px 0 8px; }
-.flrWrap{ display:flex; gap:16px; align-items:flex-start; flex-wrap:wrap; }
-.flrScroll{ flex:1 1 560px; min-width:0; overflow-x:auto; }
-.flrSvg{ display:block; width:100%; min-width:620px; height:auto; font-family:inherit; }
-.flrSide{ flex:0 0 220px; margin-left:auto; border-left:1px solid var(--line); padding-left:16px; }
-@media (max-width:760px){ .flrSide{ flex:1 1 100%; border-left:none; padding-left:0; border-top:1px solid var(--line); padding-top:10px; } .flrLb{ min-width:100%; } }
-.flrSideT{ font-size:10px; text-transform:uppercase; letter-spacing:.06em; color:var(--amber); font-weight:700; margin-bottom:6px; }
-.flrKV{ display:flex; justify-content:space-between; align-items:center; gap:8px; padding:5px 0; border-bottom:1px solid var(--line); font-size:12.5px; color:var(--muted); }
-.flrKV b{ color:var(--text-strong); font-weight:600; font-family:'JetBrains Mono',monospace; }
-.flrSw{ display:inline-block; width:12px; height:12px; border-radius:4px; border:1px solid #cbd5e1; margin-right:7px; vertical-align:-2px; }
-.flrBar{ display:inline-block; width:12px; height:4px; border-radius:2px; background:#c7d2fe; margin-right:7px; vertical-align:2px; }
-.flrLeg{ display:flex; flex-direction:column; gap:5px; margin-top:12px; font-size:11.5px; color:var(--muted); }
+.flrChip.on{ background:var(--amber-soft); color:var(--amber); border-color:var(--amber-dim); }
+.flrSec{ margin:0 0 20px; } .flrSec:last-child{ margin-bottom:0; }
+.flrHd{ font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); margin:2px 0 8px; }
+.flrScroll{ overflow-x:auto; }
+.flrSvg{ display:block; width:100%; min-width:640px; height:auto; font-family:inherit; }
+.flrFoot{ margin-top:10px; padding-top:9px; border-top:1px solid var(--line); font-size:11px; color:var(--muted); line-height:1.5; }
+.flrFacts, .flrLeg{ display:flex; flex-wrap:wrap; gap:3px 16px; }
+.flrLeg{ margin-top:4px; } .flrLeg .warn{ color:#b7791f; }
+.flrSw{ display:inline-block; width:11px; height:11px; border-radius:3px; border:1px solid #d3d9e6; margin-right:6px; vertical-align:-2px; }
+.flrSw.off{ border-style:dashed; background:#fafbfc; }
   .asumTop{ display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-bottom:12px; }
   .asumActive{ display:flex; flex-wrap:wrap; gap:6px; margin:-4px 0 12px; }
   .asumActive:empty{ display:none; }
@@ -25315,13 +25308,13 @@ function dsPerf(kind){
     });
 }
 /* ===== Machine Layout (Dashboard): one drawing model, used for the screen (SVG) and the PDF (vector) ===== */
-const FLR_KEY = 'rvfFloorLayoutV1';
+const FLR_KEY = 'rvfFloorLayoutV2';
 const FLR_DET = [['type', 'Type'], ['width', 'Width'], ['picks', 'Picks / cm'], ['speed', 'Speed'], ['cart', 'Cart picks'], ['brand', 'Brand'], ['model', 'Model'], ['jac', 'Jacquard'], ['note', 'Note']];
-const flr = { dept: '', shift: 'Day', op: true, id: true, det: [], color: 'load', panel: true, sups: [], showSup: false, open: false };
-(function(){ try{ const s = JSON.parse(localStorage.getItem(FLR_KEY) || 'null'); if(s && typeof s === 'object'){ Object.keys(flr).forEach(k => { if(k !== 'open' && s[k] !== undefined) flr[k] = s[k]; }); } }catch(e){} if(!Array.isArray(flr.sups)) flr.sups = []; })();
-function flrSave(){ try{ localStorage.setItem(FLR_KEY, JSON.stringify({ dept: flr.dept, shift: flr.shift, op: flr.op, id: flr.id, det: flr.det, color: flr.color, panel: flr.panel, sups: flr.sups, showSup: flr.showSup })); }catch(e){} }
-const FLR_SP = [['#e0e7ff', '#a5b4fc'], ['#dcfce7', '#86efac'], ['#fef3c7', '#fcd34d'], ['#fce7f3', '#f9a8d4'], ['#e0f2fe', '#7dd3fc'], ['#ede9fe', '#c4b5fd'], ['#ccfbf1', '#5eead4'], ['#ffedd5', '#fdba74']];
-const FLR_C = { c3: ['#e0e7ff', '#a5b4fc'], c2: ['#dcfce7', '#86efac'], c1: ['#f1f5f9', '#cbd5e1'], line: '#cbd5e1', ink: '#0f172a', mute: '#64748b', off: '#b4bdcc', acc: '#4f46e5', walk: '#f3f4fb', walkT: '#9aa3c7', aisle: '#f5f6fa', back: '#94a3b8', warn: '#b45309' };
+const flr = { dept: 'RVF', shift: 'Day', op: true, id: true, det: [], color: 'load', sups: [], showSup: false, open: false };
+(function(){ try{ const s = JSON.parse(localStorage.getItem(FLR_KEY) || 'null'); if(s && typeof s === 'object'){ Object.keys(flr).forEach(k => { if(k !== 'open' && s[k] !== undefined) flr[k] = s[k]; }); } }catch(e){} if(!Array.isArray(flr.sups)) flr.sups = []; if(!Array.isArray(flr.det)) flr.det = []; if(flr.dept !== 'SSTM') flr.dept = 'RVF'; })();
+function flrSave(){ try{ localStorage.setItem(FLR_KEY, JSON.stringify({ dept: flr.dept, shift: flr.shift, op: flr.op, id: flr.id, det: flr.det, color: flr.color, sups: flr.sups, showSup: flr.showSup })); }catch(e){} }
+const FLR_SP = [['#e6e9fb', '#c9cff0'], ['#dff1e8', '#bfe0cf'], ['#faefd6', '#ecd9a8'], ['#f7e4ec', '#e8c6d4'], ['#dfeef7', '#bcd8ea'], ['#ebe5f7', '#d3c8ec'], ['#dbf1ef', '#b7e0dc'], ['#f9e8dc', '#ebcdb6']];
+const FLR_C = { c3: ['#dfe4ff', '#bcc5f5'], c2: ['#edf0ff', '#d0d7f8'], c1: ['#ffffff', '#d3d9e6'], ink: '#111827', mute: '#6b7280', off: '#b9c1cd', dim: '#c9d0da', acc: '#4f46e5', walk: '#f5f6fa', walkT: '#a7afc6', aisle: '#f5f6fa', warn: '#b7791f', noop: '#c2a36b' };
 
 function flrSpec(dept){
   if(dept === 'RVF'){
@@ -25356,101 +25349,115 @@ function flrPack(items, size, w){
 }
 // everything drawn is a plain shape or a line of text, so the screen and the PDF come from the same list
 function flrSection(dept, cfg, D){
-  const sp = flrSpec(dept), W = dept === 'SSTM' ? 104 : 118, AW = 54, WG = 30, BG = 8, SZ = { t: 12.5, o: 10.5, i: 9, d: 9, s: 8.5 };
+  const sp = flrSpec(dept), W = dept === 'SSTM' ? 112 : 120, AW = 44, WG = 24, BG = 6, SZ = { t: 9, n: 11.5, i: 9, s: 8.5, d: 8.5 };
   const supCol = { '__none__': FLR_C.c1 }; D.sups.slice().sort((a, b) => a.name.localeCompare(b.name)).forEach((x, i) => { supCol[x.id] = FLR_SP[i % FLR_SP.length]; });
   const sel = cfg.sups || [];
+  const blank = !cfg.op && !cfg.id && !cfg.showSup && !cfg.det.length;
   const map = cfg.shift === 'Night' ? D.night : D.day;
   const load = {}; Object.keys(map).forEach(mid => (map[mid] || []).forEach(o => { load[o.id] = (load[o.id] || 0) + 1; }));
+  const grouping = !blank && (cfg.op || cfg.id || cfg.showSup || cfg.color !== 'none');
   const cell = (id) => {
     const m = state.machines.find(x => String(x.id) === String(id));
-    const c = { id, m, lines: [], off: '', op: null };
-    if(!m) c.off = '';
-    else if(m.status === 'stopped') c.off = 'Stopped';
-    else if(!machineRunsShift(m, cfg.shift)) c.off = cfg.shift === 'Day' ? 'Night only' : 'Day only';
-    const ops = (m && !c.off) ? (map[id] || []) : [];
+    const c = { id, m, op: null, off: '', opL: [], detL: [] };
+    if(m && m.status === 'stopped') c.off = 'Stopped';
+    else if(m && !machineRunsShift(m, cfg.shift)) c.off = cfg.shift === 'Day' ? 'Night only' : 'Day only';
+    c.run = !!(m && !c.off);
+    const ops = c.run ? (map[id] || []) : [];
     if(ops.length) c.op = ops[0];
-    const mw = W - 14, supOf = c.op && c.op.sup ? c.op.sup : null;
+    const supOf = c.op && c.op.sup ? c.op.sup : null;
     const sids = []; ops.forEach(o => { const k = o.sup ? o.sup.id : '__none__'; if(sids.indexOf(k) < 0) sids.push(k); });
     c.supId = c.op ? (supOf ? supOf.id : '__none__') : ''; c.conf = sids.length > 1;
-    c.dim = !!(sel.length && m && !c.off && !sids.some(k => sel.indexOf(k) >= 0));
-    if(m && !c.off){
-      if(cfg.op) c.lines.push({ s: ops.length ? flrFit(ops[0].name + (ops.length > 1 ? ' +' + (ops.length - 1) : ''), SZ.o, true, mw) : 'No operator', size: SZ.o, bold: !!ops.length, color: ops.length ? FLR_C.ink : FLR_C.warn });
-      if(cfg.id && ops.length) c.lines.push({ s: 'ID ' + ops[0].id, size: SZ.i, color: FLR_C.mute });
-      if(cfg.showSup && ops.length){
-        const nm = []; ops.forEach(o => { const n = o.sup ? o.sup.name : 'none'; if(nm.indexOf(n) < 0) nm.push(n); });
-        const lead = !cfg.op;   // no operator name on the layout: the supervisor becomes the main text
-        c.lines.push({ s: flrFit((lead ? '' : 'Sup. ') + nm.join(' / '), lead ? SZ.o : SZ.s, lead, mw), size: lead ? SZ.o : SZ.s, bold: lead, color: (c.conf || !supOf) ? FLR_C.warn : (lead ? FLR_C.ink : FLR_C.acc) });
-      }
-      if(c.dim) c.lines.forEach(l => { l.color = FLR_C.off; });
+    c.dim = !!(sel.length && c.run && !sids.some(k => sel.indexOf(k) >= 0));
+    c.cls = (c.op && !c.dim) ? (load[c.op.id] >= 3 ? 'c3' : load[c.op.id] === 2 ? 'c2' : 'c1') : '';
+    c.lines = ops.length;
+    if(c.run){
+      const nm = []; ops.forEach(o => { const n = o.sup ? o.sup.name : 'none'; if(nm.indexOf(n) < 0) nm.push(n); });
+      c.supTxt = nm.join(' / ');
+      c.supWarn = c.conf || !supOf;
     }
-    if(m) flrPack(flrDetails(m, cfg.det), SZ.d, mw).forEach(s => c.lines.push({ s, size: SZ.d, color: (c.off || c.dim) ? FLR_C.off : FLR_C.mute }));
-    if(c.off && m) c.lines.unshift({ s: c.off, size: SZ.d, color: FLR_C.off });
+    if(c.off && m) c.opL.push({ s: c.off, size: SZ.s, color: FLR_C.off });
+    if(m) c.detRaw = flrDetails(m, cfg.det);
     return c;
   };
   const rows = sp.rows.map(r => ({ L: r.L.map(cell), R: r.R.map(cell) }));
-  const maxL = Math.max.apply(null, rows.map(r => Math.max.apply(null, r.L.concat(r.R).map(c => c.lines.reduce((a, l) => a + l.size + 3.2, 0)))));
-  const H = Math.max(42, Math.ceil(24 + maxL + 8));
+  const allCells = []; rows.forEach(r => r.L.concat(r.R).forEach(c => allCells.push(c)));
+  // lines of the operator block (same for every machine of one operator, so they are drawn once, centred over them)
+  const opLines = (c, w) => {
+    const out = [];
+    if(!c.run) return c.opL;
+    const ops = c.op ? [c.op] : [];
+    if(cfg.op) out.push(c.op ? { s: flrFit(c.op.name + (c.lines > 1 ? ' +' + (c.lines - 1) : ''), SZ.n, false, w), size: SZ.n, color: c.dim ? FLR_C.dim : FLR_C.ink } : { s: 'No operator', size: SZ.s, color: c.dim ? FLR_C.dim : FLR_C.noop });
+    if(cfg.id && c.op) out.push({ s: 'ID ' + c.op.id, size: SZ.i, color: c.dim ? FLR_C.dim : FLR_C.mute });
+    if(cfg.showSup && c.op){ const lead = !cfg.op; out.push({ s: flrFit((lead ? '' : 'Sup. ') + c.supTxt, lead ? SZ.n : SZ.s, false, w), size: lead ? SZ.n : SZ.s, color: c.dim ? FLR_C.dim : (c.supWarn ? FLR_C.warn : (lead ? FLR_C.ink : FLR_C.acc)) }); }
+    return out;
+  };
+  const mwCell = W - 16;
+  allCells.forEach(c => { c.detL = c.detRaw ? flrPack(c.detRaw, SZ.d, mwCell).map(s => ({ s, size: SZ.d, color: (c.off || c.dim) ? FLR_C.off : FLR_C.mute })) : []; });
+  const lh = (l) => l.size + 3.4;
+  const maxOp = blank ? 0 : Math.max(0, ...allCells.map(c => opLines(c, mwCell).reduce((a, l) => a + lh(l), 0)));
+  const maxDet = Math.max(0, ...allCells.map(c => c.detL.reduce((a, l) => a + lh(l), 0)));
+  const H = blank ? 40 : Math.max(38, Math.ceil(17 + maxOp + (maxDet ? maxDet + 4 : 0) + 8));
   const lw = sp.lc * W, rw = sp.rc * W, totalW = lw + AW + rw, rx = lw + AW;
   const prims = [];
   const rect = (x, y, w, h, o) => prims.push(Object.assign({ k: 'rect', x, y, w, h }, o));
   const text = (x, y, s, o) => prims.push(Object.assign({ k: 'text', x, y, s }, o));
-  // vertical positions
   const ys = []; let y = 0;
   rows.forEach((r, t) => { ys.push(y); y += H; if(t < rows.length - 1) y += sp.back(t) ? BG : WG; });
   const totalH = y;
-  const topPad = sp.dept === 'SSTM' ? 34 : 0, aisleY = 0, aisleH = totalH + topPad * 2;
-  const OY = topPad;
-  rect(lw, aisleY, AW, aisleH, { fill: FLR_C.aisle, stroke: FLR_C.line, sw: 1, dash: '4 3', r: 4 });
-  text(lw + AW / 2, aisleH / 2, 'MIDDLE AISLE', { size: 8, bold: true, color: FLR_C.walkT, anchor: 'middle', spacing: 3, rot: -90 });
+  const topPad = sp.dept === 'SSTM' ? 30 : 0, OY = topPad, aisleH = totalH + topPad * 2;
+  rect(lw + 4, 0, AW - 8, aisleH, { fill: FLR_C.aisle, r: 6 });
+  text(lw + AW / 2, aisleH / 2, 'MIDDLE AISLE', { size: 7.5, color: FLR_C.walkT, anchor: 'middle', spacing: 3, rot: -90 });
   rows.forEach((r, t) => {
-    if(t < rows.length - 1){
-      const gy = OY + ys[t] + H, gh = sp.back(t) ? BG : WG;
-      if(sp.back(t)){ [[0, lw], [rx, rw]].forEach(b => rect(b[0], gy + gh / 2 - 1.5, b[1], 3, { fill: FLR_C.back })); }
-      else [[0, lw], [rx, rw]].forEach(b => { rect(b[0], gy, b[1], gh, { fill: FLR_C.walk }); text(b[0] + b[1] / 2, gy + gh / 2 + 3, 'WALKWAY', { size: 7.5, bold: true, color: FLR_C.walkT, anchor: 'middle', spacing: 2.2 }); });
+    if(t < rows.length - 1 && !sp.back(t)){
+      const gy = OY + ys[t] + H;
+      [[0, lw], [rx, rw]].forEach(b => { rect(b[0], gy + 4, b[1] - 2, WG - 8, { fill: FLR_C.walk, r: 4 }); text(b[0] + (b[1] - 2) / 2, gy + WG / 2 + 2.6, 'WALKWAY', { size: 7, color: FLR_C.walkT, anchor: 'middle', spacing: 2.4 }); });
     }
   });
-  const frontTop = (t) => t % 2 === 1;
   const blockDraw = (cells, x0, t) => {
-    const y0 = OY + ys[t]; let seg = [];
-    const flush = () => { if(seg.length >= 2 && cfg.color !== 'none'){ const a = seg[0], b = seg[seg.length - 1]; rect(x0 + a * W - 2, y0 - 2, (b - a + 1) * W + 4 - 2, H + 4, { stroke: cfg.color === 'sup' ? ((supCol[cells[a].supId] || FLR_C.c1)[1]) : FLR_C.acc, sw: 1.5, r: 7 }); } seg = []; };
-    cells.forEach((c, i) => {
-      const x = x0 + i * W, run = c.m && !c.off;
-      const cls = (c.op && !c.dim) ? (load[c.op.id] >= 3 ? 'c3' : load[c.op.id] === 2 ? 'c2' : 'c1') : '';
-      const tint = (run && !c.dim && c.op) ? (cfg.color === 'load' && cls ? FLR_C[cls] : cfg.color === 'sup' ? (supCol[c.supId] || FLR_C.c1) : null) : null;
-      if(run && c.dim) rect(x, y0, W - 2, H, { fill: '#fafbfd', stroke: '#e2e8f0', sw: 1, r: 5 });
-      else if(run) rect(x, y0, W - 2, H, { fill: tint ? tint[0] : '#ffffff', stroke: tint ? tint[1] : FLR_C.line, sw: 1, r: 5 });
-      else rect(x, y0, W - 2, H, { fill: '#fafbfd', stroke: '#d5dbe6', sw: 1, dash: '4 3', r: 5 });
-      if(run && !c.dim && c.conf) rect(x, y0, W - 2, H, { stroke: FLR_C.warn, sw: 1.8, r: 5 });
-      // the operator side of the machine
-      if(run && !c.dim) rect(x + 5, frontTop(t) ? y0 + 1 : y0 + H - 5, W - 12, 4, { fill: '#c7d2fe', r: 2 });
-      const base = y0 + (frontTop(t) ? 6 : 0);
-      text(x + (W - 2) / 2, base + 17, (c.m ? 'M/C ' + String(c.id) : 'M/C ' + String(c.id)), { size: SZ.t, bold: true, color: (run && !c.dim) ? FLR_C.ink : FLR_C.off, anchor: 'middle' });
-      let ly = base + 17;
-      c.lines.forEach(l => { ly += l.size + 3.2; text(x + (W - 2) / 2, ly, l.s, { size: l.size, bold: l.bold, color: l.color, anchor: 'middle' }); });
-      if(c.m && c.m.vip && cfg.det.indexOf('type') < 0 && run){ /* VIP is shown only when "Type" is chosen */ }
-      // same operator side by side -> one outline
-      if(c.op && !c.dim && cfg.color !== 'none' && seg.length && cells[seg[seg.length - 1]].op && cells[seg[seg.length - 1]].op.id === c.op.id) seg.push(i);
-      else { flush(); if(c.op && !c.dim) seg = [i]; }
-    });
-    flush();
+    const y0 = OY + ys[t];
+    let i = 0;
+    while(i < cells.length){
+      let j = i;
+      const c = cells[i];
+      if(grouping && c.op && !c.dim){ while(j + 1 < cells.length && cells[j + 1].op && !cells[j + 1].dim && cells[j + 1].op.id === c.op.id) j++; }
+      const n = j - i + 1, x = x0 + i * W, w = n * W - 2;
+      const seg = cells.slice(i, j + 1);
+      let fill = '#ffffff', stroke = '#dfe3ec', dash = '';
+      if(!c.m || c.off){ fill = '#fafbfc'; stroke = '#d9dee6'; dash = '3.5 3'; }
+      else if(c.dim){ fill = '#fcfcfd'; stroke = '#eceff4'; }
+      else if(c.op){
+        const tn = cfg.color === 'load' ? FLR_C[c.cls] : cfg.color === 'sup' ? (supCol[c.supId] || FLR_C.c1) : null;
+        if(tn){ fill = tn[0]; stroke = tn[1]; } else stroke = '#cfd5e0';
+      }
+      if(seg.some(q => q.conf) && !c.dim) stroke = FLR_C.warn;
+      rect(x, y0, w, H, { fill, stroke, sw: 0.8, dash: dash || undefined, r: 6 });
+      for(let q = 1; q < n; q++) rect(x + q * W - 1.4, y0 + 5, 0.8, 12, { fill: stroke });
+      const off = !c.m || c.off, quiet = off || c.dim;
+      seg.forEach((q, qi) => {
+        const cx = x0 + (i + qi) * W;
+        if(blank) text(cx + (W - 2) / 2, y0 + H / 2 + 4.2, 'M/C ' + String(q.id), { size: 11.5, color: quiet ? FLR_C.off : FLR_C.ink, anchor: 'middle' });
+        else text(cx + 8, y0 + 13, 'M/C ' + String(q.id), { size: SZ.t, color: quiet ? FLR_C.off : FLR_C.mute });
+        if(!blank){ let ty = y0 + 17 + maxOp + 4; q.detL.forEach(l => { text(cx + (W - 2) / 2, ty + l.size, l.s, { size: l.size, color: l.color, anchor: 'middle' }); ty += lh(l); }); }
+      });
+      if(!blank){ let ty = y0 + 17; opLines(c, w - 18).forEach(l => { text(x + w / 2, ty + l.size, l.s, { size: l.size, color: l.color, anchor: 'middle' }); ty += lh(l); }); }
+      i = j + 1;
+    }
   };
   rows.forEach((r, t) => { blockDraw(r.L, 0, t); blockDraw(r.R, rx, t); });
-  // facts for the side panel (this department, this shift)
-  const all = []; rows.forEach(r => r.L.concat(r.R).forEach(c => all.push(c)));
-  const running = all.filter(c => c.m && !c.off), noOp = running.filter(c => !c.op);
+  const running = allCells.filter(c => c.run), noOp = running.filter(c => !c.op);
   const mine = sel.length ? running.filter(c => c.op && !c.dim) : [];
   const sl = []; const slm = {};
-  running.forEach(c => { if(c.op && c.supId){ let e = slm[c.supId]; if(!e){ const sp2 = D.sups.find(x => x.id === c.supId); e = slm[c.supId] = { id: c.supId, name: sp2 ? sp2.name : 'No supervisor', col: supCol[c.supId] || FLR_C.c1, machines: 0, ops: {}, dim: c.dim }; sl.push(e); } if(!c.dim){ e.machines++; e.ops[c.op.id] = 1; } } });
+  running.forEach(c => { if(c.op && c.supId){ let e = slm[c.supId]; if(!e){ const sp2 = D.sups.find(x => x.id === c.supId); e = slm[c.supId] = { id: c.supId, name: sp2 ? sp2.name : 'No supervisor', col: supCol[c.supId] || FLR_C.c1, machines: 0, ops: {} }; sl.push(e); } if(!c.dim){ e.machines++; e.ops[c.op.id] = 1; } } });
   sl.forEach(e => { e.opsN = Object.keys(e.ops).length; }); sl.sort((a, b) => a.name.localeCompare(b.name));
   const conf = running.filter(c => c.conf && !c.dim).length;
   const opIds = {}; running.forEach(c => { if(c.op && !c.dim) opIds[c.op.id] = 1; });
   const cnt = { c3: 0, c2: 0, c1: 0 }; Object.keys(opIds).forEach(id => { cnt[load[id] >= 3 ? 'c3' : load[id] === 2 ? 'c2' : 'c1']++; });
-  return { dept: sp.dept, shift: cfg.shift, w: totalW, h: aisleH, prims, cells: all, stats: { sup: sel.length ? mine.length : -1, sl: sl.filter(e => e.machines > 0), conf, total: all.length, running: running.length, off: all.length - running.length, noOp: noOp.length, ops: Object.keys(opIds).length, cnt } };
+  return { dept: sp.dept, shift: cfg.shift, w: totalW, h: aisleH, prims, cells: allCells, stats: { sup: sel.length ? mine.length : -1, sl: sl.filter(e => e.machines > 0), conf, total: allCells.length, running: running.length, off: allCells.length - running.length, noOp: noOp.length, ops: Object.keys(opIds).length, cnt } };
 }
 function flrScope(){
   const D = asumBuild(false), out = [];
   flr.sups = flr.sups.filter(k => k === '__none__' || D.sups.some(x => x.id === k));
-  (flr.shift === 'Both' ? ['Day', 'Night'] : [flr.shift]).forEach(sh => (flr.dept ? [flr.dept] : ['RVF', 'SSTM']).forEach(d => out.push(flrSection(d, Object.assign({}, flr, { shift: sh }), D))));
+  (flr.shift === 'Both' ? ['Day', 'Night'] : [flr.shift]).forEach(sh => out.push(flrSection(flr.dept, Object.assign({}, flr, { shift: sh }), D)));
   return out;
 }
 function flrEsc(t){ return String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;'); }
@@ -25458,75 +25465,100 @@ function flrSvg(S){
   const pad = 4, body = S.prims.map(p => {
     if(p.k === 'rect') return `<rect x="${p.x + pad}" y="${p.y + pad}" width="${p.w}" height="${p.h}" rx="${p.r || 0}" fill="${p.fill || 'none'}"${p.stroke ? ` stroke="${p.stroke}" stroke-width="${p.sw || 1}"` : ''}${p.dash ? ` stroke-dasharray="${p.dash}"` : ''}/>`;
     const tr = p.rot ? ` transform="rotate(${p.rot} ${p.x + pad} ${p.y + pad})"` : '';
-    return `<text x="${p.x + pad}" y="${p.y + pad}" font-size="${p.size}" font-weight="${p.bold ? 700 : 400}" fill="${p.color}" text-anchor="${p.anchor || 'start'}"${p.spacing ? ` letter-spacing="${p.spacing}"` : ''}${tr}>${flrEsc(p.s)}</text>`;
+    return `<text x="${p.x + pad}" y="${p.y + pad}" font-size="${p.size}" font-weight="400" fill="${p.color}" text-anchor="${p.anchor || 'start'}"${p.spacing ? ` letter-spacing="${p.spacing}"` : ''}${tr}>${flrEsc(p.s)}</text>`;
   }).join('');
   return `<svg class="flrSvg" viewBox="0 0 ${S.w + pad * 2} ${S.h + pad * 2}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${S.dept} floor layout">${body}</svg>`;
 }
-function flrSideHtml(S){
-  const s = S.stats, sw = (c) => `<i class="flrSw" style="background:${c[0]};border-color:${c[1]};"></i>`;
-  const kv = (k, v) => `<div class="flrKV"><span>${k}</span><b>${v}</b></div>`;
-  return `<div class="flrSide"><div class="flrSideT">${S.dept} · ${S.shift} shift</div>
-    ${s.sup >= 0 ? kv('Machines of selected supervisors', s.sup) : ''}${kv('Operators', s.ops)}${kv('Machines running', s.running + ' of ' + s.total)}${kv('Machines off', s.off)}${kv('Running, no operator', s.noOp)}
-    ${flr.color === 'sup' ? `<div class="flrSideT" style="margin-top:12px;">Supervisors · machines / operators</div>${s.sl.map(e => `<div class="flrKV"><span>${sw(e.col)}${flrEsc(e.name)}</span><b>${e.machines} / ${e.opsN}</b></div>`).join('')}${s.conf ? `<div class="flrKV"><span style="color:#b45309;">Machines with 2 supervisors</span><b style="color:#b45309;">${s.conf}</b></div>` : `<div class="flrKV"><span>Overlap check</span><b>None</b></div>`}` : ''}
-    ${flr.color === 'load' ? `<div class="flrSideT" style="margin-top:12px;">Operators by machines</div>
-    <div class="flrKV"><span>${sw(FLR_C.c3)}3 machines</span><b>${s.cnt.c3}</b></div><div class="flrKV"><span>${sw(FLR_C.c2)}2 machines</span><b>${s.cnt.c2}</b></div><div class="flrKV"><span>${sw(FLR_C.c1)}1 machine</span><b>${s.cnt.c1}</b></div>` : ''}
-    <div class="flrLeg"><span><i class="flrSw" style="background:#fff;border-style:dashed;"></i>Machine off</span><span><i class="flrBar"></i>Operator side</span></div></div>`;
-}
+
 const FLR_IC_FILTER = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>';
 const FLR_IC_DL = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
 function flrSupList(){ try{ return asumBuild(false).sups.slice().sort((a, b) => a.name.localeCompare(b.name)); }catch(e){ return []; } }
-function flrSupChips(chip){
-  const sups = flrSupList();
-  return chip('s:', !flr.sups.length, 'All') + sups.map(x => chip('s:' + x.id, flr.sups.indexOf(x.id) >= 0, flrEsc(x.name))).join('') + chip('s:__none__', flr.sups.indexOf('__none__') >= 0, 'No supervisor');
-}
 function flrSupName(){ if(!flr.sups.length) return ''; const L = flrSupList(); return flr.sups.map(k => k === '__none__' ? 'no supervisor' : ((L.find(x => x.id === k) || {}).name || '')).filter(Boolean).join(', '); }
+// the small line(s) under the layout: numbers first, then what the colours mean (shared by the screen and the PDF)
+function flrFoot(S){
+  const s = S.stats, facts = [];
+  if(s.sup >= 0) facts.push('Selected supervisors: ' + s.sup + ' machines');
+  facts.push('Operators ' + s.ops, 'Machines running ' + s.running + ' of ' + s.total, 'Off ' + s.off, 'Running without operator ' + s.noOp);
+  const leg = [];
+  if(flr.color === 'load') leg.push({ sw: FLR_C.c3, t: '3 machines · ' + s.cnt.c3 }, { sw: FLR_C.c2, t: '2 machines · ' + s.cnt.c2 }, { sw: FLR_C.c1, t: '1 machine · ' + s.cnt.c1 });
+  if(flr.color === 'sup'){ s.sl.forEach(e => leg.push({ sw: e.col, t: e.name + ' · ' + e.machines + ' machines · ' + e.opsN + ' operators' })); leg.push(s.conf ? { t: s.conf + ' machines with 2 supervisors', warn: true } : { t: 'No overlap between supervisors' }); }
+  leg.push({ sw: 'off', t: 'Machine off' });
+  return { facts, leg };
+}
+function flrFootHtml(S){
+  const f = flrFoot(S), sw = (c) => c === 'off' ? '<i class="flrSw off"></i>' : c ? `<i class="flrSw" style="background:${c[0]};border-color:${c[1]};"></i>` : '';
+  return `<div class="flrFoot"><div class="flrFacts">${f.facts.map(x => `<span>${flrEsc(x)}</span>`).join('')}</div><div class="flrLeg">${f.leg.map(l => `<span${l.warn ? ' class="warn"' : ''}>${sw(l.sw)}${flrEsc(l.t)}</span>`).join('')}</div></div>`;
+}
+function flrViewKey(){
+  if(!flr.op && !flr.id && !flr.showSup && !flr.det.length && flr.color === 'none') return 'blank';
+  if(flr.op && flr.id && !flr.showSup && !flr.det.length && flr.color === 'load') return 'ops';
+  if(!flr.op && !flr.id && !flr.showSup && flr.det.length && flr.color === 'none') return 'det';
+  if(flr.op && flr.id && !flr.showSup && flr.det.length && flr.color === 'load') return 'both';
+  return 'custom';
+}
+function flrBadge(){ return flr.sups.length + flr.det.length + (flr.showSup ? 1 : 0) + (flr.color !== 'load' ? 1 : 0) + ((flr.op && flr.id) ? 0 : 1); }
 function flrPanelHtml(){
-  const chip = (act, on, label, extra) => `<button type="button" class="flrChip${on ? ' on' : ''}" data-flr="${act}"${extra || ''}>${label}</button>`;
-  return `<div class="flrPanel">
-    <div class="flrRow"><span class="flrLb">Quick views</span>${chip('p:blank', 0, 'Blank layout')}${chip('p:ops', 0, 'Operators only')}${chip('p:det', 0, 'Machine details only')}${chip('p:both', 0, 'Operators + details')}</div>
-    <div class="flrRow"><span class="flrLb">Shift</span>${chip('shift:Day', flr.shift === 'Day', 'Day')}${chip('shift:Night', flr.shift === 'Night', 'Night')}${chip('shift:Both', flr.shift === 'Both', 'Day and Night')}</div>
-    <div class="flrRow"><span class="flrLb">Department</span>${chip('dept:', !flr.dept, 'All')}${chip('dept:RVF', flr.dept === 'RVF', 'RVF')}${chip('dept:SSTM', flr.dept === 'SSTM', 'SSTM')}</div>
-    <div class="flrRow"><span class="flrLb">Operator</span>${chip('t:op', flr.op, 'Name')}${chip('t:id', flr.id, 'ID')}${chip('t:sup', flr.showSup, 'Supervisor name')}</div>
-    <div class="flrRow"><span class="flrLb">Supervisors</span>${flrSupChips(chip)}</div>
-    <div class="flrRow"><span class="flrLb">Machine details</span>${FLR_DET.map(d => chip('d:' + d[0], flr.det.indexOf(d[0]) >= 0, d[1])).join('')}</div>
-    <div class="flrRow"><span class="flrLb">Colour</span>${chip('c:load', flr.color === 'load', 'By machines per operator')}${chip('c:sup', flr.color === 'sup', 'By supervisor')}${chip('c:none', flr.color === 'none', 'None')}<span class="flrLb" style="margin-left:8px;">Side info</span>${chip('t:panel', flr.panel, flr.panel ? 'Shown' : 'Hidden')}</div>
+  const chip = (act, on, label) => `<button type="button" class="flrChip${on ? ' on' : ''}" data-flr="${act}">${label}</button>`;
+  const opt = (v, cur, l) => `<option value="${v}"${v === cur ? ' selected' : ''}>${l}</option>`;
+  const vk = flrViewKey(), ok = flr.op && flr.id ? 'both' : flr.op ? 'name' : flr.id ? 'id' : 'none';
+  const sel = (n, lbl, opts) => `<div class="fItem"><label>${lbl}</label><select data-flrsel="${n}">${opts}</select></div>`;
+  const sups = flrSupList();
+  return `<div class="fPanel">
+    <div class="fHead"><span class="fTitle">${FLR_IC_FILTER.replace('width="17" height="17"', 'width="13" height="13"')}Filters</span><button type="button" class="fClear" data-flr="reset" style="${flrBadge() ? '' : 'visibility:hidden;'}">Clear all</button></div>
+    <div class="fGrid" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr));">
+      ${sel('view', 'Quick view', (vk === 'custom' ? opt('custom', vk, 'Custom') : '') + opt('blank', vk, 'Blank layout') + opt('ops', vk, 'Operators only') + opt('det', vk, 'Machine details only') + opt('both', vk, 'Operators + details'))}
+      ${sel('opmode', 'Operator on machine', opt('both', ok, 'Name and ID') + opt('name', ok, 'Name only') + opt('id', ok, 'ID only') + opt('none', ok, 'Hidden'))}
+      ${sel('supname', 'Supervisor name', opt('0', flr.showSup ? '1' : '0', 'Hidden') + opt('1', flr.showSup ? '1' : '0', 'Shown'))}
+      ${sel('color', 'Colour', opt('load', flr.color, 'By machines per operator') + opt('sup', flr.color, 'By supervisor') + opt('none', flr.color, 'No colour'))}
+      <div class="fItem fWide"><label>Supervisors (select one or more)</label><div class="flrChips">${chip('s:', !flr.sups.length, 'All')}${sups.map(x => chip('s:' + x.id, flr.sups.indexOf(x.id) >= 0, flrEsc(x.name))).join('')}${chip('s:__none__', flr.sups.indexOf('__none__') >= 0, 'No supervisor')}</div></div>
+      <div class="fItem fWide"><label>Machine details</label><div class="flrChips">${FLR_DET.map(d => chip('d:' + d[0], flr.det.indexOf(d[0]) >= 0, d[1])).join('')}</div></div>
+    </div>
   </div>`;
 }
 function flrRender(){
   const box = document.getElementById('flrBox'); if(!box) return;
   let secs;
   try{ if(!state.users || !state.machines || !state.machines.length) throw new Error('nodata'); secs = flrScope(); }catch(err){ box.innerHTML = '<div class="empty-state">The layout will show here once the people and machines are loaded.</div>'; return; }
-  const n = (flr.op ? 0 : 0) + (flr.shift !== 'Day' ? 1 : 0) + (flr.dept ? 1 : 0) + flr.det.length;
-  box.innerHTML = `<div class="asumTop">
-      <button type="button" class="iconBtn flrFilt${flr.open ? ' on' : ''}" data-flr="open" title="Filters" aria-label="Filters" aria-expanded="${flr.open ? 'true' : 'false'}">${FLR_IC_FILTER}</button>
-      <span class="flrHint">${flr.dept || 'RVF and SSTM'} · ${flr.shift === 'Both' ? 'Day and Night' : flr.shift + ' shift'}${flr.sups.length ? ' · ' + flrEsc(flrSupName()) : ''}</span><span style="flex:1;"></span>
+  const n = flrBadge(), L = flrSupList();
+  const seg = (items, cur, pre) => `<div class="seg">${items.map(i => `<button type="button" class="${cur === i[0] ? 'active' : ''}" data-flr="${pre}:${i[0]}">${i[1]}</button>`).join('')}</div>`;
+  const chips = flr.sups.map(k => `<span class="fChip">${flrEsc(k === '__none__' ? 'No supervisor' : ((L.find(x => x.id === k) || {}).name || k))}<button type="button" data-flr="s:${flrEsc(k)}" aria-label="Remove">&times;</button></span>`).concat(flr.det.map(k => `<span class="fChip">${flrEsc((FLR_DET.find(q => q[0] === k) || [0, k])[1])}<button type="button" data-flr="d:${k}" aria-label="Remove">&times;</button></span>`));
+  box.innerHTML = `<div class="asumTop flrTop">
+      <button type="button" class="iconBtn${flr.open || n ? ' on' : ''}" data-flr="open" title="Filters" aria-label="Filters" aria-expanded="${flr.open ? 'true' : 'false'}">${FLR_IC_FILTER}${n ? `<span class="iconBadge">${n}</span>` : ''}</button>
+      ${seg([['RVF', 'RVF'], ['SSTM', 'SSTM']], flr.dept, 'dept')}${seg([['Day', 'Day'], ['Night', 'Night'], ['Both', 'Both']], flr.shift, 'shift')}
+      <span style="flex:1;"></span>
       <button type="button" class="pillBtn" data-flr="pdf" title="Download as PDF" aria-label="Download PDF">${FLR_IC_DL}PDF</button>
       <button type="button" class="pillBtn" data-flr="xls" title="Download as Excel" aria-label="Download Excel">${FLR_IC_DL}Excel</button>
-    </div>${flr.open ? flrPanelHtml() : ''}
-    ${secs.map(S => `<div class="flrSec"><div class="flrHd">${S.dept} department · ${S.shift} shift</div><div class="flrWrap"><div class="flrScroll">${flrSvg(S)}</div>${flr.panel ? flrSideHtml(S) : ''}</div></div>`).join('')}`;
+    </div>${chips.length ? `<div class="asumActive">${chips.join('')}</div>` : ''}${flr.open ? flrPanelHtml() : ''}
+    ${secs.map(S => `<div class="flrSec">${secs.length > 1 ? `<div class="flrHd">${S.shift} shift</div>` : ''}<div class="flrScroll">${flrSvg(S)}</div>${flrFootHtml(S)}</div>`).join('')}`;
 }
 function flrAct(a){
-  const [k, v] = [a.slice(0, a.indexOf(':') < 0 ? a.length : a.indexOf(':')), a.indexOf(':') < 0 ? '' : a.slice(a.indexOf(':') + 1)];
+  const ci = a.indexOf(':'), k = ci < 0 ? a : a.slice(0, ci), v = ci < 0 ? '' : a.slice(ci + 1);
   if(k === 'open'){ flr.open = !flr.open; flrRender(); return; }
   if(k === 'pdf'){ flrPdf(); return; }
   if(k === 'xls'){ flrXls(); return; }
   if(k === 'shift') flr.shift = v;
   else if(k === 'dept') flr.dept = v;
-  else if(k === 't'){ if(v === 'sup') flr.showSup = !flr.showSup; else if(v === 'op') flr.op = !flr.op; else if(v === 'id') flr.id = !flr.id; else if(v === 'panel') flr.panel = !flr.panel; }
-  else if(k === 'c') flr.color = v;
+  else if(k === 'reset'){ flr.op = true; flr.id = true; flr.showSup = false; flr.det = []; flr.color = 'load'; flr.sups = []; }
   else if(k === 's'){ if(!v) flr.sups = []; else { const i = flr.sups.indexOf(v); if(i >= 0) flr.sups.splice(i, 1); else flr.sups.push(v); } }
   else if(k === 'd'){ const i = flr.det.indexOf(v); if(i >= 0) flr.det.splice(i, 1); else flr.det.push(v); flr.det.sort((x, y) => FLR_DET.findIndex(q => q[0] === x) - FLR_DET.findIndex(q => q[0] === y)); }
-  else if(k === 'p'){
-    if(v === 'blank'){ flr.op = false; flr.id = false; flr.showSup = false; flr.sups = []; flr.det = []; flr.color = 'none'; }
-    else if(v === 'ops'){ flr.op = true; flr.id = true; flr.det = []; flr.color = 'load'; }
-    else if(v === 'det'){ flr.op = false; flr.id = false; flr.det = ['type', 'width', 'picks', 'brand', 'jac']; flr.color = 'none'; }
-    else if(v === 'both'){ flr.op = true; flr.id = true; flr.det = ['type', 'brand', 'jac']; flr.color = 'load'; }
-  }
   flrSave(); flrRender();
 }
+function flrSel(n, v){
+  if(n === 'view'){
+    if(v === 'blank'){ flr.op = false; flr.id = false; flr.showSup = false; flr.det = []; flr.color = 'none'; }
+    else if(v === 'ops'){ flr.op = true; flr.id = true; flr.showSup = false; flr.det = []; flr.color = 'load'; }
+    else if(v === 'det'){ flr.op = false; flr.id = false; flr.showSup = false; flr.det = ['type', 'width', 'picks', 'brand', 'jac']; flr.color = 'none'; }
+    else if(v === 'both'){ flr.op = true; flr.id = true; flr.showSup = false; flr.det = ['type', 'brand', 'jac']; flr.color = 'load'; }
+  }
+  else if(n === 'opmode'){ flr.op = v === 'both' || v === 'name'; flr.id = v === 'both' || v === 'id'; }
+  else if(n === 'supname') flr.showSup = v === '1';
+  else if(n === 'color') flr.color = v;
+  flrSave(); flrRender();
+}
+document.addEventListener('change', (e) => { const s = e.target.closest && e.target.closest('#flrBox [data-flrsel]'); if(s) flrSel(s.getAttribute('data-flrsel'), s.value); });
 document.addEventListener('click', (e) => { const b = e.target.closest && e.target.closest('#flrBox [data-flr]'); if(b) flrAct(b.getAttribute('data-flr')); });
 
-// ---- PDF: shapes and text (not a picture)
+// ---- PDF: shapes and text (not a picture), one A4 landscape page per department and shift
 function flrRgb(h){ h = String(h || '#000000').replace('#', ''); return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)]; }
 async function flrPdf(){
   let secs; try{ secs = flrScope(); }catch(err){ toast('Nothing to download yet'); return; }
@@ -25534,46 +25566,47 @@ async function flrPdf(){
   try{ if(!(window.jspdf && window.jspdf.jsPDF)) await rvfLoadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'); }catch(err){ console.error(err); toast('Could not load the PDF tool — check your connection'); return; }
   try{
     const pdf = new window.jspdf.jsPDF({ unit: 'mm', format: 'a4', orientation: 'landscape' });
-    const PW = 297, PH = 210, M = 10, HD = 20, PNL = 56;
+    const PW = 297, PH = 210, M = 10, HD = 17, FT = 14;
     secs.forEach((S, i) => {
       if(i) pdf.addPage();
-      pdf.setFont('helvetica', 'bold'); pdf.setFontSize(8); pdf.setTextColor(79, 70, 229); pdf.text('RIYADH VELVET FACTORY', M, M + 3, { charSpace: 0.6 });
-      pdf.setFontSize(16); pdf.setTextColor(15, 23, 42); pdf.text('Machine Layout · ' + S.dept + ' · ' + S.shift + ' shift' + (flr.sups.length ? ' · ' + flrSupName() : ''), M, M + 11);
-      pdf.setFont('helvetica', 'normal'); pdf.setFontSize(8); pdf.setTextColor(100, 116, 139); pdf.text('Created ' + rvfNowText(), M, M + 16);
-      const gap = flr.panel ? 8 : 0, tw = S.w + 8, availW = PW - 2 * M - (flr.panel ? PNL + gap : 0), availH = PH - M - (M + HD);
-      const k = Math.min(availW / tw, availH / (S.h + 8)), ox = M, oy = M + HD;
+      pdf.setFont('helvetica', 'normal'); pdf.setFontSize(7); pdf.setTextColor(79, 70, 229); pdf.text('RIYADH VELVET FACTORY', M, M + 2, { charSpace: 0.6 });
+      pdf.setFontSize(13); pdf.setTextColor(17, 24, 39); pdf.text('Machine Layout · ' + S.dept + ' · ' + S.shift + ' shift' + (flr.sups.length ? ' · ' + flrSupName() : ''), M, M + 9);
+      pdf.setFontSize(7.5); pdf.setTextColor(107, 114, 128); pdf.text('Created ' + rvfNowText(), PW - M, M + 9, { align: 'right' });
+      const availW = PW - 2 * M, availH = PH - M - (M + HD) - FT;
+      const k = Math.min(availW / (S.w + 8), availH / (S.h + 8)), ox = M + (availW - (S.w + 8) * k) / 2, oy = M + HD;
       S.prims.forEach(p => {
         if(p.k === 'rect'){
           const x = ox + (p.x + 4) * k, y = oy + (p.y + 4) * k, w = p.w * k, h = p.h * k, r = (p.r || 0) * k;
           if(p.fill){ const c = flrRgb(p.fill); pdf.setFillColor(c[0], c[1], c[2]); }
-          if(p.stroke){ const c = flrRgb(p.stroke); pdf.setDrawColor(c[0], c[1], c[2]); pdf.setLineWidth((p.sw || 1) * k); }
+          if(p.stroke && !(p.fill && p.stroke === p.fill && p.w < 2)){ const c = flrRgb(p.stroke); pdf.setDrawColor(c[0], c[1], c[2]); pdf.setLineWidth((p.sw || 1) * k); }
           if(p.dash){ const d = p.dash.split(' ').map(Number); pdf.setLineDashPattern([d[0] * k, (d[1] || d[0]) * k], 0); } else pdf.setLineDashPattern([], 0);
-          const st = p.fill && p.stroke ? 'FD' : p.fill ? 'F' : 'S';
+          const st = p.fill && p.stroke && p.w >= 2 ? 'FD' : p.fill ? 'F' : 'S';
           if(r > 0) pdf.roundedRect(x, y, w, h, r, r, st); else pdf.rect(x, y, w, h, st);
         } else {
-          const c = flrRgb(p.color); pdf.setTextColor(c[0], c[1], c[2]); pdf.setFont('helvetica', p.bold ? 'bold' : 'normal'); pdf.setFontSize(p.size * k * 2.835);
+          const c = flrRgb(p.color); pdf.setTextColor(c[0], c[1], c[2]); pdf.setFont('helvetica', 'normal'); pdf.setFontSize(p.size * k * 2.835);
           const opt = { align: p.anchor === 'middle' ? 'center' : 'left' }; if(p.spacing) opt.charSpace = p.spacing * k; if(p.rot) opt.angle = -p.rot;
           pdf.text(String(p.s), ox + (p.x + 4) * k, oy + (p.y + 4) * k, opt);
         }
       });
       pdf.setLineDashPattern([], 0);
-      if(flr.panel){
-        const s = S.stats, px = PW - M - PNL; let py = oy + 4;
-        const head = (t) => { pdf.setFont('helvetica', 'bold'); pdf.setFontSize(7.5); pdf.setTextColor(79, 70, 229); pdf.text(t.toUpperCase(), px, py, { charSpace: 0.4 }); py += 5; };
-        const kv = (a, b, sw) => { pdf.setFont('helvetica', 'normal'); pdf.setFontSize(9); pdf.setTextColor(71, 85, 105); if(sw){ const f = flrRgb(sw[0]), d = flrRgb(sw[1]); pdf.setFillColor(f[0], f[1], f[2]); pdf.setDrawColor(d[0], d[1], d[2]); pdf.setLineWidth(0.25); pdf.roundedRect(px, py - 2.6, 3.6, 3.6, 0.8, 0.8, 'FD'); pdf.text(a, px + 5.5, py); } else pdf.text(a, px, py); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(15, 23, 42); pdf.text(String(b), px + PNL, py, { align: 'right' }); pdf.setDrawColor(226, 232, 240); pdf.setLineWidth(0.15); pdf.line(px, py + 1.8, px + PNL, py + 1.8); py += 6; };
-        head(S.dept + ' · ' + S.shift + ' shift');
-        if(s.sup >= 0) kv('Machines of selected supervisors', s.sup);
-        kv('Operators', s.ops); kv('Machines running', s.running + ' of ' + s.total); kv('Machines off', s.off); kv('Running, no operator', s.noOp);
-        if(flr.color === 'sup'){ py += 3; head('Supervisors · machines / operators'); s.sl.forEach(e => kv(e.name, e.machines + ' / ' + e.opsN, e.col)); kv(s.conf ? 'Machines with 2 supervisors' : 'Overlap check', s.conf ? s.conf : 'None'); }
-        if(flr.color === 'load'){ py += 3; head('Operators by machines'); kv('3 machines', s.cnt.c3, FLR_C.c3); kv('2 machines', s.cnt.c2, FLR_C.c2); kv('1 machine', s.cnt.c1, FLR_C.c1); }
-        py += 3; pdf.setFont('helvetica', 'normal'); pdf.setFontSize(8); pdf.setTextColor(100, 116, 139);
-        pdf.setLineDashPattern([0.8, 0.8], 0); pdf.setDrawColor(180, 189, 204); pdf.setFillColor(250, 251, 253); pdf.setLineWidth(0.25); pdf.roundedRect(px, py - 2.6, 3.6, 3.6, 0.8, 0.8, 'FD'); pdf.setLineDashPattern([], 0); pdf.text('Machine off', px + 5.5, py); py += 5.5;
-        pdf.setFillColor(199, 210, 254); pdf.roundedRect(px, py - 1.8, 3.6, 1.2, 0.5, 0.5, 'F'); pdf.text('Operator side of the machine', px + 5.5, py);
-      }
+      // small print under the layout: numbers, then what the colours mean
+      const f = flrFoot(S); let fy = PH - M - 7;
+      pdf.setFont('helvetica', 'normal'); pdf.setFontSize(8); pdf.setTextColor(75, 85, 99);
+      pdf.text(f.facts.join('   ·   '), M, fy);
+      fy += 5.2; let fx = M;
+      f.leg.forEach(l => {
+        const tw = pdf.getTextWidth(l.t) + (l.sw ? 6.4 : 0) + 6;
+        if(fx + tw > PW - M){ fx = M; fy += 4.4; }
+        if(l.sw === 'off'){ pdf.setLineDashPattern([0.7, 0.7], 0); pdf.setDrawColor(185, 193, 205); pdf.setFillColor(250, 251, 252); pdf.setLineWidth(0.2); pdf.roundedRect(fx, fy - 2.7, 3.4, 3.4, 0.8, 0.8, 'FD'); pdf.setLineDashPattern([], 0); }
+        else if(l.sw){ const a = flrRgb(l.sw[0]), b = flrRgb(l.sw[1]); pdf.setFillColor(a[0], a[1], a[2]); pdf.setDrawColor(b[0], b[1], b[2]); pdf.setLineWidth(0.2); pdf.roundedRect(fx, fy - 2.7, 3.4, 3.4, 0.8, 0.8, 'FD'); }
+        if(l.warn) pdf.setTextColor(183, 121, 31); else pdf.setTextColor(107, 114, 128);
+        pdf.text(l.t, fx + (l.sw ? 5.2 : 0), fy); fx += tw;
+      });
     });
-    pdf.save('machine-layout-' + (flr.shift === 'Both' ? 'day-night' : flr.shift.toLowerCase()) + '-' + rvfDateStamp() + '.pdf');
+    pdf.save('machine-layout-' + flr.dept.toLowerCase() + '-' + (flr.shift === 'Both' ? 'day-night' : flr.shift.toLowerCase()) + '-' + rvfDateStamp() + '.pdf');
   }catch(err){ console.error(err); toast('Could not make the PDF'); }
 }
+
 function flrXls(){
   if(typeof XLSX === 'undefined'){ toast('Excel tool not loaded — check your connection'); return; }
   let secs; try{ secs = flrScope(); }catch(err){ toast('Nothing to download yet'); return; }
@@ -25585,7 +25618,7 @@ function flrXls(){
     rows.push([S.dept, S.shift, c.m ? c.m.name : 'M/C ' + c.id, st].concat(flr.op ? [c.op ? c.op.name : ''] : [], flr.id ? [c.op ? c.op.id : ''] : [], flr.showSup ? [c.op && c.op.sup ? c.op.sup.name : ''] : [], flr.det.map(k => dv(c.m, k))));
   }));
   const wb = XLSX.utils.book_new(); dsSheet(wb, 'Layout ' + flr.shift, rvfNumRows(rows), [5, 11, 8, 14, 20].concat(flr.op ? [26] : [], flr.id ? [12] : [], flr.showSup ? [24] : [], flr.det.map(() => 14)));
-  XLSX.writeFile(wb, 'machine-layout-' + (flr.shift === 'Both' ? 'day-night' : flr.shift.toLowerCase()) + '-' + rvfDateStamp() + '.xlsx'); toast('Excel file downloaded');
+  XLSX.writeFile(wb, 'machine-layout-' + flr.dept.toLowerCase() + '-' + (flr.shift === 'Both' ? 'day-night' : flr.shift.toLowerCase()) + '-' + rvfDateStamp() + '.xlsx'); toast('Excel file downloaded');
 }
 
 // ---- Machines by Department (no longer on the page)
