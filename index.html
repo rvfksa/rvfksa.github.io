@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261112-090625">
+<meta name="rvf-build" content="20261112-094201">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -1546,6 +1546,17 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
   .fGrid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; }
   .fItem label{ display:flex; align-items:center; gap:5px; font-size:9.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); font-weight:600; margin:0 0 5px; }
   .fItem select{ width:100%; }
+  .asumMulti{ position:relative; }
+  .asumMultiBtn{ width:100%; display:flex; justify-content:space-between; align-items:center; gap:8px; text-align:left; font:inherit; font-size:13px; padding:10px 12px; border:1px solid var(--line, #e5e7eb); border-radius:12px; background:#fff; color:inherit; cursor:pointer; }
+  .asumMultiBtn .car{ color:var(--muted); font-size:11px; }
+  .asumMultiPanel{ margin-top:6px; border:1px solid var(--line, #e5e7eb); border-radius:12px; background:#fff; padding:8px; }
+  .asumMultiQ{ width:100%; box-sizing:border-box; font-size:13px; padding:7px 10px; border:1px solid var(--line, #e5e7eb); border-radius:8px; margin-bottom:6px; }
+  .asumMultiList{ max-height:220px; overflow:auto; }
+  .asumMultiRow{ display:flex; align-items:center; gap:8px; padding:6px 4px; font-size:13px; cursor:pointer; border-radius:6px; text-transform:none; letter-spacing:0; color:inherit; font-weight:400; margin:0; }
+  .asumMultiRow:hover{ background:#f5f5fb; } .asumMultiRow input{ width:auto; margin:0; } .asumMultiRow i{ color:var(--muted); font-style:normal; font-size:11px; }
+  .asumMultiFoot{ display:flex; justify-content:space-between; margin-top:6px; }
+  .asumMultiFoot button{ font:inherit; font-size:12px; padding:5px 12px; border-radius:8px; border:1px solid var(--line, #e5e7eb); background:#fff; cursor:pointer; }
+  .asumMultiDone{ background:#4f46e5 !important; color:#fff; border-color:#4f46e5 !important; }
   .fItem.fWide{ grid-column:1/-1; }
   @media (max-width:560px){ .fGrid > .fItem:last-child:nth-child(odd), .fGrid > .fItem:nth-last-child(2):nth-child(odd){ grid-column:1/-1; } }
   .fHint{ font-size:11px; color:var(--muted); margin-top:12px; padding-top:10px; border-top:1px solid var(--line); }
@@ -6351,7 +6362,7 @@ $('pendingRefreshBtn').addEventListener('click', async () => {
    ============================================================ */
 async function loadUsersForAdmin(){
   const body = $('usersBody');
-  body.innerHTML = '<div class="empty-state">Loading users… the list fills in by itself, no need to press Refresh.</div>';
+  body.innerHTML = '<div class="empty-state">Loading users…</div>';
   if(!requireDb()) return;
   try{
     const [users, authIndex] = await Promise.all([window.__db.listUsers(), window.__db.listAuthIndex()]);
@@ -11487,7 +11498,7 @@ function assignShortList(names, max){ return names.length <= max ? names.join(',
    On the Dashboard it shows what is saved. On Admin > Assign it also counts the changes waiting to be saved, so it
    updates the moment something is picked, and shows the saved numbers again after Save changes. */
 const asumState = {};
-function asumGet(key){ return asumState[key] || (asumState[key] = { view:'supervisor', fDept:'', fShift:'', fVip:'', fSup:'', fOp:'', fMach:'', gap:false, panel:false, open:new Set() }); }
+function asumGet(key){ return asumState[key] || (asumState[key] = { view:'supervisor', fDept:'', fShift:'', fVip:'', fSup:'', fOps:[], fMach:'', gap:false, panel:false, open:new Set() }); }
 function asumBuild(staged){
   const machinesOf = (u) => staged ? assignMachinesOf(u) : new Set(u.assignedMachines || []);
   const approverOf = (u) => staged ? assignApproverOf(u) : assignOriginalApprover(u);
@@ -11515,12 +11526,12 @@ function asumBuild(staged){
   return { ops, sups, machines, day, night };
 }
 function asumFilterFn(st){
-  return (o) => (!st.fOp || o.id === st.fOp) && (!st.fMach || o.machines.some(mid => String(mid) === st.fMach)) &&
+  return (o) => (!st.fOps.length || st.fOps.indexOf(o.id) >= 0) && (!st.fMach || o.machines.some(mid => String(mid) === st.fMach)) &&
     (!st.fSup || (st.fSup === '__none__' ? !o.sup : (o.sup && o.sup.id === st.fSup)));
 }
 function asumMachineRows(D, st, opOk){
   let rows = D.machines.filter(x => (!st.fMach || String(x.m.id) === st.fMach) && (!st.gap || x.gap));
-  if(st.fOp || st.fSup) rows = rows.filter(x => x.d.concat(x.n).some(opOk));
+  if(st.fOps.length || st.fSup) rows = rows.filter(x => x.d.concat(x.n).some(opOk));
   return rows;
 }
 function asumBuckets(D, opOk, anyFilter){
@@ -11541,7 +11552,7 @@ function asumFilterText(st, D){
   if(st.fShift) bits.push(st.fShift + ' shift');
   if(st.fVip) bits.push(st.fVip === 'vip' ? 'VIP machines only' : 'Normal machines only');
   if(st.fSup) bits.push('Supervisor: ' + (st.fSup === '__none__' ? 'none assigned' : ((D.sups.find(x => x.id === st.fSup) || {}).name || st.fSup)));
-  if(st.fOp) bits.push('Operator: ' + ((D.ops.find(x => x.id === st.fOp) || {}).name || st.fOp));
+  if(st.fOps.length) bits.push((st.fOps.length > 1 ? 'Operators: ' : 'Operator: ') + st.fOps.map(id => (D.ops.find(x => x.id === id) || {}).name || id).join(', '));
   if(st.fMach) bits.push('Machine: ' + machineName(st.fMach));
   if(st.gap) bits.push('Only machines with nobody assigned');
   return bits.join(' \u00B7 ');
@@ -11642,7 +11653,7 @@ async function asumDownloadPdf(mountId, key, staged){
 }
 function asumDownloadExcel(key, staged){
   if(typeof XLSX === 'undefined'){ toast('Excel tool not loaded \u2014 check your connection'); return; }
-  const st = asumGet(key), D = asumScope(asumBuild(staged), st), ok = asumFilterFn(st), anyFilter = !!(st.fOp || st.fMach || st.fSup || st.gap);
+  const st = asumGet(key), D = asumScope(asumBuild(staged), st), ok = asumFilterFn(st), anyFilter = !!(st.fOps.length || st.fMach || st.fSup || st.gap);
   const shiftTag = (s) => s === 'Day' ? 'Day' : s === 'Night' ? 'Night' : 'Both';
   const mlist = (o) => o.machines.map(machineName).join(', ');
   const covered = D.machines.filter(x => !x.gap).length;
@@ -11699,13 +11710,13 @@ function renderAssignSummary(mountId, key, staged){
   if(!state.users || !state.users.length || !state.machines){ root.innerHTML = ''; return; }
   const D0 = asumBuild(staged), D = asumScope(D0, st), esc = assignEsc;
   // keep filters valid if people or machines changed under them
-  if(st.fOp && !D.ops.some(o => o.id === st.fOp)) st.fOp = '';
+  if(st.fOps.length) st.fOps = st.fOps.filter(id => D.ops.some(o => o.id === id));
   if(st.fMach && !D.machines.some(x => String(x.m.id) === st.fMach)) st.fMach = '';
   if(st.fSup && st.fSup !== '__none__' && !D.sups.some(s => s.id === st.fSup) && !D.ops.some(o => o.sup && o.sup.id === st.fSup)) st.fSup = '';
 
   const opOk = asumFilterFn(st);
-  const anyNarrow = !!(st.fOp || st.fMach || st.fSup || st.gap);
-  const activeCount = (st.fDept ? 1 : 0) + (st.fShift ? 1 : 0) + (st.fVip ? 1 : 0) + (st.fSup ? 1 : 0) + (st.fOp ? 1 : 0) + (st.fMach ? 1 : 0) + (st.gap ? 1 : 0);
+  const anyNarrow = !!(st.fOps.length || st.fMach || st.fSup || st.gap);
+  const activeCount = (st.fDept ? 1 : 0) + (st.fShift ? 1 : 0) + (st.fVip ? 1 : 0) + (st.fSup ? 1 : 0) + (st.fOps.length ? 1 : 0) + (st.fMach ? 1 : 0) + (st.gap ? 1 : 0);
   const covered = D.machines.filter(x => !x.gap).length, uncovered = D.machines.length - covered;
   const noAppr = D.ops.filter(o => !o.sup).length;
   const dayOps = D.ops.filter(o => o.shift === 'Day').length, nightOps = D.ops.filter(o => o.shift === 'Night').length, bothOps = D.ops.length - dayOps - nightOps;
@@ -11720,7 +11731,7 @@ function renderAssignSummary(mountId, key, staged){
   if(st.fShift) labels.push(['fShift', st.fShift + ' shift']);
   if(st.fVip) labels.push(['fVip', st.fVip === 'vip' ? 'VIP machines' : 'Normal machines']);
   if(st.fSup) labels.push(['fSup', 'Supervisor: ' + (st.fSup === '__none__' ? 'none' : ((D0.sups.find(x => x.id === st.fSup) || {}).name || st.fSup))]);
-  if(st.fOp) labels.push(['fOp', 'Operator: ' + ((D0.ops.find(x => x.id === st.fOp) || {}).name || st.fOp)]);
+  if(st.fOps.length) labels.push(['fOp', st.fOps.length === 1 ? 'Operator: ' + ((D0.ops.find(x => x.id === st.fOps[0]) || {}).name || st.fOps[0]) : 'Operators: ' + st.fOps.length + ' selected']);
   if(st.fMach) labels.push(['fMach', 'Machine: ' + machineName(st.fMach)]);
   if(st.gap) labels.push(['gap', 'Nobody assigned']);
   const chkOpen = st.chk === undefined ? key === 'adm' : st.chk;   // the two check tiles: shown in Admin → Assign, tucked away on the Dashboard until "Checks" is pressed
@@ -11743,7 +11754,9 @@ function renderAssignSummary(mountId, key, staged){
       ${sel('fShift', '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>', 'Shift', `<option value="">Day &amp; Night</option><option value="Day" ${st.fShift === 'Day' ? 'selected' : ''}>Day</option><option value="Night" ${st.fShift === 'Night' ? 'selected' : ''}>Night</option>`)}
       ${sel('fVip', '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z"/></svg>', 'Machine type', `<option value="">All machines</option><option value="vip" ${st.fVip === 'vip' ? 'selected' : ''}>VIP machines only</option><option value="normal" ${st.fVip === 'normal' ? 'selected' : ''}>Normal machines only</option>`)}
       ${sel('fSup', '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><polyline points="16 11 18 13 22 9"/></svg>', 'Supervisor', `<option value="">All supervisors</option><option value="__none__" ${st.fSup === '__none__' ? 'selected' : ''}>No supervisor</option>` + D.sups.map(s => `<option value="${esc(s.id)}" ${st.fSup === s.id ? 'selected' : ''}>${esc(s.name)}</option>`).join(''))}
-      ${sel('fOp', '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>', 'Operator', '<option value="">All operators</option>' + D.ops.map(o => `<option value="${esc(o.id)}" ${st.fOp === o.id ? 'selected' : ''}>${esc(o.name)}</option>`).join(''))}
+      <div class="fItem"><label><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Operator</label>
+        <div class="asumMulti"><button type="button" class="asumMultiBtn">${st.fOps.length ? (st.fOps.length === 1 ? esc(((D.ops.find(o => o.id === st.fOps[0]) || {}).name) || '1 operator') : st.fOps.length + ' operators') : 'All operators'}<span class="car">${st.opOpen ? '\u25B4' : '\u25BE'}</span></button>
+        ${st.opOpen ? `<div class="asumMultiPanel"><input type="search" class="asumMultiQ" placeholder="Search operator"><div class="asumMultiList">${D.ops.map(o => `<label class="asumMultiRow" data-q="${esc(((o.name || '') + ' ' + o.id).toLowerCase())}"><input type="checkbox" value="${esc(o.id)}" ${st.fOps.indexOf(o.id) >= 0 ? 'checked' : ''}><span>${esc(o.name)} <i>${esc(o.id)}</i></span></label>`).join('')}</div><div class="asumMultiFoot"><button type="button" class="asumMultiClear">Clear</button><button type="button" class="asumMultiDone">Done</button></div></div>` : ''}</div></div>
       ${sel('fMach', '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 14h3M1 9h3M1 14h3"/></svg>', 'Machine', '<option value="">All machines</option>' + D.machines.map(x => `<option value="${esc(x.m.id)}" ${st.fMach === String(x.m.id) ? 'selected' : ''}>${esc(x.m.name)}</option>`).join(''))}
       </div>
       <div class="fHint">Department, Shift and Machine type change every number below. Supervisor, Operator and Machine narrow the lists.</div>
@@ -11809,7 +11822,7 @@ function renderAssignSummary(mountId, key, staged){
 
   root.innerHTML = top + panel + tiles + bar + `<div id="${mountId}Body">${body}</div>`;
   const redraw = () => renderAssignSummary(mountId, key, staged);
-  const clearNarrow = () => { st.fSup = ''; st.fOp = ''; st.fMach = ''; st.gap = false; };
+  const clearNarrow = () => { st.fSup = ''; st.fOps = []; st.fMach = ''; st.gap = false; };
   root.querySelectorAll('.asumTile').forEach(t => t.addEventListener('click', () => {
     const k = t.dataset.t; clearNarrow();
     if(k === 'operators') st.view = 'operator'; else if(k === 'supervisors') st.view = 'supervisor'; else if(k === 'machines') st.view = 'machine';
@@ -11819,8 +11832,22 @@ function renderAssignSummary(mountId, key, staged){
   root.querySelector('.asumChkBtn').addEventListener('click', () => { st.chk = !chkOpen; redraw(); });
   root.querySelectorAll('.asumView').forEach(b => b.addEventListener('click', () => { st.view = b.dataset.v; redraw(); }));
   root.querySelector('.asumFiltBtn').addEventListener('click', () => { st.panel = !st.panel; redraw(); });
-  root.querySelectorAll('.asumSel').forEach(s => s.addEventListener('change', () => { st[s.dataset.f] = s.value; if(s.dataset.f === 'fOp' || s.dataset.f === 'fSup' || (s.dataset.f === 'fMach' && s.value)) st.gap = false; redraw(); }));
-  root.querySelectorAll('.asumChipX').forEach(x => x.addEventListener('click', () => { if(x.dataset.f === 'gap') st.gap = false; else st[x.dataset.f] = ''; redraw(); }));
+  root.querySelectorAll('.asumSel').forEach(s => s.addEventListener('change', () => { st[s.dataset.f] = s.value; if(s.dataset.f === 'fSup' || (s.dataset.f === 'fMach' && s.value)) st.gap = false; redraw(); }));
+  root.querySelectorAll('.asumChipX').forEach(x => x.addEventListener('click', () => { if(x.dataset.f === 'gap') st.gap = false; else if(x.dataset.f === 'fOp') st.fOps = []; else st[x.dataset.f] = ''; redraw(); }));
+  (function(){
+    const btn = root.querySelector('.asumMultiBtn'); if(!btn) return;
+    btn.addEventListener('click', () => { st.opOpen = !st.opOpen; redraw(); });
+    const panelEl = root.querySelector('.asumMultiPanel'); if(!panelEl) return;
+    const list = panelEl.querySelector('.asumMultiList'); list.scrollTop = st.opScroll || 0;
+    panelEl.querySelector('.asumMultiQ').addEventListener('input', (e) => { const q = e.target.value.trim().toLowerCase(); list.querySelectorAll('.asumMultiRow').forEach(r => { r.style.display = (!q || r.dataset.q.indexOf(q) >= 0) ? '' : 'none'; }); });
+    list.addEventListener('change', (e) => {
+      const cb = e.target; if(!cb || cb.type !== 'checkbox') return;
+      const set = new Set(st.fOps); if(cb.checked) set.add(cb.value); else set.delete(cb.value);
+      st.fOps = Array.from(set); st.gap = false; st.opScroll = list.scrollTop; redraw();
+    });
+    panelEl.querySelector('.asumMultiClear').addEventListener('click', () => { st.fOps = []; st.opScroll = 0; redraw(); });
+    panelEl.querySelector('.asumMultiDone').addEventListener('click', () => { st.opOpen = false; redraw(); });
+  })();
   root.querySelector('.asumPdf').addEventListener('click', () => asumDownloadPdf(mountId, key, staged));
   root.querySelector('.asumXls').addEventListener('click', () => asumDownloadExcel(key, staged));
   const clr = root.querySelector('.asumClear'); if(clr) clr.addEventListener('click', () => { st.fDept = ''; st.fShift = ''; st.fVip = ''; clearNarrow(); redraw(); });
