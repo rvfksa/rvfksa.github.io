@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261112-084629">
+<meta name="rvf-build" content="20261112-085309">
 <meta name="robots" content="noindex, nofollow">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
@@ -27253,6 +27253,22 @@ body.rvfBusy #screen-dashboard .card{ opacity:.5; transition:opacity .2s; }
 </style>
 <div id="rvfBusy"><i></i><span id="rvfBusyTxt">Loading data…</span></div>
 <script>
+/* Diagnostic only (type rvfUserSizes() in the browser console): which fields make the employee records heavy. Changes nothing. */
+window.rvfUserSizes = function(){
+  var us = (typeof state !== 'undefined' && state.users) || [], tot = {}, big = [];
+  us.forEach(function(u){
+    var all = 0;
+    Object.keys(u).forEach(function(k){
+      var v = u[k];
+      if(k === 'profile' && v && typeof v === 'object'){ Object.keys(v).forEach(function(k2){ var n = JSON.stringify(v[k2] === undefined ? '' : v[k2]).length; tot['profile.' + k2] = (tot['profile.' + k2] || 0) + n; all += n; }); }
+      else { var n = JSON.stringify(v === undefined ? '' : v).length; tot[k] = (tot[k] || 0) + n; all += n; }
+    });
+    big.push(all);
+  });
+  var rows = Object.keys(tot).map(function(k){ return { field: k, MB: Math.round(tot[k] / 1048.576) / 1000 }; }).sort(function(a, b){ return b.MB - a.MB; }).slice(0, 10);
+  console.log('employees: ' + us.length + ', total MB: ' + Math.round(big.reduce(function(a, b){ return a + b; }, 0) / 1048.576) / 1000);
+  console.table(rows); return rows;
+};
 /* Loading indicator: a slow connection shows "Loading", never a screen of zeros that looks broken. */
 (function(){
   var depth = 0, t1 = null, txt = document.getElementById('rvfBusyTxt');
