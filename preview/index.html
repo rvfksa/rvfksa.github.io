@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261112-080026">
+<meta name="rvf-build" content="20261112-084629">
 <meta name="robots" content="noindex, nofollow">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
@@ -42,7 +42,7 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
   import {
     getFirestore,
-    doc, getDoc, setDoc, updateDoc, deleteDoc, writeBatch, runTransaction,
+    doc, getDoc as _fbGetDoc, setDoc, updateDoc, deleteDoc, writeBatch, runTransaction,
     collection, addDoc, getDocs as _fbGetDocs, getDocsFromServer as _fbGetDocsFromServer, query, where, orderBy, onSnapshot as _fbOnSnapshot, getCountFromServer
   } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
   import {
@@ -56,16 +56,18 @@
   function __rdName(q){ try{ return q.path || (q._query && q._query.path && q._query.path.canonicalString()) || '?'; }catch(e){ return '?'; } }
   function __rdAdd(q, docs, kind){
     try{
-      const name = __rdName(q), t = __rd[name] || (__rd[name] = { reads: 0, docs: 0, kb: 0 });
+      const name = __rdName(q), t = __rd[name] || (__rd[name] = { reads: 0, docs: 0, kb: 0, maxKB: 0, maxId: '' });
       t.reads++; t.docs += docs.length;
-      let sz = 0, c = 0; for(const d of docs){ if(c >= 25) break; sz += JSON.stringify(d.data()).length; c++; }
-      t.kb += c ? Math.round(sz / c * docs.length / 1024) : 0; t[kind] = (t[kind] || 0) + 1;
+      let tot = 0;
+      for(const d of docs){ const kb = JSON.stringify(d.data() || {}).length / 1024; tot += kb; if(kb > t.maxKB){ t.maxKB = Math.round(kb); t.maxId = d.id; } }
+      t.kb += Math.round(tot); t[kind] = (t[kind] || 0) + 1;
     }catch(e){}
   }
+  const getDoc = async (ref) => { const snap = await _fbGetDoc(ref); try{ if(snap.exists()) __rdAdd(ref.parent ? ref.parent : ref, [snap], 'doc'); }catch(e){} return snap; };
   const getDocs = async (q) => { const snap = await _fbGetDocs(q); try{ __rdAdd(q, snap.docs, 'once'); }catch(e){} return snap; };
   const getDocsFromServer = async (q) => { const snap = await _fbGetDocsFromServer(q); try{ __rdAdd(q, snap.docs, 'fromServer'); }catch(e){} return snap; };
   const onSnapshot = (q, ...rest) => {
-    if(typeof rest[0] === 'function'){ const f = rest[0]; rest[0] = (snap) => { try{ if(snap.docChanges) __rdAdd(q, snap.docChanges().map(c => c.doc), 'live'); }catch(e){} return f(snap); }; }
+    if(typeof rest[0] === 'function'){ const f = rest[0]; rest[0] = (snap) => { try{ if(snap.docChanges) __rdAdd(q, snap.docChanges().map(c => c.doc), 'live'); else if(snap.exists && snap.exists()) __rdAdd(q.parent || q, [snap], 'liveDoc'); }catch(e){} return f(snap); }; }
     return _fbOnSnapshot(q, ...rest);
   };
   window.rvfReads = () => { const rows = Object.keys(__rd).map(k => Object.assign({ collection: k }, __rd[k])).sort((a, b) => b.kb - a.kb); console.table(rows); return rows; };
