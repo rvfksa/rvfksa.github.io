@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<meta name="rvf-build" content="20261112-090625">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -40,13 +41,36 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
   import {
     getFirestore,
-    doc, getDoc, setDoc, updateDoc, deleteDoc, writeBatch, runTransaction,
-    collection, addDoc, getDocs, getDocsFromServer, query, where, orderBy, onSnapshot, getCountFromServer
+    doc, getDoc as _fbGetDoc, setDoc, updateDoc, deleteDoc, writeBatch, runTransaction,
+    collection, addDoc, getDocs as _fbGetDocs, getDocsFromServer as _fbGetDocsFromServer, query, where, orderBy, onSnapshot as _fbOnSnapshot, getCountFromServer
   } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
   import {
     getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword,
     updatePassword, signOut
   } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+  // Read counter: only counts what each read brings in (documents and approximate size), per collection, since this page was opened.
+  // Type rvfReads() in the browser console to see it. It does not change what is read.
+  const __rd = {};
+  function __rdName(q){ try{ return q.path || (q._query && q._query.path && q._query.path.canonicalString()) || '?'; }catch(e){ return '?'; } }
+  function __rdAdd(q, docs, kind){
+    try{
+      if(!(window.rvfIsAdmin && window.rvfIsAdmin())) return;   // measuring is for the admin only: nobody else pays for it
+      const name = __rdName(q), t = __rd[name] || (__rd[name] = { reads: 0, docs: 0, kb: 0, maxKB: 0, maxId: '' });
+      t.reads++; t.docs += docs.length;
+      let tot = 0;
+      for(const d of docs){ const kb = JSON.stringify(d.data() || {}).length / 1024; tot += kb; if(kb > t.maxKB){ t.maxKB = Math.round(kb); t.maxId = d.id; } }
+      t.kb += Math.round(tot); t[kind] = (t[kind] || 0) + 1;
+    }catch(e){}
+  }
+  const getDoc = async (ref) => { const snap = await _fbGetDoc(ref); try{ if(snap.exists()) __rdAdd(ref.parent ? ref.parent : ref, [snap], 'doc'); }catch(e){} return snap; };
+  const getDocs = async (q) => { const snap = await _fbGetDocs(q); try{ __rdAdd(q, snap.docs, 'once'); }catch(e){} return snap; };
+  const getDocsFromServer = async (q) => { const snap = await _fbGetDocsFromServer(q); try{ __rdAdd(q, snap.docs, 'fromServer'); }catch(e){} return snap; };
+  const onSnapshot = (q, ...rest) => {
+    if(typeof rest[0] === 'function'){ const f = rest[0]; rest[0] = (snap) => { try{ if(snap.docChanges) __rdAdd(q, snap.docChanges().map(c => c.doc), 'live'); else if(snap.exists && snap.exists()) __rdAdd(q.parent || q, [snap], 'liveDoc'); }catch(e){} return f(snap); }; }
+    return _fbOnSnapshot(q, ...rest);
+  };
+  window.rvfReads = () => { const rows = Object.keys(__rd).map(k => Object.assign({ collection: k }, __rd[k])).sort((a, b) => b.kb - a.kb); console.table(rows); return rows; };
 
   const firebaseConfig = {
     apiKey: "AIzaSyA-IRsoL3cy92qw6QC8_q4dThg7ydMXo-w",
@@ -107,7 +131,7 @@
     d.setDate(d.getDate() - days);
     return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
   }
-  function makeCachedCollection(name, { orderByField, includeId = true, recentWindowField = null, recentWindowDays = 60, buildQuery = null, rowFilter = null } = {}){
+  function makeCachedCollection(name, { orderByField, includeId = true, recentWindowField = null, recentWindowDays = 60, buildQuery = null, rowFilter = null, confirmWaitMs = null } = {}){
     let cachedRows = null;
     let firstSnapshot = null;
     let unsub = null;
@@ -157,7 +181,7 @@
               if(settled) return;
               if(cachedRows && cachedRows.length){ settled = true; resolve(cachedRows); return; }
               offlineTimer = setTimeout(() => { if(!settled){ settled = true; resolve(cachedRows || []); } }, 9500);
-            }, 2500);
+            }, (confirmWaitMs && navigator.onLine !== false) ? confirmWaitMs : 2500);
           }
         }, (err) => {
           console.error(name + ' live cache error', err);
@@ -247,7 +271,7 @@
 // caches, so filtering here keeps it out of all of them with no other change. Direct look-ups by ID
 // (login, "is this ID taken?") still find it. It is only ever created by hand in the database.
 const hiddenAccountsOut = (u) => !u.hiddenAccount;
-const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: hiddenAccountsOut });
+const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: hiddenAccountsOut, confirmWaitMs: 20000 });
   // A separate, plain one-time read of the same collection for every screen
   // that just needs "the current list of people" (My Status, Approvals'
   // employee picker, Leave, Employees) and never watches for live changes —
@@ -6327,7 +6351,7 @@ $('pendingRefreshBtn').addEventListener('click', async () => {
    ============================================================ */
 async function loadUsersForAdmin(){
   const body = $('usersBody');
-  body.innerHTML = '<div class="empty-state">Loading users…</div>';
+  body.innerHTML = '<div class="empty-state">Loading users… the list fills in by itself, no need to press Refresh.</div>';
   if(!requireDb()) return;
   try{
     const [users, authIndex] = await Promise.all([window.__db.listUsers(), window.__db.listAuthIndex()]);
@@ -12254,6 +12278,7 @@ function renderProfilePhoto(u){
   const img = $('profilePhotoImg'), initials = $('profilePhotoInitials');
   if(p.photoDataUrl){
     img.src = p.photoDataUrl; img.style.display = 'block'; initials.textContent = ''; $('profilePhotoWrap').classList.add('hasPhoto');
+    if(p.photoRef){ const uid = u.loginId; img.dataset.uid = uid; window.__db.getPhotoBlob(p.photoRef).then(d => { if(d && img.dataset.uid === uid && /^data:image/.test(d)) img.src = d; }).catch(() => {}); }   // the small copy shows at once, the full photo replaces it when it arrives
   } else {
     img.style.display = 'none'; $('profilePhotoWrap').classList.remove('hasPhoto');
     initials.textContent = (u.name || '?').trim().split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase();
@@ -12300,7 +12325,7 @@ $('profilePhotoInput').addEventListener('change', async (e) => {
   if(!requireDb()) return;
   try{
     const dataUrl = await compressImageSafe(file);
-    await saveProfileFields(profileCache.user.loginId, { photoDataUrl: dataUrl });
+    await saveProfilePhoto(profileCache.user.loginId, dataUrl);
     renderProfilePhoto(profileCache.user);
     toast('Photo updated');
   }catch(err){ console.error(err); toast('Could not upload photo — try a smaller image'); }
@@ -25946,7 +25971,7 @@ async function pdMark(ids, how){
 }
 async function pdPhoto(id, file){
   if(!file || !acCanEdit() || !requireDb()) return;
-  try{ const du = await compressImageSafe(file); await saveProfileFields(id, { photoDataUrl: du }); toast('Photo saved'); pdDrawBody(); }
+  try{ const du = await compressImageSafe(file); await saveProfilePhoto(id, du); toast('Photo saved'); pdDrawBody(); }
   catch(err){ console.error(err); toast('Could not save the photo - try again'); }
 }
 function pdExportRows(){
@@ -25969,7 +25994,7 @@ document.addEventListener('click', (e) => {
   else if(a === 'st'){ PD.st = t.dataset.v; PD.shown = 40; PD.sel.clear(); pdDraw(); }
   else if(a === 'edit'){ PD.edit = !PD.edit; pdDraw(); }
   else if(a === 'more'){ PD.shown += 40; pdDrawBody(); }
-  else if(a === 'big'){ const u = (state.users || []).find(x => x.loginId === id), p = u && u.profile; if(p && p.photoDataUrl && !e.target.closest('.pdCam')) openLightbox(p.photoDataUrl); }
+  else if(a === 'big'){ const u = (state.users || []).find(x => x.loginId === id), p = u && u.profile; if(p && p.photoDataUrl && !e.target.closest('.pdCam')){ if(p.photoRef) openPhotoRef(p.photoRef); else openLightbox(p.photoDataUrl); } }
   else if(a === 'doc'){ openPhotoRef(t.dataset.ref); }
   else if(a === 'tick'){ if(t.checked) PD.sel.add(id); else PD.sel.delete(id); pdDrawBody(); }
   else if(a === 'tickall'){ const list = pdFiltered(pdPeople()); if(t.checked) list.forEach(u => PD.sel.add(u.loginId)); else PD.sel.clear(); pdDrawBody(); }
@@ -27219,6 +27244,165 @@ document.addEventListener('change', (e) => {
     hfBar(); hfDet(); hfDraw(); }
 });
 
+</script>
+<style>
+#rvfBusy{ position:fixed; top:10px; left:50%; transform:translateX(-50%); z-index:9999; display:none; align-items:center; gap:8px; background:#fff; border:1px solid var(--line); border-radius:9999px; padding:6px 14px; font-size:12px; color:var(--muted); box-shadow:0 4px 14px rgba(15,23,42,.10); white-space:nowrap; }
+body.rvfBusy #rvfBusy{ display:flex; }
+#rvfBusy i{ width:10px; height:10px; border-radius:50%; border:2px solid var(--line); border-top-color:var(--amber); animation:rvfSpin .8s linear infinite; }
+@keyframes rvfSpin{ to{ transform:rotate(360deg); } }
+body.rvfBusy #screen-dashboard .card{ opacity:.5; transition:opacity .2s; }
+</style>
+<div id="rvfBusy"><i></i><span id="rvfBusyTxt">Loading data…</span></div>
+<script>
+/* Profile photos. The employee record keeps only a SMALL copy (so lists and screens that load everybody stay light); the full photo is
+   stored once in photoBlobs and referenced by profile.photoRef, and is fetched only when a profile or a big view is opened.
+   Anything that goes wrong while saving falls back to the old way (the full photo inside the record), so a photo is never lost. */
+window.rvfThumb = function(src){
+  return new Promise(function(res, rej){
+    var im = new Image();
+    im.onload = function(){
+      var w = im.naturalWidth, h = im.naturalHeight, k = Math.min(1, 240 / Math.max(w, h)), c = document.createElement('canvas');
+      c.width = Math.max(1, Math.round(w * k)); c.height = Math.max(1, Math.round(h * k));
+      var x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.drawImage(im, 0, 0, c.width, c.height);
+      res(c.toDataURL('image/jpeg', 0.72));
+    };
+    im.onerror = function(){ rej(new Error('image')); };
+    im.src = src;
+  });
+};
+window.saveProfilePhoto = async function(id, full){
+  var thumb = null, ref = null;
+  try{ thumb = await rvfThumb(full); ref = await window.__db.savePhotoBlob(full); }catch(e){ thumb = null; if(ref){ try{ await window.__db.deletePhotoBlob(ref); }catch(e2){} } ref = null; }
+  if(!thumb || !ref){ await saveProfileFields(id, { photoDataUrl: full }); return; }
+  var u = (state.users || []).find(function(x){ return x.loginId === id; }), old = u && u.profile && u.profile.photoRef;
+  try{ await saveProfileFields(id, { photoDataUrl: thumb, photoRef: ref }); }
+  catch(e){ try{ await window.__db.deletePhotoBlob(ref); }catch(e2){} throw e; }
+  if(old && old !== ref){ try{ await window.__db.deletePhotoBlob(old); }catch(e){} }
+};
+/* One-time move of the photos already stored inside the employee records (admin only, typed in the browser console):
+     rvfMigratePhotos()                      only counts and reports - changes nothing
+     rvfMigratePhotos({ dry: false, only: ['1461'] })   moves just the listed people
+     rvfMigratePhotos({ dry: false })        moves everybody that is left (safe to run again)
+     rvfRestorePhotos({ only: ['1461'] })    puts the full photo back inside the record (leave out 'only' for everybody)
+   Each photo is copied, read back and compared BEFORE the record is changed; the full photo is never deleted. */
+window.rvfMigratePhotos = async function(o){
+  o = o || {};
+  if(!rvfIsAdmin()){ console.log('Admin only.'); return; }
+  var dry = o.dry !== false, us = await window.__db.listUsersOnce(), only = o.only ? [].concat(o.only).map(String) : null;
+  var todo = us.filter(function(u){ var p = u.profile || {}; return typeof p.photoDataUrl === 'string' && p.photoDataUrl.indexOf('data:') === 0 && p.photoDataUrl.length > 45000 && !p.photoRef && (!only || only.indexOf(String(u.loginId)) >= 0); });
+  if(o.limit) todo = todo.slice(0, o.limit);
+  var mb = function(n){ return Math.round(n / 1048.576) / 1000; };
+  if(dry){ var tot = todo.reduce(function(a, u){ return a + u.profile.photoDataUrl.length; }, 0); console.log('DRY RUN - nothing changed. Photos to move: ' + todo.length + ' (' + mb(tot) + ' MB inside the employee records).'); return { toMove: todo.length, mb: mb(tot) }; }
+  var done = 0, before = 0, after = 0, fail = [];
+  for(var i = 0; i < todo.length; i++){
+    var u = todo[i], full = u.profile.photoDataUrl, ref = null;
+    try{
+      var thumb = await rvfThumb(full);
+      ref = await window.__db.savePhotoBlob(full);
+      var back = await window.__db.getPhotoBlob(ref);
+      if(back !== full) throw new Error('copy did not match');
+      await saveProfileFields(u.loginId, { photoDataUrl: thumb, photoRef: ref });
+      done++; before += full.length; after += thumb.length;
+      console.log((i + 1) + '/' + todo.length + ' moved ' + u.loginId);
+    }catch(e){ fail.push([u.loginId, String((e && e.message) || e)]); console.log('skipped ' + u.loginId + ': ' + ((e && e.message) || e)); if(ref){ try{ await window.__db.deletePhotoBlob(ref); }catch(e2){} } }
+  }
+  console.log('DONE. Moved ' + done + ', skipped ' + fail.length + '. Records shrank from ' + mb(before) + ' MB to ' + mb(after) + ' MB.');
+  return { moved: done, skipped: fail, beforeMB: mb(before), afterMB: mb(after) };
+};
+window.rvfRestorePhotos = async function(o){
+  o = o || {};
+  if(!rvfIsAdmin()){ console.log('Admin only.'); return; }
+  var us = await window.__db.listUsersOnce(), only = o.only ? [].concat(o.only).map(String) : null, n = 0, fail = [];
+  var todo = us.filter(function(u){ var p = u.profile || {}; return p.photoRef && (!only || only.indexOf(String(u.loginId)) >= 0); });
+  for(var i = 0; i < todo.length; i++){
+    var u = todo[i];
+    try{
+      var full = await window.__db.getPhotoBlob(u.profile.photoRef);
+      if(!full) throw new Error('full photo not found');
+      await saveProfileFields(u.loginId, { photoDataUrl: full, photoRef: null }); n++;
+    }catch(e){ fail.push([u.loginId, String((e && e.message) || e)]); }
+  }
+  console.log('Restored ' + n + ', skipped ' + fail.length); return { restored: n, skipped: fail };
+};
+/* Diagnostic only (type rvfUserSizes() in the browser console): which fields make the employee records heavy. Changes nothing. */
+window.rvfUserSizes = function(){
+  var us = (typeof state !== 'undefined' && state.users) || [], tot = {}, big = [];
+  us.forEach(function(u){
+    var all = 0;
+    Object.keys(u).forEach(function(k){
+      var v = u[k];
+      if(k === 'profile' && v && typeof v === 'object'){ Object.keys(v).forEach(function(k2){ var n = JSON.stringify(v[k2] === undefined ? '' : v[k2]).length; tot['profile.' + k2] = (tot['profile.' + k2] || 0) + n; all += n; }); }
+      else { var n = JSON.stringify(v === undefined ? '' : v).length; tot[k] = (tot[k] || 0) + n; all += n; }
+    });
+    big.push(all);
+  });
+  var rows = Object.keys(tot).map(function(k){ return { field: k, MB: Math.round(tot[k] / 1048.576) / 1000 }; }).sort(function(a, b){ return b.MB - a.MB; }).slice(0, 10);
+  console.log('employees: ' + us.length + ', total MB: ' + Math.round(big.reduce(function(a, b){ return a + b; }, 0) / 1048.576) / 1000);
+  console.table(rows); return rows;
+};
+/* Loading indicator: a slow connection shows "Loading", never a screen of zeros that looks broken. */
+(function(){
+  var depth = 0, t1 = null, txt = document.getElementById('rvfBusyTxt');
+  window.rvfIsAdmin = function(){ try{ return !!(state && state.user && state.user.role === 'admin'); }catch(e){ return false; } };
+  window.rvfBusy = function(on){
+    if(!rvfIsAdmin() && depth === 0) return;   // only the admin sees this; everybody else's screens stay exactly as before
+    depth = Math.max(0, depth + (on ? 1 : -1));
+    if(depth > 0){ document.body.classList.add('rvfBusy'); if(!t1){ t1 = setTimeout(function(){ txt.textContent = 'Still loading - slow connection, please wait'; }, 10000); } }
+    else { document.body.classList.remove('rvfBusy'); clearTimeout(t1); t1 = null; txt.textContent = 'Loading data…'; }
+  };
+  ['loadCeoDashboard', 'loadApprovals'].forEach(function(n){
+    var f = window[n]; if(typeof f !== 'function') return;
+    window[n] = async function(){ rvfBusy(true); try{ return await f.apply(this, arguments); } finally { rvfBusy(false); } };
+  });
+})();
+/* Self-update, completely silent and for everybody - no button, no message, nothing to click. Each build carries a stamp; the app compares it
+   with the file on the server (only the first few KB are read). If a newer build exists it reloads itself, but ONLY at a safe moment:
+   never while someone is on the photo/review screens, typing in a field, or holding an unsent photo - it simply waits for the next moment. */
+(function(){
+  var m = document.querySelector('meta[name="rvf-build"]'), cur = m && m.content;
+  if(!cur || !/^https?:/.test(location.protocol)) return;
+  var lastAt = 0, target = null, busy = false;
+  function remote(){
+    return fetch(location.pathname + '?rvfchk=' + Date.now(), { cache: 'no-store' }).then(function(r){
+      if(!r.ok) throw new Error('x');
+      var re = /name="rvf-build" content="([^"]+)"/;
+      if(!r.body || !r.body.getReader) return r.text().then(function(t){ var x = t.match(re); return x ? x[1] : null; });
+      var rd = r.body.getReader(), dec = new TextDecoder(), buf = '';
+      function pump(){ return rd.read().then(function(x){
+        if(x.done) return null; buf += dec.decode(x.value, { stream: true }); var y = buf.match(re);
+        if(y){ try{ rd.cancel(); }catch(e){} return y[1]; }
+        if(buf.length > 30000){ try{ rd.cancel(); }catch(e){} return null; } return pump(); }); }
+      return pump();
+    });
+  }
+  function safe(){
+    try{
+      var a = document.activeElement, tag = a && a.tagName;
+      if(tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (a && a.isContentEditable)) return false;
+      var sc = document.querySelector('.screen.active'), id = sc ? sc.id : '';
+      if(id === 'screen-capture' || id === 'screen-review' || id === 'screen-boot') return false;
+      if(typeof state !== 'undefined' && state && state.photoDataUrl) return false;
+      if(document.querySelector('.lightbox, .modal.open, .modal-backdrop.show')) return false;
+      return true;
+    }catch(e){ return false; }
+  }
+  function go(b){
+    var tried = ''; try{ tried = sessionStorage.getItem('rvfReloaded') || ''; }catch(e){}
+    if(tried === b) return;   // already tried this build in this session: never loop
+    try{ sessionStorage.setItem('rvfReloaded', b); }catch(e){}
+    try{ if(window.caches && caches.keys) caches.keys().then(function(ks){ ks.forEach(function(k){ caches.delete(k); }); }); }catch(e){}
+    location.replace(location.pathname + '?v=' + encodeURIComponent(b));
+  }
+  function tryGo(){ if(target && safe()) go(target); }
+  function check(){
+    if(busy) return; busy = true; lastAt = Date.now();
+    remote().then(function(b){ busy = false; if(b && b !== cur){ target = b; tryGo(); } }).catch(function(){ busy = false; });
+  }
+  [3000, 15000, 40000].forEach(function(ms){ setTimeout(check, ms); });
+  setInterval(function(){ if(target) tryGo(); else check(); }, 60 * 1000 * 5);
+  setInterval(tryGo, 20000);
+  document.addEventListener('visibilitychange', function(){ if(!document.hidden && Date.now() - lastAt > 2 * 60 * 1000) check(); });
+})();
 </script>
 </body>
 </html>

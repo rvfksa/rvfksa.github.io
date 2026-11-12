@@ -6352,7 +6352,7 @@ $('pendingRefreshBtn').addEventListener('click', async () => {
    ============================================================ */
 async function loadUsersForAdmin(){
   const body = $('usersBody');
-  body.innerHTML = '<div class="empty-state">Loading users…</div>';
+  body.innerHTML = '<div class="empty-state">Loading users… the list fills in by itself, no need to press Refresh.</div>';
   if(!requireDb()) return;
   try{
     const [users, authIndex] = await Promise.all([window.__db.listUsers(), window.__db.listAuthIndex()]);
