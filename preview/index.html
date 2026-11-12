@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261112-085309">
+<meta name="rvf-build" content="20261112-085725">
 <meta name="robots" content="noindex, nofollow">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
@@ -12278,6 +12278,7 @@ function renderProfilePhoto(u){
   const img = $('profilePhotoImg'), initials = $('profilePhotoInitials');
   if(p.photoDataUrl){
     img.src = p.photoDataUrl; img.style.display = 'block'; initials.textContent = ''; $('profilePhotoWrap').classList.add('hasPhoto');
+    if(p.photoRef){ const uid = u.loginId; img.dataset.uid = uid; window.__db.getPhotoBlob(p.photoRef).then(d => { if(d && img.dataset.uid === uid && /^data:image/.test(d)) img.src = d; }).catch(() => {}); }   // the small copy shows at once, the full photo replaces it when it arrives
   } else {
     img.style.display = 'none'; $('profilePhotoWrap').classList.remove('hasPhoto');
     initials.textContent = (u.name || '?').trim().split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase();
@@ -12324,7 +12325,7 @@ $('profilePhotoInput').addEventListener('change', async (e) => {
   if(!requireDb()) return;
   try{
     const dataUrl = await compressImageSafe(file);
-    await saveProfileFields(profileCache.user.loginId, { photoDataUrl: dataUrl });
+    await saveProfilePhoto(profileCache.user.loginId, dataUrl);
     renderProfilePhoto(profileCache.user);
     toast('Photo updated');
   }catch(err){ console.error(err); toast('Could not upload photo — try a smaller image'); }
@@ -25970,7 +25971,7 @@ async function pdMark(ids, how){
 }
 async function pdPhoto(id, file){
   if(!file || !acCanEdit() || !requireDb()) return;
-  try{ const du = await compressImageSafe(file); await saveProfileFields(id, { photoDataUrl: du }); toast('Photo saved'); pdDrawBody(); }
+  try{ const du = await compressImageSafe(file); await saveProfilePhoto(id, du); toast('Photo saved'); pdDrawBody(); }
   catch(err){ console.error(err); toast('Could not save the photo - try again'); }
 }
 function pdExportRows(){
@@ -25993,7 +25994,7 @@ document.addEventListener('click', (e) => {
   else if(a === 'st'){ PD.st = t.dataset.v; PD.shown = 40; PD.sel.clear(); pdDraw(); }
   else if(a === 'edit'){ PD.edit = !PD.edit; pdDraw(); }
   else if(a === 'more'){ PD.shown += 40; pdDrawBody(); }
-  else if(a === 'big'){ const u = (state.users || []).find(x => x.loginId === id), p = u && u.profile; if(p && p.photoDataUrl && !e.target.closest('.pdCam')) openLightbox(p.photoDataUrl); }
+  else if(a === 'big'){ const u = (state.users || []).find(x => x.loginId === id), p = u && u.profile; if(p && p.photoDataUrl && !e.target.closest('.pdCam')){ if(p.photoRef) openPhotoRef(p.photoRef); else openLightbox(p.photoDataUrl); } }
   else if(a === 'doc'){ openPhotoRef(t.dataset.ref); }
   else if(a === 'tick'){ if(t.checked) PD.sel.add(id); else PD.sel.delete(id); pdDrawBody(); }
   else if(a === 'tickall'){ const list = pdFiltered(pdPeople()); if(t.checked) list.forEach(u => PD.sel.add(u.loginId)); else PD.sel.clear(); pdDrawBody(); }
@@ -27253,6 +27254,76 @@ body.rvfBusy #screen-dashboard .card{ opacity:.5; transition:opacity .2s; }
 </style>
 <div id="rvfBusy"><i></i><span id="rvfBusyTxt">Loading data…</span></div>
 <script>
+/* Profile photos. The employee record keeps only a SMALL copy (so lists and screens that load everybody stay light); the full photo is
+   stored once in photoBlobs and referenced by profile.photoRef, and is fetched only when a profile or a big view is opened.
+   Anything that goes wrong while saving falls back to the old way (the full photo inside the record), so a photo is never lost. */
+window.rvfThumb = function(src){
+  return new Promise(function(res, rej){
+    var im = new Image();
+    im.onload = function(){
+      var w = im.naturalWidth, h = im.naturalHeight, k = Math.min(1, 240 / Math.max(w, h)), c = document.createElement('canvas');
+      c.width = Math.max(1, Math.round(w * k)); c.height = Math.max(1, Math.round(h * k));
+      var x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.drawImage(im, 0, 0, c.width, c.height);
+      res(c.toDataURL('image/jpeg', 0.72));
+    };
+    im.onerror = function(){ rej(new Error('image')); };
+    im.src = src;
+  });
+};
+window.saveProfilePhoto = async function(id, full){
+  var thumb = null, ref = null;
+  try{ thumb = await rvfThumb(full); ref = await window.__db.savePhotoBlob(full); }catch(e){ thumb = null; if(ref){ try{ await window.__db.deletePhotoBlob(ref); }catch(e2){} } ref = null; }
+  if(!thumb || !ref){ await saveProfileFields(id, { photoDataUrl: full }); return; }
+  var u = (state.users || []).find(function(x){ return x.loginId === id; }), old = u && u.profile && u.profile.photoRef;
+  try{ await saveProfileFields(id, { photoDataUrl: thumb, photoRef: ref }); }
+  catch(e){ try{ await window.__db.deletePhotoBlob(ref); }catch(e2){} throw e; }
+  if(old && old !== ref){ try{ await window.__db.deletePhotoBlob(old); }catch(e){} }
+};
+/* One-time move of the photos already stored inside the employee records (admin only, typed in the browser console):
+     rvfMigratePhotos()                      only counts and reports - changes nothing
+     rvfMigratePhotos({ dry: false, only: ['1461'] })   moves just the listed people
+     rvfMigratePhotos({ dry: false })        moves everybody that is left (safe to run again)
+     rvfRestorePhotos({ only: ['1461'] })    puts the full photo back inside the record (leave out 'only' for everybody)
+   Each photo is copied, read back and compared BEFORE the record is changed; the full photo is never deleted. */
+window.rvfMigratePhotos = async function(o){
+  o = o || {};
+  if(!rvfIsAdmin()){ console.log('Admin only.'); return; }
+  var dry = o.dry !== false, us = await window.__db.listUsersOnce(), only = o.only ? [].concat(o.only).map(String) : null;
+  var todo = us.filter(function(u){ var p = u.profile || {}; return typeof p.photoDataUrl === 'string' && p.photoDataUrl.indexOf('data:') === 0 && p.photoDataUrl.length > 45000 && !p.photoRef && (!only || only.indexOf(String(u.loginId)) >= 0); });
+  if(o.limit) todo = todo.slice(0, o.limit);
+  var mb = function(n){ return Math.round(n / 1048.576) / 1000; };
+  if(dry){ var tot = todo.reduce(function(a, u){ return a + u.profile.photoDataUrl.length; }, 0); console.log('DRY RUN - nothing changed. Photos to move: ' + todo.length + ' (' + mb(tot) + ' MB inside the employee records).'); return { toMove: todo.length, mb: mb(tot) }; }
+  var done = 0, before = 0, after = 0, fail = [];
+  for(var i = 0; i < todo.length; i++){
+    var u = todo[i], full = u.profile.photoDataUrl, ref = null;
+    try{
+      var thumb = await rvfThumb(full);
+      ref = await window.__db.savePhotoBlob(full);
+      var back = await window.__db.getPhotoBlob(ref);
+      if(back !== full) throw new Error('copy did not match');
+      await saveProfileFields(u.loginId, { photoDataUrl: thumb, photoRef: ref });
+      done++; before += full.length; after += thumb.length;
+      console.log((i + 1) + '/' + todo.length + ' moved ' + u.loginId);
+    }catch(e){ fail.push([u.loginId, String((e && e.message) || e)]); console.log('skipped ' + u.loginId + ': ' + ((e && e.message) || e)); if(ref){ try{ await window.__db.deletePhotoBlob(ref); }catch(e2){} } }
+  }
+  console.log('DONE. Moved ' + done + ', skipped ' + fail.length + '. Records shrank from ' + mb(before) + ' MB to ' + mb(after) + ' MB.');
+  return { moved: done, skipped: fail, beforeMB: mb(before), afterMB: mb(after) };
+};
+window.rvfRestorePhotos = async function(o){
+  o = o || {};
+  if(!rvfIsAdmin()){ console.log('Admin only.'); return; }
+  var us = await window.__db.listUsersOnce(), only = o.only ? [].concat(o.only).map(String) : null, n = 0, fail = [];
+  var todo = us.filter(function(u){ var p = u.profile || {}; return p.photoRef && (!only || only.indexOf(String(u.loginId)) >= 0); });
+  for(var i = 0; i < todo.length; i++){
+    var u = todo[i];
+    try{
+      var full = await window.__db.getPhotoBlob(u.profile.photoRef);
+      if(!full) throw new Error('full photo not found');
+      await saveProfileFields(u.loginId, { photoDataUrl: full, photoRef: null }); n++;
+    }catch(e){ fail.push([u.loginId, String((e && e.message) || e)]); }
+  }
+  console.log('Restored ' + n + ', skipped ' + fail.length); return { restored: n, skipped: fail };
+};
 /* Diagnostic only (type rvfUserSizes() in the browser console): which fields make the employee records heavy. Changes nothing. */
 window.rvfUserSizes = function(){
   var us = (typeof state !== 'undefined' && state.users) || [], tot = {}, big = [];
