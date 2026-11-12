@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261112-085725">
+<meta name="rvf-build" content="20261112-090625">
 <meta name="robots" content="noindex, nofollow">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
@@ -56,6 +56,7 @@
   function __rdName(q){ try{ return q.path || (q._query && q._query.path && q._query.path.canonicalString()) || '?'; }catch(e){ return '?'; } }
   function __rdAdd(q, docs, kind){
     try{
+      if(!(window.rvfIsAdmin && window.rvfIsAdmin())) return;   // measuring is for the admin only: nobody else pays for it
       const name = __rdName(q), t = __rd[name] || (__rd[name] = { reads: 0, docs: 0, kb: 0, maxKB: 0, maxId: '' });
       t.reads++; t.docs += docs.length;
       let tot = 0;
@@ -131,7 +132,7 @@
     d.setDate(d.getDate() - days);
     return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
   }
-  function makeCachedCollection(name, { orderByField, includeId = true, recentWindowField = null, recentWindowDays = 60, buildQuery = null, rowFilter = null } = {}){
+  function makeCachedCollection(name, { orderByField, includeId = true, recentWindowField = null, recentWindowDays = 60, buildQuery = null, rowFilter = null, confirmWaitMs = null } = {}){
     let cachedRows = null;
     let firstSnapshot = null;
     let unsub = null;
@@ -181,7 +182,7 @@
               if(settled) return;
               if(cachedRows && cachedRows.length){ settled = true; resolve(cachedRows); return; }
               offlineTimer = setTimeout(() => { if(!settled){ settled = true; resolve(cachedRows || []); } }, 9500);
-            }, 2500);
+            }, (confirmWaitMs && navigator.onLine !== false) ? confirmWaitMs : 2500);
           }
         }, (err) => {
           console.error(name + ' live cache error', err);
@@ -271,7 +272,7 @@
 // caches, so filtering here keeps it out of all of them with no other change. Direct look-ups by ID
 // (login, "is this ID taken?") still find it. It is only ever created by hand in the database.
 const hiddenAccountsOut = (u) => !u.hiddenAccount;
-const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: hiddenAccountsOut });
+const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: hiddenAccountsOut, confirmWaitMs: 20000 });
   // A separate, plain one-time read of the same collection for every screen
   // that just needs "the current list of people" (My Status, Approvals'
   // employee picker, Leave, Employees) and never watches for live changes —
