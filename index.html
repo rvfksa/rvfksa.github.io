@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261114-112147">
+<meta name="rvf-build" content="20261114-112310">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -2975,21 +2975,18 @@ table.a2T tbody tr.a2Gap + tr.a2First td{ border-top:0 !important; }
 .acLadT td{ padding:4px 6px; border-top:1px solid #eef0f6; } .acLadT td input.acNum{ width:90px; } .acLadE td{ background:#f6f7fc; font-size:12px; color:var(--muted); }
 .acPaste{ margin:8px 0; padding:10px; border-radius:12px; background:#f6f7fc; } .acRow2{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:8px; }
 
-.mxF{ margin:0 0 14px; background:#fff; border:1px solid var(--line, #e5e7eb); border-radius:16px; overflow:hidden; }
-.mxFTop{ display:flex; align-items:center; gap:10px; padding:10px 12px; flex-wrap:wrap; }
-.mxFGap{ flex:1 1 0; min-width:0; } .mxFSearch{ flex:1 1 240px !important; max-width:360px; }
-.mxFBtn b{ display:none; align-items:center; justify-content:center; min-width:17px; height:17px; padding:0 5px; border-radius:9px; background:var(--accent, #4f46e5); color:#fff; font-size:10.5px; margin-left:2px; } .mxFBtn.open{ background:#eef0ff; border-color:var(--accent, #4f46e5); color:var(--accent, #4f46e5); }
-.mxFSearch{ flex:1; min-width:0; display:flex; align-items:center; gap:8px; height:36px; padding:0 12px; border-radius:10px; background:#f6f7fb; border:1px solid transparent; color:var(--muted); margin:0; }
-.mxFSearch:focus-within{ background:#fff; border-color:var(--accent, #4f46e5); } .mxFSearch input{ flex:1; min-width:0; border:0; outline:0; background:transparent; font:inherit; font-size:13.5px; color:var(--text, #0f172a); padding:0; height:auto; box-shadow:none; }
-.mxFCount{ font-size:12px; font-weight:600; color:var(--text, #0f172a); white-space:nowrap; } .mxFClear{ border:0; background:transparent; color:var(--accent, #4f46e5); font:inherit; font-size:12px; font-weight:600; cursor:pointer; padding:4px 2px; }
-#mxFChips{ border-top:1px solid var(--line, #e5e7eb); } #mxFChips:not([hidden]){ display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); }
-.mxFRow{ display:flex; flex-direction:column; gap:7px; padding:11px 14px; border-bottom:1px solid var(--line, #e5e7eb); } .mxFRow:nth-child(odd){ border-right:1px solid var(--line, #e5e7eb); } .mxFRow:nth-last-child(-n+2){ border-bottom:0; }
-.mxFLbl{ font-size:10.5px; font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:var(--muted); }
-.mxFOpts{ display:flex; flex-wrap:wrap; gap:6px; }
-.mxFChip{ display:inline-flex; align-items:center; gap:6px; height:28px; padding:0 11px; border-radius:8px; border:1px solid var(--line, #e5e7eb); background:#fff; color:var(--text, #0f172a); font:inherit; font-size:12.5px; cursor:pointer; transition:background .12s, border-color .12s; }
-.mxFChip i{ font-style:normal; font-size:11px; color:var(--muted); } .mxFChip:hover{ background:#f6f7fb; }
-.mxFChip.on{ background:var(--accent, #4f46e5); border-color:var(--accent, #4f46e5); color:#fff; font-weight:600; } .mxFChip.on i{ color:rgba(255,255,255,.8); }
-@media (max-width:640px){ #mxFChips{ grid-template-columns:1fr; } .mxFRow:nth-child(odd){ border-right:0; } .mxFRow:nth-last-child(-n+2){ border-bottom:1px solid var(--line, #e5e7eb); } .mxFRow:last-child{ border-bottom:0; } }
+.mxF{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin:0 0 14px; padding:10px 12px; background:#fff; border:1px solid var(--line, #e5e7eb); border-radius:16px; }
+.mxFSearch{ flex:1 1 200px; max-width:300px; display:flex; align-items:center; gap:7px; height:34px; padding:0 11px; border-radius:999px; background:#f6f7fb; border:1px solid transparent; color:var(--muted); margin:0; }
+.mxFSearch:focus-within{ background:#fff; border-color:var(--accent, #4f46e5); } .mxFSearch input{ flex:1; min-width:0; border:0; outline:0; background:transparent; font:inherit; font-size:12.5px; color:var(--text, #0f172a); padding:0; height:auto; box-shadow:none; }
+.mxFDrops{ display:contents; } .mxFDd{ position:relative; }
+.mxFDb{ height:34px; display:inline-flex; align-items:center; gap:8px; padding:0 12px; border-radius:999px; border:1px solid var(--line, #e5e7eb); background:#fff; color:var(--text, #0f172a); font:inherit; font-size:12px; cursor:pointer; }
+.mxFDb i{ font-style:normal; font-size:10px; color:var(--muted); } .mxFDb:hover{ background:#f6f7fb; }
+.mxFDb.on{ border-color:var(--accent, #4f46e5); color:var(--accent, #4f46e5); background:#f4f5ff; font-weight:600; } .mxFDb.on i{ color:var(--accent, #4f46e5); }
+.mxFList{ position:absolute; z-index:30; top:40px; left:0; min-width:170px; padding:6px; background:#fff; border:1px solid var(--line, #e5e7eb); border-radius:14px; box-shadow:0 10px 28px rgba(15,23,42,.12); }
+.mxFOpt{ display:flex; align-items:center; gap:9px; margin:0; padding:7px 9px; border-radius:8px; font-size:12.5px; cursor:pointer; color:var(--text, #0f172a); font-weight:400; } .mxFOpt:hover{ background:#f6f7fb; }
+.mxFOpt input{ width:15px; height:15px; margin:0; accent-color:var(--accent, #4f46e5); } .mxFOpt span{ flex:1; } .mxFOpt i{ font-style:normal; font-size:11px; color:var(--muted); }
+.mxFCount{ font-size:12px; color:var(--muted); white-space:nowrap; margin-left:2px; } .mxFClear{ border:0; background:transparent; color:var(--accent, #4f46e5); font:inherit; font-size:12px; font-weight:600; cursor:pointer; padding:4px 2px; }
+.mxFGap{ flex:1 1 0; min-width:0; }
 .mCat{ display:inline-flex; align-items:center; margin-left:4px; padding:1px 7px; border-radius:999px; background:#f1f3f9; color:#475569; font-size:10px; font-weight:700; letter-spacing:.03em; vertical-align:1px; }
 .mStar{ display:inline-flex; vertical-align:-1px; margin-left:5px; color:var(--accent,#4f46e5); } .mStar svg{ display:block; }
 .mVip{ display:inline-flex; align-items:center; gap:3px; margin-left:4px; padding:1px 7px 1px 5px; border-radius:999px; background:#eef0ff; color:var(--accent,#4f46e5); font-size:10px; font-weight:700; letter-spacing:.04em; vertical-align:1px; }
@@ -6882,7 +6879,7 @@ async function loadMachinesForAdmin(){
 /* ---------- Admin > Machines: filter ----------
    Search box and tap-to-select chips (Department, Status, Category, Shift). Nothing selected in a row = all. The list below
    and the Download both follow what is shown. Works on the machines already loaded: no database reads. */
-const mxF = { open: false, q: '', dept: [], status: [], cat: [], shift: [] };
+const mxF = { open: '', q: '', dept: [], status: [], cat: [], shift: [] };
 function mxCatOf(m){ return machineCat(m) || 'Not set'; }
 function mxFiltered(){
   const q = mxF.q.trim().toLowerCase();
@@ -6893,31 +6890,36 @@ function mxFiltered(){
     (!mxF.shift.length || mxF.shift.indexOf(m.shiftRun || 'Both') >= 0) &&
     (!q || [m.id, m.name, m.department, m.brand, m.model, m.jacquard, m.colours, m.note].join(' ').toLowerCase().indexOf(q) >= 0));
 }
+const MX_UP = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>';
+function mxOptOf(key, m){ return key === 'dept' ? (m.department || '') : key === 'status' ? (m.status === 'stopped' ? 'Stopped' : 'Running') : key === 'cat' ? mxCatOf(m) : (m.shiftRun || 'Both'); }
 function mxFilterSync(){
   const body = $('machinesBody'); if(!body || !body.parentNode) return;
   let bar = $('mxFilterBar');
   if(!bar){
     bar = document.createElement('div'); bar.id = 'mxFilterBar'; bar.className = 'mxF';
-    bar.innerHTML = '<div class="mxFTop"><label class="mxFSearch"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg><input type="search" id="mxFq" placeholder="Search machine, brand, model, jacquard" autocomplete="off"></label><button type="button" class="pillBtn mxFBtn" id="mxFToggle"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.5 10 19 14 21 14 12.5 22 3"/></svg>Filter<b id="mxFBadge"></b></button><span class="mxFCount" id="mxFCount"></span><button type="button" class="mxFClear" id="mxFClear">Clear</button><span class="mxFGap"></span><button type="button" class="pillBtn" id="mxUpBtn" title="Upload the machine details sheet">' + DL_ICON + 'Upload Excel</button><button type="button" class="pillBtn" id="dlMachBtn">' + DL_ICON + 'Download</button></div><div id="mxFChips" hidden></div>';
+    bar.innerHTML = '<label class="mxFSearch"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg><input type="search" id="mxFq" placeholder="Search machines" autocomplete="off"></label><span id="mxFDrops" class="mxFDrops"></span><span class="mxFCount" id="mxFCount"></span><button type="button" class="mxFClear" id="mxFClear">Clear</button><span class="mxFGap"></span><button type="button" class="pillBtn" id="mxUpBtn" title="Upload the machine details sheet">' + MX_UP + 'Upload</button><button type="button" class="pillBtn" id="dlMachBtn">' + DL_ICON + 'Download</button>';
     body.parentNode.insertBefore(bar, body);
   }
   const all = state.machines || [];
   const depts = Array.from(new Set(all.map(m => m.department || '').filter(Boolean))).sort();
-  const grp = (key, label, opts) => `<div class="mxFRow"><span class="mxFLbl">${label}</span><div class="mxFOpts">${opts.map(o => { const n = all.filter(m => key === 'dept' ? (m.department || '') === o : key === 'status' ? (m.status === 'stopped' ? 'Stopped' : 'Running') === o : key === 'cat' ? mxCatOf(m) === o : (m.shiftRun || 'Both') === o).length; return `<button type="button" class="mxFChip${mxF[key].indexOf(o) >= 0 ? ' on' : ''}" data-mxf="${key}" data-v="${assignEsc(o)}">${assignEsc(o)}<i>${n}</i></button>`; }).join('')}</div></div>`;
-  $('mxFChips').innerHTML = (depts.length > 1 ? grp('dept', 'Department', depts) : '') + grp('status', 'Status', ['Running', 'Stopped']) + grp('cat', 'Category', MACHINE_CATS.concat(['Not set'])) + grp('shift', 'Shift', ['Both', 'Day', 'Night']);
-  const nAct = (mxF.dept.length ? 1 : 0) + (mxF.status.length ? 1 : 0) + (mxF.cat.length ? 1 : 0) + (mxF.shift.length ? 1 : 0);
-  $('mxFChips').hidden = !mxF.open; $('mxFToggle').classList.toggle('open', !!mxF.open); $('mxFBadge').textContent = nAct || ''; $('mxFBadge').style.display = nAct ? 'inline-flex' : 'none';
+  const defs = [['dept', 'Department', depts], ['status', 'Status', ['Running', 'Stopped']], ['cat', 'Category', MACHINE_CATS.concat(['Not set'])], ['shift', 'Shift', ['Both', 'Day', 'Night']]];
+  $('mxFDrops').innerHTML = defs.filter(d => d[0] !== 'dept' || d[2].length > 1).map(([k, label, opts]) => {
+    const sel = mxF[k], open = mxF.open === k, txt = sel.length ? (sel.length === 1 ? sel[0] : sel.length + ' selected') : label;
+    return `<span class="mxFDd"><button type="button" class="mxFDb${sel.length ? ' on' : ''}${open ? ' open' : ''}" data-mxo="${k}"><span>${assignEsc(txt)}</span><i>${open ? '▴' : '▾'}</i></button>${open ? `<div class="mxFList">${opts.map(o => `<label class="mxFOpt"><input type="checkbox" class="mxFChk" data-k="${k}" value="${assignEsc(o)}"${sel.indexOf(o) >= 0 ? ' checked' : ''}><span>${assignEsc(o)}</span><i>${all.filter(m => mxOptOf(k, m) === o).length}</i></label>`).join('')}</div>` : ''}</span>`;
+  }).join('');
   const n = mxFiltered().length, active = mxF.q.trim() || mxF.dept.length || mxF.status.length || mxF.cat.length || mxF.shift.length;
-  $('mxFCount').textContent = active ? n + ' of ' + all.length + ' machines' : all.length + ' machines';
-  $('mxFClear').style.visibility = active ? 'visible' : 'hidden';
+  $('mxFCount').textContent = active ? n + ' of ' + all.length : all.length + ' machines';
+  $('mxFClear').style.display = active ? '' : 'none';
 }
 document.addEventListener('input', (e) => { if(e.target && e.target.id === 'mxFq'){ mxF.q = e.target.value; renderMachinesList(); } });
+document.addEventListener('change', (e) => {
+  const c = e.target.closest && e.target.closest('.mxFChk'); if(!c) return;
+  const sel = mxF[c.dataset.k], i = sel.indexOf(c.value); if(i >= 0) sel.splice(i, 1); else sel.push(c.value); renderMachinesList();
+});
 document.addEventListener('click', (e) => {
-  if(e.target.closest('#mxFToggle')){ mxF.open = !mxF.open; renderMachinesList(); return; }
-  const c = e.target.closest('.mxFChip'); 
-  if(c){ const k = c.dataset.mxf, v = c.dataset.v, i = mxF[k].indexOf(v); if(i >= 0) mxF[k].splice(i, 1); else mxF[k].push(v); renderMachinesList(); return; }
-  if(e.target.closest('#mxFClear')){ mxF.q = ''; mxF.dept = []; mxF.status = []; mxF.cat = []; mxF.shift = []; const q = $('mxFq'); if(q) q.value = ''; renderMachinesList(); }
-  else if(mxF.open && !e.target.closest('#mxFilterBar')){ mxF.open = false; renderMachinesList(); }
+  const d = e.target.closest('.mxFDb'); if(d){ mxF.open = mxF.open === d.dataset.mxo ? '' : d.dataset.mxo; renderMachinesList(); return; }
+  if(e.target.closest('#mxFClear')){ mxF.q = ''; mxF.dept = []; mxF.status = []; mxF.cat = []; mxF.shift = []; mxF.open = ''; const q = $('mxFq'); if(q) q.value = ''; renderMachinesList(); return; }
+  if(mxF.open && !e.target.closest('.mxFList')){ mxF.open = ''; renderMachinesList(); }
 });
 function renderMachinesList(){
   const body = $('machinesBody');
