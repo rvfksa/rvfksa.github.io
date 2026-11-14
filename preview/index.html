@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta name="robots" content="noindex, nofollow">
-<meta name="rvf-build" content="20261114-140717">
+<meta name="rvf-build" content="20261114-141746">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -10450,7 +10450,9 @@ function findUnusualRows(allRecords, fromDate, toDate){
     if(before && before.status !== 'approved') return;   // the entry right before it isn't approved yet
     let kind = null, flag = '', reason = '';
     if(r.photoType === 'Starting'){
-      if(!r.resetApplied && r.diff !== 0){
+      // The very first entry after the machine's baseline reading is compared with the baseline counter, so its gap is simply
+      // everything the machine made since the baseline was set - that is normal, not an error. Only later Starting readings must match the last Ending reading.
+      if(before && !r.resetApplied && r.diff !== 0){
         kind = 'start'; flag = r.diff < 0 ? 'down' : 'unusual';
         reason = `Starting reading is ${num(Math.abs(r.diff))} ${r.diff > 0 ? 'higher' : 'lower'} than the last Ending reading \u2014 it should be the same (difference 0).`;
       }
