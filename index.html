@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261114-170530">
+<meta name="rvf-build" content="20261114-171709">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -28077,7 +28077,7 @@ async function skShowDesign(id){
   if(!imgs){ try{ const r = await window.__db.invGet('img_' + id); imgs = SK.imgs[id] = (r && r.p) || {}; }catch(e){ imgs = {}; } }
   const admin = skIsAdmin();
   skModal(`<span class="x" data-sk="close">×</span><h3>${skEsc(d.name)}</h3>${skStampLine(d)}<div style="color:var(--muted);font-size:13px;">${d.ar ? skEsc(d.ar) + ' · ' : ''}${d.code ? 'Code ' + skEsc(d.code) + ' · ' : ''}${d.picks ? d.picks + ' picks/cm' : ''}</div>
-    <div class="skPhotos">${its.map(i => `<figure>${imgs[i.id] ? `<img src="${imgs[i.id]}" alt="">` : '<img alt="" style="visibility:hidden;">'}<figcaption><b>${skEsc(i.col || i.name)}</b><br>${skNum(skBal(i))} ${skUnit(i.g)}${admin ? `<br><a href="#" data-sk="photo" data-v="${skEsc(i.id)}" data-d="${skEsc(id)}">${imgs[i.id] ? 'Change photo' : 'Add photo'}</a>` : ''}</figcaption></figure>`).join('') || '<div class="skEmpty" style="grid-column:1/-1;">No colours yet.</div>'}</div>
+    <div class="skPhotos">${its.map(i => `<figure>${imgs[i.id] ? `<img src="${imgs[i.id]}" alt="">` : '<img alt="" style="visibility:hidden;">'}<figcaption><b>${skEsc(i.col || i.name)}</b><br>${skNum(skBal(i))} ${skUnit(i.g)}${admin ? `<br><a href="#" data-sk="photo" data-v="${skEsc(i.id)}" data-d="${skEsc(id)}">${imgs[i.id] ? 'Change photo' : 'Add photo'}</a>` : ''}</figcaption></figure>`).join('') || (Object.keys(imgs).length ? '' : '<div class="skEmpty" style="grid-column:1/-1;">No colours yet.</div>')}${Object.keys(imgs).filter(k => k !== '_cover' && !its.some(i => i.id === k)).map(k => { const bi = skItem(k.replace(/#+$/, '')); return `<figure><img src="${imgs[k]}" alt=""><figcaption><b>${skEsc(k.indexOf('c:') === 0 ? k.slice(2) : (bi ? (bi.col || bi.name) : 'Photo'))}</b></figcaption></figure>`; }).join('')}</div>
     ${admin ? `<div class="skBar" style="margin-top:14px;"><button class="pcBtnSoft sm" data-sk="newitem" data-d="${skEsc(id)}">Add colour</button><button class="pcBtnSoft sm" data-sk="photo" data-v="" data-d="${skEsc(id)}">Cover photo</button><button class="pcBtnSoft sm" data-sk="editdes" data-v="${skEsc(id)}">Edit design</button></div>` : ''}`);
 }
 function skModal(inner){ skClose(); const d = document.createElement('div'); d.className = 'skModal'; d.id = 'skModal'; d.innerHTML = '<div class="skBox">' + inner + '</div>'; d.addEventListener('mousedown', ev => { if(ev.target === d) skClose(); }); document.body.appendChild(d); }
