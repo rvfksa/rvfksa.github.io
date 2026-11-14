@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261114-103040">
+<meta name="rvf-build" content="20261114-104517">
 <meta name="robots" content="noindex, nofollow">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
@@ -7004,11 +7004,13 @@ async function renderBaselinePreview(panel, id){
   if(!baselineVal){ box.textContent = ''; return; }
   if(!baselineDate){ box.textContent = 'Pick the date the physical reset happened.'; box.style.color = ''; return; }
   if(!isValidNumber(baselineVal)){ box.textContent = ''; return; }
+  { const m0 = (state.machines || []).find(x => String(x.id) === String(id));
+    if(m0 && String(m0.baselineReading == null ? '' : m0.baselineReading) === baselineVal && (m0.baselineDate || '') === baselineDate){ box.textContent = ''; return; } }   // unchanged: nothing to check
   box.textContent = 'Checking against this machine\'s reading history…';
   box.style.color = '';
   let allReadings;
   try{
-    allReadings = await window.__db.loadAllReadingsEver();
+    allReadings = await window.__db.loadReadingsForMachines([String(id)]);
   }catch(err){ console.error(err); box.textContent = ''; return; }
   const problem = checkBaselinePlacement(allReadings, id, baselineVal, baselineDate);
   if(problem){
@@ -7023,10 +7025,12 @@ async function renderBaselinePreview(panel, id){
 async function saveMachineEdit(id, panel){
   const baselineReading = panel.querySelector('.em-baseline').value.trim();
   const baselineDate = baselineReading ? (panel.querySelector('.em-baseline-date').value || new Date().toISOString().slice(0,10)) : null;
-  if(baselineReading){
+  const m0 = (state.machines || []).find(x => String(x.id) === String(id)) || {};
+  const baseChanged = baselineReading !== String(m0.baselineReading == null ? '' : m0.baselineReading) || (baselineReading && (panel.querySelector('.em-baseline-date').value || '') !== (m0.baselineDate || ''));
+  if(baselineReading && baseChanged){
     if(!isValidNumber(baselineReading)){ toast('Counter Reading must be a number'); return; }
     try{
-      const allReadings = await window.__db.loadAllReadingsEver();
+      const allReadings = await window.__db.loadReadingsForMachines([String(id)]);
       const problem = checkBaselinePlacement(allReadings, id, baselineReading, baselineDate);
       if(problem){
         toast(`Can't save — the ${fmtDate(problem.date)} ${problem.shift} reading (${problem.reading}) would diff to ${problem.diff} picks (negative). This date doesn't match where the readings switch from big to small numbers — check the reading history and try a different date.`);
@@ -7050,6 +7054,7 @@ async function saveMachineEdit(id, panel){
     baselineReading: baselineReading || null,
     baselineDate
   };
+  if(!baseChanged){ updates.baselineReading = m0.baselineReading == null ? null : m0.baselineReading; updates.baselineDate = m0.baselineDate == null ? null : m0.baselineDate; }   // untouched: keep exactly as it was
   if(!updates.name){ toast('Machine name cannot be empty'); return; }
   if(!requireDb()) return;
   const list = state.machines.map(m => String(m.id) === String(id) ? Object.assign({}, m, updates) : m);
@@ -7058,7 +7063,7 @@ async function saveMachineEdit(id, panel){
     setMachinesSorted(list);
     renderMachinesList();
     toast('Machine updated');
-    refreshMachineNumbersNow(id);
+    if(baseChanged) refreshMachineNumbersNow(id);   // only a changed counter reading can change past picks; other settings change nothing already calculated
   }catch(err){ console.error(err); toast('Could not save — check your connection'); }
 }
 
@@ -18050,7 +18055,7 @@ function bkMapRow(f, aoa, head, map, sc){
 }
 function bkImportHtml(){
   const has = bk.aoa.length > 0 || bk.vaoa.length > 0;
-  let h = `<div class="card bkCard"><div class="bkStep">Your Excel file</div><div class="bkFile"><label class="pillBtn bkPick">${bkSvg('up', 15)} Choose Excel file<input type="file" id="bkFile" accept=".xlsx,.xls,.csv" style="display:none"></label><span class="hrNote">${bk.fileName ? bkEsc(bk.fileName) + ' · ' + bk.sheets.length + (bk.sheets.length === 1 ? ' sheet' : ' sheets') : 'Excel (.xlsx) or CSV'}</span></div>
+  let h = `<div class="card bkCard"><div class="bkStep">Your Excel file</div><div class="bkFile"><label class="pillBtn bkPick">${bkSvg('up', 15)} Choose Excel file<input type="file" id="bkFile" accept=".xlsx,.xls,.csv" style="display:none"></label><button type="button" class="pillBtn" data-bk="sheet" title="Excel with every employee and what is saved now. Fill the empty cells, then choose it here">${bkSvg('up', 15)} Excel sheet to fill</button><span class="hrNote">${bk.fileName ? bkEsc(bk.fileName) + ' · ' + bk.sheets.length + (bk.sheets.length === 1 ? ' sheet' : ' sheets') : 'Excel (.xlsx) or CSV'}</span></div>
     <details class="bkPaste"><summary>or paste the rows from Excel</summary><textarea id="bkPaste" rows="4" placeholder="Select the cells in Excel, copy, and paste here"></textarea><button class="pillBtn" data-bk="paste">Use these rows</button></details>${bk.msg ? `<div class="hrNote" style="color:var(--danger);margin-top:8px">${bkEsc(bk.msg)}</div>` : ''}</div>`;
   if(!has && !bk.sheets.length) return h;
   if(bk.sheets.length > 1){
@@ -18186,6 +18191,26 @@ async function bkConfirmOne(p, silent){
   bk.staged = bk.staged.filter(x => x.sid !== p.sid); delete bk.sel[p.sid];
   return ex ? 'updated' : 'created';
 }
+function bkDownloadSheet(){
+  if(typeof XLSX === 'undefined'){ toast('The Excel tool did not load - check your connection'); return; }
+  const g = (o, path) => path.split('.').reduce((a, k) => (a && a[k] != null ? a[k] : ''), o);
+  const val = {
+    id: u => u.loginId, name: u => u.name || '', joining: u => g(u.profile || {}, 'joiningDate'), dept: u => u.department || '', position: u => g(u.profile || {}, 'position'),
+    empType: u => g(u.profile || {}, 'employmentType'), salary: u => g(u.profile || {}, 'salary.basicSalary'), overtime: u => g(u.profile || {}, 'salary.overtime'),
+    country: u => g(u.profile || {}, 'homeCountry'), phone: u => g(u.profile || {}, 'phone') || g(u.profile || {}, 'phoneNumber'), role: u => (BK_ROLES.find(r => r[0] === u.role) || [0, u.role || ''])[1],
+    shift: u => g(u.profile || {}, 'shiftPref'), vac: u => g(u.profile || {}, 'vacationEligibility'), passportNo: u => g(u.profile || {}, 'passport.passportNo'), passportIssue: u => g(u.profile || {}, 'passport.issueDate'),
+    passportExpiry: u => g(u.profile || {}, 'passport.expiryDate'), dob: u => g(u.profile || {}, 'passport.dob'), iqamaNo: u => g(u.profile || {}, 'iqama.no'), iqamaExpiry: u => g(u.profile || {}, 'iqama.expiry'),
+    airport: u => g(u.profile || {}, 'homeCountryAirport'), endDate: u => g(u.profile || {}, 'endDate'), extraMoney: u => g(u.profile || {}, 'salary.extraMoney'),
+    insExpiry: u => g(u.profile || {}, 'hr.insuranceExpiry'), contractEnd: u => g(u.profile || {}, 'hr.contractEnd'), hrNote: u => g(u.profile || {}, 'hr.note')
+  };
+  const users = (state.users || []).filter(u => u.role !== 'admin' || true).slice().sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
+  const aoa = [BK_FIELDS.map(f => f.t)].concat(users.map(u => BK_FIELDS.map(f => (val[f.k] ? val[f.k](u) : ''))));
+  const how = XLSX.utils.aoa_to_sheet([['How to use this sheet'], ['1. Fill the empty cells. Keep the Employee ID column as it is (a new person: write a new ID, or leave it empty to create one).'], ['2. Dates as 2026-11-14 (year-month-day).'], ['3. In the app: Admin > Users > Excel icon > Choose Excel file. The columns are matched by their headings.'], ['4. Only EMPTY details are filled unless you tick "Replace details that are already in the app" in the waiting list.']]);
+  how['!cols'] = [{ wch: 110 }];
+  const ws = XLSX.utils.aoa_to_sheet(aoa); ws['!cols'] = BK_FIELDS.map(f => ({ wch: Math.max(12, f.t.length + 2) }));
+  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Employees'); XLSX.utils.book_append_sheet(wb, how, 'How to use');
+  XLSX.writeFile(wb, 'employees-to-fill-' + new Date().toISOString().slice(0, 10) + '.xlsx');
+}
 async function bkClick(e){
   const el = e.target.closest('[data-bk]'); if(!el || !bk.open) return;
   const a = el.dataset.bk, s = el.dataset.s;
@@ -18194,6 +18219,7 @@ async function bkClick(e){
     case 'close': bkClose(); break;
     case 'salonly': { Object.keys(bk.map).forEach(k => { if(['id', 'name', 'salary', 'overtime', 'extraMoney'].indexOf(k) < 0) bk.map[k] = { col: -1, fixed: '' }; }); bk.overwrite = true; bk.apprOn = false; bkRender(); break; }
     case 'view': bk.view = el.dataset.v; bkRender(); break;
+    case 'sheet': bkDownloadSheet(); break;
     case 'paste': { const t = $('bkPaste').value; if(!t.trim()) break; bkReadPaste(t); bkRender(); break; }
     case 'stage': {
       bk.stageMsg = '';
@@ -20795,11 +20821,129 @@ function dlSuppliersCfg(){
 function dlMachBar(){
   const body = document.getElementById('machinesBody'); if(!body || document.getElementById('dlMachTop')) return;
   const d = document.createElement('div'); d.className = 'asumTop'; d.id = 'dlMachTop';
-  d.innerHTML = `<span class="hrNote" style="margin:0;">Download the machine list (choose the columns)</span><span style="flex:1;"></span><button type="button" class="pillBtn" id="dlMachBtn">${DL_ICON}Download</button>`;
+  d.innerHTML = `<span class="hrNote" style="margin:0;">Download the machine list (choose the columns)</span><span style="flex:1;"></span><button type="button" class="pillBtn" id="mxSheetBtn" title="Excel sheet with every machine and its settings. Fill the empty cells, then upload it back">${DL_ICON}Excel sheet to fill</button><button type="button" class="pillBtn" id="mxUpBtn" title="Upload the filled sheet">${DL_ICON.replace('M21 15v4','M21 15v4')}Upload Excel</button><button type="button" class="pillBtn" id="dlMachBtn">${DL_ICON}Download</button>`;
   body.insertBefore(d, body.firstChild);
 }
 document.addEventListener('click', (e) => {
   const t = e.target.closest('#dlMachBtn'); if(t) dlOpen(dlMachinesCfg());
+});
+
+/* ---------- Admin > Machines: fill the settings from Excel ----------
+   "Excel sheet to fill" gives every machine with its settings (empty cells are the ones to fill). "Upload Excel" reads it back,
+   shows what would change, and saves everything in ONE write. By default only EMPTY settings are filled; tick the box to also
+   replace settings that are already there. The counter reading, status and stop details are never touched here. */
+const MX_COLS = [
+  { k: 'id', l: 'ID' }, { k: 'name', l: 'Machine name' }, { k: 'department', l: 'Department' }, { k: 'shiftRun', l: 'Runs shift (Both / Day / Night)' },
+  { k: 'widthCm', l: 'Width (cm)' }, { k: 'speed', l: 'Speed' }, { k: 'picksPerCm', l: 'Picks / cm' }, { k: 'cartPicks', l: 'Cart picks' },
+  { k: 'brand', l: 'Brand' }, { k: 'model', l: 'Model' }, { k: 'jacquard', l: 'Jacquard model' }, { k: 'note', l: 'Note' }, { k: 'vip', l: 'Machine type (Normal / VIP)' }
+];
+const MX_SYN = { id: /^(machine\s*)?(id|no\.?|number|code)$/i, name: /name|machine$/i, department: /dep/i, shiftRun: /shift|runs/i, widthCm: /width/i, speed: /speed/i, picksPerCm: /picks?\s*\/?\s*(per)?\s*cm/i, cartPicks: /cart/i, brand: /brand|make/i, model: /^model$|^model\b(?!.*jac)/i, jacquard: /jacq/i, note: /note|remark/i, vip: /type|vip/i };
+function mxCell(m, k){
+  if(k === 'shiftRun') return m.shiftRun || 'Both';
+  if(k === 'vip') return m.vip ? 'VIP' : 'Normal';
+  const v = m[k]; return v == null ? '' : v;
+}
+function mxDownload(){
+  if(typeof XLSX === 'undefined'){ toast('The Excel tool did not load - check your connection'); return; }
+  const aoa = [MX_COLS.map(c => c.l)].concat((state.machines || []).map(m => MX_COLS.map(c => mxCell(m, c.k))));
+  const ws = XLSX.utils.aoa_to_sheet(aoa); ws['!cols'] = MX_COLS.map(c => ({ wch: c.k === 'name' ? 16 : c.k === 'note' ? 26 : c.l.length > 18 ? 24 : 14 }));
+  const how = XLSX.utils.aoa_to_sheet([['How to use this sheet'], ['1. Fill the empty cells (brand, model, jacquard, cart picks, note ...). Do not change the ID column.'], ['2. Runs shift: Both, Day or Night. Machine type: Normal or VIP.'], ['3. In the app: Admin > Machines > Upload Excel, choose this file, check the summary, press Apply.'], ['4. By default only EMPTY settings are filled. Tick "Replace settings that are already there" in the app to change existing ones too.']]);
+  how['!cols'] = [{ wch: 110 }];
+  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Machines'); XLSX.utils.book_append_sheet(wb, how, 'How to use');
+  XLSX.writeFile(wb, 'machines-to-fill-' + new Date().toISOString().slice(0, 10) + '.xlsx');
+}
+function mxNorm(k, raw){
+  let v = raw == null ? '' : String(raw).trim(); if(v === '') return null;
+  if(k === 'shiftRun'){ const x = v.toLowerCase(); return /^day/.test(x) ? 'Day' : /^night/.test(x) ? 'Night' : /^both|day\s*&|day\s*and/.test(x) ? 'Both' : undefined; }
+  if(k === 'vip'){ const x = v.toLowerCase(); return /^(vip|yes|y|1|true)$/.test(x) ? true : /^(normal|no|n|0|false)$/.test(x) ? false : undefined; }
+  if(k === 'widthCm' || k === 'speed' || k === 'picksPerCm' || k === 'cartPicks'){ v = v.replace(/,/g, '.'); if(!isFinite(Number(v))) return undefined; return String(Number(v)); }
+  return v;
+}
+function mxPlan(aoa, replace){
+  const head = (aoa[0] || []).map(h => String(h == null ? '' : h).trim()), colOf = {};
+  head.forEach((h, i) => { MX_COLS.forEach(c => { if(colOf[c.k] == null && MX_SYN[c.k].test(h) && !Object.values(colOf).includes(i)) colOf[c.k] = i; }); });
+  const res = { ok: colOf.id != null || colOf.name != null, fill: 0, repl: 0, same: 0, bad: [], missing: [], changes: {}, machines: 0, locked: 0 };
+  if(!res.ok) return res;
+  const byId = {}, byName = {}; (state.machines || []).forEach(m => { byId[String(m.id)] = m; byName[String(m.name || '').toLowerCase()] = m; });
+  aoa.slice(1).forEach((r, ri) => {
+    const rid = colOf.id != null ? String(r[colOf.id] == null ? '' : r[colOf.id]).trim().replace(/\.0+$/, '') : '', rname = colOf.name != null ? String(r[colOf.name] == null ? '' : r[colOf.name]).trim().toLowerCase() : '';
+    if(!rid && !rname) return;
+    const m = (rid && byId[rid]) || (rname && byName[rname]);
+    if(!m){ res.missing.push(rid || rname); return; }
+    const ch = res.changes[m.id] || (res.changes[m.id] = {});
+    MX_COLS.forEach(c => {
+      if(c.k === 'id' || colOf[c.k] == null) return;
+      const nv = mxNorm(c.k, r[colOf[c.k]]);
+      if(nv === null) return;
+      if(nv === undefined){ res.bad.push('Row ' + (ri + 2) + ' - ' + c.l + ': "' + String(r[colOf[c.k]]).trim() + '" is not valid, left as is'); return; }
+      const cur = c.k === 'vip' ? !!m.vip : (c.k === 'shiftRun' ? (m.shiftRun || 'Both') : (m[c.k] == null ? '' : String(m[c.k])));
+      const blank = c.k === 'vip' ? !m.vip : (c.k === 'shiftRun' ? !m.shiftRun : cur === '');
+      if(String(cur) === String(nv)){ res.same++; return; }
+      if(blank){ ch[c.k] = nv; res.fill++; }
+      else if(c.k === 'widthCm' || c.k === 'speed' || c.k === 'picksPerCm'){ res.locked++; }   // these change production: change them one machine at a time, from a date, never in bulk
+      else if(replace){ ch[c.k] = nv; res.repl++; }
+    });
+  });
+  Object.keys(res.changes).forEach(id => { if(!Object.keys(res.changes[id]).length) delete res.changes[id]; });
+  res.machines = Object.keys(res.changes).length;
+  return res;
+}
+// what ticking "replace" would add, so the person can see the difference before choosing
+function mxSummaryHtml(aoa, replace){
+  const p = mxPlan(aoa, replace), p2 = mxPlan(aoa, true);
+  if(!p.ok) return '<div class="hrNote" style="color:var(--danger)">I could not find an ID or Machine name column in the first row. Use the sheet from "Excel sheet to fill".</div>';
+  return `<div style="line-height:1.7"><b>${p.machines}</b> machine${p.machines === 1 ? '' : 's'} will change: <b>${p.fill}</b> empty setting${p.fill === 1 ? '' : 's'} filled${replace ? `, <b>${p.repl}</b> existing setting${p.repl === 1 ? '' : 's'} replaced` : ''}.<br>
+    ${!replace && p2.repl ? `<span class="hrNote">${p2.repl} setting${p2.repl === 1 ? ' differs' : 's differ'} from what is in the app and will be left alone. Tick the box below to replace ${p2.repl === 1 ? 'it' : 'them'}.</span><br>` : ''}
+    ${p2.locked ? `<span class="hrNote">${p2.locked} width / speed / picks-per-cm value${p2.locked === 1 ? ' differs' : 's differ'} from the app and ${p2.locked === 1 ? 'was' : 'were'} not changed here: those affect production, so change them from the machine&rsquo;s own Edit.</span><br>` : ''}
+    ${p.missing.length ? `<span class="hrNote">Not found in the app (ignored): ${p.missing.slice(0, 8).map(bkEsc).join(', ')}${p.missing.length > 8 ? ' and ' + (p.missing.length - 8) + ' more' : ''}</span><br>` : ''}
+    ${p.bad.length ? `<span class="hrNote">${p.bad.slice(0, 5).map(bkEsc).join('<br>')}${p.bad.length > 5 ? '<br>and ' + (p.bad.length - 5) + ' more' : ''}</span>` : ''}</div>`;
+}
+const mx = { aoa: null, replace: false };
+function mxClose(){ const o = document.getElementById('mxOv'); if(o) o.remove(); mx.aoa = null; mx.replace = false; }
+function mxRender(){
+  const o = document.getElementById('mxOv'); if(!o) return;
+  const p = mx.aoa ? mxPlan(mx.aoa, mx.replace) : null;
+  o.querySelector('.mxBody').innerHTML = !mx.aoa
+    ? `<div class="hrNote" style="margin-bottom:10px">Choose the sheet you filled (from "Excel sheet to fill"). Nothing is saved until you press Apply.</div><label class="pillBtn" style="cursor:pointer">${DL_ICON}Choose Excel file<input type="file" id="mxFile" accept=".xlsx,.xls,.csv" style="display:none"></label>`
+    : `${mxSummaryHtml(mx.aoa, mx.replace)}<label class="bkChk" style="margin:12px 0;display:flex;gap:8px;align-items:center"><input type="checkbox" id="mxRepl" ${mx.replace ? 'checked' : ''}> Replace settings that are already there (leave it off to fill only the empty ones)</label>
+       <div style="display:flex;gap:8px;justify-content:flex-end"><button type="button" class="pillBtn" id="mxCancel">Cancel</button><button type="button" class="btn btn-primary btn-sm" id="mxApply" ${p && p.machines ? '' : 'disabled'}>Apply${p && p.machines ? ' to ' + p.machines + ' machine' + (p.machines === 1 ? '' : 's') : ''}</button></div>`;
+}
+function mxOpen(){
+  if(!state.user || state.user.role !== 'admin'){ toast('Only Admin can do this'); return; }
+  mxClose();
+  const o = document.createElement('div'); o.id = 'mxOv'; o.style.cssText = 'position:fixed;inset:0;z-index:9000;background:rgba(15,23,42,.45);display:flex;align-items:center;justify-content:center;padding:16px;';
+  o.innerHTML = '<div class="card" style="max-width:520px;width:100%;max-height:88vh;overflow:auto;padding:18px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><b style="font-size:15px">Fill machine settings from Excel</b><button type="button" class="pillBtn" id="mxX">Close</button></div><div class="mxBody"></div></div>';
+  document.body.appendChild(o); mx.aoa = null; mx.replace = false; mxRender();
+}
+async function mxApply(){
+  const p = mxPlan(mx.aoa, mx.replace); if(!p.machines){ toast('Nothing to change'); return; }
+  if(!requireDb()) return;
+  const list = (state.machines || []).map(m => p.changes[m.id] ? Object.assign({}, m, p.changes[m.id]) : m);
+  if(list.length !== (state.machines || []).length){ toast('Something is wrong - nothing was saved'); return; }
+  try{
+    await window.__db.saveMachines(list);
+    setMachinesSorted(list); renderMachinesList();
+    toast(p.machines + ' machine' + (p.machines === 1 ? '' : 's') + ' updated');
+    mxClose();
+  }catch(err){ console.error(err); toast('Could not save - check your connection'); }
+}
+document.addEventListener('click', (e) => {
+  if(e.target.closest('#mxSheetBtn')){ mxDownload(); return; }
+  if(e.target.closest('#mxUpBtn')){ mxOpen(); return; }
+  if(e.target.closest('#mxX') || e.target.closest('#mxCancel')){ mxClose(); return; }
+  if(e.target.closest('#mxApply')){ mxApply(); return; }
+});
+document.addEventListener('change', async (e) => {
+  if(e.target && e.target.id === 'mxRepl'){ mx.replace = e.target.checked; mxRender(); return; }
+  if(e.target && e.target.id === 'mxFile'){
+    const f = e.target.files && e.target.files[0]; if(!f) return;
+    try{
+      if(typeof XLSX === 'undefined') throw new Error('x');
+      const wb = XLSX.read(await f.arrayBuffer(), { type: 'array' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      mx.aoa = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '', raw: false }); mx.replace = false; mxRender();
+    }catch(err){ console.error(err); toast('Could not read that file'); }
+  }
 });
 
 /* ============================================================
