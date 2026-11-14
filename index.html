@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261114-110056">
+<meta name="rvf-build" content="20261114-111408">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -20919,7 +20919,7 @@ function mxFind(dept, no, id, name){
   if(id){ const m = ms.find(x => String(x.id) === id); if(m) return m; }
   const n = parseInt(no, 10);
   if(isFinite(n)){
-    const want = String(D && MX_ID_OFFSET[D] ? n + MX_ID_OFFSET[D] : n);
+    const want = String(D && MX_ID_OFFSET[D] && n <= MX_ID_OFFSET[D] ? n + MX_ID_OFFSET[D] : n);   // SSTM 1-20 or 61-80 both work
     let m = ms.find(x => (!D || String(x.department || '').toUpperCase() === D) && String(x.id) === want); if(m) return m;
     m = ms.find(x => (!D || String(x.department || '').toUpperCase() === D) && (/(\d+)\s*$/.exec(String(x.name || '')) || [])[1] === String(n)); if(m) return m;
   }
