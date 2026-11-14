@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261114-112049">
+<meta name="rvf-build" content="20261114-112147">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -2976,11 +2976,13 @@ table.a2T tbody tr.a2Gap + tr.a2First td{ border-top:0 !important; }
 .acPaste{ margin:8px 0; padding:10px; border-radius:12px; background:#f6f7fc; } .acRow2{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:8px; }
 
 .mxF{ margin:0 0 14px; background:#fff; border:1px solid var(--line, #e5e7eb); border-radius:16px; overflow:hidden; }
-.mxFTop{ display:flex; align-items:center; gap:12px; padding:12px 14px; border-bottom:1px solid var(--line, #e5e7eb); }
+.mxFTop{ display:flex; align-items:center; gap:10px; padding:10px 12px; flex-wrap:wrap; }
+.mxFGap{ flex:1 1 0; min-width:0; } .mxFSearch{ flex:1 1 240px !important; max-width:360px; }
+.mxFBtn b{ display:none; align-items:center; justify-content:center; min-width:17px; height:17px; padding:0 5px; border-radius:9px; background:var(--accent, #4f46e5); color:#fff; font-size:10.5px; margin-left:2px; } .mxFBtn.open{ background:#eef0ff; border-color:var(--accent, #4f46e5); color:var(--accent, #4f46e5); }
 .mxFSearch{ flex:1; min-width:0; display:flex; align-items:center; gap:8px; height:36px; padding:0 12px; border-radius:10px; background:#f6f7fb; border:1px solid transparent; color:var(--muted); margin:0; }
 .mxFSearch:focus-within{ background:#fff; border-color:var(--accent, #4f46e5); } .mxFSearch input{ flex:1; min-width:0; border:0; outline:0; background:transparent; font:inherit; font-size:13.5px; color:var(--text, #0f172a); padding:0; height:auto; box-shadow:none; }
 .mxFCount{ font-size:12px; font-weight:600; color:var(--text, #0f172a); white-space:nowrap; } .mxFClear{ border:0; background:transparent; color:var(--accent, #4f46e5); font:inherit; font-size:12px; font-weight:600; cursor:pointer; padding:4px 2px; }
-#mxFChips{ display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); }
+#mxFChips{ border-top:1px solid var(--line, #e5e7eb); } #mxFChips:not([hidden]){ display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); }
 .mxFRow{ display:flex; flex-direction:column; gap:7px; padding:11px 14px; border-bottom:1px solid var(--line, #e5e7eb); } .mxFRow:nth-child(odd){ border-right:1px solid var(--line, #e5e7eb); } .mxFRow:nth-last-child(-n+2){ border-bottom:0; }
 .mxFLbl{ font-size:10.5px; font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:var(--muted); }
 .mxFOpts{ display:flex; flex-wrap:wrap; gap:6px; }
@@ -6880,7 +6882,7 @@ async function loadMachinesForAdmin(){
 /* ---------- Admin > Machines: filter ----------
    Search box and tap-to-select chips (Department, Status, Category, Shift). Nothing selected in a row = all. The list below
    and the Download both follow what is shown. Works on the machines already loaded: no database reads. */
-const mxF = { q: '', dept: [], status: [], cat: [], shift: [] };
+const mxF = { open: false, q: '', dept: [], status: [], cat: [], shift: [] };
 function mxCatOf(m){ return machineCat(m) || 'Not set'; }
 function mxFiltered(){
   const q = mxF.q.trim().toLowerCase();
@@ -6896,22 +6898,26 @@ function mxFilterSync(){
   let bar = $('mxFilterBar');
   if(!bar){
     bar = document.createElement('div'); bar.id = 'mxFilterBar'; bar.className = 'mxF';
-    bar.innerHTML = '<div class="mxFTop"><label class="mxFSearch"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg><input type="search" id="mxFq" placeholder="Search machine, brand, model, jacquard" autocomplete="off"></label><span class="mxFCount" id="mxFCount"></span><button type="button" class="mxFClear" id="mxFClear">Clear</button></div><div id="mxFChips"></div>';
+    bar.innerHTML = '<div class="mxFTop"><label class="mxFSearch"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg><input type="search" id="mxFq" placeholder="Search machine, brand, model, jacquard" autocomplete="off"></label><button type="button" class="pillBtn mxFBtn" id="mxFToggle"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.5 10 19 14 21 14 12.5 22 3"/></svg>Filter<b id="mxFBadge"></b></button><span class="mxFCount" id="mxFCount"></span><button type="button" class="mxFClear" id="mxFClear">Clear</button><span class="mxFGap"></span><button type="button" class="pillBtn" id="mxUpBtn" title="Upload the machine details sheet">' + DL_ICON + 'Upload Excel</button><button type="button" class="pillBtn" id="dlMachBtn">' + DL_ICON + 'Download</button></div><div id="mxFChips" hidden></div>';
     body.parentNode.insertBefore(bar, body);
   }
   const all = state.machines || [];
   const depts = Array.from(new Set(all.map(m => m.department || '').filter(Boolean))).sort();
   const grp = (key, label, opts) => `<div class="mxFRow"><span class="mxFLbl">${label}</span><div class="mxFOpts">${opts.map(o => { const n = all.filter(m => key === 'dept' ? (m.department || '') === o : key === 'status' ? (m.status === 'stopped' ? 'Stopped' : 'Running') === o : key === 'cat' ? mxCatOf(m) === o : (m.shiftRun || 'Both') === o).length; return `<button type="button" class="mxFChip${mxF[key].indexOf(o) >= 0 ? ' on' : ''}" data-mxf="${key}" data-v="${assignEsc(o)}">${assignEsc(o)}<i>${n}</i></button>`; }).join('')}</div></div>`;
   $('mxFChips').innerHTML = (depts.length > 1 ? grp('dept', 'Department', depts) : '') + grp('status', 'Status', ['Running', 'Stopped']) + grp('cat', 'Category', MACHINE_CATS.concat(['Not set'])) + grp('shift', 'Shift', ['Both', 'Day', 'Night']);
+  const nAct = (mxF.dept.length ? 1 : 0) + (mxF.status.length ? 1 : 0) + (mxF.cat.length ? 1 : 0) + (mxF.shift.length ? 1 : 0);
+  $('mxFChips').hidden = !mxF.open; $('mxFToggle').classList.toggle('open', !!mxF.open); $('mxFBadge').textContent = nAct || ''; $('mxFBadge').style.display = nAct ? 'inline-flex' : 'none';
   const n = mxFiltered().length, active = mxF.q.trim() || mxF.dept.length || mxF.status.length || mxF.cat.length || mxF.shift.length;
   $('mxFCount').textContent = active ? n + ' of ' + all.length + ' machines' : all.length + ' machines';
   $('mxFClear').style.visibility = active ? 'visible' : 'hidden';
 }
 document.addEventListener('input', (e) => { if(e.target && e.target.id === 'mxFq'){ mxF.q = e.target.value; renderMachinesList(); } });
 document.addEventListener('click', (e) => {
+  if(e.target.closest('#mxFToggle')){ mxF.open = !mxF.open; renderMachinesList(); return; }
   const c = e.target.closest('.mxFChip'); 
   if(c){ const k = c.dataset.mxf, v = c.dataset.v, i = mxF[k].indexOf(v); if(i >= 0) mxF[k].splice(i, 1); else mxF[k].push(v); renderMachinesList(); return; }
   if(e.target.closest('#mxFClear')){ mxF.q = ''; mxF.dept = []; mxF.status = []; mxF.cat = []; mxF.shift = []; const q = $('mxFq'); if(q) q.value = ''; renderMachinesList(); }
+  else if(mxF.open && !e.target.closest('#mxFilterBar')){ mxF.open = false; renderMachinesList(); }
 });
 function renderMachinesList(){
   const body = $('machinesBody');
@@ -20871,6 +20877,7 @@ function dlSuppliersCfg(){
       { k: 'addr', l: 'Address', g: 'Supplier', get: s => s.a || '' }, { k: 'email', l: 'Email', g: 'Supplier', get: s => s.e || '' }, { k: 'on', l: 'Status', g: 'Supplier', get: s => s.off ? 'Disabled' : 'Enabled' }] };
 }
 function dlMachBar(){
+  return;
   const body = document.getElementById('machinesBody'); if(!body || document.getElementById('dlMachTop')) return;
   const d = document.createElement('div'); d.className = 'asumTop'; d.id = 'dlMachTop';
   d.innerHTML = `<span class="hrNote" style="margin:0;">Download the machine list (choose the columns)</span><span style="flex:1;"></span><button type="button" class="pillBtn" id="mxUpBtn" title="Upload the filled sheet">${DL_ICON.replace('M21 15v4','M21 15v4')}Upload Excel</button><button type="button" class="pillBtn" id="dlMachBtn">${DL_ICON}Download</button>`;
