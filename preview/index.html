@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta name="robots" content="noindex, nofollow">
-<meta name="rvf-build" content="20261114-112343">
+<meta name="rvf-build" content="20261114-113700">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -25732,7 +25732,7 @@ function dsPerf(kind){
 }
 /* ===== Machine Layout (Dashboard): one drawing model, used for the screen (SVG) and the PDF (vector) ===== */
 const FLR_KEY = 'rvfFloorLayoutV3';
-const FLR_DET = [['width', 'Width'], ['picks', 'Picks / cm'], ['speed', 'Speed'], ['cart', 'Cart picks'], ['brand', 'Brand'], ['model', 'Model'], ['jac', 'Jacquard'], ['col', 'Colours'], ['cat', 'Category'], ['note', 'Note']];
+const FLR_DET = [['width', 'Width'], ['picks', 'Picks / cm'], ['speed', 'Speed'], ['cart', 'Cart picks'], ['brand', 'Brand'], ['model', 'Model'], ['jac', 'Jacquard'], ['col', 'Colours'], ['cat', 'VL / MR / DOT'], ['note', 'Note']];
 const flr = { dept: 'RVF', shift: 'Day', op: true, id: true, det: [], color: 'op', sups: [], showSup: false, open: false };
 (function(){ try{ const s = JSON.parse(localStorage.getItem(FLR_KEY) || 'null'); if(s && typeof s === 'object'){ Object.keys(flr).forEach(k => { if(k !== 'open' && s[k] !== undefined) flr[k] = s[k]; }); } }catch(e){} if(!Array.isArray(flr.sups)) flr.sups = []; if(!Array.isArray(flr.det)) flr.det = []; flr.det = flr.det.filter(k => k !== 'type'); if(flr.dept !== 'SSTM') flr.dept = 'RVF'; })();
 function flrSave(){ try{ localStorage.setItem(FLR_KEY, JSON.stringify({ dept: flr.dept, shift: flr.shift, op: flr.op, id: flr.id, det: flr.det, color: flr.color, sups: flr.sups, showSup: flr.showSup })); }catch(e){} }
@@ -25755,7 +25755,7 @@ function flrDetails(m, det){
   const v = (x) => (x == null ? '' : String(x).trim()), out = [];
   det.forEach(k => {
     if(k === 'type') out.push(machineCat(m) || 'Normal');
-    else if(k === 'cat'){ if(machineCat(m)) out.push(machineCat(m)); }
+    else if(k === 'cat'){ const c = machineCat(m); if(c && c !== 'VIP') out.push(c); }   // VIP is always the star, so only VL / MR / DOT are listed here
     else if(k === 'col' && v(m.colours)) out.push(v(m.colours) + ' col.');
     else if(k === 'width' && v(m.widthCm)) out.push(v(m.widthCm) + ' cm');
     else if(k === 'picks' && v(m.picksPerCm)) out.push(v(m.picksPerCm) + ' p/cm');
@@ -25861,7 +25861,7 @@ function flrSection(dept, cfg, D){
       if(bar) rect(x + 9, y0 + 5, CW - 18, 4, Object.assign({ fill: bar, r: 2 }, tag));
       if(blank) text(x + CW / 2, y0 + H / 2 + 4.2, 'M/C ' + String(c.id), Object.assign({ size: 11.5, color: quiet ? FLR_C.off : FLR_C.ink, anchor: 'middle' }, tag));
       else text(x + 9, y0 + 21, 'M/C ' + String(c.id), Object.assign({ size: SZ.t, color: quiet ? FLR_C.off : FLR_C.mute }, tag));
-      if(c.m && c.m.vip && !off) prims.push({ k: 'star', x: x + CW - 13, y: y0 + 18.5, r: 5.2, color: c.dim ? FLR_C.dim : FLR_C.star, cell: 1, c: cid });
+      if(c.m && (c.m.vip || machineCat(c.m) === 'VIP') && !off) prims.push({ k: 'star', x: x + CW - 13, y: y0 + 18.5, r: 5.2, color: c.dim ? FLR_C.dim : FLR_C.star, cell: 1, c: cid });
       if(!blank){
         let ty = y0 + 25; opLines(c, CW - 16).forEach(l => { text(x + CW / 2, ty + l.size, l.s, Object.assign({ size: l.size, color: l.color, anchor: 'middle' }, tag)); ty += lh(l); });
         ty = y0 + 25 + maxOp + 4; c.detL.forEach(l => { text(x + CW / 2, ty + l.size, l.s, Object.assign({ size: l.size, color: l.color, anchor: 'middle' }, tag)); ty += lh(l); });
