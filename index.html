@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261114-143037">
+<meta name="rvf-build" content="20261114-143747">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -10049,8 +10049,12 @@ async function loadReportSourceRecords(fromDate, toDate){
     const digests = machineIds.length ? await window.__db.loadMachineHistories(machineIds) : {};
     const older = [];
     const noDigest = [];
+    const okIds = {};
+    inView.forEach(r => { if(r.status === 'approved' && r.photoType !== 'start'){ (okIds[String(r.machine)] = okIds[String(r.machine)] || []).push(r._id); } });
     machineIds.forEach(mid => {
       if(!digests[mid]){ noDigest.push(mid); return; }
+      const have = new Set(digests[mid].map(line => String(line).split('|')[0]));
+      if((okIds[mid] || []).some(id => !have.has(String(id)))){ noDigest.push(mid); return; }   // stale digest: read this machine's real readings instead
       digests[mid].forEach(line => { const e = window.__db.decodeHistoryEntry(line, mid); if(e.date < fromDate){ e._fromDigest = true; older.push(e); } });
     });
     for(let i = 0; i < noDigest.length; i += 10){
