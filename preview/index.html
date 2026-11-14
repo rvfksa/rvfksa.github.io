@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261114-104517">
-<meta name="robots" content="noindex, nofollow">
+<meta name="robots" content="noindex">
+<meta name="rvf-build" content="20261114-110056">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -2976,6 +2976,17 @@ table.a2T tbody tr.a2Gap + tr.a2First td{ border-top:0 !important; }
 .acLadT td{ padding:4px 6px; border-top:1px solid #eef0f6; } .acLadT td input.acNum{ width:90px; } .acLadE td{ background:#f6f7fc; font-size:12px; color:var(--muted); }
 .acPaste{ margin:8px 0; padding:10px; border-radius:12px; background:#f6f7fc; } .acRow2{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:8px; }
 
+.mxF{ margin:0 0 12px; padding:12px; background:#fff; border:1px solid var(--line, #e5e7eb); border-radius:16px; }
+.mxFTop{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.mxFSearch{ flex:1 1 220px; display:flex; align-items:center; gap:8px; height:38px; padding:0 12px; border-radius:12px; background:#f6f7fb; border:1px solid transparent; color:var(--muted); margin:0; }
+.mxFSearch:focus-within{ background:#fff; border-color:var(--accent, #4f46e5); } .mxFSearch input{ flex:1; min-width:0; border:0; outline:0; background:transparent; font:inherit; font-size:13.5px; color:var(--text, #0f172a); padding:0; height:auto; }
+.mxFCount{ font-size:12px; color:var(--muted); white-space:nowrap; } .mxFClear{ border:0; background:transparent; color:var(--accent, #4f46e5); font:inherit; font-size:12px; font-weight:600; cursor:pointer; padding:4px 6px; }
+.mxFRow{ display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-top:10px; } .mxFLbl{ flex:none; width:78px; font-size:10.5px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); }
+.mxFChip{ display:inline-flex; align-items:center; gap:6px; height:30px; padding:0 11px; border-radius:999px; border:1px solid var(--line, #e5e7eb); background:#fff; color:var(--text, #0f172a); font:inherit; font-size:12.5px; cursor:pointer; transition:background .12s, border-color .12s; }
+.mxFChip i{ font-style:normal; font-size:10.5px; color:var(--muted); } .mxFChip:hover{ background:#f6f7fb; }
+.mxFChip.on{ background:#eef0ff; border-color:var(--accent, #4f46e5); color:var(--accent, #4f46e5); font-weight:600; } .mxFChip.on i{ color:var(--accent, #4f46e5); }
+@media (max-width:560px){ .mxFLbl{ width:100%; } }
+.mCat{ display:inline-flex; align-items:center; margin-left:4px; padding:1px 7px; border-radius:999px; background:#f1f3f9; color:#475569; font-size:10px; font-weight:700; letter-spacing:.03em; vertical-align:1px; }
 .mStar{ display:inline-flex; vertical-align:-1px; margin-left:5px; color:var(--accent,#4f46e5); } .mStar svg{ display:block; }
 .mVip{ display:inline-flex; align-items:center; gap:3px; margin-left:4px; padding:1px 7px 1px 5px; border-radius:999px; background:#eef0ff; color:var(--accent,#4f46e5); font-size:10px; font-weight:700; letter-spacing:.04em; vertical-align:1px; }
 
@@ -4577,7 +4588,8 @@ table.a2T td .a2In{ width:100%; min-width:36px; }
           <div class="field"><label for="newMachineModel">Model</label><input type="text" id="newMachineModel" placeholder="optional"></div>
           <div class="field"><label for="newMachineJac">Jacquard model</label><input type="text" id="newMachineJac" placeholder="optional"></div>
           <div class="admGT">3. Type and starting counter</div>
-          <div class="field"><label for="newMachineVip">Machine type</label><select id="newMachineVip"><option value="">Normal</option><option value="1">VIP</option></select></div>
+          <div class="field"><label for="newMachineVip">Category</label><select id="newMachineVip"><option value="">Not set</option><option>VIP</option><option>VL</option><option>MR</option><option>DOT</option></select></div>
+          <div class="field"><label for="newMachineColours">Colours</label><input type="text" id="newMachineColours" placeholder="e.g. 3 or 4+1"></div>
           <div class="field"><label for="newMachineBaseline">Current reading</label><input type="text" inputmode="numeric" id="newMachineBaseline" placeholder="what the counter shows now"></div>
           <div class="field"><label for="newMachineBaselineDate">As of date</label><input type="date" id="newMachineBaselineDate"></div>
           <div class="field admBtnCell"><label>&nbsp;</label><button class="btn btn-primary" id="addMachineBtn">Add machine</button></div>
@@ -6863,12 +6875,51 @@ async function loadMachinesForAdmin(){
   }catch(err){ console.error(err); body.innerHTML = '<div class="empty-state">Could not load machines.</div>'; }
 }
 
+/* ---------- Admin > Machines: filter ----------
+   Search box and tap-to-select chips (Department, Status, Category, Shift). Nothing selected in a row = all. The list below
+   and the Download both follow what is shown. Works on the machines already loaded: no database reads. */
+const mxF = { q: '', dept: [], status: [], cat: [], shift: [] };
+function mxCatOf(m){ return machineCat(m) || 'Not set'; }
+function mxFiltered(){
+  const q = mxF.q.trim().toLowerCase();
+  return (state.machines || []).filter(m =>
+    (!mxF.dept.length || mxF.dept.indexOf(m.department || '') >= 0) &&
+    (!mxF.status.length || mxF.status.indexOf(m.status === 'stopped' ? 'Stopped' : 'Running') >= 0) &&
+    (!mxF.cat.length || mxF.cat.indexOf(mxCatOf(m)) >= 0) &&
+    (!mxF.shift.length || mxF.shift.indexOf(m.shiftRun || 'Both') >= 0) &&
+    (!q || [m.id, m.name, m.department, m.brand, m.model, m.jacquard, m.colours, m.note].join(' ').toLowerCase().indexOf(q) >= 0));
+}
+function mxFilterSync(){
+  const body = $('machinesBody'); if(!body || !body.parentNode) return;
+  let bar = $('mxFilterBar');
+  if(!bar){
+    bar = document.createElement('div'); bar.id = 'mxFilterBar'; bar.className = 'mxF';
+    bar.innerHTML = '<div class="mxFTop"><label class="mxFSearch"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg><input type="search" id="mxFq" placeholder="Search machine, brand, model, jacquard" autocomplete="off"></label><span class="mxFCount" id="mxFCount"></span><button type="button" class="mxFClear" id="mxFClear">Clear</button></div><div id="mxFChips"></div>';
+    body.parentNode.insertBefore(bar, body);
+  }
+  const all = state.machines || [];
+  const depts = Array.from(new Set(all.map(m => m.department || '').filter(Boolean))).sort();
+  const grp = (key, label, opts) => `<div class="mxFRow"><span class="mxFLbl">${label}</span>${opts.map(o => { const n = all.filter(m => key === 'dept' ? (m.department || '') === o : key === 'status' ? (m.status === 'stopped' ? 'Stopped' : 'Running') === o : key === 'cat' ? mxCatOf(m) === o : (m.shiftRun || 'Both') === o).length; return `<button type="button" class="mxFChip${mxF[key].indexOf(o) >= 0 ? ' on' : ''}" data-mxf="${key}" data-v="${assignEsc(o)}">${assignEsc(o)}<i>${n}</i></button>`; }).join('')}</div>`;
+  $('mxFChips').innerHTML = (depts.length > 1 ? grp('dept', 'Department', depts) : '') + grp('status', 'Status', ['Running', 'Stopped']) + grp('cat', 'Category', MACHINE_CATS.concat(['Not set'])) + grp('shift', 'Shift', ['Both', 'Day', 'Night']);
+  const n = mxFiltered().length, active = mxF.q.trim() || mxF.dept.length || mxF.status.length || mxF.cat.length || mxF.shift.length;
+  $('mxFCount').textContent = active ? n + ' of ' + all.length + ' machines' : all.length + ' machines';
+  $('mxFClear').style.visibility = active ? 'visible' : 'hidden';
+}
+document.addEventListener('input', (e) => { if(e.target && e.target.id === 'mxFq'){ mxF.q = e.target.value; renderMachinesList(); } });
+document.addEventListener('click', (e) => {
+  const c = e.target.closest('.mxFChip'); 
+  if(c){ const k = c.dataset.mxf, v = c.dataset.v, i = mxF[k].indexOf(v); if(i >= 0) mxF[k].splice(i, 1); else mxF[k].push(v); renderMachinesList(); return; }
+  if(e.target.closest('#mxFClear')){ mxF.q = ''; mxF.dept = []; mxF.status = []; mxF.cat = []; mxF.shift = []; const q = $('mxFq'); if(q) q.value = ''; renderMachinesList(); }
+});
 function renderMachinesList(){
   const body = $('machinesBody');
+  try{ mxFilterSync(); }catch(err){ console.error(err); }
   if(state.machines.length === 0){ body.innerHTML = '<div class="empty-state">No machines yet — add one above.</div>'; return; }
   body.innerHTML = '';
   try{ dlMachBar(); }catch(err){ console.error(err); }
-  state.machines.forEach(m => {
+  const shownMachines = mxFiltered();
+  if(!shownMachines.length){ const e = document.createElement('div'); e.className = 'empty-state'; e.textContent = 'No machine matches these filters.'; body.appendChild(e); }
+  shownMachines.forEach(m => {
     const row = document.createElement('div');
     row.className = 'machine-row';
     row.style.flexDirection = 'column';
@@ -6881,10 +6932,11 @@ function renderMachinesList(){
     row.innerHTML = `
       <div style="display:flex; align-items:center; gap:8px; width:100%;">
         <div style="flex:1;">
-          <b>${m.id}</b> &middot; ${m.name} ${machineVipTag(m.id)} ${statusBadge}
+          <b>${m.id}</b> &middot; ${m.name} ${machineVipTag(m.id)}${machineCatTag(m)} ${statusBadge}
           <div style="font-size:11px; color:var(--muted); margin-top:2px;">
             ${m.department ? 'Dept: ' + m.department + ' &middot; ' : ''}${(m.shiftRun && m.shiftRun !== 'Both') ? m.shiftRun + ' Only &middot; ' : ''}${m.widthCm ? 'Width ' + m.widthCm+'cm &middot; ' : ''}${m.speed ? 'Speed '+m.speed+' &middot; ' : ''}${m.picksPerCm ? m.picksPerCm+' picks/cm' : ''}
           </div>
+          ${(m.brand || m.model || m.jacquard || m.colours) ? `<div style="font-size:11px; color:var(--muted); margin-top:2px;">${[[m.brand, m.model].filter(Boolean).join(' '), m.jacquard ? 'Jacquard ' + m.jacquard : '', m.colours ? m.colours + ' colours' : ''].filter(Boolean).map(assignEsc).join(' &middot; ')}</div>` : ''}
           ${stopNote}
         </div>
         <button class="btn btn-ghost btn-sm editMachine" data-id="${m.id}" style="width:auto;">Edit</button>
@@ -6951,14 +7003,12 @@ function toggleMachineEditPanel(id){
       <div class="hint" style="text-align:left; margin-left:0;">Changing this resets where picks are counted from — future readings diff against this value and date instead of the reading history before it.</div>
       <div class="em-baseline-preview hint" style="text-align:left; margin-left:0; margin-top:6px;"></div>
     </div>
-    <div class="field">
-      <label>Machine type</label>
-      <select class="em-vip">
-        <option value="" ${!m.vip?'selected':''}>Normal</option>
-        <option value="1" ${m.vip?'selected':''}>VIP</option>
-      </select>
-      <div class="hint" style="text-align:left; margin-left:0;">A VIP machine shows a small star everywhere, and Accounts uses it for the VIP extra-money and premium groups.</div>
+    <div class="grid-2">
+      <div class="field"><label>Colours</label><input type="text" class="em-col" value="${assignEsc(m.colours)}" placeholder="e.g. 3 or 4+1"></div>
+      <div class="field"><label>Category</label>
+        <select class="em-cat"><option value="" ${!machineCat(m)?'selected':''}>Not set</option>${MACHINE_CATS.map(c => `<option ${machineCat(m) === c ? 'selected' : ''}>${c}</option>`).join('')}</select></div>
     </div>
+    <div class="hint" style="text-align:left; margin:-4px 0 10px;">A VIP machine shows a small star everywhere, and Accounts uses it for the VIP extra-money and premium groups. VL, MR and DOT show as a small label.</div>
     <div class="row-2">
       <button class="btn btn-ghost btn-sm em-cancel">Cancel</button>
       <button class="btn btn-primary btn-sm em-save">Save Changes</button>
@@ -7050,7 +7100,7 @@ async function saveMachineEdit(id, panel){
     model: panel.querySelector('.em-model').value.trim(),
     jacquard: panel.querySelector('.em-jac').value.trim(),
     note: panel.querySelector('.em-note').value.trim(),
-    vip: panel.querySelector('.em-vip').value === '1',
+    category: panel.querySelector('.em-cat').value, vip: panel.querySelector('.em-cat').value === 'VIP', colours: panel.querySelector('.em-col').value.trim(),
     baselineReading: baselineReading || null,
     baselineDate
   };
@@ -7241,12 +7291,12 @@ $('addMachineBtn').addEventListener('click', async () => {
   if(!id || !name){ toast('Enter both machine ID and name'); return; }
   if(!requireDb()) return;
   if(state.machines.some(m => String(m.id) === id)){ toast('That machine ID already exists'); return; }
-  const list = state.machines.concat([{ id, name, department, widthCm, speed, shiftRun, picksPerCm, cartPicks, brand, model, jacquard, vip: $('newMachineVip').value === '1', status: 'running', baselineReading: baselineReading || null, baselineDate: baselineReading ? baselineDate : null }]);
+  const list = state.machines.concat([{ id, name, department, widthCm, speed, shiftRun, picksPerCm, cartPicks, brand, model, jacquard, colours: ($('newMachineColours').value || '').trim(), category: $('newMachineVip').value, vip: $('newMachineVip').value === 'VIP', status: 'running', baselineReading: baselineReading || null, baselineDate: baselineReading ? baselineDate : null }]);
   try{
     await window.__db.saveMachines(list);
     setMachinesSorted(list);
     $('newMachineId').value = ''; $('newMachineName').value = '';
-    $('newMachineWidth').value = ''; $('newMachineSpeed').value = ''; $('newMachineShiftRun').value = 'Both'; $('newMachineVip').value = '';
+    $('newMachineWidth').value = ''; $('newMachineSpeed').value = ''; $('newMachineShiftRun').value = 'Both'; $('newMachineVip').value = ''; $('newMachineColours').value = '';
     $('newMachinePicks').value = ''; $('newMachineCart').value = ''; $('newMachineBrand').value = ''; $('newMachineModel').value = ''; $('newMachineJac').value = '';
     $('newMachineBaseline').value = ''; $('newMachineBaselineDate').value = '';
     renderMachinesList();
@@ -20785,10 +20835,10 @@ function dlMachinesCfg(){
   }));
   const hasUsers = (state.users || []).length > 0, st = (m) => m.status === 'stopped';
   return { key: 'machines', title: 'Machines', noun: 'machines', file: 'machines', sheet: 'Machines', def: ['id', 'name', 'dept', 'status'],
-    items: () => state.machines || [], id: m => m.id, label: m => m.id + ' · ' + m.name + (m.department ? ' · ' + m.department : ''),
+    items: () => mxFiltered(), id: m => m.id, label: m => m.id + ' · ' + m.name + (m.department ? ' · ' + m.department : ''),
     cols: () => [
       { k: 'id', l: 'ID', g: 'Basic', get: m => m.id }, { k: 'name', l: 'Machine', g: 'Basic', get: m => m.name || '' }, { k: 'dept', l: 'Department', g: 'Basic', get: m => m.department || '' },
-      { k: 'run', l: 'Runs shift', g: 'Basic', get: m => m.shiftRun || 'Both' },
+      { k: 'run', l: 'Runs shift', g: 'Basic', get: m => m.shiftRun || 'Both' }, { k: 'cat', l: 'Category', g: 'Basic', get: m => machineCat(m) }, { k: 'make', l: 'Brand', g: 'Basic', get: m => m.brand || '' }, { k: 'mod', l: 'Model', g: 'Basic', get: m => m.model || '' }, { k: 'jq', l: 'Jacquard model', g: 'Basic', get: m => m.jacquard || '' }, { k: 'colr', l: 'Colours', g: 'Basic', get: m => m.colours || '' },
       { k: 'width', l: 'Width (cm)', g: 'Settings', get: m => m.widthCm || '' }, { k: 'speed', l: 'Speed', g: 'Settings', get: m => m.speed || '' }, { k: 'picks', l: 'Picks / cm', g: 'Settings', get: m => m.picksPerCm || '' }, { k: 'cart', l: 'Cart picks', g: 'Settings', get: m => m.cartPicks || '' },
       { k: 'base', l: 'Counter reading', g: 'Settings', get: m => m.baselineReading == null ? '' : m.baselineReading }, { k: 'based', l: 'Reading date', g: 'Settings', get: m => m.baselineDate ? fmtDate(m.baselineDate) : '' },
       { k: 'status', l: 'Status', g: 'Status', get: m => st(m) ? 'Stopped' : 'Running' }, { k: 'stype', l: 'Stop type', g: 'Status', get: m => st(m) ? (m.stopType === 'permanent' ? 'Permanent' : 'Temporary') : '' },
@@ -20821,81 +20871,100 @@ function dlSuppliersCfg(){
 function dlMachBar(){
   const body = document.getElementById('machinesBody'); if(!body || document.getElementById('dlMachTop')) return;
   const d = document.createElement('div'); d.className = 'asumTop'; d.id = 'dlMachTop';
-  d.innerHTML = `<span class="hrNote" style="margin:0;">Download the machine list (choose the columns)</span><span style="flex:1;"></span><button type="button" class="pillBtn" id="mxSheetBtn" title="Excel sheet with every machine and its settings. Fill the empty cells, then upload it back">${DL_ICON}Excel sheet to fill</button><button type="button" class="pillBtn" id="mxUpBtn" title="Upload the filled sheet">${DL_ICON.replace('M21 15v4','M21 15v4')}Upload Excel</button><button type="button" class="pillBtn" id="dlMachBtn">${DL_ICON}Download</button>`;
+  d.innerHTML = `<span class="hrNote" style="margin:0;">Download the machine list (choose the columns)</span><span style="flex:1;"></span><button type="button" class="pillBtn" id="mxSheetBtn" title="Excel sheet with every machine and its details">${DL_ICON}Excel sheet</button><button type="button" class="pillBtn" id="mxUpBtn" title="Upload the filled sheet">${DL_ICON.replace('M21 15v4','M21 15v4')}Upload Excel</button><button type="button" class="pillBtn" id="dlMachBtn">${DL_ICON}Download</button>`;
   body.insertBefore(d, body.firstChild);
 }
 document.addEventListener('click', (e) => {
   const t = e.target.closest('#dlMachBtn'); if(t) dlOpen(dlMachinesCfg());
 });
 
-/* ---------- Admin > Machines: fill the settings from Excel ----------
-   "Excel sheet to fill" gives every machine with its settings (empty cells are the ones to fill). "Upload Excel" reads it back,
-   shows what would change, and saves everything in ONE write. By default only EMPTY settings are filled; tick the box to also
-   replace settings that are already there. The counter reading, status and stop details are never touched here. */
+/* ---------- Admin > Machines: fill machine details from Excel ----------
+   The sheet has one row per machine: Department + Machine no., then Brand, Model, Jacquard model, Colours and Category (VIP / VL / MR / DOT).
+   "Upload Excel" reads it, shows what would change, and saves everything in ONE write into the machines list in the database.
+   By default only EMPTY details are filled; tick the box to also replace details that are already there.
+   Width, speed and picks per cm are never changed here (they change production), and neither are the counter reading or the status. */
 const MX_COLS = [
-  { k: 'id', l: 'ID' }, { k: 'name', l: 'Machine name' }, { k: 'department', l: 'Department' }, { k: 'shiftRun', l: 'Runs shift (Both / Day / Night)' },
-  { k: 'widthCm', l: 'Width (cm)' }, { k: 'speed', l: 'Speed' }, { k: 'picksPerCm', l: 'Picks / cm' }, { k: 'cartPicks', l: 'Cart picks' },
-  { k: 'brand', l: 'Brand' }, { k: 'model', l: 'Model' }, { k: 'jacquard', l: 'Jacquard model' }, { k: 'note', l: 'Note' }, { k: 'vip', l: 'Machine type (Normal / VIP)' }
+  { k: 'department', l: 'Department' }, { k: 'no', l: 'Machine no.' }, { k: 'name', l: 'Machine name' },
+  { k: 'brand', l: 'Brand' }, { k: 'model', l: 'Model' }, { k: 'jacquard', l: 'Jacquard model' }, { k: 'colours', l: 'Colours' }, { k: 'category', l: 'Category (VIP / VL / MR / DOT)' },
+  { k: 'shiftRun', l: 'Runs shift (Both / Day / Night)' }, { k: 'cartPicks', l: 'Cart picks' }, { k: 'note', l: 'Note' }
 ];
-const MX_SYN = { id: /^(machine\s*)?(id|no\.?|number|code)$/i, name: /name|machine$/i, department: /dep/i, shiftRun: /shift|runs/i, widthCm: /width/i, speed: /speed/i, picksPerCm: /picks?\s*\/?\s*(per)?\s*cm/i, cartPicks: /cart/i, brand: /brand|make/i, model: /^model$|^model\b(?!.*jac)/i, jacquard: /jacq/i, note: /note|remark/i, vip: /type|vip/i };
+const MX_FILL = ['brand', 'model', 'jacquard', 'colours', 'category', 'shiftRun', 'cartPicks', 'note'];
+const MX_SYN = { id: /^(machine\s*)?id$/i, department: /^dep/i, no: /(mc|machine)\s*(no|number|#)|^no\.?$|^number$/i, name: /^machine\s*name$|^name$/i, brand: /^(brand|make|company|manufacturer)/i, model: /^model$/i, jacquard: /jacq|^jq/i, colours: /colou?r/i, category: /categ|vl\s*\/\s*mr|^type/i, shiftRun: /shift|runs/i, cartPicks: /cart/i, note: /note|remark/i };
+const MX_ID_OFFSET = { SSTM: 60 };   // SSTM machines are 61-80 in the app; the sheet counts them 1-20
 function mxCell(m, k){
+  if(k === 'department') return m.department || '';
+  if(k === 'no'){ const t = /(\d+)\s*$/.exec(String(m.name || '')); const n = t ? parseInt(t[1], 10) : parseInt(m.id, 10); return m.department && MX_ID_OFFSET[m.department] && n > MX_ID_OFFSET[m.department] ? n - MX_ID_OFFSET[m.department] : (isFinite(n) ? n : ''); }
+  if(k === 'category') return machineCat(m);
   if(k === 'shiftRun') return m.shiftRun || 'Both';
-  if(k === 'vip') return m.vip ? 'VIP' : 'Normal';
   const v = m[k]; return v == null ? '' : v;
 }
 function mxDownload(){
   if(typeof XLSX === 'undefined'){ toast('The Excel tool did not load - check your connection'); return; }
-  const aoa = [MX_COLS.map(c => c.l)].concat((state.machines || []).map(m => MX_COLS.map(c => mxCell(m, c.k))));
-  const ws = XLSX.utils.aoa_to_sheet(aoa); ws['!cols'] = MX_COLS.map(c => ({ wch: c.k === 'name' ? 16 : c.k === 'note' ? 26 : c.l.length > 18 ? 24 : 14 }));
-  const how = XLSX.utils.aoa_to_sheet([['How to use this sheet'], ['1. Fill the empty cells (brand, model, jacquard, cart picks, note ...). Do not change the ID column.'], ['2. Runs shift: Both, Day or Night. Machine type: Normal or VIP.'], ['3. In the app: Admin > Machines > Upload Excel, choose this file, check the summary, press Apply.'], ['4. By default only EMPTY settings are filled. Tick "Replace settings that are already there" in the app to change existing ones too.']]);
+  const list = (state.machines || []).slice().sort((a, b) => String(a.department || '').localeCompare(String(b.department || '')) || (Number(a.id) || 0) - (Number(b.id) || 0));
+  const aoa = [MX_COLS.map(c => c.l)].concat(list.map(m => MX_COLS.map(c => mxCell(m, c.k))));
+  const ws = XLSX.utils.aoa_to_sheet(aoa); ws['!cols'] = MX_COLS.map(c => ({ wch: c.k === 'note' ? 26 : c.l.length > 16 ? 26 : 16 }));
+  const how = XLSX.utils.aoa_to_sheet([['How to use this sheet'], ['1. Fill or correct Brand, Model, Jacquard model, Colours and Category. Keep Department and Machine no. as they are.'], ['2. Category: VIP, VL, MR or DOT.'], ['3. In the app: Admin > Machines > Upload Excel, choose this file, check the summary, press Apply.'], ['4. By default only EMPTY details are filled. Tick "Replace details that are already there" to change existing ones too.']]);
   how['!cols'] = [{ wch: 110 }];
   const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Machines'); XLSX.utils.book_append_sheet(wb, how, 'How to use');
-  XLSX.writeFile(wb, 'machines-to-fill-' + new Date().toISOString().slice(0, 10) + '.xlsx');
+  XLSX.writeFile(wb, 'machines-' + new Date().toISOString().slice(0, 10) + '.xlsx');
 }
 function mxNorm(k, raw){
-  let v = raw == null ? '' : String(raw).trim(); if(v === '') return null;
+  const v = raw == null ? '' : String(raw).normalize('NFKD').replace(/[\u0300-\u036f]/g, '').trim().replace(/\s+/g, ' '); if(v === '') return null;   // plain English letters only
+  if(k === 'category'){ const x = v.toUpperCase(); return MACHINE_CATS.indexOf(x) >= 0 ? x : undefined; }
   if(k === 'shiftRun'){ const x = v.toLowerCase(); return /^day/.test(x) ? 'Day' : /^night/.test(x) ? 'Night' : /^both|day\s*&|day\s*and/.test(x) ? 'Both' : undefined; }
-  if(k === 'vip'){ const x = v.toLowerCase(); return /^(vip|yes|y|1|true)$/.test(x) ? true : /^(normal|no|n|0|false)$/.test(x) ? false : undefined; }
-  if(k === 'widthCm' || k === 'speed' || k === 'picksPerCm' || k === 'cartPicks'){ v = v.replace(/,/g, '.'); if(!isFinite(Number(v))) return undefined; return String(Number(v)); }
+  if(k === 'cartPicks'){ const y = v.replace(/,/g, '.'); return isFinite(Number(y)) ? String(Number(y)) : undefined; }
   return v;
+}
+function mxFind(dept, no, id, name){
+  const ms = state.machines || [], D = String(dept || '').trim().toUpperCase();
+  if(id){ const m = ms.find(x => String(x.id) === id); if(m) return m; }
+  const n = parseInt(no, 10);
+  if(isFinite(n)){
+    const want = String(D && MX_ID_OFFSET[D] ? n + MX_ID_OFFSET[D] : n);
+    let m = ms.find(x => (!D || String(x.department || '').toUpperCase() === D) && String(x.id) === want); if(m) return m;
+    m = ms.find(x => (!D || String(x.department || '').toUpperCase() === D) && (/(\d+)\s*$/.exec(String(x.name || '')) || [])[1] === String(n)); if(m) return m;
+  }
+  if(name){ const nm = String(name).toLowerCase().replace(/[\s\-_.]/g, ''); return ms.find(x => String(x.name || '').toLowerCase().replace(/[\s\-_.]/g, '') === nm) || null; }
+  return null;
 }
 function mxPlan(aoa, replace){
   const head = (aoa[0] || []).map(h => String(h == null ? '' : h).trim()), colOf = {};
-  head.forEach((h, i) => { MX_COLS.forEach(c => { if(colOf[c.k] == null && MX_SYN[c.k].test(h) && !Object.values(colOf).includes(i)) colOf[c.k] = i; }); });
-  const res = { ok: colOf.id != null || colOf.name != null, fill: 0, repl: 0, same: 0, bad: [], missing: [], changes: {}, machines: 0, locked: 0 };
+  ['id'].concat(MX_COLS.map(c => c.k)).forEach(k => { head.forEach((h, i) => { if(colOf[k] == null && MX_SYN[k] && MX_SYN[k].test(h) && !Object.values(colOf).includes(i)) colOf[k] = i; }); });
+  const res = { ok: colOf.no != null || colOf.id != null || colOf.name != null, fill: 0, repl: 0, same: 0, bad: [], missing: [], changes: {}, machines: 0, rows: 0, found: 0, wrongDept: [] };
   if(!res.ok) return res;
-  const byId = {}, byName = {}; (state.machines || []).forEach(m => { byId[String(m.id)] = m; byName[String(m.name || '').toLowerCase()] = m; });
+  const get = (r, k) => colOf[k] == null ? '' : String(r[colOf[k]] == null ? '' : r[colOf[k]]).trim().replace(/\.0+$/, '');
   aoa.slice(1).forEach((r, ri) => {
-    const rid = colOf.id != null ? String(r[colOf.id] == null ? '' : r[colOf.id]).trim().replace(/\.0+$/, '') : '', rname = colOf.name != null ? String(r[colOf.name] == null ? '' : r[colOf.name]).trim().toLowerCase() : '';
-    if(!rid && !rname) return;
-    const m = (rid && byId[rid]) || (rname && byName[rname]);
-    if(!m){ res.missing.push(rid || rname); return; }
+    const dept = get(r, 'department'), no = get(r, 'no'), id = get(r, 'id'), name = get(r, 'name');
+    if(!no && !id && !name) return;
+    res.rows++;
+    const m = mxFind(dept, no, id, name);
+    if(!m){ res.missing.push((dept ? dept + ' ' : '') + (no || id || name)); return; }
+    res.found++;
     const ch = res.changes[m.id] || (res.changes[m.id] = {});
-    MX_COLS.forEach(c => {
-      if(c.k === 'id' || colOf[c.k] == null) return;
-      const nv = mxNorm(c.k, r[colOf[c.k]]);
+    MX_FILL.forEach(k => {
+      if(colOf[k] == null) return;
+      const nv = mxNorm(k, r[colOf[k]]);
       if(nv === null) return;
-      if(nv === undefined){ res.bad.push('Row ' + (ri + 2) + ' - ' + c.l + ': "' + String(r[colOf[c.k]]).trim() + '" is not valid, left as is'); return; }
-      const cur = c.k === 'vip' ? !!m.vip : (c.k === 'shiftRun' ? (m.shiftRun || 'Both') : (m[c.k] == null ? '' : String(m[c.k])));
-      const blank = c.k === 'vip' ? !m.vip : (c.k === 'shiftRun' ? !m.shiftRun : cur === '');
+      if(nv === undefined){ res.bad.push('Row ' + (ri + 2) + ' - ' + (MX_COLS.find(c => c.k === k) || { l: k }).l + ': "' + String(r[colOf[k]]).trim() + '" is not valid, left as is'); return; }
+      const cur = k === 'category' ? machineCat(m) : k === 'shiftRun' ? (m.shiftRun || 'Both') : (m[k] == null ? '' : String(m[k]));
+      const blank = k === 'category' ? !cur : k === 'shiftRun' ? !m.shiftRun : cur === '';
       if(String(cur) === String(nv)){ res.same++; return; }
-      if(blank){ ch[c.k] = nv; res.fill++; }
-      else if(c.k === 'widthCm' || c.k === 'speed' || c.k === 'picksPerCm'){ res.locked++; }   // these change production: change them one machine at a time, from a date, never in bulk
-      else if(replace){ ch[c.k] = nv; res.repl++; }
+      if(blank){ ch[k] = nv; res.fill++; }
+      else if(replace){ ch[k] = nv; res.repl++; }
     });
+    if(ch.category !== undefined) ch.vip = ch.category === 'VIP';   // the star follows the VIP category
   });
   Object.keys(res.changes).forEach(id => { if(!Object.keys(res.changes[id]).length) delete res.changes[id]; });
   res.machines = Object.keys(res.changes).length;
   return res;
 }
-// what ticking "replace" would add, so the person can see the difference before choosing
 function mxSummaryHtml(aoa, replace){
   const p = mxPlan(aoa, replace), p2 = mxPlan(aoa, true);
-  if(!p.ok) return '<div class="hrNote" style="color:var(--danger)">I could not find an ID or Machine name column in the first row. Use the sheet from "Excel sheet to fill".</div>';
-  return `<div style="line-height:1.7"><b>${p.machines}</b> machine${p.machines === 1 ? '' : 's'} will change: <b>${p.fill}</b> empty setting${p.fill === 1 ? '' : 's'} filled${replace ? `, <b>${p.repl}</b> existing setting${p.repl === 1 ? '' : 's'} replaced` : ''}.<br>
-    ${!replace && p2.repl ? `<span class="hrNote">${p2.repl} setting${p2.repl === 1 ? ' differs' : 's differ'} from what is in the app and will be left alone. Tick the box below to replace ${p2.repl === 1 ? 'it' : 'them'}.</span><br>` : ''}
-    ${p2.locked ? `<span class="hrNote">${p2.locked} width / speed / picks-per-cm value${p2.locked === 1 ? ' differs' : 's differ'} from the app and ${p2.locked === 1 ? 'was' : 'were'} not changed here: those affect production, so change them from the machine&rsquo;s own Edit.</span><br>` : ''}
-    ${p.missing.length ? `<span class="hrNote">Not found in the app (ignored): ${p.missing.slice(0, 8).map(bkEsc).join(', ')}${p.missing.length > 8 ? ' and ' + (p.missing.length - 8) + ' more' : ''}</span><br>` : ''}
+  if(!p.ok) return '<div class="hrNote" style="color:var(--danger)">I could not find the Department / Machine no. columns in the first row. Use the sheet you were given.</div>';
+  return `<div style="line-height:1.7">Rows matched to a machine: <b>${p.found}</b> of <b>${p.rows}</b>.<br>
+    <b>${p.machines}</b> machine${p.machines === 1 ? '' : 's'} will change: <b>${p.fill}</b> empty detail${p.fill === 1 ? '' : 's'} filled${replace ? `, <b>${p.repl}</b> existing detail${p.repl === 1 ? '' : 's'} replaced` : ''}.<br>
+    ${!replace && p2.repl ? `<span class="hrNote">${p2.repl} detail${p2.repl === 1 ? ' differs' : 's differ'} from what is in the app and will be left alone. Tick the box below to replace ${p2.repl === 1 ? 'it' : 'them'}.</span><br>` : ''}
+    ${p.missing.length ? `<span class="hrNote">No machine found for (ignored): ${p.missing.slice(0, 8).map(bkEsc).join(', ')}${p.missing.length > 8 ? ' and ' + (p.missing.length - 8) + ' more' : ''}</span><br>` : ''}
     ${p.bad.length ? `<span class="hrNote">${p.bad.slice(0, 5).map(bkEsc).join('<br>')}${p.bad.length > 5 ? '<br>and ' + (p.bad.length - 5) + ' more' : ''}</span>` : ''}</div>`;
 }
 const mx = { aoa: null, replace: false };
@@ -20904,15 +20973,15 @@ function mxRender(){
   const o = document.getElementById('mxOv'); if(!o) return;
   const p = mx.aoa ? mxPlan(mx.aoa, mx.replace) : null;
   o.querySelector('.mxBody').innerHTML = !mx.aoa
-    ? `<div class="hrNote" style="margin-bottom:10px">Choose the sheet you filled (from "Excel sheet to fill"). Nothing is saved until you press Apply.</div><label class="pillBtn" style="cursor:pointer">${DL_ICON}Choose Excel file<input type="file" id="mxFile" accept=".xlsx,.xls,.csv" style="display:none"></label>`
-    : `${mxSummaryHtml(mx.aoa, mx.replace)}<label class="bkChk" style="margin:12px 0;display:flex;gap:8px;align-items:center"><input type="checkbox" id="mxRepl" ${mx.replace ? 'checked' : ''}> Replace settings that are already there (leave it off to fill only the empty ones)</label>
+    ? `<div class="hrNote" style="margin-bottom:10px">Choose the Excel sheet with the machine details. Nothing is saved until you press Apply.</div><label class="pillBtn" style="cursor:pointer">${DL_ICON}Choose Excel file<input type="file" id="mxFile" accept=".xlsx,.xls,.csv" style="display:none"></label>`
+    : `${mxSummaryHtml(mx.aoa, mx.replace)}<label class="bkChk" style="margin:12px 0;display:flex;gap:8px;align-items:center"><input type="checkbox" id="mxRepl" ${mx.replace ? 'checked' : ''}> Replace details that are already there (leave it off to fill only the empty ones)</label>
        <div style="display:flex;gap:8px;justify-content:flex-end"><button type="button" class="pillBtn" id="mxCancel">Cancel</button><button type="button" class="btn btn-primary btn-sm" id="mxApply" ${p && p.machines ? '' : 'disabled'}>Apply${p && p.machines ? ' to ' + p.machines + ' machine' + (p.machines === 1 ? '' : 's') : ''}</button></div>`;
 }
 function mxOpen(){
   if(!state.user || state.user.role !== 'admin'){ toast('Only Admin can do this'); return; }
   mxClose();
   const o = document.createElement('div'); o.id = 'mxOv'; o.style.cssText = 'position:fixed;inset:0;z-index:9000;background:rgba(15,23,42,.45);display:flex;align-items:center;justify-content:center;padding:16px;';
-  o.innerHTML = '<div class="card" style="max-width:520px;width:100%;max-height:88vh;overflow:auto;padding:18px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><b style="font-size:15px">Fill machine settings from Excel</b><button type="button" class="pillBtn" id="mxX">Close</button></div><div class="mxBody"></div></div>';
+  o.innerHTML = '<div class="card" style="max-width:520px;width:100%;max-height:88vh;overflow:auto;padding:18px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><b style="font-size:15px">Fill machine details from Excel</b><button type="button" class="pillBtn" id="mxX">Close</button></div><div class="mxBody"></div></div>';
   document.body.appendChild(o); mx.aoa = null; mx.replace = false; mxRender();
 }
 async function mxApply(){
@@ -23074,6 +23143,9 @@ function tkAstHtml(){
 }
 
 /* VIP (2-loom) machines: one flag on the machine, shown as a small star wherever a machine name is drawn */
+const MACHINE_CATS = ['VIP', 'VL', 'MR', 'DOT'];
+function machineCat(m){ return (m && (m.category || (m.vip ? 'VIP' : ''))) || ''; }
+function machineCatTag(m){ const c = machineCat(m); return c && c !== 'VIP' ? `<span class="mCat" title="Machine category">${c}</span>` : ''; }
 function machineIsVip(id){ const m = (state.machines || []).find(x => String(x.id) === String(id)); return !!(m && m.vip); }
 const MVIP_SVG = '<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2.5 15.1 8.8 22 9.8 17 14.7 18.2 21.5 12 18.2 5.8 21.5 7 14.7 2 9.8 8.9 8.8"/></svg>';
 function machineStar(id){ return machineIsVip(id) ? `<span class="mStar" title="VIP machine">${MVIP_SVG}</span>` : ''; }
@@ -25645,7 +25717,7 @@ function dsPerf(kind){
 }
 /* ===== Machine Layout (Dashboard): one drawing model, used for the screen (SVG) and the PDF (vector) ===== */
 const FLR_KEY = 'rvfFloorLayoutV3';
-const FLR_DET = [['width', 'Width'], ['picks', 'Picks / cm'], ['speed', 'Speed'], ['cart', 'Cart picks'], ['brand', 'Brand'], ['model', 'Model'], ['jac', 'Jacquard'], ['note', 'Note']];
+const FLR_DET = [['width', 'Width'], ['picks', 'Picks / cm'], ['speed', 'Speed'], ['cart', 'Cart picks'], ['brand', 'Brand'], ['model', 'Model'], ['jac', 'Jacquard'], ['col', 'Colours'], ['cat', 'Category'], ['note', 'Note']];
 const flr = { dept: 'RVF', shift: 'Day', op: true, id: true, det: [], color: 'op', sups: [], showSup: false, open: false };
 (function(){ try{ const s = JSON.parse(localStorage.getItem(FLR_KEY) || 'null'); if(s && typeof s === 'object'){ Object.keys(flr).forEach(k => { if(k !== 'open' && s[k] !== undefined) flr[k] = s[k]; }); } }catch(e){} if(!Array.isArray(flr.sups)) flr.sups = []; if(!Array.isArray(flr.det)) flr.det = []; flr.det = flr.det.filter(k => k !== 'type'); if(flr.dept !== 'SSTM') flr.dept = 'RVF'; })();
 function flrSave(){ try{ localStorage.setItem(FLR_KEY, JSON.stringify({ dept: flr.dept, shift: flr.shift, op: flr.op, id: flr.id, det: flr.det, color: flr.color, sups: flr.sups, showSup: flr.showSup })); }catch(e){} }
@@ -25667,7 +25739,9 @@ function flrDetails(m, det){
   if(!m) return [];
   const v = (x) => (x == null ? '' : String(x).trim()), out = [];
   det.forEach(k => {
-    if(k === 'type') out.push(m.vip ? 'VIP' : 'Normal');
+    if(k === 'type') out.push(machineCat(m) || 'Normal');
+    else if(k === 'cat'){ if(machineCat(m)) out.push(machineCat(m)); }
+    else if(k === 'col' && v(m.colours)) out.push(v(m.colours) + ' col.');
     else if(k === 'width' && v(m.widthCm)) out.push(v(m.widthCm) + ' cm');
     else if(k === 'picks' && v(m.picksPerCm)) out.push(v(m.picksPerCm) + ' p/cm');
     else if(k === 'speed' && v(m.speed)) out.push('Speed ' + v(m.speed));
@@ -25995,10 +26069,10 @@ function flrXls(){
   let secs; try{ secs = flrScope(); }catch(err){ toast('Nothing to download yet'); return; }
   const hdr = ['Department', 'Shift', 'Machine', 'Type', 'Status'].concat(flr.op ? ['Operator'] : [], flr.id ? ['Operator ID'] : [], flr.showSup ? ['Supervisor'] : [], flr.det.map(k => (FLR_DET.find(q => q[0] === k) || [0, k])[1]));
   const rows = [hdr];
-  const dv = (m, k) => k === 'type' ? (m ? (m.vip ? 'VIP' : 'Normal') : '') : !m ? '' : ({ width: m.widthCm, picks: m.picksPerCm, speed: m.speed, cart: m.cartPicks, brand: m.brand, model: m.model, jac: m.jacquard, note: m.note }[k] || '');
+  const dv = (m, k) => k === 'type' ? (m ? (machineCat(m) || 'Normal') : '') : !m ? '' : ({ width: m.widthCm, picks: m.picksPerCm, speed: m.speed, cart: m.cartPicks, brand: m.brand, model: m.model, jac: m.jacquard, col: m.colours, cat: machineCat(m), note: m.note }[k] || '');
   secs.forEach(S => S.cells.slice().sort((a, b) => a.id - b.id).forEach(c => {
     const st = !c.m ? 'Not in the app' : c.off ? c.off : c.op || !flr.op ? 'Running' : 'Running, no operator';
-    rows.push([S.dept, S.shift, c.m ? c.m.name : 'M/C ' + c.id, c.m ? (c.m.vip ? 'VIP' : 'Normal') : '', st].concat(flr.op ? [c.op ? c.op.name : ''] : [], flr.id ? [c.op ? c.op.id : ''] : [], flr.showSup ? [c.op && c.op.sup ? c.op.sup.name : ''] : [], flr.det.map(k => dv(c.m, k))));
+    rows.push([S.dept, S.shift, c.m ? c.m.name : 'M/C ' + c.id, c.m ? (machineCat(c.m) || 'Normal') : '', st].concat(flr.op ? [c.op ? c.op.name : ''] : [], flr.id ? [c.op ? c.op.id : ''] : [], flr.showSup ? [c.op && c.op.sup ? c.op.sup.name : ''] : [], flr.det.map(k => dv(c.m, k))));
   }));
   const wb = XLSX.utils.book_new(); dsSheet(wb, 'Layout ' + flr.shift, rvfNumRows(rows), [5, 11, 8, 8, 14, 20].concat(flr.op ? [26] : [], flr.id ? [12] : [], flr.showSup ? [24] : [], flr.det.map(() => 14)));
   XLSX.writeFile(wb, 'machine-layout-' + flr.dept.toLowerCase() + '-' + (flr.shift === 'Both' ? 'day-night' : flr.shift.toLowerCase()) + '-' + rvfDateStamp() + '.xlsx'); toast('Excel file downloaded');
