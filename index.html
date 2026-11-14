@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261114-143747">
+<meta name="rvf-build" content="20261114-144804">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -10052,7 +10052,7 @@ async function loadReportSourceRecords(fromDate, toDate){
     const okIds = {};
     inView.forEach(r => { if(r.status === 'approved' && r.photoType !== 'start'){ (okIds[String(r.machine)] = okIds[String(r.machine)] || []).push(r._id); } });
     machineIds.forEach(mid => {
-      if(!digests[mid]){ noDigest.push(mid); return; }
+      if(!digests[mid] || digests[mid].length === 0){ noDigest.push(mid); return; }   // missing or empty digest: read the real readings
       const have = new Set(digests[mid].map(line => String(line).split('|')[0]));
       if((okIds[mid] || []).some(id => !have.has(String(id)))){ noDigest.push(mid); return; }   // stale digest: read this machine's real readings instead
       digests[mid].forEach(line => { const e = window.__db.decodeHistoryEntry(line, mid); if(e.date < fromDate){ e._fromDigest = true; older.push(e); } });
@@ -22142,7 +22142,7 @@ async function pkxEnsureChains(mids){
   if(PKX.digestOk === null) PKX.digestOk = await window.__db.getHistoryDigestReady();
   if(!PKX.digestOk) return false;
   const d = await window.__db.loadMachineHistories(need);
-  need.forEach(m => { const lines = d[m]; PKX.chains[m] = lines ? lines.map(l => window.__db.decodeHistoryEntry(l, m)).sort(chronoCompare) : null; });
+  need.forEach(m => { const lines = d[m]; PKX.chains[m] = (lines && lines.length) ? lines.map(l => window.__db.decodeHistoryEntry(l, m)).sort(chronoCompare) : null; });
   return true;
 }
 function pkxStartEnd(mid, date, shifts){
