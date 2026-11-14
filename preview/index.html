@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta name="robots" content="noindex, nofollow">
-<meta name="rvf-build" content="20261114-113700">
+<meta name="rvf-build" content="20261114-120355">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -135,6 +135,7 @@
   function makeCachedCollection(name, { orderByField, includeId = true, recentWindowField = null, recentWindowDays = 60, buildQuery = null, rowFilter = null, confirmWaitMs = null } = {}){
     let cachedRows = null;
     let firstSnapshot = null;
+    let firstDone = false;
     let unsub = null;
     let listeners = [];
     function start(){
@@ -158,6 +159,7 @@
         let settled = false;
         let offlineTimer = null;
         unsub = onSnapshot(ref, (snap) => {
+          if(!snap.metadata.fromCache) firstDone = true;
           const out = [];
           snap.forEach(d => { const row = includeId ? { _id: d.id, ...d.data() } : d.data(); if(!rowFilter || rowFilter(row)) out.push(row); });
           cachedRows = out;
@@ -197,7 +199,9 @@
         start();
         return cachedRows !== null ? cachedRows : firstSnapshot;
       },
-      onChange(fn){ listeners.push(fn); }
+      onChange(fn){ listeners.push(fn); },
+      // What the live listener already holds, once the server has confirmed it - lets a second reader reuse it instead of paying for the same documents again.
+      peek(){ return (firstDone && cachedRows && cachedRows.length) ? cachedRows : null; }
     };
   }
   // Plain "YYYY-MM-DD" for today / yesterday, used to scope the live
@@ -427,6 +431,7 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
     },
     // Plain one-time read — see usersOnceCache above.
     async listUsersOnce() {
+      const live = usersCache.peek(); if(live) return live;   // the live list is already in memory: no second read of every person
       return usersOnceCache.get();
     },
     async countUsersDirectly() {
@@ -893,13 +898,13 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
     async getMachines() {
       if (!dbReady) throw new Error('NOT_CONFIGURED');
       const data = await machinesDocCache.get();
-      if (data && data.list) return data.list;
+      if (data && data.list) { window.__machinesKnown = data.list.slice(); return data.list; }
       // The live cache came back empty — check directly once before
       // concluding there's really nothing there.
       const directSnap = await getDoc(doc(db, "config", "machines"));
       if (directSnap.exists()) {
         const directData = directSnap.data();
-        if (directData && directData.list) return directData.list;
+        if (directData && directData.list) { window.__machinesKnown = directData.list.slice(); return directData.list; }
       }
       // Genuinely nothing stored yet — this function's only job is to
       // READ, so it returns an empty list and stops there. It must NEVER
@@ -913,7 +918,15 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
     },
     async saveMachines(list) {
       if (!dbReady) throw new Error('NOT_CONFIGURED');
+      // Safety: a save that would wipe the list, or drop more than one machine at once, is almost certainly an
+      // old or half-loaded screen overwriting good data. It is refused instead of written.
+      const prev = window.__machinesKnown;
+      if (!Array.isArray(list) || list.length === 0) { console.error('Refused to save an empty machine list'); throw new Error('REFUSED_EMPTY_MACHINES'); }
+      if (Array.isArray(prev) && prev.length > 3 && list.length < prev.length - 1) { console.error('Refused to save: it would remove ' + (prev.length - list.length) + ' machines at once'); throw new Error('REFUSED_SHRINK_MACHINES'); }
+      // The version just BEFORE this change is kept as a second backup (no reads, one small write), so one bad save can always be undone.
+      if (Array.isArray(prev) && prev.length) { try{ await setDoc(doc(db, "config", "machinesBackupPrev"), { list: prev, savedAt: Date.now() }); }catch(err){ console.error('Previous-version backup failed (non-fatal):', err); } }
       await setDoc(doc(db, "config", "machines"), { list });
+      window.__machinesKnown = list.slice();
       // Automatic backup — every real save also updates a separate,
       // always-current copy, so there's never a need to remember to
       // download one manually. This never runs from a read, only ever
@@ -977,6 +990,16 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
     // never needs a composite index, and it's naturally tiny (one person's
     // own submissions) regardless of how large the company's total data
     // grows or how many other people are using the app at the same time.
+    async loadMyStatusReadings(operatorId, date) {
+      if (!dbReady) throw new Error('NOT_CONFIGURED');
+      const seen = new Map();
+      const [a, b] = await Promise.all([
+        getDocs(query(collection(db, 'readings'), where('operatorId', '==', operatorId), where('status', '==', 'rejected'))),
+        getDocs(query(collection(db, 'readings'), where('operatorId', '==', operatorId), where('date', '==', date)))
+      ]);
+      [a, b].forEach(snap => snap.forEach(d => { if(!seen.has(d.id)) seen.set(d.id, { _id: d.id, ...d.data() }); }));
+      return Array.from(seen.values());
+    },
     async loadMyReadingHistory(operatorId) {
       if (!dbReady) throw new Error('NOT_CONFIGURED');
       const q = query(collection(db, 'readings'), where('operatorId', '==', operatorId));
@@ -2774,7 +2797,7 @@ table.ovTbl td.pick input{ width:16px; height:16px; accent-color:#4f46e5; cursor
 .phLb .phPrev{ left:14px; } .phLb .phNext{ right:14px; }
 .phLb .phCnt{ position:absolute; bottom:16px; left:0; right:0; text-align:center; color:#fff; font-size:13px; }
 .ppPhotos .pcThumb img, .pcThumbs .pcThumb img{ cursor:zoom-in; }
-.pcSug .pcPhBtn{ float:right; margin-left:8px; width:30px; height:30px; padding:0; border:1px solid var(--line); border-radius:50%; background:#fff; color:var(--accent, #4f46e5); display:inline-flex; align-items:center; justify-content:center; cursor:pointer; }
+.pcSug .pcPhBtn{ float:right; margin-left:8px; width:30px; height:30px; padding:0; border:1px solid var(--line); border-radius:50%; background:#fff; color:var(--amber, #4f46e5); display:inline-flex; align-items:center; justify-content:center; cursor:pointer; }
 /* v56: Purchase orders as separate cards */
 .pcCards{ display:flex; flex-direction:column; gap:10px; margin-top:12px; }
 .pcCards .pcOrder{ border:1px solid var(--line); border-radius:16px; background:#fff; box-shadow:0 1px 3px rgba(15,23,42,.05); overflow:hidden; }
@@ -2978,17 +3001,17 @@ table.a2T tbody tr.a2Gap + tr.a2First td{ border-top:0 !important; }
 
 .mxF{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin:0 0 14px; padding:10px 12px; background:#fff; border:1px solid var(--line, #e5e7eb); border-radius:16px; }
 .mxFSearch{ flex:1 1 200px; max-width:300px; display:flex; align-items:center; gap:7px; height:34px; padding:0 11px; border-radius:999px; background:#f6f7fb; border:1px solid transparent; color:var(--muted); margin:0; }
-.mxFSearch:focus-within{ background:#fff; border-color:var(--accent, #4f46e5); } .mxFSearch input{ flex:1; min-width:0; border:0; outline:0; background:transparent; font:inherit; font-size:12.5px; color:var(--text, #0f172a); padding:0; height:auto; box-shadow:none; }
+.mxFSearch:focus-within{ background:#fff; border-color:var(--amber, #4f46e5); } .mxFSearch input{ flex:1; min-width:0; border:0; outline:0; background:transparent; font:inherit; font-size:12.5px; color:var(--text, #0f172a); padding:0; height:auto; box-shadow:none; }
 .mxFDrops{ display:contents; } .mxFDd{ position:relative; }
 .mxFDb{ height:34px; display:inline-flex; align-items:center; gap:8px; padding:0 12px; border-radius:999px; border:1px solid var(--line, #e5e7eb); background:#fff; color:var(--text, #0f172a); font:inherit; font-size:12px; cursor:pointer; }
 .mxFDb i{ font-style:normal; font-size:10px; color:var(--muted); } .mxFDb:hover{ background:#f6f7fb; }
-.mxFDb.on{ border-color:var(--accent, #4f46e5); color:var(--accent, #4f46e5); background:#f4f5ff; font-weight:600; } .mxFDb.on i{ color:var(--accent, #4f46e5); }
+.mxFDb.on{ border-color:var(--amber, #4f46e5); color:var(--amber, #4f46e5); background:#f4f5ff; font-weight:600; } .mxFDb.on i{ color:var(--amber, #4f46e5); }
 .mxFList{ position:absolute; z-index:30; top:40px; left:0; min-width:170px; padding:6px; background:#fff; border:1px solid var(--line, #e5e7eb); border-radius:14px; box-shadow:0 10px 28px rgba(15,23,42,.12); }
 .mxFOpt{ display:flex; align-items:center; gap:9px; margin:0; padding:7px 9px; border-radius:8px; font-size:12.5px; cursor:pointer; color:var(--text, #0f172a); font-weight:400; } .mxFOpt:hover{ background:#f6f7fb; }
-.mxFOpt input{ width:15px; height:15px; margin:0; accent-color:var(--accent, #4f46e5); } .mxFOpt span{ flex:1; } .mxFOpt i{ font-style:normal; font-size:11px; color:var(--muted); }
-.mxFCount{ font-size:12px; color:var(--muted); white-space:nowrap; margin-left:2px; } .mxFClear{ border:0; background:transparent; color:var(--accent, #4f46e5); font:inherit; font-size:12px; font-weight:600; cursor:pointer; padding:4px 2px; }
+.mxFOpt input{ width:15px; height:15px; margin:0; accent-color:var(--amber, #4f46e5); } .mxFOpt span{ flex:1; } .mxFOpt i{ font-style:normal; font-size:11px; color:var(--muted); }
+.mxFCount{ font-size:12px; color:var(--muted); white-space:nowrap; margin-left:2px; } .mxFClear{ border:0; background:transparent; color:var(--amber, #4f46e5); font:inherit; font-size:12px; font-weight:600; cursor:pointer; padding:4px 2px; }
 .mxFGap{ flex:1 1 0; min-width:0; }
-.mxFIc{ flex:none; width:34px; height:34px; display:inline-flex; align-items:center; justify-content:center; padding:0; border-radius:50%; border:1px solid var(--line, #e5e7eb); background:#fff; color:var(--text, #0f172a); cursor:pointer; } .mxFIc:hover{ background:#f6f7fb; color:var(--accent, #4f46e5); border-color:var(--accent, #4f46e5); }
+.mxFIc{ flex:none; width:34px; height:34px; display:inline-flex; align-items:center; justify-content:center; padding:0; border-radius:50%; border:1px solid var(--line, #e5e7eb); background:#fff; color:var(--text, #0f172a); cursor:pointer; } .mxFIc:hover{ background:#f6f7fb; color:var(--amber, #4f46e5); border-color:var(--amber, #4f46e5); }
 .mxFIc svg{ width:15px; height:15px; }
 .mCat{ display:inline-flex; align-items:center; margin-left:4px; padding:1px 7px; border-radius:999px; background:#f1f3f9; color:#475569; font-size:10px; font-weight:700; letter-spacing:.03em; vertical-align:1px; }
 .mStar{ display:inline-flex; vertical-align:-1px; margin-left:5px; color:var(--accent,#4f46e5); } .mStar svg{ display:block; }
@@ -11265,7 +11288,7 @@ async function loadMyStatus(){
     // machines' readings for the day are read (from everyone who logged them) — not
     // every machine in the company.
     const [mine, allOnDate] = await Promise.all([
-      window.__db.loadMyReadingHistory(targetId),
+      window.__db.loadMyStatusReadings(targetId, checkDate),
       window.__db.loadReadingsForMachinesOnDate(myMachines.map(m => m.id), checkDate)
     ]);
 
@@ -11309,7 +11332,7 @@ async function loadMyStatus(){
        personal history stay per-operator (item 4) even though the checklist
        above now checks everyone sharing the machine. ---- */
     const onDate = mine.filter(r => r.date === checkDate);
-    loadMyPicksReport(mine);   // hands over the history just loaded, so it isn't read a second time
+    loadMyPicksReport();
     if(onDate.length === 0){
       body.innerHTML = '<div class="empty-state">' + (viewingOther ? 'Nothing submitted' : 'You haven\'t submitted anything') + ' for ' + fmtDate(checkDate) + ' yet.</div>';
       return;
