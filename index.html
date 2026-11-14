@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261114-142844">
+<meta name="rvf-build" content="20261114-143037">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -6965,10 +6965,18 @@ function renderMachinesList(){
     const stopNote = (m.status === 'stopped' && (m.stopReason || m.stopSince))
       ? `<div style="font-size:11px; color:var(--danger); margin-top:2px;">${m.stopSince ? 'Since ' + m.stopSince + ' \u2014 ' : ''}${m.stopReason || ''}</div>` : '';
     row.innerHTML = `
-      <div class="mrLine">
-        <div class="mrName"><b>${m.id}</b> &middot; ${m.name} ${machineVipTag(m.id)}${machineCatTag(m)} ${statusBadge}</div>
-        <div class="mrInfo">${[m.department || '', (m.shiftRun && m.shiftRun !== 'Both') ? m.shiftRun + ' only' : '', m.widthCm ? m.widthCm + ' cm' : '', m.speed ? 'Speed ' + m.speed : '', m.picksPerCm ? m.picksPerCm + ' picks/cm' : '', [m.brand, m.model].filter(Boolean).join(' '), m.jacquard ? 'Jacquard ' + m.jacquard : '', m.colours ? m.colours + ' colours' : ''].filter(Boolean).map(assignEsc).join(' &middot; ')}${(m.status === 'stopped' && (m.stopReason || m.stopSince)) ? ` <span class="mrStop">${m.stopSince ? 'Since ' + assignEsc(m.stopSince) : ''}${m.stopReason ? ' \u2014 ' + assignEsc(m.stopReason) : ''}</span>` : ''}</div>
-        <div class="mrActs"><button class="btn btn-ghost btn-sm editMachine" data-id="${m.id}" style="width:auto;">Edit</button><button class="btn btn-ghost btn-sm toggleStatus" data-id="${m.id}" style="width:auto;">${m.status === 'stopped' ? 'Set Running' : 'Set Stopped'}</button><button class="rm" data-id="${m.id}" title="Remove">&times;</button></div>
+      <div style="display:flex; align-items:center; gap:8px; width:100%;">
+        <div style="flex:1;">
+          <b>${m.id}</b> &middot; ${m.name} ${machineVipTag(m.id)}${machineCatTag(m)} ${statusBadge}
+          <div style="font-size:11px; color:var(--muted); margin-top:2px;">
+            ${m.department ? 'Dept: ' + m.department + ' &middot; ' : ''}${(m.shiftRun && m.shiftRun !== 'Both') ? m.shiftRun + ' Only &middot; ' : ''}${m.widthCm ? 'Width ' + m.widthCm+'cm &middot; ' : ''}${m.speed ? 'Speed '+m.speed+' &middot; ' : ''}${m.picksPerCm ? m.picksPerCm+' picks/cm' : ''}
+          </div>
+          ${(m.brand || m.model || m.jacquard || m.colours) ? `<div style="font-size:11px; color:var(--muted); margin-top:2px;">${[[m.brand, m.model].filter(Boolean).join(' '), m.jacquard ? 'Jacquard ' + m.jacquard : '', m.colours ? m.colours + ' colours' : ''].filter(Boolean).map(assignEsc).join(' &middot; ')}</div>` : ''}
+          ${stopNote}
+        </div>
+        <button class="btn btn-ghost btn-sm editMachine" data-id="${m.id}" style="width:auto;">Edit</button>
+        <button class="btn btn-ghost btn-sm toggleStatus" data-id="${m.id}" style="width:auto;">${m.status === 'stopped' ? 'Set Running' : 'Set Stopped'}</button>
+        <button class="rm" data-id="${m.id}" title="Remove">&times;</button>
       </div>
       <div class="edit-panel" id="machine-edit-${m.id}" style="display:none; margin-top:10px;"></div>
       <div class="edit-panel" id="machine-stopform-${m.id}" style="display:none; margin-top:10px;"></div>
@@ -27599,26 +27607,6 @@ body.rvfBusy #rvfBusy{ display:flex; }
 #rvfBusy i{ width:10px; height:10px; border-radius:50%; border:2px solid var(--line); border-top-color:var(--amber); animation:rvfSpin .8s linear infinite; }
 @keyframes rvfSpin{ to{ transform:rotate(360deg); } }
 body.rvfBusy #screen-dashboard .card{ opacity:.5; transition:opacity .2s; }
-
-/* Machines list: one line per machine, using the full width left to right; wraps only on a narrow screen */
-.mrLine{ display:flex; align-items:center; gap:12px; width:100%; flex-wrap:wrap; }
-.mrName{ flex:0 0 auto; min-width:230px; font-size:13px; }
-.mrInfo{ flex:1 1 280px; min-width:0; font-size:12px; color:var(--muted); line-height:1.4; }
-.mrStop{ color:var(--danger); margin-left:6px; }
-.mrActs{ flex:0 0 auto; display:flex; align-items:center; gap:8px; margin-left:auto; }
-@media (min-width:900px){ .mrInfo{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; } }
-@media (max-width:560px){ .mrName{ min-width:0; flex:1 1 100%; } .mrInfo{ flex:1 1 100%; order:3; } .mrActs{ margin-left:0; width:100%; order:4; } }
-
-/* People list: one line per person across the full width (name and role, then ID / department / shift / machines / approver / team / profile, all side by side) */
-.user-row{ padding:10px 14px; margin-bottom:8px; }
-.user-row .top > div{ flex:1; min-width:0; display:flex; flex-wrap:wrap; align-items:center; gap:2px 22px; }
-.user-row .nm{ flex:0 0 280px; max-width:100%; font-size:14px; }
-.user-row .meta{ margin:0; font-size:12px; white-space:nowrap; }
-.user-row .meta:last-child{ margin-left:auto; }
-@media (max-width:640px){ .user-row .nm{ flex:1 1 100%; } .user-row .meta{ white-space:normal; } .user-row .meta:last-child{ margin-left:0; } }
-
-/* a Refresh button next to a search box is a compact button, not half the row */
-.report-toolbar > .btn{ flex:0 0 auto !important; width:auto !important; }
 </style>
 <div id="rvfBusy"><i></i><span id="rvfBusyTxt">Loading data…</span></div>
 <script>
