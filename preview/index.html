@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261114-094835">
+<meta name="rvf-build" content="20261114-103040">
 <meta name="robots" content="noindex, nofollow">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
@@ -3528,6 +3528,8 @@ table.pkPdf tr.tot td{ background:#eef2ff !important; border-top:1px solid #c7d2
 @media (max-width:560px){ #ceoColsBox .ovColG{ grid-template-columns:1fr; gap:4px; } }
 /* v100: Accounts deduct pop-up, remarks numbers, filter columns */
 .a2FPanel{ width:250px; }
+.a2Multi{ margin:0 0 6px; } .a2MBtn{ width:100%; height:34px; display:flex; align-items:center; justify-content:space-between; gap:8px; border-radius:999px; border:1px solid var(--line); background:#fff; padding:0 12px; font:inherit; font-size:12px; cursor:pointer; text-align:left; }
+.a2MBtn i{ font-style:normal; color:var(--muted); font-size:10px; } .a2MList{ max-height:170px; overflow:auto; margin-top:4px; padding:4px 6px; border:1px solid var(--line); border-radius:12px; background:#fff; }
 .a2FCols{ display:flex; flex-direction:column; gap:2px; margin-top:2px; }
 .a2FT{ font-size:9.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); font-weight:600; margin:2px 0 2px; }
 .a2FPanel .a2DetL{ display:flex !important; align-items:flex-start !important; white-space:normal !important; gap:7px; margin:2px 0 0 !important; line-height:1.3; }
@@ -22940,7 +22942,7 @@ function machineVipTag(id){ return machineIsVip(id) ? `<span class="mVip" title=
    - Unsaved work is kept in this browser (no database use) until Save is pressed.
    - Settings (rates, extra-money rules, columns, structure) are still the ones in acctSettings / acctTables.
    ============================================================ */
-const A2 = { sec: 'operator', view: 'sheet', ym: '', docs: {}, idx: null, q: '', dept: '', shift: '', pos: '', busy: false, t: null };
+const A2 = { sec: 'operator', view: 'sheet', ym: '', docs: {}, idx: null, q: '', dept: [], shift: '', pos: [], mOpen: '', mScroll: {}, busy: false, t: null };
 const A2_SEC = { operator: { n: 'Operator', ic: '<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>' }, sponsor: { n: 'Sponsor', ic: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/>' }, nonsponsor: { n: 'Non Sponsor', ic: '<path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>' }, saudi: { n: 'Saudi', ic: '<path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/>' } };
 const A2_IC = { filter: '<polygon points="22 3 2 3 10 12.5 10 19 14 21 14 12.5 22 3"/>', saved: '<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/>', users: '<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/>',
   pick: '<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>', wallet: '<path d="M20 12V8H6a2 2 0 010-4h12v4"/><path d="M4 6v12a2 2 0 002 2h14v-4"/><path d="M18 12a2 2 0 000 4h4v-4z"/>', minus: '<circle cx="12" cy="12" r="9"/><line x1="8" y1="12" x2="16" y2="12"/>',
@@ -23248,9 +23250,15 @@ function sec2net(sec, r){ return Number(sec === 'sponsor' ? (r.v || {}).net : r.
 
 /* ---------- screen ---------- */
 function a2Rows(){ const d = a2Doc(), skip = new Set((state.users || []).filter(a2Skip).map(u => u.loginId)); return d ? d.rows.filter(r => !skip.has(r.id)).sort((a, b) => a2Num(a.id, b.id)) : []; }
+// tick as many as needed (departments / positions)
+function a2Multi(k, noun, allTxt, list){
+  const sel = A2[k], open = A2.mOpen === k;
+  const label = sel.length ? (sel.length === 1 ? sel[0] : sel.length + ' ' + noun + 's') : allTxt;
+  return `<div class="a2Multi"><button type="button" class="a2MBtn" data-a2="mtog" data-v="${k}"><span>${acEsc(label)}</span><i>${open ? '\u25B4' : '\u25BE'}</i></button>${open ? `<div class="a2MList">${list.map(v => `<label class="a2DetL"><input type="checkbox" class="a2MChk" data-k="${k}" value="${acEsc(v)}" ${sel.indexOf(v) >= 0 ? 'checked' : ''}><span>${acEsc(v)}</span></label>`).join('')}</div>` : ''}</div>`;
+}
 function a2Filtered0(){
   const q = A2.q.trim().toLowerCase();
-  return a2Rows().filter(r => (!A2.dept || r.dept === A2.dept) && (!A2.shift || r.sh === A2.shift) && (!A2.pos || (A2.sec === 'operator' ? r.pos : a2PosNs(r)) === A2.pos) && (!A2.nat || a2NatOf(r) === A2.nat) && (!q || (r.id + ' ' + r.name + ' ' + r.dept).toLowerCase().includes(q)));
+  return a2Rows().filter(r => (!A2.dept.length || A2.dept.indexOf(r.dept) >= 0) && (!A2.shift || r.sh === A2.shift) && (!A2.pos.length || A2.pos.indexOf(A2.sec === 'operator' ? r.pos : a2PosNs(r)) >= 0) && (!A2.nat || a2NatOf(r) === A2.nat) && (!q || (r.id + ' ' + r.name + ' ' + r.dept).toLowerCase().includes(q)));
 }
 function a2Tile(ic, cls, n, l){ return `<div class="hrTile a2Tile"><span class="ic ${cls}">${a2Svg(ic, 16)}</span><span class="tx"><span class="n">${n}</span><span class="l">${l}</span></span></div>`; }
 function a2TilesHtml(){ return '';
@@ -23284,17 +23292,17 @@ function a2DrawSheet0(){
   const calc = op && d ? (d.calcAt ? `Picks calculated ${a2Stamp(d.calcAt)}` : 'Picks not calculated yet') : '';
   const depts = Array.from(new Set(rows.map(r => r.dept).filter(Boolean))).sort(), poss = Array.from(new Set(rows.map(r => sec !== 'operator' ? a2PosNs(r) : r.pos).filter(Boolean))).sort(), nats = Array.from(new Set(rows.map(a2NatOf).filter(Boolean))).sort();
   const opts = (list, cur, all) => `<option value="">${all}</option>` + list.map(v => `<option value="${acEsc(v[0])}" ${v[0] === cur ? 'selected' : ''}>${acEsc(v[1])}</option>`).join('');
-  const full = !!(d && rows.length), fN = [A2.q, A2.dept, A2.pos, A2.shift, A2.nat, A2.hideNj].filter(Boolean).length;
+  const full = !!(d && rows.length), fN = [A2.q, A2.dept.length, A2.pos.length, A2.shift, A2.nat, A2.hideNj].filter(Boolean).length;
   $('a2Top').innerHTML = (op || sec === 'sponsor' || sec === 'nonsponsor') ? `<button type="button" class="pillBtn a2SetB" data-a2="set" title="Settings: rates, rules, reasons">${a2Svg('gear', 14)}<span class="a2SetT">Settings</span></button>` : '';
   { const rg0 = d && d.from && d.to ? { from: d.from, to: d.to } : acDefaultRange(A2.ym), sh = (x) => (typeof pdDayTxt === 'function' ? pdDayTxt(x) : x);
     const panel = A2.fOpen && full ? `<div class="a2FPanel">
-      ${depts.length > 1 ? `<select id="a2Dept">${opts(depts.map(x => [x, x]), A2.dept, 'All departments')}</select>` : ''}
-      ${poss.length > 1 ? `<select id="a2Pos">${opts(poss.map(x => [x, x]), A2.pos, 'All positions')}</select>` : ''}
+      ${depts.length > 1 ? a2Multi('dept', 'department', 'All departments', depts) : ''}
+      ${poss.length > 1 ? a2Multi('pos', 'position', 'All positions', poss) : ''}
       ${!op && nats.length > 1 ? `<select id="a2Nat">${opts(nats.map(x => [x, x]), A2.nat, 'All nationalities')}</select>` : ''}
       ${op ? `<select id="a2Shift">${opts([['D', 'Day'], ['N', 'Night']], A2.shift, 'Both shifts')}</select>` : ''}
       ${op ? `<div class="a2FCols"><span class="a2FT">Columns to show</span><label class="a2Fx a2DetL"><input type="checkbox" id="a2Det" ${A2.det !== false ? 'checked' : ''}><span>Machine details (MC, Picks, Rate)</span></label><label class="a2Fx a2DetL"><input type="checkbox" id="a2Tp" ${A2.tp !== false ? 'checked' : ''}><span>Total picks</span></label><label class="a2Fx a2DetL"><input type="checkbox" id="a2Av" ${A2.av !== false ? 'checked' : ''}><span>Avg rate</span></label></div>` : ''}
       ${a2NjCount(rows) || A2.hideNj ? `<label class="a2Fx a2DetL"><input type="checkbox" id="a2Hnj" ${A2.hideNj ? 'checked' : ''}><span>Hide people who had not joined yet in this salary month (${a2NjCount(rows)})</span></label>` : ''}${fN ? '<button type="button" class="pillBtn" data-a2="fclear">Clear</button>' : ''}</div>` : '';
-    const fCnt = [A2.dept, A2.pos, A2.shift, A2.nat, A2.hideNj].filter(Boolean).length;
+    const fCnt = [A2.dept.length, A2.pos.length, A2.shift, A2.nat, A2.hideNj].filter(Boolean).length;
     const needCalc = op && ed && !(d && d.calcAt), cyc = sh(rg0.from) + ' &ndash; ' + sh(rg0.to);
     const datesPop = A2.dOpen && op && ed ? `<div class="a2FPanel a2DP"><div class="a2TH">Count the picks between</div><div class="a2TR"><input type="date" id="a2From" value="${d ? d.from : ''}" aria-label="From"><i>&rarr;</i><input type="date" id="a2To" value="${d ? d.to : ''}" aria-label="To"></div><div class="hrNote" style="margin:4px 0 6px;">Press Recalculate after changing the dates.</div><button type="button" class="pillBtn" data-a2="datesreset">Back to the salary month</button></div>` : '';
     $('a2Head').innerHTML = `<div class="a2Tool">
@@ -23488,7 +23496,7 @@ async function a2Export(o){
 document.addEventListener('click', async (e) => {
   const t = e.target.closest('[data-a2]'); if(!t || !$('accountsBody') || !($('accountsBody').contains(t) || t.dataset.a2 === 'peekx' || t.dataset.a2 === 'grpx' || t.dataset.a2 === 'grpset')) return;
   const a = t.dataset.a2;
-  if(a === 'sec'){ A2.sec = t.dataset.v; A2.view = 'sheet'; A2.q = ''; A2.dept = ''; A2.shift = ''; A2.pos = ''; A2.nat = ''; try{ if(A2.sec !== 'saudi') await a2LoadDoc(A2.sec, A2.ym); a2Draw(); }catch(err){ console.error(err); toast('Could not load'); } }
+  if(a === 'sec'){ A2.sec = t.dataset.v; A2.view = 'sheet'; A2.q = ''; A2.dept = []; A2.shift = ''; A2.pos = []; A2.nat = ''; try{ if(A2.sec !== 'saudi') await a2LoadDoc(A2.sec, A2.ym); a2Draw(); }catch(err){ console.error(err); toast('Could not load'); } }
   else if(a === 'saved'){ A2.view = 'saved'; a2Draw(); }
   else if(a === 'pay'){ A2.view = 'pay'; a2Draw(); }
   else if(a === 'users'){ A2.view = 'users'; a2Draw(); }
@@ -23520,7 +23528,8 @@ document.addEventListener('click', async (e) => {
   else if(a === 'tools'){ A2.tOpen = !A2.tOpen; A2.fOpen = false; a2DrawSheet(); }
   else if(a === 'dates'){ A2.dOpen = !A2.dOpen; A2.fOpen = false; a2DrawSheet(); }
   else if(a === 'datesreset'){ const d = a2Doc(); if(d){ const g = acDefaultRange(A2.ym); d.from = g.from; d.to = g.to; a2Touch(); } A2.dOpen = false; a2DrawSheet(); }
-  else if(a === 'fclear'){ A2.q = A2.dept = A2.pos = A2.shift = A2.nat = ''; A2.hideNj = false; a2DrawSheet(); }
+  else if(a === 'fclear'){ A2.q = A2.shift = A2.nat = ''; A2.dept = []; A2.pos = []; A2.mOpen = ''; A2.hideNj = false; a2DrawSheet(); }
+  else if(a === 'mtog'){ A2.mOpen = A2.mOpen === t.dataset.v ? '' : t.dataset.v; a2DrawSheet(); }
   else if(a === 'del'){ const d = a2Doc(), r = d && d.rows.find(x => x.id === t.dataset.id); if(!r || !confirm('Take ' + r.name + ' out of this month\'s sheet? Their profile is not changed.')) return; d.rows = d.rows.filter(x => x.id !== r.id); a2Touch(); a2DrawSheet(); }
 });
 document.addEventListener('mousedown', (e) => { if((A2.fOpen || A2.tOpen || A2.dOpen) && !e.target.closest('.a2Fl') && document.getElementById('a2Top')){ A2.fOpen = false; A2.tOpen = false; A2.dOpen = false; if(A2.view === 'sheet') a2DrawSheet(); } });
@@ -23540,8 +23549,10 @@ document.addEventListener('change', async (e) => {
   if(t.id === 'a2Det'){ A2.det = t.checked; a2DrawSheet(); return; }
   if(t.id === 'a2Tp'){ A2.tp = t.checked; a2DrawSheet(); return; }
   if(t.id === 'a2Av'){ A2.av = t.checked; a2DrawSheet(); return; }
-  if(t.id === 'a2Dept'){ A2.dept = t.value; a2DrawSheet(); return; }
-  if(t.id === 'a2Pos'){ A2.pos = t.value; a2DrawSheet(); return; }
+  if(t.classList && t.classList.contains('a2MChk')){
+    const k = t.dataset.k, set = new Set(A2[k]); if(t.checked) set.add(t.value); else set.delete(t.value);
+    A2[k] = Array.from(set); const lst = t.closest('.a2MList'); A2.mScroll[k] = lst ? lst.scrollTop : 0; a2DrawSheet(); { const l2 = document.querySelector('.a2MList'); if(l2) l2.scrollTop = A2.mScroll[k] || 0; } return;
+  }
   if(t.id === 'a2Nat'){ A2.nat = t.value; a2DrawSheet(); return; }
   if(t.id === 'a2Shift'){ A2.shift = t.value; a2DrawSheet(); return; }
   if(t.id === 'a2Add'){ const u = (state.users || []).find(x => x.loginId === t.value), d = a2Doc(); if(u && d){ d.rows.push(a2NewRow(d.sec, u)); a2Touch(); a2DrawSheet(); } return; }
