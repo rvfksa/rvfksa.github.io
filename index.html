@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261114-171709">
+<meta name="rvf-build" content="20261114-173416">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -28144,12 +28144,14 @@ function skSavePlan(id){
   window.__db.invSet('plan', SK.plan).then(() => { toast('Saved'); skClose(); skRender(); }).catch(err => { console.error(err); toast('Could not save'); });
 }
 /* ---- items (admin) ---- */
+function skUseItem(id){ skClose(); if(SK.tab === 'move'){ SK.form.item = id; skRender(); const q = $('skQty'); if(q) q.focus(); } else { const it = skItem(id); SK.tab = 'stock'; SK.q = it ? it.name : ''; skRender(); } }
 function skItemForm(id, desId, hint){
+  window.__skEditId = id || '';
   const i = id ? skItem(id) : { g: SK.grp, des: desId || '', on: true, name: hint || '' }; if(!i) return;
   const gOpts = SK_GROUPS.map(g => `<option value="${g[0]}" ${i.g === g[0] ? 'selected' : ''}>${g[1]} (${g[2]})</option>`).join('');
   skModal(`<span class="x" data-sk="close">×</span><h3>${id ? 'Edit item' : 'Add item'}</h3>${skStampLine(i)}${skDataLists()}<div class="skForm" style="border:0;box-shadow:none;padding:0;max-width:none;">
-    <label>Type</label><select id="sfG">${gOpts}</select>
-    <div class="skGrid2"><div><label>Name</label><input id="sfN" type="text" value="${skEsc(i.name || '')}"></div><div><label>Arabic name</label><input id="sfA" type="text" value="${skEsc(i.ar || '')}"></div></div>
+    <div id="sfDup"></div><label>Type</label><select id="sfG">${gOpts}</select>
+    <div class="skGrid2"><div><label>Name</label><input id="sfN" autocomplete="off" type="text" value="${skEsc(i.name || '')}"></div><div><label>Arabic name</label><input id="sfA" type="text" value="${skEsc(i.ar || '')}"></div></div>
     <div class="skGrid2"><div><label>Code (ERP / FG)</label><input id="sfC" type="text" value="${skEsc(i.code || '')}"></div><div><label>Colour (pick or type new)</label><input id="sfCo" list="skColList" type="text" value="${skEsc(i.col || '')}"></div></div>
     <div class="skGrid2"><div><label>Design (pick or type a new one)</label><input id="sfDn" list="skDesList" type="text" value="${skEsc((skDesign(i.des) || {}).name || '')}"><datalist id="skDesList">${SK.designs.map(d => `<option value="${skEsc(d.name)}">`).join('')}</datalist></div><div><label>Benchmark (blank = group rule)</label><input id="sfS" type="number" inputmode="decimal" value="${i.safe || ''}"></div></div>
     <div class="skGrid2"><div><label>Pieces per bundle / box</label><input id="sfP" type="number" inputmode="decimal" value="${i.per || ''}"></div><div><label>Truck capacity (bundles)</label><input id="sfT" type="number" inputmode="decimal" value="${i.truck || ''}"></div></div>
@@ -28158,8 +28160,18 @@ function skItemForm(id, desId, hint){
     <label style="display:flex;gap:8px;align-items:center;text-transform:none;letter-spacing:0;font-size:13px;"><input type="checkbox" id="sfOn" ${i.on !== false ? 'checked' : ''} style="width:auto;"> Active (untick to hide, nothing is deleted)</label>
     <div style="margin-top:14px;display:flex;gap:8px;"><button class="pcBtnMain" data-sk="saveitem" data-v="${skEsc(id || '')}" style="flex:1;">Save</button></div></div>`);
 }
+function skDupFind(name, code, exceptId){
+  const n = String(name || '').trim().toLowerCase(), c = String(code || '').trim().toLowerCase(); if(n.length < 2 && c.length < 2) return [];
+  return SK.items.filter(i => i.id !== exceptId && ((n.length >= 2 && (String(i.name).toLowerCase().includes(n) || String(i.ar || '').includes(n))) || (c.length >= 2 && String(i.code || '').toLowerCase().includes(c)))).slice(0, 6);
+}
+function skDupShow(){
+  const box = $('sfDup'); if(!box) return; const id = ($('sfN') || {}).dataset ? '' : '';
+  const l = skDupFind(($('sfN') || {}).value, ($('sfC') || {}).value, window.__skEditId || '');
+  box.innerHTML = l.length ? `<div class="skInfo" style="margin:8px 0;"><b>Already in the list \u2014 tap to use it instead:</b>${l.map(i => `<div data-sk="dupuse" data-v="${skEsc(i.id)}" style="padding:7px 0;border-top:1px solid rgba(15,23,42,.08);cursor:pointer;">${skEsc(i.name)}${i.col ? ' \u00b7 ' + skEsc(i.col) : ''}<small style="color:var(--muted);margin-left:6px;">${skEsc(i.code || '')} \u00b7 ${skNum(skBal(i))} ${skUnit(i.g)}</small></div>`).join('')}</div>` : '';
+}
 async function skSaveItem(id){
   const name = $('sfN').value.trim(); if(!name){ toast('Type a name'); return; }
+  if(!id){ const same = SK.items.find(i => i.g === $('sfG').value && String(i.name).trim().toLowerCase() === name.toLowerCase() && String(i.col || '').trim().toLowerCase() === $('sfCo').value.trim().toLowerCase()); if(same){ toast('This item already exists \u2014 opening it'); skUseItem(same.id); return; } }
   const o = { g: $('sfG').value, name, ar: $('sfA').value.trim(), code: $('sfC').value.trim(), col: $('sfCo').value.trim(), des: skDesignId($('sfDn').value), safe: Number($('sfS').value) || 0, per: Number($('sfP').value) || 0, truck: Number($('sfT').value) || 0, on: $('sfOn').checked };
   let it = id ? skItem(id) : null;
   if(it) Object.assign(it, o, skStamp()); else { it = Object.assign({ id: 'i' + Date.now().toString(36) + Math.random().toString(36).slice(2, 4) }, o, skStamp(true)); SK.items.push(it); if(SK.tab === 'move') SK.form.item = it.id; }
@@ -28309,6 +28321,7 @@ document.addEventListener('click', (ev) => {
   else if(a === 'editdes') skDesignForm(v);
   else if(a === 'savedes') skSaveDesign(v);
   else if(a === 'photo') skPickPhoto(v, el.dataset.d);
+  else if(a === 'dupuse') skUseItem(v);
   else if(a === 'dl') skDownload(v);
   else if(a === 'bench') skBenchForm(v);
   else if(a === 'savebench') skSaveBench(v);
@@ -28323,6 +28336,7 @@ document.addEventListener('input', (ev) => {
   const t = ev.target; if(!t || !t.id) return;
   if(t.id === 'skQ'){ SK.q = t.value; const pos = t.selectionStart; skRender(); const q = $('skQ'); if(q){ q.focus(); try{ q.setSelectionRange(pos, pos); }catch(e){} } }
   else if(t.id === 'skItem'){ skSuggest(t.value); }
+  else if(t.id === 'sfN' || t.id === 'sfC'){ skDupShow(); }
   else if(t.id === 'skQty'){ SK.form.q = t.value; }
 });
 document.addEventListener('focusin', (ev) => { if(ev.target && ev.target.id === 'skItem') skSuggest(''); });
