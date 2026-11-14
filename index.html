@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261114-144804">
+<meta name="rvf-build" content="20261114-145912">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -5861,6 +5861,13 @@ async function recalculateMachineDiffs(machineId, stats){
     if(!records.length && !state.machines.some(m => String(m.id) === String(machineId))){
       console.warn('Skipping recalculation — no readings and no such machine id:', machineId);
       return true;
+    }
+    // Safety: if no readings came back but this machine already has a saved history, the read most likely failed
+    // or came back empty by mistake. Never wipe its totals, summaries or history because of that.
+    if(!records.length){
+      let had = false;
+      try{ const dg = await window.__db.loadMachineHistories([String(machineId)]); had = !!(dg[String(machineId)] && dg[String(machineId)].length); }catch(e){ had = true; }
+      if(had){ console.warn('Recalculation stopped — no readings came back for machine', machineId, 'but it has a saved history'); return false; }
     }
     const byMachine = buildDiffSequenceByMachine(records);
     const chain = byMachine[machineId] || byMachine[String(machineId)] || [];
