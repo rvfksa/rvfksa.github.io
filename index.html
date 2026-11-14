@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261112-102858">
+<meta name="rvf-build" content="20261114-094835">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -227,8 +227,9 @@
   const pendingReadingsCache = makeCachedCollection('readings', {
     buildQuery: () => query(collection(db, 'readings'), where('status', '==', 'pending'))
   });
+  let recentStartedOn = null;
   const recentReadingsCache = makeCachedCollection('readings', {
-    buildQuery: () => query(collection(db, 'readings'), where('date', 'in', [todayStr(), yesterdayStr()]))
+    buildQuery: () => { recentStartedOn = todayStr(); return query(collection(db, 'readings'), where('date', 'in', [todayStr(), yesterdayStr()])); }
   });
   // Full, uncapped history — used ONLY by the handful of screens that
   // genuinely need every reading ever logged for correctness (Report,
@@ -379,6 +380,7 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
     ready: () => dbReady,
     encodeHistoryEntry, decodeHistoryEntry,
     readingsVersion: () => readingsVersion,
+    recentCacheDay: () => recentStartedOn,
     bumpReadingsVersion: () => { readingsVersion++; },
     invalidateReadings: () => { allReadingsCache = null; allReadingsPromise = null; readingsVersion++; },
 
@@ -473,6 +475,7 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
         await batch.commit();
         if (onProgress) onProgress(Math.min(i + CHUNK, items.length), items.length);
       }
+      try{ if(window.rvfRpTouch) window.rvfRpTouch(null); }catch(e){}
       allReadingsCache = null; allReadingsPromise = null; readingsVersion++;
     },
     // Persists pre-calculated production numbers (diff) directly onto each
@@ -928,6 +931,7 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
     async saveReading(record) {
       if (!dbReady) throw new Error('NOT_CONFIGURED');
       const ref = await addDoc(collection(db, "readings"), record);
+      try{ if(window.rvfRpTouch) window.rvfRpTouch(null); }catch(e){}
       allReadingsCache = null; allReadingsPromise = null; readingsVersion++;
       return ref.id;
     },
@@ -1073,16 +1077,19 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
     async updateReading(id, updates) {
       if (!dbReady) throw new Error('NOT_CONFIGURED');
       await updateDoc(doc(db, "readings", id), updates);
+      try{ if(window.rvfRpTouch) window.rvfRpTouch(id); }catch(e){}
       allReadingsCache = null; allReadingsPromise = null; readingsVersion++;
     },
     async deleteReading(id) {
       if (!dbReady) throw new Error('NOT_CONFIGURED');
       await deleteDoc(doc(db, "readings", id));
+      try{ if(window.rvfRpTouch) window.rvfRpTouch(id); }catch(e){}
       allReadingsCache = null; allReadingsPromise = null; readingsVersion++;
     },
     async addReading(record) {
       if (!dbReady) throw new Error('NOT_CONFIGURED');
       const ref = await addDoc(collection(db, "readings"), record);
+      try{ if(window.rvfRpTouch) window.rvfRpTouch(null); }catch(e){}
       allReadingsCache = null; allReadingsPromise = null; readingsVersion++;
       return ref.id;
     },
@@ -9885,6 +9892,49 @@ function buildReportRows(allRecords, recordsToShow){
 // then runs on this unchanged. Anything it can't do exactly falls back to the
 // full history: no digests built yet, the dates cleared to see everything, a
 // machine with no digest, or any read failing.
+// Refresh without re-reading the company's days again: the days being viewed are kept after the first read.
+// A later refresh re-reads only the entries this device changed (1 read each), takes today and yesterday from the
+// live copy the app already keeps (no reads), and takes waiting entries from the live waiting list. Anything it
+// cannot do with certainty goes the normal way (read the days again), so what is shown is never a guess.
+let rpBase = null, rpDirtyAll = false; const rpDirty = new Set();
+window.rvfRpTouch = function(id){ if(id === null || id === undefined) rpDirtyAll = true; else rpDirty.add(String(id)); };
+async function rpLight(fromDate, toDate, key, ver){
+  const b = rpBase;
+  if(!b || b.key !== key || rpDirtyAll || (Date.now() - b.at) > 300000) return null;
+  const now = new Date(), y = new Date(now); y.setDate(y.getDate() - 1);
+  const cut = dateToStr(y), todayS = dateToStr(now);
+  if(b.cut !== cut || !window.__db.recentCacheDay) return null;
+  const to = toDate || '9999-12-31';
+  const recent = await window.__db.loadRecentReadings();
+  const pending = await window.__db.loadPendingReadings();
+  if(window.__db.recentCacheDay() !== todayS) return null;
+  const dirty = Array.from(rpDirty);
+  const pendIds = new Set(pending.map(r => String(r._id)));
+  const have = new Map(), reread = new Set(dirty);
+  const put = (r) => { if(r && r.date >= fromDate && r.date <= to) have.set(r._id, r); };
+  b.records.forEach(r => {
+    if(r.date >= cut) return;                       // today / yesterday come from the live copy below
+    if(reread.has(String(r._id))) return;           // changed here: read again below
+    if(r.status === 'pending'){ if(!pendIds.has(String(r._id))) reread.add(String(r._id)); return; }   // was waiting: still waiting (below) or decided meanwhile (read again)
+    have.set(r._id, r);
+  });
+  for(const id of reread){
+    const fresh = await window.__db.getReading(id);
+    if(!fresh) continue;                            // deleted
+    if(fresh.date < fromDate) return null;          // moved before the days shown: needs the normal way
+    if(fresh.date >= cut) continue;                 // lives in today / yesterday: the live copy has it
+    put(fresh);
+  }
+  recent.forEach(r => { if(r.date >= cut) put(r); });
+  pending.forEach(r => { if(r.date < cut) put(r); });
+  const inView = Array.from(have.values());
+  if(inView.some(r => !b.machines.has(String(r.machine)))) return null;   // a machine we hold no history for yet
+  dirty.forEach(id => rpDirty.delete(id));
+  rpBase = Object.assign({}, b, { records: inView });
+  const records = inView.concat(b.older);
+  reportSourceCache = { key, ver, records, at: Date.now() }; reportSourceMore[key] = reportSourceCache;
+  return records;
+}
 let reportSourceCache = null, reportSourceMore = {};   // { key, ver, records } — reused only while nothing at all has changed
 async function loadReportSourceRecords(fromDate, toDate){
   if(!fromDate) return window.__db.loadAllReadingsEver();
@@ -9894,6 +9944,11 @@ async function loadReportSourceRecords(fromDate, toDate){
   const key = fromDate + '|' + (toDate || '');
   { const c = reportSourceMore[key]; if(ver !== -1 && c && c.ver === ver && (Date.now() - c.at) < 300000) return c.records; }
   if(ver !== -1 && reportSourceCache && reportSourceCache.key === key && reportSourceCache.ver === ver && (Date.now() - reportSourceCache.at) < 300000) return reportSourceCache.records;   // kept at most 5 minutes
+  try{
+    const quick = await rpLight(fromDate, toDate, key, ver);
+    if(quick) return quick;
+  }catch(err){ console.error('Report: quick refresh not possible, reading the days again', err); }
+  rpBase = null; rpDirty.clear(); rpDirtyAll = false;
   try{
     if(!(await window.__db.getHistoryDigestReady())) return window.__db.loadAllReadingsEver();
     const inView = await window.__db.loadReadingsInRange(fromDate, toDate || '9999-12-31');
@@ -9910,6 +9965,7 @@ async function loadReportSourceRecords(fromDate, toDate){
       full.forEach(r => { if(r.date < fromDate) older.push(r); });
     }
     const records = inView.concat(older);
+    { const yy = new Date(); yy.setDate(yy.getDate() - 1); rpBase = { key, at: Date.now(), cut: dateToStr(yy), records: inView, older, machines: new Set(machineIds) }; }
     if(ver !== -1){ reportSourceCache = { key, ver, records, at: Date.now() }; reportSourceMore[key] = reportSourceCache; const ks = Object.keys(reportSourceMore); if(ks.length > 4) delete reportSourceMore[ks[0]]; }
     return records;
   }catch(err){
