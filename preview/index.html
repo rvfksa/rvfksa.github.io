@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta name="robots" content="noindex, nofollow">
-<meta name="rvf-build" content="20261114-170429">
+<meta name="rvf-build" content="20261114-170530">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -27913,7 +27913,7 @@ async function skOpen(){
     SK.items = (it && it.items) || []; SK.bal = (st && st.bal) || {}; SK.designs = (de && de.designs) || []; SK.plan = (pl && pl.m) ? pl : { m: {}, log: [] };
     SK.loaded = true;
   }catch(err){ console.error('Stock: could not load', err); toast('Could not load Stock — check your connection'); }
-  SK.loading = false; skRender();
+  await skLoadMonth(); SK.loading = false; skRender();
 }
 async function skLoadMonth(){
   if(SK.mvLoaded) return;
@@ -27921,6 +27921,10 @@ async function skLoadMonth(){
 }
 function skCanAdd(){ return !!(state.user && (state.user.role === 'admin' || state.user.role === 'supervisor')); }
 function skDesignId(name){ name = String(name || '').trim(); if(!name) return ''; let d = SK.designs.find(x => String(x.name).toLowerCase() === name.toLowerCase()); if(!d){ d = Object.assign({ id: 'd' + Date.now().toString(36) + Math.random().toString(36).slice(2, 4), name, ar: '', code: '', picks: 0 }, skStamp(true)); SK.designs.push(d); SK._nd = true; } return d.id; }
+function skCover(i){ // days the stock will last, from this month's average OUT per day
+  if(!SK.mvLoaded) return null; const dm = Math.max(1, new Date().getDate()); let out = 0; SK.mv.forEach(e => { if(e.i === i.id && e.k === 'out') out += Number(e.q) || 0; });
+  if(out <= 0) return null; return Math.floor(skBal(i) / (out / dm));
+}
 function skBal(i){ return Number(SK.bal[i.id]) || 0; }
 function skSafe(i){ return Number(i.safe) > 0 ? Number(i.safe) : (Number((SK.cfg.def || {})[i.g]) || 0); }
 function skStamp(isNew){ const o = { ub: state.user.name || '', uu: state.user.loginId, ut: Date.now() }; if(isNew){ o.cb = o.ub; o.ct = o.ut; } return o; }
@@ -27967,8 +27971,8 @@ function skOverHtml(){
   { const ms = state.machines || [], pm = SK.plan.m || {}; const stopped = ms.filter(m => m.status === 'stopped' || (pm[m.id] || {}).st === 'stop').length, free = ms.filter(m => !(pm[m.id] || {}).des && !(m.status === 'stopped' || (pm[m.id] || {}).st === 'stop')).length, noResp = ms.filter(m => !(pm[m.id] || {}).resp).length;
     h += `<div class="skTile" data-sk="tab" data-v="plan" style="cursor:pointer;"><span>Machines</span><b>${ms.length - stopped - free} / ${ms.length}</b><i>running a design \u00b7 ${free} free \u00b7 ${stopped} stopped${noResp ? ' \u00b7 ' + noResp + ' without a responsible person' : ''}</i></div>`; }
   h += '</div>';
-  const need = SK.items.filter(i => i.on !== false && skSafe(i) > 0 && skBal(i) < skSafe(i) && i.g !== 'rm').map(i => ({ i, p: skBal(i) / skSafe(i) })).sort((a, b) => a.p - b.p).slice(0, 12);
-  h += '<h3 style="margin:18px 0 8px;font-size:15px;">Needs production first</h3>';
+  const need = SK.items.filter(i => i.on !== false && skSafe(i) > 0 && skBal(i) < skSafe(i) && i.g !== 'rm').map(i => ({ i, p: skBal(i) / skSafe(i), c: skCover(i) == null ? 9999 : skCover(i) })).sort((a, b) => Math.min(a.c, 9999) - Math.min(b.c, 9999) || a.p - b.p).slice(0, 12);
+  h += '<h3 style="margin:18px 0 8px;font-size:15px;">Decide first: what to make next</h3><div style="font-size:12px;color:var(--muted);margin:-4px 0 8px;">Sorted by how soon it runs out. Tap Plan to pick the machine.</div>';
   h += need.length ? '<div class="skList">' + need.map(x => skRowHtml(x.i, true)).join('') + '</div>' : '<div class="skEmpty">Everything is at or above its safety stock.</div>';
   const on = {}; Object.keys(SK.plan.m || {}).forEach(k => { const p = SK.plan.m[k]; if(p && p.st !== 'stop' && p.des){ on[p.des] = (on[p.des] || 0) + 1; } });
   const runs = Object.keys(on).map(id => [skDesign(id), on[id]]).filter(x => x[0]).sort((a, b) => b[1] - a[1]);
@@ -27978,7 +27982,7 @@ function skOverHtml(){
 function skRowHtml(i, showGrp){
   const L = skLevel(i), b = skBal(i), run = skRunning(i), g = SK_GROUPS.find(x => x[0] === i.g) || [];
   const per = i.per > 0 && i.g !== 'up' && i.g !== 'rm' ? `${skNum(b * i.per)} pcs` : '';
-  const sub = [showGrp ? g[1] : '', i.code, skSafe(i) > b ? 'Short by ' + skNum(skSafe(i) - b) : '', i.col ? '' : '', per, run.length ? 'Running on ' + run.length + ' machine' + (run.length > 1 ? 's' : '') : ''].filter(Boolean).join(' · ');
+  const sub = [showGrp ? g[1] : '', i.code, skSafe(i) > b ? 'Short by ' + skNum(skSafe(i) - b) : '', skCover(i) == null ? '' : (skCover(i) <= 0 ? 'Sold out' : 'Lasts ~' + skCover(i) + ' days'), i.col ? '' : '', per, run.length ? 'Running on ' + run.length + ' machine' + (run.length > 1 ? 's' : '') : ''].filter(Boolean).join(' · ');
   return `<div class="skRow"><div class="nm"><b>${skEsc(i.name)}${i.col ? ` <span class="skCol">${skEsc(i.col)}</span>` : ''}${L.tag}</b><small>${skEsc(sub)}</small></div>
     <div class="lv">${L.pct == null ? '' : `<div class="skMeter ${L.cls}"><i style="width:${Math.min(100, Math.max(2, L.pct * 100))}%"></i></div><small style="font-size:11px;color:var(--muted);">${skIsAdmin() ? `<a href="#" data-sk="bench" data-v="${skEsc(i.id)}">Benchmark ${skNum(skSafe(i))}</a>` : 'Benchmark ' + skNum(skSafe(i))} · ${Math.round(L.pct * 100)}%</small>`}</div>
     <div class="qty">${skNum(b)}<small>${skUnit(i.g)}</small></div>
