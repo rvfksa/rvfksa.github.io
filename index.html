@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261114-153337">
+<meta name="rvf-build" content="20261114-154658">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -27618,6 +27618,9 @@ body.rvfBusy #rvfBusy{ display:flex; }
 #rvfBusy i{ width:10px; height:10px; border-radius:50%; border:2px solid var(--line); border-top-color:var(--amber); animation:rvfSpin .8s linear infinite; }
 @keyframes rvfSpin{ to{ transform:rotate(360deg); } }
 body.rvfBusy #screen-dashboard .card{ opacity:.5; transition:opacity .2s; }
+
+/* PDF tables: the heading row is drawn as a plain rectangle, so the frame around the table must have square corners too (round frame + square heading looked cut off). */
+.pdfSheet .table-scroll, .pdfSheet .report-table{ border-radius:0; }
 </style>
 <div id="rvfBusy"><i></i><span id="rvfBusyTxt">Loading data…</span></div>
 <script>
