@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta name="robots" content="noindex, nofollow">
-<meta name="rvf-build" content="20261114-165114">
+<meta name="rvf-build" content="20261114-170429">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -27735,6 +27735,8 @@ body.rvfBusy #screen-dashboard .card{ opacity:.5; transition:opacity .2s; }
 @media (max-width:760px){ .skRow{ flex-wrap:wrap; } .skRow .lv{ flex:1 1 100%; order:5; } .skRow .qty{ flex:0 0 auto; margin-left:auto; } .skGrid2{ grid-template-columns:1fr; } }
 
 .skCard .bd small{ display:block; }
+
+@media (min-width:761px){ .skRow .act{ flex:0 0 250px; justify-content:flex-end; } }
 </style>
 <div id="rvfBusy"><i></i><span id="rvfBusyTxt">Loading data…</span></div>
 <script>
@@ -27893,7 +27895,7 @@ window.rvfUserSizes = function(){
    ============================================================ */
 const SK_GROUPS = [['up', 'Upholstery', 'rolls'], ['cr', 'Carpets & Rugs', 'bundles'], ['vip', 'VIP', 'bundles'], ['q2', '2nd Quality', 'bundles'], ['rm', 'Raw materials', 'kg']];
 const SK_TABS = [['over', 'Overview'], ['stock', 'Stock'], ['move', 'In / Out'], ['des', 'Designs'], ['plan', 'Machines']];
-const SK = { loaded: false, loading: false, items: [], bal: {}, designs: [], plan: { m: {}, log: [] }, tab: 'over', grp: 'up', q: '', need: false, mv: [], mvLoaded: false, form: { k: 'in', item: '', q: '', d: '', n: '' }, dept: 'ALL', imgs: {} };
+const SK = { loaded: false, loading: false, items: [], bal: {}, designs: [], plan: { m: {}, log: [] }, tab: 'over', grp: 'up', q: '', need: false, mv: [], mvLoaded: false, form: { k: 'in', item: '', q: '', d: '', n: '' }, dept: 'ALL', imgs: {}, cfg: { def: {} }, fd: '', fs: '' };
 const skEsc = (t) => String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
 const skIsAdmin = () => !!(state.user && state.user.role === 'admin');
 const skNum = (n) => (Math.round((Number(n) || 0) * 100) / 100).toLocaleString('en-US');
@@ -27906,7 +27908,8 @@ async function skOpen(){
   if(SK.loaded || SK.loading) return;
   SK.loading = true;
   try{
-    const [it, st, de, pl] = await Promise.all([window.__db.invGet('items'), window.__db.invGet('stock'), window.__db.invGet('designs'), window.__db.invGet('plan')]);
+    const [it, st, de, pl, cf] = await Promise.all([window.__db.invGet('items'), window.__db.invGet('stock'), window.__db.invGet('designs'), window.__db.invGet('plan'), window.__db.invGet('cfg')]);
+    SK.cfg = (cf && cf.def) ? cf : { def: {} };
     SK.items = (it && it.items) || []; SK.bal = (st && st.bal) || {}; SK.designs = (de && de.designs) || []; SK.plan = (pl && pl.m) ? pl : { m: {}, log: [] };
     SK.loaded = true;
   }catch(err){ console.error('Stock: could not load', err); toast('Could not load Stock — check your connection'); }
@@ -27916,9 +27919,19 @@ async function skLoadMonth(){
   if(SK.mvLoaded) return;
   try{ const d = await window.__db.invGet('mv_' + dateToStr(new Date()).slice(0, 7)); SK.mv = (d && d.entries) || []; SK.mvLoaded = true; }catch(e){ console.error(e); }
 }
+function skCanAdd(){ return !!(state.user && (state.user.role === 'admin' || state.user.role === 'supervisor')); }
+function skDesignId(name){ name = String(name || '').trim(); if(!name) return ''; let d = SK.designs.find(x => String(x.name).toLowerCase() === name.toLowerCase()); if(!d){ d = Object.assign({ id: 'd' + Date.now().toString(36) + Math.random().toString(36).slice(2, 4), name, ar: '', code: '', picks: 0 }, skStamp(true)); SK.designs.push(d); SK._nd = true; } return d.id; }
 function skBal(i){ return Number(SK.bal[i.id]) || 0; }
+function skSafe(i){ return Number(i.safe) > 0 ? Number(i.safe) : (Number((SK.cfg.def || {})[i.g]) || 0); }
+function skStamp(isNew){ const o = { ub: state.user.name || '', uu: state.user.loginId, ut: Date.now() }; if(isNew){ o.cb = o.ub; o.ct = o.ut; } return o; }
+function skWhen(t){ return t ? new Date(t).toLocaleString([], { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''; }
+function skStampLine(o){ return o && o.ut ? `<div style="font-size:12px;color:var(--muted);margin:2px 0 6px;">${o.cb ? 'Added by ' + skEsc(o.cb) + ', ' + skEsc(skWhen(o.ct)) + ' \u00b7 ' : ''}Last changed by ${skEsc(o.ub || '')}, ${skEsc(skWhen(o.ut))}</div>` : ''; }
+function skColours(){ const set = {}; SK.items.forEach(i => { if(i.col) set[i.col] = 1; }); return Object.keys(set).sort(); }
+function skYarnList(){ const set = {}; skColours().forEach(c => set[c] = 1); SK.items.filter(i => i.g === 'rm').forEach(i => set[i.name + (i.col ? ' ' + i.col : '')] = 1); return Object.keys(set).sort(); }
+function skDataLists(){ return '<datalist id="skColList">' + skColours().map(c => `<option value="${skEsc(c)}">`).join('') + '</datalist><datalist id="skYarnList">' + skYarnList().map(c => `<option value="${skEsc(c)}">`).join('') + '</datalist>'; }
+function skUsers(){ return (state.users || []).filter(u => u.role === 'supervisor' || u.role === 'operator' || u.role === 'admin').sort((a, b) => (a.role === b.role ? 0 : a.role === 'supervisor' ? -1 : 1) || String(a.name).localeCompare(b.name)); }
 function skLevel(i){
-  const b = skBal(i), sf = Number(i.safe) || 0;
+  const b = skBal(i), sf = skSafe(i);
   if(!sf) return { pct: null, cls: '', tag: b > 0 ? '' : '<span class="skTag dim">Empty</span>' };
   const pct = b / sf;
   if(pct >= 1) return { pct, cls: '', tag: '<span class="skTag ok">Enough</span>' };
@@ -27948,11 +27961,13 @@ function skOverHtml(){
   let h = '<div class="skTiles">';
   SK_GROUPS.forEach(g => {
     const its = SK.items.filter(i => i.g === g[0]); if(!its.length) return;
-    const tot = its.reduce((a, i) => a + skBal(i), 0), need = its.filter(i => i.safe > 0 && skBal(i) < i.safe).length;
+    const tot = its.reduce((a, i) => a + skBal(i), 0), need = its.filter(i => skSafe(i) > 0 && skBal(i) < skSafe(i)).length;
     h += `<div class="skTile" data-sk="grp" data-v="${g[0]}" style="cursor:pointer;"><span>${g[1]}</span><b>${skNum(tot)}</b><i>${g[2]} · ${its.length} items${need ? ' · <b style="display:inline;font-size:12px;color:#92400e;">' + need + ' need production</b>' : ''}</i></div>`;
   });
+  { const ms = state.machines || [], pm = SK.plan.m || {}; const stopped = ms.filter(m => m.status === 'stopped' || (pm[m.id] || {}).st === 'stop').length, free = ms.filter(m => !(pm[m.id] || {}).des && !(m.status === 'stopped' || (pm[m.id] || {}).st === 'stop')).length, noResp = ms.filter(m => !(pm[m.id] || {}).resp).length;
+    h += `<div class="skTile" data-sk="tab" data-v="plan" style="cursor:pointer;"><span>Machines</span><b>${ms.length - stopped - free} / ${ms.length}</b><i>running a design \u00b7 ${free} free \u00b7 ${stopped} stopped${noResp ? ' \u00b7 ' + noResp + ' without a responsible person' : ''}</i></div>`; }
   h += '</div>';
-  const need = SK.items.filter(i => i.on !== false && i.safe > 0 && skBal(i) < i.safe && i.g !== 'rm').map(i => ({ i, p: skBal(i) / i.safe })).sort((a, b) => a.p - b.p).slice(0, 12);
+  const need = SK.items.filter(i => i.on !== false && skSafe(i) > 0 && skBal(i) < skSafe(i) && i.g !== 'rm').map(i => ({ i, p: skBal(i) / skSafe(i) })).sort((a, b) => a.p - b.p).slice(0, 12);
   h += '<h3 style="margin:18px 0 8px;font-size:15px;">Needs production first</h3>';
   h += need.length ? '<div class="skList">' + need.map(x => skRowHtml(x.i, true)).join('') + '</div>' : '<div class="skEmpty">Everything is at or above its safety stock.</div>';
   const on = {}; Object.keys(SK.plan.m || {}).forEach(k => { const p = SK.plan.m[k]; if(p && p.st !== 'stop' && p.des){ on[p.des] = (on[p.des] || 0) + 1; } });
@@ -27963,23 +27978,25 @@ function skOverHtml(){
 function skRowHtml(i, showGrp){
   const L = skLevel(i), b = skBal(i), run = skRunning(i), g = SK_GROUPS.find(x => x[0] === i.g) || [];
   const per = i.per > 0 && i.g !== 'up' && i.g !== 'rm' ? `${skNum(b * i.per)} pcs` : '';
-  const sub = [showGrp ? g[1] : '', i.code, i.col ? '' : '', per, run.length ? 'Running on ' + run.length + ' machine' + (run.length > 1 ? 's' : '') : ''].filter(Boolean).join(' · ');
+  const sub = [showGrp ? g[1] : '', i.code, skSafe(i) > b ? 'Short by ' + skNum(skSafe(i) - b) : '', i.col ? '' : '', per, run.length ? 'Running on ' + run.length + ' machine' + (run.length > 1 ? 's' : '') : ''].filter(Boolean).join(' · ');
   return `<div class="skRow"><div class="nm"><b>${skEsc(i.name)}${i.col ? ` <span class="skCol">${skEsc(i.col)}</span>` : ''}${L.tag}</b><small>${skEsc(sub)}</small></div>
-    <div class="lv">${L.pct == null ? '' : `<div class="skMeter ${L.cls}"><i style="width:${Math.min(100, Math.max(2, L.pct * 100))}%"></i></div><small style="font-size:11px;color:var(--muted);">Safety stock ${skNum(i.safe)} · ${Math.round(L.pct * 100)}%</small>`}</div>
+    <div class="lv">${L.pct == null ? '' : `<div class="skMeter ${L.cls}"><i style="width:${Math.min(100, Math.max(2, L.pct * 100))}%"></i></div><small style="font-size:11px;color:var(--muted);">${skIsAdmin() ? `<a href="#" data-sk="bench" data-v="${skEsc(i.id)}">Benchmark ${skNum(skSafe(i))}</a>` : 'Benchmark ' + skNum(skSafe(i))} · ${Math.round(L.pct * 100)}%</small>`}</div>
     <div class="qty">${skNum(b)}<small>${skUnit(i.g)}</small></div>
-    <div class="act"><button class="pcBtnSoft sm" data-sk="mv" data-v="${skEsc(i.id)}" data-k="in">In</button><button class="pcBtnSoft sm" data-sk="mv" data-v="${skEsc(i.id)}" data-k="out">Out</button>${skIsAdmin() ? `<button class="pcBtnSoft sm" data-sk="edititem" data-v="${skEsc(i.id)}">Edit</button>` : ''}</div></div>`;
+    <div class="act"><button class="pcBtnSoft sm" data-sk="mv" data-v="${skEsc(i.id)}" data-k="in">In</button><button class="pcBtnSoft sm" data-sk="mv" data-v="${skEsc(i.id)}" data-k="out">Out</button>${skIsAdmin() && i.g !== 'rm' && skSafe(i) > b ? `<button class="pcBtnMain sm" data-sk="assign" data-v="${skEsc(i.id)}">Plan</button>` : ''}${skIsAdmin() ? `<button class="pcBtnSoft sm" data-sk="edititem" data-v="${skEsc(i.id)}">Edit</button>` : ''}</div></div>`;
 }
 function skStockHtml(){
   if(!SK.items.length) return skEmptyHtml();
   const q = SK.q.trim().toLowerCase();
   let list = SK.items.filter(i => i.g === SK.grp && i.on !== false);
   if(q) list = SK.items.filter(i => i.on !== false && (i.name + ' ' + (i.code || '') + ' ' + (i.col || '') + ' ' + (i.ar || '')).toLowerCase().includes(q));
-  if(SK.need) list = list.filter(i => i.safe > 0 && skBal(i) < i.safe);
+  if(SK.fd) list = list.filter(i => i.des === SK.fd);
+  if(SK.fs) list = list.filter(i => SK.fs === 'need' ? (skSafe(i) > 0 && skBal(i) < skSafe(i)) : SK.fs === 'out' ? skBal(i) <= 0 : (skSafe(i) > 0 && skBal(i) >= skSafe(i)));
+  SK.cur = list;
   list = list.slice().sort((a, b) => String(a.name).localeCompare(b.name) || String(a.col || '').localeCompare(String(b.col || '')));
   const tot = list.reduce((a, i) => a + skBal(i), 0);
   let h = `<div class="skBar"><div class="skGrp">${SK_GROUPS.map(g => `<button class="skChip ${SK.grp === g[0] && !q ? 'on' : ''}" data-sk="grp" data-v="${g[0]}">${g[1]}</button>`).join('')}</div></div>
-    <div class="skBar"><input id="skQ" class="skSearch" type="text" placeholder="Search name, code or colour…" value="${skEsc(SK.q)}"><button class="skChip ${SK.need ? 'on' : ''}" data-sk="need">Needs production</button><span style="font-size:12px;color:var(--muted);">${list.length} items · ${skNum(tot)} ${q ? '' : skUnit(SK.grp)}</span>
-    ${skIsAdmin() ? '<span class="grow"></span><button class="pcBtnSoft sm" data-sk="newitem">Add item</button><button class="pcBtnSoft sm" data-sk="tpl">Template</button><button class="pcBtnSoft sm" data-sk="upl">Upload Excel</button>' : ''}</div>`;
+    <div class="skBar"><input id="skQ" class="skSearch" type="text" placeholder="Search name, code or colour…" value="${skEsc(SK.q)}"><select id="skFs" style="flex:0 0 auto;width:auto;min-width:130px;"><option value="">All status</option><option value="need" ${SK.fs === 'need' ? 'selected' : ''}>Needs production</option><option value="out" ${SK.fs === 'out' ? 'selected' : ''}>Out of stock</option><option value="ok" ${SK.fs === 'ok' ? 'selected' : ''}>Enough</option></select><select id="skFd" style="flex:0 0 auto;width:auto;min-width:130px;"><option value="">All designs</option>${SK.designs.slice().sort((a, b) => String(a.name).localeCompare(b.name)).map(d => `<option value="${skEsc(d.id)}" ${SK.fd === d.id ? 'selected' : ''}>${skEsc(d.name)}</option>`).join('')}</select><span style="font-size:12px;color:var(--muted);">${list.length} items · ${skNum(tot)} ${q ? '' : skUnit(SK.grp)}</span>
+    <span class="grow"></span><button class="pcBtnSoft sm" data-sk="dl" data-v="stock">Download</button>${skCanAdd() ? '<button class="pcBtnMain sm" data-sk="newitem">+ New item</button>' : ''}${skIsAdmin() ? '<button class="pcBtnSoft sm" data-sk="bench" data-v="">Benchmarks</button><button class="pcBtnSoft sm" data-sk="tpl">Template</button><button class="pcBtnSoft sm" data-sk="upl">Upload Excel</button>' : ''}</div>`;
   h += list.length ? '<div class="skList">' + list.map(i => skRowHtml(i, !!q)).join('') + '</div>' : '<div class="skEmpty">No items found.</div>';
   return h;
 }
@@ -27990,19 +28007,19 @@ function skMoveHtml(){
   const pcs = it && it.per > 0 && it.g !== 'up' && it.g !== 'rm' && Number(F.q) > 0 ? ` = ${skNum(Number(F.q) * it.per)} pcs` : '';
   return `<div class="skForm"><div class="skSeg"><button class="in ${F.k === 'in' ? 'on' : ''}" data-sk="k" data-v="in">IN &nbsp;(received / produced)</button><button class="out ${F.k === 'out' ? 'on' : ''}" data-sk="k" data-v="out">OUT &nbsp;(sold / used)</button></div>
     <label>Item</label><div class="skPick"><input id="skItem" type="text" autocomplete="off" placeholder="Type a name, code or colour…" value="${it ? skEsc(it.name + (it.col ? ' · ' + it.col : '')) : ''}"><div class="skSug" id="skSug" style="display:none;"></div></div>
-    ${it ? `<div class="skInfo">In stock now: <b>${skNum(skBal(it))} ${unit}</b>${it.safe ? ' · safety stock ' + skNum(it.safe) : ''}</div>` : ''}
+    ${it ? `<div class="skInfo">In stock now: <b>${skNum(skBal(it))} ${unit}</b>${skSafe(it) ? ' · safety stock ' + skNum(skSafe(it)) : ''}</div>` : ''}
     <div class="skGrid2"><div><label>Quantity ${unit ? '(' + unit + ')' : ''}</label><input id="skQty" class="skQty" type="number" inputmode="decimal" min="0" step="any" value="${skEsc(F.q)}" placeholder="0"><div style="font-size:12px;color:var(--muted);margin-top:4px;min-height:16px;">${pcs}</div></div>
     <div><label>Date</label><input id="skDate" type="date" value="${skEsc(F.d)}"></div></div>
     <label>${F.k === 'out' ? 'Customer / order (optional)' : 'Note (optional)'}</label><input id="skNote" type="text" placeholder="${F.k === 'out' ? 'e.g. Najm Al Sharq, truck 2' : 'e.g. machine R-14, batch'}" value="${skEsc(F.n)}">
     <div style="margin-top:16px;display:flex;gap:8px;"><button class="pcBtnMain" data-sk="save" style="flex:1;height:48px;font-size:15px;">${F.k === 'out' ? 'Save OUT' : 'Save IN'}</button></div></div>
-    <h3 style="margin:20px 0 8px;font-size:15px;">Recent entries this month</h3><div id="skRecent" class="skList">${skRecentHtml()}</div>`;
+    <div class="skBar" style="margin:20px 0 8px;"><h3 style="margin:0;font-size:15px;">Recent entries this month</h3><span class="grow"></span><button class="pcBtnSoft sm" data-sk="dl" data-v="mv">Download</button></div><div id="skRecent" class="skList">${skRecentHtml()}</div>`;
 }
 function skRecentHtml(){
   if(!SK.mvLoaded) return '<div class="skEmpty">Loading…</div>';
   const l = SK.mv.slice().sort((a, b) => (b.t || 0) - (a.t || 0)).slice(0, 30);
   if(!l.length) return '<div class="skEmpty">No entries yet this month.</div>';
   return l.map(e => { const it = skItem(e.i); const can = skIsAdmin() || (state.user && e.u === state.user.loginId);
-    return `<div class="skRow"><div class="nm"><b>${it ? skEsc(it.name) : skEsc(e.i)}${it && it.col ? ` <span class="skCol">${skEsc(it.col)}</span>` : ''}</b><small>${skEsc(e.d)} · ${skEsc(e.by || '')}${e.n ? ' · ' + skEsc(e.n) : ''}</small></div>
+    return `<div class="skRow"><div class="nm"><b>${it ? skEsc(it.name) : skEsc(e.i)}${it && it.col ? ` <span class="skCol">${skEsc(it.col)}</span>` : ''}</b><small>${skEsc(e.d)}${e.t ? ' ' + new Date(e.t).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''} · ${skEsc(e.by || '')}${e.n ? ' · ' + skEsc(e.n) : ''}</small></div>
     <div class="qty" style="color:${e.k === 'out' ? '#dc2626' : '#16a34a'};">${e.k === 'out' ? '−' : '+'}${skNum(e.q)}<small>${it ? skUnit(it.g) : ''}</small></div>
     <div class="act">${can ? `<button class="pcBtnSoft sm" data-sk="undo" data-v="${skEsc(e.id)}" data-m="${skEsc(String(e.d).slice(0, 7))}">Undo</button>` : ''}</div></div>`; }).join('');
 }
@@ -28010,7 +28027,8 @@ function skSuggest(q){
   const box = $('skSug'); if(!box) return;
   const t = String(q || '').trim().toLowerCase();
   const l = SK.items.filter(i => i.on !== false && (!t || (i.name + ' ' + (i.code || '') + ' ' + (i.col || '') + ' ' + (i.ar || '')).toLowerCase().includes(t))).slice(0, 25);
-  box.innerHTML = l.map(i => `<div data-sk="pick" data-v="${skEsc(i.id)}">${skEsc(i.name)}${i.col ? ' · ' + skEsc(i.col) : ''}<small>${skEsc(i.code || '')} · ${skNum(skBal(i))} ${skUnit(i.g)}</small></div>`).join('') || '<div style="color:var(--muted);">No match</div>';
+  box.innerHTML = l.map(i => `<div data-sk="pick" data-v="${skEsc(i.id)}">${skEsc(i.name)}${i.col ? ' · ' + skEsc(i.col) : ''}<small>${skEsc(i.code || '')} · ${skNum(skBal(i))} ${skUnit(i.g)}</small></div>`).join('') || '';
+  if(skCanAdd()) box.innerHTML += `<div data-sk="newitem" data-h="${skEsc(String(q || '').trim())}" style="color:var(--amber);font-weight:700;">+ Add new item${t ? ' \u201c' + skEsc(String(q).trim()) + '\u201d' : ''}</div>`;
   box.style.display = 'block';
 }
 async function skSave(){
@@ -28038,7 +28056,7 @@ async function skUndo(id, mk){
 /* ---- designs ---- */
 function skDesHtml(){
   const admin = skIsAdmin();
-  let h = `<div class="skBar"><input id="skQ" class="skSearch" type="text" placeholder="Search designs…" value="${skEsc(SK.q)}">${admin ? '<span class="grow"></span><button class="pcBtnSoft sm" data-sk="newdes">Add design</button>' : ''}</div>`;
+  let h = `<div class="skBar"><input id="skQ" class="skSearch" type="text" placeholder="Search designs…" value="${skEsc(SK.q)}">${skCanAdd() ? '<span class="grow"></span><button class="pcBtnMain sm" data-sk="newdes">+ New design</button>' : ''}</div>`;
   const q = SK.q.trim().toLowerCase();
   const l = SK.designs.filter(d => !q || (d.name + ' ' + (d.ar || '') + ' ' + (d.code || '')).toLowerCase().includes(q));
   if(!l.length) return h + '<div class="skEmpty">No designs yet.' + (admin ? '<br>Add a design, then add its colours and photos.' : '') + '</div>';
@@ -28055,7 +28073,7 @@ async function skShowDesign(id){
   let imgs = SK.imgs[id];
   if(!imgs){ try{ const r = await window.__db.invGet('img_' + id); imgs = SK.imgs[id] = (r && r.p) || {}; }catch(e){ imgs = {}; } }
   const admin = skIsAdmin();
-  skModal(`<span class="x" data-sk="close">×</span><h3>${skEsc(d.name)}</h3><div style="color:var(--muted);font-size:13px;">${d.ar ? skEsc(d.ar) + ' · ' : ''}${d.code ? 'Code ' + skEsc(d.code) + ' · ' : ''}${d.picks ? d.picks + ' picks/cm' : ''}</div>
+  skModal(`<span class="x" data-sk="close">×</span><h3>${skEsc(d.name)}</h3>${skStampLine(d)}<div style="color:var(--muted);font-size:13px;">${d.ar ? skEsc(d.ar) + ' · ' : ''}${d.code ? 'Code ' + skEsc(d.code) + ' · ' : ''}${d.picks ? d.picks + ' picks/cm' : ''}</div>
     <div class="skPhotos">${its.map(i => `<figure>${imgs[i.id] ? `<img src="${imgs[i.id]}" alt="">` : '<img alt="" style="visibility:hidden;">'}<figcaption><b>${skEsc(i.col || i.name)}</b><br>${skNum(skBal(i))} ${skUnit(i.g)}${admin ? `<br><a href="#" data-sk="photo" data-v="${skEsc(i.id)}" data-d="${skEsc(id)}">${imgs[i.id] ? 'Change photo' : 'Add photo'}</a>` : ''}</figcaption></figure>`).join('') || '<div class="skEmpty" style="grid-column:1/-1;">No colours yet.</div>'}</div>
     ${admin ? `<div class="skBar" style="margin-top:14px;"><button class="pcBtnSoft sm" data-sk="newitem" data-d="${skEsc(id)}">Add colour</button><button class="pcBtnSoft sm" data-sk="photo" data-v="" data-d="${skEsc(id)}">Cover photo</button><button class="pcBtnSoft sm" data-sk="editdes" data-v="${skEsc(id)}">Edit design</button></div>` : ''}`);
 }
@@ -28070,7 +28088,7 @@ function skPickPhoto(itemId, desId){
       const full = await compressImageSafe(f, 120000);
       const imgs = SK.imgs[desId] || (SK.imgs[desId] = {});
       const key = itemId || '_cover'; imgs[key] = full;
-      await window.__db.invSet('img_' + desId, { p: imgs });
+      await window.__db.invSet('img_' + desId, { p: imgs, ub: state.user.name || '', ut: Date.now() });
       const d = skDesign(desId);
       if(d && (!d.cover || !itemId)){ d.cover = await skThumb(full); await window.__db.invSet('designs', { designs: SK.designs }); }
       toast('Photo saved'); skRender(); skShowDesign(desId);
@@ -28088,11 +28106,11 @@ function skPlanHtml(){
   list.forEach(m => { const p = (SK.plan.m || {})[m.id]; if(p && p.des && p.st !== 'stop'){ on[p.des] = (on[p.des] || 0) + 1; } else if(!p || p.st !== 'stop') none.push(m.id); });
   let h = `<div class="skBar"><div class="skGrp">${['ALL'].concat(depts).map(d => `<button class="skChip ${SK.dept === d ? 'on' : ''}" data-sk="dept" data-v="${skEsc(d)}">${d === 'ALL' ? 'All machines' : skEsc(d)}</button>`).join('')}</div></div>`;
   const sum = Object.keys(on).map(id => [skDesign(id), on[id]]).filter(x => x[0]).sort((a, b) => b[1] - a[1]);
-  h += `<div class="skBar" style="margin-top:0;">${sum.map(r => `<span class="skCol" style="font-size:12px;padding:5px 12px;">${skEsc(r[0].name)} · ${r[1]}</span>`).join('')}<span style="font-size:12px;color:var(--muted);">${none.length} machines without a design</span></div>`;
+  h += `<div class="skBar" style="margin-top:0;">${sum.map(r => `<span class="skCol" style="font-size:12px;padding:5px 12px;">${skEsc(r[0].name)} · ${r[1]}</span>`).join('')}<span style="font-size:12px;color:var(--muted);">${none.length} machines without a design</span><span class="grow"></span><button class="pcBtnSoft sm" data-sk="dl" data-v="plan">Download</button></div>`;
   h += '<div class="skMc">' + list.map(m => {
     const p = (SK.plan.m || {})[m.id] || {}, d = p.des ? skDesign(p.des) : null, it = p.it ? skItem(p.it) : null;
     const cl = [p.c1, p.c2, p.c3].filter(Boolean).join(' / ');
-    return `<div class="skM ${p.st === 'stop' ? 'stop' : ''} ${d ? '' : 'empty'}" data-sk="mc" data-v="${skEsc(m.id)}"><b>${skEsc(m.name || m.id)}</b>${p.st === 'stop' ? ' <span class="skTag dim">Stopped</span>' : ''}<small>${d ? skEsc(d.name) + (p.col ? ' · ' + skEsc(p.col) : '') : 'No design'}</small><small>${skEsc(cl)}</small></div>`; }).join('') + '</div>';
+    return `<div class="skM ${p.st === 'stop' ? 'stop' : ''} ${d ? '' : 'empty'}" data-sk="mc" data-v="${skEsc(m.id)}"><b>${skEsc(m.name || m.id)}</b>${p.st === 'stop' ? ' <span class="skTag dim">Stopped</span>' : ''}<small>${d ? skEsc(d.name) + (p.col ? ' · ' + skEsc(p.col) : '') : 'No design'}</small><small>${skEsc(cl)}</small>${p.respN ? '<small>Resp: ' + skEsc(p.respN) + '</small>' : ''}</div>`; }).join('') + '</div>';
   const log = (SK.plan.log || []).slice(-8).reverse();
   if(log.length) h += '<h3 style="margin:18px 0 8px;font-size:15px;">Recent changes</h3><div class="skList">' + log.map(l => `<div class="skRow"><div class="nm"><b>${skEsc(l.mc)}: ${skEsc(l.to || 'cleared')}</b><small>${skEsc(l.d)} · ${skEsc(l.by || '')}${l.from ? ' · was ' + skEsc(l.from) : ''}</small></div></div>`).join('') + '</div>';
   return h;
@@ -28104,9 +28122,10 @@ function skMachineForm(id){
   skModal(`<span class="x" data-sk="close">×</span><h3>${skEsc(m.name || m.id)}</h3><div style="color:var(--muted);font-size:13px;margin-bottom:8px;">${skEsc(m.department || '')}${m.brand ? ' · ' + skEsc(m.brand) + ' ' + skEsc(m.model || '') : ''}</div>
     <div class="skForm" style="border:0;box-shadow:none;padding:0;max-width:none;"><label>Design</label><select id="skpDes" ${admin ? '' : 'disabled'}>${dOpts}</select>
     <label>Main colour</label><select id="skpCol" ${admin ? '' : 'disabled'}></select>
-    <div class="skGrid2"><div><label>Colour 1</label><input id="skpC1" type="text" value="${skEsc(p.c1 || '')}" ${admin ? '' : 'disabled'}></div><div><label>Colour 2</label><input id="skpC2" type="text" value="${skEsc(p.c2 || '')}" ${admin ? '' : 'disabled'}></div></div>
-    <div class="skGrid2"><div><label>Colour 3</label><input id="skpC3" type="text" value="${skEsc(p.c3 || '')}" ${admin ? '' : 'disabled'}></div><div><label>Status</label><select id="skpSt" ${admin ? '' : 'disabled'}><option value="run" ${p.st !== 'stop' ? 'selected' : ''}>Running</option><option value="stop" ${p.st === 'stop' ? 'selected' : ''}>Stopped / maintenance</option></select></div></div>
-    <label>Note</label><input id="skpN" type="text" value="${skEsc(p.n || '')}" ${admin ? '' : 'disabled'}>
+    <div class="skGrid2"><div><label>Weft / colour 1</label><input id="skpC1" list="skYarnList" type="text" value="${skEsc(p.c1 || '')}" ${admin ? '' : 'disabled'}></div><div><label>Weft / colour 2</label><input id="skpC2" list="skYarnList" type="text" value="${skEsc(p.c2 || '')}" ${admin ? '' : 'disabled'}></div></div>
+    <div class="skGrid2"><div><label>Weft / colour 3</label><input id="skpC3" list="skYarnList" type="text" value="${skEsc(p.c3 || '')}" ${admin ? '' : 'disabled'}></div><div><label>Status</label><select id="skpSt" ${admin ? '' : 'disabled'}><option value="run" ${p.st !== 'stop' ? 'selected' : ''}>Running</option><option value="stop" ${p.st === 'stop' ? 'selected' : ''}>Stopped / maintenance</option></select></div></div>
+    <label>Responsible person</label><select id="skpR" ${admin ? '' : 'disabled'}><option value="">\u2014 none \u2014</option>${skUsers().map(u => `<option value="${skEsc(u.loginId)}" ${String(p.resp) === String(u.loginId) ? 'selected' : ''}>${skEsc(u.name)} (${skEsc(u.role)})</option>`).join('')}</select>
+    <label>Note</label><input id="skpN" type="text" value="${skEsc(p.n || '')}" ${admin ? '' : 'disabled'}>${skDataLists()}${skStampLine({ ub: p.ub, ut: p.ut })}
     ${p.since ? `<div style="font-size:12px;color:var(--muted);margin-top:8px;">On this design since ${skEsc(p.since)}</div>` : ''}
     ${admin ? `<div style="margin-top:14px;display:flex;gap:8px;"><button class="pcBtnMain" data-sk="saveplan" data-v="${skEsc(id)}" style="flex:1;">Save</button></div>` : ''}</div>`);
   const fill = () => { const d = $('skpDes').value, sel = $('skpCol'); const its = SK.items.filter(i => i.des === d); sel.innerHTML = '<option value="">—</option>' + its.map(i => `<option value="${skEsc(i.id)}" ${p.it === i.id ? 'selected' : ''}>${skEsc(i.col || i.name)}</option>`).join(''); };
@@ -28114,7 +28133,7 @@ function skMachineForm(id){
 }
 function skSavePlan(id){
   const des = $('skpDes').value, itId = $('skpCol').value, it = itId ? skItem(itId) : null, old = (SK.plan.m || {})[id] || {};
-  const nu = { des, it: itId, col: it ? (it.col || '') : '', c1: $('skpC1').value.trim(), c2: $('skpC2').value.trim(), c3: $('skpC3').value.trim(), st: $('skpSt').value, n: $('skpN').value.trim(), since: old.since || dateToStr(new Date()) };
+  const nu = { des, it: itId, col: it ? (it.col || '') : '', c1: $('skpC1').value.trim(), c2: $('skpC2').value.trim(), c3: $('skpC3').value.trim(), st: $('skpSt').value, n: $('skpN').value.trim(), since: old.since || dateToStr(new Date()), resp: $('skpR').value, respN: ($('skpR').selectedOptions[0] || {}).textContent ? $('skpR').selectedOptions[0].textContent.replace(/ \((supervisor|operator|admin)\)$/, '') : '' }; if(!nu.resp) nu.respN = ''; Object.assign(nu, skStamp());
   const label = (p) => p && p.des ? ((skDesign(p.des) || {}).name || '') + (p.col ? ' ' + p.col : '') : '';
   if((old.des || '') !== des || (old.it || '') !== itId) nu.since = dateToStr(new Date());
   SK.plan.m = SK.plan.m || {}; SK.plan.m[id] = nu;
@@ -28122,14 +28141,14 @@ function skSavePlan(id){
   window.__db.invSet('plan', SK.plan).then(() => { toast('Saved'); skClose(); skRender(); }).catch(err => { console.error(err); toast('Could not save'); });
 }
 /* ---- items (admin) ---- */
-function skItemForm(id, desId){
-  const i = id ? skItem(id) : { g: SK.grp, des: desId || '', on: true }; if(!i) return;
+function skItemForm(id, desId, hint){
+  const i = id ? skItem(id) : { g: SK.grp, des: desId || '', on: true, name: hint || '' }; if(!i) return;
   const gOpts = SK_GROUPS.map(g => `<option value="${g[0]}" ${i.g === g[0] ? 'selected' : ''}>${g[1]} (${g[2]})</option>`).join('');
-  skModal(`<span class="x" data-sk="close">×</span><h3>${id ? 'Edit item' : 'Add item'}</h3><div class="skForm" style="border:0;box-shadow:none;padding:0;max-width:none;">
+  skModal(`<span class="x" data-sk="close">×</span><h3>${id ? 'Edit item' : 'Add item'}</h3>${skStampLine(i)}${skDataLists()}<div class="skForm" style="border:0;box-shadow:none;padding:0;max-width:none;">
     <label>Type</label><select id="sfG">${gOpts}</select>
     <div class="skGrid2"><div><label>Name</label><input id="sfN" type="text" value="${skEsc(i.name || '')}"></div><div><label>Arabic name</label><input id="sfA" type="text" value="${skEsc(i.ar || '')}"></div></div>
-    <div class="skGrid2"><div><label>Code (ERP / FG)</label><input id="sfC" type="text" value="${skEsc(i.code || '')}"></div><div><label>Colour</label><input id="sfCo" type="text" value="${skEsc(i.col || '')}"></div></div>
-    <div class="skGrid2"><div><label>Design</label><select id="sfD"><option value="">— none —</option>${SK.designs.map(d => `<option value="${skEsc(d.id)}" ${i.des === d.id ? 'selected' : ''}>${skEsc(d.name)}</option>`).join('')}</select></div><div><label>Safety stock</label><input id="sfS" type="number" inputmode="decimal" value="${i.safe || ''}"></div></div>
+    <div class="skGrid2"><div><label>Code (ERP / FG)</label><input id="sfC" type="text" value="${skEsc(i.code || '')}"></div><div><label>Colour (pick or type new)</label><input id="sfCo" list="skColList" type="text" value="${skEsc(i.col || '')}"></div></div>
+    <div class="skGrid2"><div><label>Design (pick or type a new one)</label><input id="sfDn" list="skDesList" type="text" value="${skEsc((skDesign(i.des) || {}).name || '')}"><datalist id="skDesList">${SK.designs.map(d => `<option value="${skEsc(d.name)}">`).join('')}</datalist></div><div><label>Benchmark (blank = group rule)</label><input id="sfS" type="number" inputmode="decimal" value="${i.safe || ''}"></div></div>
     <div class="skGrid2"><div><label>Pieces per bundle / box</label><input id="sfP" type="number" inputmode="decimal" value="${i.per || ''}"></div><div><label>Truck capacity (bundles)</label><input id="sfT" type="number" inputmode="decimal" value="${i.truck || ''}"></div></div>
     ${id ? '' : '<label>Opening stock now</label><input id="sfO" type="number" inputmode="decimal" placeholder="0">'}
     ${id ? `<label>Count / correct stock to</label><input id="sfB" type="number" inputmode="decimal" placeholder="${skNum(skBal(i))}">` : ''}
@@ -28138,10 +28157,11 @@ function skItemForm(id, desId){
 }
 async function skSaveItem(id){
   const name = $('sfN').value.trim(); if(!name){ toast('Type a name'); return; }
-  const o = { g: $('sfG').value, name, ar: $('sfA').value.trim(), code: $('sfC').value.trim(), col: $('sfCo').value.trim(), des: $('sfD').value, safe: Number($('sfS').value) || 0, per: Number($('sfP').value) || 0, truck: Number($('sfT').value) || 0, on: $('sfOn').checked };
+  const o = { g: $('sfG').value, name, ar: $('sfA').value.trim(), code: $('sfC').value.trim(), col: $('sfCo').value.trim(), des: skDesignId($('sfDn').value), safe: Number($('sfS').value) || 0, per: Number($('sfP').value) || 0, truck: Number($('sfT').value) || 0, on: $('sfOn').checked };
   let it = id ? skItem(id) : null;
-  if(it) Object.assign(it, o); else { it = Object.assign({ id: 'i' + Date.now().toString(36) + Math.random().toString(36).slice(2, 4) }, o); SK.items.push(it); }
+  if(it) Object.assign(it, o, skStamp()); else { it = Object.assign({ id: 'i' + Date.now().toString(36) + Math.random().toString(36).slice(2, 4) }, o, skStamp(true)); SK.items.push(it); if(SK.tab === 'move') SK.form.item = it.id; }
   try{
+    if(SK._nd){ await window.__db.invSet('designs', { designs: SK.designs }); SK._nd = false; }
     await window.__db.invSet('items', { items: SK.items });
     const open = id ? Number($('sfB') && $('sfB').value !== '' ? $('sfB').value : NaN) : Number($('sfO') && $('sfO').value || 0);
     if(!isNaN(open) && (id ? true : open > 0)){
@@ -28153,7 +28173,7 @@ async function skSaveItem(id){
 }
 function skDesignForm(id){
   const d = id ? skDesign(id) : {};
-  skModal(`<span class="x" data-sk="close">×</span><h3>${id ? 'Edit design' : 'Add design'}</h3><div class="skForm" style="border:0;box-shadow:none;padding:0;max-width:none;">
+  skModal(`<span class="x" data-sk="close">×</span><h3>${id ? 'Edit design' : 'Add design'}</h3>${skStampLine(d)}<div class="skForm" style="border:0;box-shadow:none;padding:0;max-width:none;">
     <div class="skGrid2"><div><label>Name</label><input id="sdN" type="text" value="${skEsc(d.name || '')}"></div><div><label>Arabic name</label><input id="sdA" type="text" value="${skEsc(d.ar || '')}"></div></div>
     <div class="skGrid2"><div><label>Design code</label><input id="sdC" type="text" value="${skEsc(d.code || '')}"></div><div><label>Picks per cm</label><input id="sdP" type="number" inputmode="decimal" value="${d.picks || ''}"></div></div>
     <div style="margin-top:14px;display:flex;gap:8px;"><button class="pcBtnMain" data-sk="savedes" data-v="${skEsc(id || '')}" style="flex:1;">Save</button></div></div>`);
@@ -28161,7 +28181,7 @@ function skDesignForm(id){
 async function skSaveDesign(id){
   const name = $('sdN').value.trim(); if(!name){ toast('Type a name'); return; }
   const o = { name, ar: $('sdA').value.trim(), code: $('sdC').value.trim(), picks: Number($('sdP').value) || 0 };
-  if(id){ Object.assign(skDesign(id), o); } else SK.designs.push(Object.assign({ id: 'd' + Date.now().toString(36) }, o));
+  if(id){ Object.assign(skDesign(id), o, skStamp()); } else SK.designs.push(Object.assign({ id: 'd' + Date.now().toString(36) }, o, skStamp(true)));
   try{ await window.__db.invSet('designs', { designs: SK.designs }); toast('Saved'); skClose(); skRender(); }catch(err){ console.error(err); toast('Could not save'); }
 }
 /* ---- Excel template + upload (admin) ---- */
@@ -28186,25 +28206,86 @@ function skUpload(){
       rows.forEach(r => {
         const g = T[String(r['Type']).trim().toLowerCase()], name = String(r['Name']).trim(); if(!g || !name) return;
         const code = String(r['Code']).trim(), col = String(r['Colour']).trim(), dn = String(r['Design']).trim();
-        let d = null; if(dn){ d = SK.designs.find(x => x.name.toLowerCase() === dn.toLowerCase()); if(!d){ d = { id: 'd' + Date.now().toString(36) + (des++), name: dn, ar: '', code: '', picks: 0 }; SK.designs.push(d); } }
+        let d = null; if(dn){ d = SK.designs.find(x => x.name.toLowerCase() === dn.toLowerCase()); if(!d){ d = Object.assign({ id: 'd' + Date.now().toString(36) + (des++), name: dn, ar: '', code: '', picks: 0 }, skStamp(true)); SK.designs.push(d); } }
         const o = { g, name, ar: String(r['Arabic name']).trim(), code, col, des: d ? d.id : '', per: Number(r['Pcs per bundle']) || 0, safe: Number(r['Safety stock']) || 0, truck: Number(r['Truck capacity']) || 0, on: true };
         let it = SK.items.find(x => x.g === g && (code ? x.code === code && (x.col || '') === col : x.name.toLowerCase() === name.toLowerCase() && (x.col || '') === col));
-        if(it){ Object.assign(it, o); updated++; }
-        else { it = Object.assign({ id: 'i' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5) }, o); SK.items.push(it); added++; const op = Number(r['Opening stock']) || 0; if(op > 0){ bal[it.id] = op; opens.push(it.id); } }
+        if(it){ Object.assign(it, o, skStamp()); updated++; }
+        else { it = Object.assign({ id: 'i' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5) }, o, skStamp(true)); SK.items.push(it); added++; const op = Number(r['Opening stock']) || 0; if(op > 0){ bal[it.id] = op; opens.push(it.id); } }
       });
       if(!added && !updated){ toast('No rows found — use the template'); return; }
       await window.__db.invSet('items', { items: SK.items }); await window.__db.invSet('designs', { designs: SK.designs });
-      if(opens.length){ await window.__db.invSet('stock', { bal, upd: Date.now() }); SK.bal = bal; }
+      if(opens.length){
+        const today = dateToStr(new Date()), mk = today.slice(0, 7), ex = await window.__db.invGet('mv_' + mk), ents = (ex && ex.entries) || [];
+        opens.forEach((iid, n) => ents.push({ id: 'e' + Date.now().toString(36) + n, t: Date.now(), d: today, i: iid, k: 'in', q: bal[iid], by: state.user.name || '', u: state.user.loginId, n: 'Opening stock (Excel upload)' }));
+        await window.__db.invSet('mv_' + mk, { entries: ents }); await window.__db.invSet('stock', { bal, upd: Date.now() }); SK.bal = bal; SK.mvLoaded = false;
+      }
       toast(added + ' added, ' + updated + ' updated'); skRender();
     }catch(err){ console.error(err); toast('Could not read the Excel file'); }
   };
   inp.click();
 }
+/* ---- benchmarks ---- */
+function skBenchForm(id){
+  const it = id ? skItem(id) : null;
+  if(it){
+    skModal(`<span class="x" data-sk="close">\u00d7</span><h3>Benchmark</h3><div style="color:var(--muted);font-size:13px;">${skEsc(it.name)}${it.col ? ' \u00b7 ' + skEsc(it.col) : ''}</div><div class="skForm" style="border:0;box-shadow:none;padding:0;max-width:none;">
+      <label>How much we want to always have (${skUnit(it.g)})</label><input id="sbV" class="skQty" type="number" inputmode="decimal" value="${it.safe || ''}" placeholder="${skNum((SK.cfg.def || {})[it.g] || 0)}">
+      <div class="skInfo">Leave empty to use the rule for the whole group (${skNum((SK.cfg.def || {})[it.g] || 0)} ${skUnit(it.g)}).</div>
+      <div style="margin-top:14px;"><button class="pcBtnMain" data-sk="savebench" data-v="${skEsc(id)}" style="width:100%;">Save</button></div></div>`);
+  } else {
+    skModal(`<span class="x" data-sk="close">\u00d7</span><h3>Benchmark rules</h3>${skStampLine({ ub: SK.cfg.ub, ut: SK.cfg.ut })}<div style="color:var(--muted);font-size:13px;">Default level for every item in a group. A single item can still have its own number.</div><div class="skForm" style="border:0;box-shadow:none;padding:0;max-width:none;">
+      ${SK_GROUPS.map(g => `<label>${g[1]} (${g[2]})</label><input class="sbG" data-g="${g[0]}" type="number" inputmode="decimal" value="${(SK.cfg.def || {})[g[0]] || ''}">`).join('')}
+      <div style="margin-top:14px;"><button class="pcBtnMain" data-sk="savebench" data-v="" style="width:100%;">Save</button></div></div>`);
+  }
+}
+async function skSaveBench(id){
+  try{
+    if(id){ const it = skItem(id); it.safe = Number($('sbV').value) || 0; Object.assign(it, skStamp()); await window.__db.invSet('items', { items: SK.items }); }
+    else { const def = {}; document.querySelectorAll('.sbG').forEach(e => { if(Number(e.value) > 0) def[e.dataset.g] = Number(e.value); }); SK.cfg = Object.assign({ def }, { ub: state.user.name || '', ut: Date.now() }); await window.__db.invSet('cfg', SK.cfg); }
+    toast('Saved'); skClose(); skRender();
+  }catch(err){ console.error(err); toast('Could not save'); }
+}
+/* ---- plan an item on a machine (2 clicks) ---- */
+function skAssign(itemId){
+  const it = skItem(itemId); if(!it) return; const pm = SK.plan.m || {};
+  const ms = (state.machines || []).slice().map(m => { const p = pm[m.id] || {}, stop = m.status === 'stopped' || p.st === 'stop'; return { m, p, stop, rank: stop ? 3 : !p.des ? 0 : (p.it === itemId ? 2 : 1) }; }).sort((a, b) => a.rank - b.rank || Number(a.m.id) - Number(b.m.id));
+  const run = ms.filter(x => x.p.it === itemId && !x.stop).length;
+  skModal(`<span class="x" data-sk="close">\u00d7</span><h3>Where should we make it?</h3><div style="color:var(--muted);font-size:13px;margin-bottom:8px;"><b>${skEsc(it.name)}${it.col ? ' \u00b7 ' + skEsc(it.col) : ''}</b> \u00b7 short by ${skNum(Math.max(0, skSafe(it) - skBal(it)))} ${skUnit(it.g)} \u00b7 now on ${run} machine${run === 1 ? '' : 's'}. Free machines are first. Tap a machine to put it there.</div>
+    <div class="skList" style="max-height:60vh;overflow:auto;">${ms.map(x => { const d = x.p.des ? skDesign(x.p.des) : null; return `<div class="skRow" style="${x.stop ? 'opacity:.5;' : 'cursor:pointer;'}" ${x.stop ? '' : `data-sk="assignto" data-v="${skEsc(x.m.id)}" data-i="${skEsc(itemId)}"`}><div class="nm"><b>${skEsc(x.m.name || x.m.id)} <span class="skTag ${x.stop ? 'dim' : x.rank === 0 ? 'ok' : x.rank === 2 ? 'need' : 'dim'}">${x.stop ? 'Stopped' : x.rank === 0 ? 'Free' : x.rank === 2 ? 'Already on it' : 'Busy'}</span></b><small>${d ? 'Now: ' + skEsc(d.name) + (x.p.col ? ' \u00b7 ' + skEsc(x.p.col) : '') : 'No design'}${x.p.respN ? ' \u00b7 Resp: ' + skEsc(x.p.respN) : ''}</small></div></div>`; }).join('')}</div>`);
+}
+async function skAssignTo(mid, itemId){
+  const it = skItem(itemId), old = (SK.plan.m || {})[mid] || {}; if(!it) return;
+  const label = (p) => p && p.des ? ((skDesign(p.des) || {}).name || '') + (p.col ? ' ' + p.col : '') : '';
+  const nu = Object.assign({}, old, { des: it.des || '', it: it.id, col: it.col || '', st: 'run', since: dateToStr(new Date()) }, skStamp());
+  SK.plan.m = SK.plan.m || {}; SK.plan.m[mid] = nu;
+  const nm = (it.des ? (skDesign(it.des) || {}).name : it.name) + (it.col ? ' ' + it.col : '');
+  SK.plan.log = (SK.plan.log || []).concat([{ mc: ((state.machines || []).find(x => String(x.id) === String(mid)) || {}).name || mid, from: label(old), to: nm, d: dateToStr(new Date()), t: Date.now(), by: state.user.name || '' }]).slice(-200);
+  try{ await window.__db.invSet('plan', SK.plan); toast('Planned on ' + (((state.machines || []).find(x => String(x.id) === String(mid)) || {}).name || mid)); skClose(); skRender(); }
+  catch(err){ console.error(err); toast('Could not save'); }
+}
+/* ---- downloads ---- */
+function skDlXlsx(name, sheet, rows){
+  if(!window.XLSX){ toast('The Excel tool did not load'); return; }
+  const ws = XLSX.utils.aoa_to_sheet(rows); ws['!cols'] = rows[0].map(() => ({ wch: 18 }));
+  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, sheet); XLSX.writeFile(wb, name + '-' + dateToStr(new Date()) + '.xlsx'); toast('Excel file downloaded');
+}
+function skDownload(kind){
+  const gn = (g) => (SK_GROUPS.find(x => x[0] === g) || [0, g])[1];
+  if(kind === 'stock'){
+    const l = SK.cur || SK.items;
+    skDlXlsx('stock', 'Stock', [['Type', 'Code', 'Name', 'Colour', 'Design', 'Unit', 'In stock', 'Benchmark', 'Short by', 'Status', 'Running on machines', 'Last changed by', 'Last changed']].concat(l.map(i => { const b = skBal(i), sf = skSafe(i), L = sf ? (b >= sf ? 'Enough' : b <= 0 ? 'Out' : 'Needs production') : ''; return [gn(i.g), i.code || '', i.name, i.col || '', (skDesign(i.des) || {}).name || '', skUnit(i.g), b, sf, sf > b ? sf - b : 0, L, skRunning(i).length, i.ub || '', skWhen(i.ut)]; })));
+  } else if(kind === 'mv'){
+    skDlXlsx('stock-in-out', 'In-Out', [['Date', 'Time', 'In / Out', 'Item', 'Colour', 'Quantity', 'Unit', 'Note', 'Entered by']].concat(SK.mv.slice().sort((a, b) => (a.t || 0) - (b.t || 0)).map(e => { const it = skItem(e.i) || {}; return [e.d, e.t ? new Date(e.t).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '', e.k === 'out' ? 'OUT' : 'IN', it.name || e.i, it.col || '', e.q, it.g ? skUnit(it.g) : '', e.n || '', e.by || '']; })));
+  } else {
+    const pm = SK.plan.m || {};
+    skDlXlsx('machine-plan', 'Machines', [['Machine', 'Department', 'Design', 'Colour', 'Weft / colour 1', 'Weft / colour 2', 'Weft / colour 3', 'Status', 'Responsible', 'On this design since', 'Last changed by', 'Last changed']].concat((state.machines || []).filter(m => SK.dept === 'ALL' || m.department === SK.dept).map(m => { const p = pm[m.id] || {}; return [m.name || m.id, m.department || '', p.des ? (skDesign(p.des) || {}).name || '' : '', p.col || '', p.c1 || '', p.c2 || '', p.c3 || '', m.status === 'stopped' || p.st === 'stop' ? 'Stopped' : (p.des ? 'Running' : 'Free'), p.respN || '', p.since || '', p.ub || '', skWhen(p.ut)]; })));
+  }
+}
 /* ---- clicks ---- */
 document.addEventListener('click', (ev) => {
   const el = ev.target.closest && ev.target.closest('[data-sk]'); if(!el) return;
   const a = el.dataset.sk, v = el.dataset.v;
-  if(a === 'photo') ev.preventDefault();
+  if(a === 'photo' || a === 'bench') ev.preventDefault();
   if(a === 'tab'){ SK.tab = v; SK.q = ''; skRender(); }
   else if(a === 'grp'){ SK.grp = v; SK.tab = 'stock'; SK.q = ''; skRender(); }
   else if(a === 'need'){ SK.need = !SK.need; skRender(); }
@@ -28218,17 +28299,23 @@ document.addEventListener('click', (ev) => {
   else if(a === 'close') skClose();
   else if(a === 'mc') skMachineForm(v);
   else if(a === 'saveplan') skSavePlan(v);
-  else if(a === 'newitem'){ if(el.dataset.d) skClose(); skItemForm('', el.dataset.d || ''); }
+  else if(a === 'newitem'){ if(el.dataset.d) skClose(); skItemForm('', el.dataset.d || '', el.dataset.h || ''); }
   else if(a === 'edititem') skItemForm(v);
   else if(a === 'saveitem') skSaveItem(v);
   else if(a === 'newdes') skDesignForm('');
   else if(a === 'editdes') skDesignForm(v);
   else if(a === 'savedes') skSaveDesign(v);
   else if(a === 'photo') skPickPhoto(v, el.dataset.d);
+  else if(a === 'dl') skDownload(v);
+  else if(a === 'bench') skBenchForm(v);
+  else if(a === 'savebench') skSaveBench(v);
+  else if(a === 'assign') skAssign(v);
+  else if(a === 'assignto') skAssignTo(v, el.dataset.i);
   else if(a === 'tpl') skTemplate();
   else if(a === 'upl') skUpload();
 });
 function skSyncForm(){ const q = $('skQty'), d = $('skDate'), n = $('skNote'); if(q) SK.form.q = q.value; if(d) SK.form.d = d.value; if(n) SK.form.n = n.value; }
+document.addEventListener('change', (ev) => { const t = ev.target; if(!t || !t.id) return; if(t.id === 'skFs'){ SK.fs = t.value; skRender(); } else if(t.id === 'skFd'){ SK.fd = t.value; skRender(); } });
 document.addEventListener('input', (ev) => {
   const t = ev.target; if(!t || !t.id) return;
   if(t.id === 'skQ'){ SK.q = t.value; const pos = t.selectionStart; skRender(); const q = $('skQ'); if(q){ q.focus(); try{ q.setSelectionRange(pos, pos); }catch(e){} } }
