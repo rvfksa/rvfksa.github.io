@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261114-134609">
+<meta name="rvf-build" content="20261114-140717">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -27633,6 +27633,17 @@ select:focus, input[type=text]:focus, input[type=number]:focus, input[type=passw
 .tab-sidebar-btn.active{ background:var(--amber-soft); color:var(--amber); border-color:var(--amber-dim); font-weight:600; }
 .auth-tabs{ background:#fff; }
 .auth-tab.active{ background:var(--amber-soft); color:var(--amber); box-shadow:none; }
+
+/* People list: one line per person across the full width (name and role, then ID / department / shift / machines / approver / team / profile, all side by side) */
+.user-row{ padding:10px 14px; margin-bottom:8px; }
+.user-row .top > div{ flex:1; min-width:0; display:flex; flex-wrap:wrap; align-items:center; gap:2px 22px; }
+.user-row .nm{ flex:0 0 280px; max-width:100%; font-size:14px; }
+.user-row .meta{ margin:0; font-size:12px; white-space:nowrap; }
+.user-row .meta:last-child{ margin-left:auto; }
+@media (max-width:640px){ .user-row .nm{ flex:1 1 100%; } .user-row .meta{ white-space:normal; } .user-row .meta:last-child{ margin-left:0; } }
+
+/* a Refresh button next to a search box is a compact button, not half the row */
+.report-toolbar > .btn{ flex:0 0 auto !important; width:auto !important; }
 </style>
 <div id="rvfBusy"><i></i><span id="rvfBusyTxt">Loading data…</span></div>
 <script>
