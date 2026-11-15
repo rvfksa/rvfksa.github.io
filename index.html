@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261114-173416">
+<meta name="rvf-build" content="20261115-073011">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -23301,7 +23301,7 @@ function a2OpRates(r){
   }
   a2OpNet(r);
 }
-function a2OpNet(r){ if(typeof a2DaysRecalc === 'function') a2DaysRecalc(r); r.extra = r.ax || 0; a2JoinSet(r, acNum(r.bs) + acNum(r.otm)); r.net = Math.round(acNum(r.bs) + acNum(r.otm) + (r.np != null && r.np !== '' ? r.np : (r.prem || 0)) + r.extra - acNum(r.ded) - acNum(r.jded)); }
+function a2OpNet(r){ if(typeof a2DaysRecalc === 'function') a2DaysRecalc(r); r.extra = r.ax || 0; a2JoinSet(r, acNum(r.bs) + acNum(r.otm)); r.net = Math.round(acNum(r.bs) + acNum(r.otm) + (r.np != null && r.np !== '' ? r.np : (r.prem || 0)) + r.extra - acNum(r.ded) - acNum(r.jded) + acNum(r.due)); }
 function a2NewSp(u){
   const sal = (u.profile && u.profile.salary) || {};
   const r = { id: u.loginId, name: u.name, dept: u.department || '', basic: sal.basicSalary || '', fixed: sal.salaryType === 'fixed', ot: sal.overtime || '', extra: sal.extraMoney || '', ab: '', pr: '', c: {}, fl: {}, rm: '' };
@@ -23326,11 +23326,11 @@ function a2SpCalc(r){
   });
   const g0 = adds;
   pct.forEach(c => { const b = c.of === 'gross' ? g0 : (c.of === 'basicHousing' ? basic + v.housing : basic); const x = acR2(b * c.pct / 100); v.c[c.id] = x; if(c.kind === 'deduct') deds += x; else adds += x; });
-  v.gross = acR2(adds); v.totded = acR2(deds); v.net = acR2(adds - deds); r.v = v;
+  v.gross = acR2(adds); v.totded = acR2(deds); v.net = acR2(adds - deds + acNum(r.due)); r.v = v;
 }
 function a2NewNs(u){ const sal = (u.profile && u.profile.salary) || {}; const r = { id: u.loginId, name: u.name, dept: u.department || '', pos: a2PosOf(u), fx: sal.basicSalary || '', ded: '', rm: '', net: 0 }; a2NsCalc(r); return r; }
 function a2PosNs(r){ if(r.pos) return r.pos; const u = (state.users || []).find(x => x.loginId === r.id); return u ? a2PosOf(u) : ''; }
-function a2NsCalc(r){ a2JoinSet(r, r.fx); r.net = Math.round(acNum(r.fx) - acNum(r.ded) - acNum(r.jded)); }
+function a2NsCalc(r){ a2JoinSet(r, r.fx); r.net = Math.round(acNum(r.fx) - acNum(r.ded) - acNum(r.jded) + acNum(r.due)); }
 function a2Calc(sec, r){ if(sec === 'operator') a2OpNet(r); else if(sec === 'sponsor') a2SpCalc(r); else a2NsCalc(r); }
 function a2NewRow(sec, u){ return sec === 'operator' ? a2NewOp(u) : sec === 'sponsor' ? a2NewSp(u) : a2NewNs(u); }
 const a2Skip = (u) => !!(((u.profile || {}).salary || {}).noSalary);
@@ -23586,8 +23586,18 @@ function a2TilesHtml(){ return '';
   const mid = sec === 'operator' ? a2Tile('pick', 'c-blue', a2I(rows.reduce((a, r) => a + (r.total || 0), 0)) || '0', 'Total picks') : a2Tile('minus', 'c-red', acMoney(ded), 'Deductions');
   return `<div class="hrTiles a2Tiles" id="a2Tiles">${a2Tile('users', 'c-green', rows.length, sec === 'operator' ? 'Operators' : 'People')}${mid}${a2Tile('wallet', 'c-purple', acMoney(net), 'Net payable')}</div>`;
 }
+// held last month: the amount comes into this month's sheet as "Due" (only for this month and the coming ones; older sheets are history)
+function a2DueMap(ym){ const m = {}, h = a2PaidMap(acYmShift(ym, -1)); Object.keys(h).forEach(id => { const x = h[id]; if(x && x.h === 'hold' && Number(x.amt) > 0) m[id] = x; }); return m; }
+function a2DueSync(d){
+  if(!d || !(d.sec === 'operator' || d.sec === 'sponsor' || d.sec === 'nonsponsor') || d.ym < acYmShift(acYmNow(), -1)) return false;
+  const m = a2DueMap(d.ym); let ch = false; A2.jym = d.ym;
+  try{ d.rows.forEach(r => { const x = m[r.id], due = x ? Number(x.amt) : 0, from = x ? (x.from && x.from.length ? x.from : [acYmShift(d.ym, -1)]) : [];
+    if(acNum(r.due) !== due || JSON.stringify(r.dueFrom || []) !== JSON.stringify(from)){ r.due = due; r.dueFrom = from; a2Calc(d.sec, r); ch = true; } }); }catch(e){ console.error(e); }
+  A2.jym = ''; return ch;
+}
 function a2Draw(){
   const body = $('accountsBody'); if(!body) return;
+  if(A2.view === 'sheet'){ const dd = a2Doc(); if(dd && a2DueSync(dd)) dd.dirty = true; }
   const tabs = ['operator', 'sponsor', 'nonsponsor', 'saudi'].map(s => `<button type="button" class="${A2.view === 'sheet' || A2.view === 'set' ? (A2.sec === s ? 'active' : '') : ''}" data-a2="sec" data-v="${s}">${a2Svg(s)}<span class="hrLbl">${A2_SEC[s].n}</span></button>`).join('')
     + `<button type="button" class="${A2.view === 'saved' ? 'active' : ''}" data-a2="saved">${a2Svg('saved')}<span class="hrLbl">Saved</span></button>`
     + `<button type="button" class="${A2.view === 'pay' ? 'active' : ''}" data-a2="pay">${a2Svg('wallet')}<span class="hrLbl">Pay desk</span></button>`
@@ -23987,7 +23997,7 @@ function a2SpCalc(r){
   a2DaysRecalc(r);
   const basic = acNum(r.basic), ot = r.othf ? acR2(acNum(r.otd) * a2WorkDaysFor(r) * a2OtRate(r)) : acNum(r.ot), ex = acR2(acNum(r.extra) + acNum(r.ty));
   a2JoinSet(r, basic + (r.othf ? 0 : ot) + acNum(r.extra)); const gross = acR2(basic + ot + ex), ded = acNum(r.ded) + acNum(r.jded);
-  r.v = { gross: Math.round(gross), totded: ded, net: Math.round(gross - ded), otAmt: ot, exAmt: ex, housing: 0, transport: 0, absentDed: 0, c: {} };
+  r.v = { gross: Math.round(gross), totded: ded, net: Math.round(gross - ded + acNum(r.due)), otAmt: ot, exAmt: ex, housing: 0, transport: 0, absentDed: 0, c: {} };
 }
 function a2TyGroups(){ const d = a2Doc(), by = {}; if(d) d.rows.forEach(r => { if(r.tyf) (by[r.dept || '-'] = by[r.dept || '-'] || []).push(r); }); return by; }
 function a2TyHtml(){
@@ -24571,7 +24581,7 @@ function a2Cols1(sec, all){
   return cols;
 }
 async function a2LoadDoc(sec, ym, force){
-  await a2VacLoad(); await a2PaidLoad(ym);
+  await a2VacLoad(); await a2PaidLoad(ym); await a2PaidLoad(acYmShift(ym, -1));
   const d = await a2LoadDoc0(sec, ym, force);
   if(d && !d._jn && (sec === 'operator' || sec === 'sponsor' || sec === 'nonsponsor')){
     d._jn = 1; A2.jym = ym; let ch = false;
@@ -24624,7 +24634,7 @@ function a2ExitWhy(u){   // he was settled in hand when he left, so he is not in
   return 'has left (Exit / Terminated) and was settled when he left';
 }
 function a2JoinWhy(u){ const ym = A2.jym || A2.ym, jd = (u.profile || {}).joiningDate; return (ym && a2D8(jd) && jd > acDefaultRange(ym).to) ? 'joined after this salary month (' + fmtDate(jd) + ')' : ''; }
-const a2OtherWhy = (u) => { const ym = A2.jym || A2.ym, x = ym ? a2PaidMap(ym)[u.loginId] : null; return (x && x.h === 'other') ? 'was paid another way (Pay desk)' : ''; };
+const a2OtherWhy = (u) => { const ym = A2.jym || A2.ym, x = ym ? a2PaidMap(ym)[u.loginId] : null; return (x && x.h === 'hold') ? 'is on hold this month (Pay desk); the amount is added to next month' : ((x && x.h === 'other') ? 'was paid another way (Pay desk)' : ''); };
 const a2Decide = (u) => !!(a2JoinWhy(u) || /^left after/.test(a2ExitWhy(u)));   // the two cases you decide yourself
 const a2Kept = (u) => { const d = a2Doc(); return !!(d && d.keep && d.keep[u.loginId]); };
 const a2ExitOld = () => (A2.ym || '') < acYmShift(acYmNow(), -1);   // sheets older than last month are history: nobody is taken out of them
@@ -25259,8 +25269,17 @@ function a2VioCell(r){   // the remarks cell of this row
   document.querySelectorAll(`#a2Tbl td[data-rid="${CSS.escape(r.id)}"][data-c="rm"]`).forEach(td => { if(!td.querySelector('input')) td.innerHTML = c.html(r, false, 0); });
 }
 document.addEventListener('click', (e) => { const t = e.target.closest && e.target.closest('[data-a2v]'); if(t) a2VioAct(t.dataset.a2v, t.dataset.id); });
+const a2DueTxt = (r) => (r.dueFrom || []).map(y => acYmLabel(y).split(' ')[0] + ' due').join(', ');
 function a2Cols(sec, all){
   const cols = a2ColsB(sec, all);
+  { const dd = a2Doc(), has = !!(dd && dd.rows.some(r => acNum(r.due) > 0)), fm = (x) => sec === 'operator' ? (a2W(x) || '') : (a2M(x) || ''), i = cols.findIndex(c => c.k === 'ded');
+    const dc = { k: 'due', l: 'Due', g: 'Pay', def: has ? 1 : 0, num: 1, sum: 1, calc: 1, sv: r => acNum(r.due), raw: r => acNum(r.due) || '', text: r => fm(acNum(r.due)), html: r => fm(acNum(r.due)) };
+    if(i >= 0) cols.splice(i, 0, dc); }
+  cols.forEach(c => { if(c.k === 'rm'){
+    const t1 = c.text, h1 = c.html;
+    c.text = (r, i) => [a2DueTxt(r), t1(r, i)].filter(Boolean).join(', ');
+    c.html = (r, e, i) => { const x = h1(r, e, i) || '', t = a2DueTxt(r); return t ? `<span class="a2RnT" title="Held in ${acEsc((r.dueFrom || []).map(acYmLabel).join(', '))}: paid with this month">${acEsc(t)}</span>` + (x ? '<span class="a2RnC">,</span>' : '') + x : x; };
+  } });
   const vl = (r) => (r.dl || []).filter(l => l.vid).map(l => 'Violation ' + (l.vd ? a2VioShort(l.vd) + ': ' : ': ') + String(l.n || '').replace(/^Violation:\s*/, '') + ' ' + acMoney(l.a));
   cols.forEach(c => { if(c.k === 'rm'){
     const t0 = c.text, h0 = c.html;
@@ -26287,11 +26306,28 @@ document.addEventListener('click', async (e) => {
    The people, photos and attached documents are the ones already loaded for the app, so the list costs no database reads;
    the month document is read once per month and every action is one small write.
    ============================================================ */
-const PD = { ym: '', docs: {}, q: '', dept: '', cat: '', pos: '', st: 'all', exited: false, edit: false, sel: new Set(), shown: 40, fopen: false, busy: false, loading: false };
-const PD_IC = { cam: '<path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/>', edit: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/>', dl: '<path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>' };
+const PD = { amt: {}, amtOn: false, rev: new Set(), amtLoading: false, ym: '', docs: {}, q: '', dept: '', cat: '', pos: '', st: 'all', exited: false, edit: false, sel: new Set(), shown: 40, fopen: false, busy: false, loading: false };
+const PD_IC = { cam: '<path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/>', edit: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/>', eye: '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"/><circle cx="12" cy="12" r="3"/>', eyeoff: '<path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>', hold: '<circle cx="12" cy="12" r="9"/><line x1="10" y1="9" x2="10" y2="15"/><line x1="14" y1="9" x2="14" y2="15"/>', dl: '<path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>' };
 const pdSvg = (n, s) => `<svg width="${s || 14}" height="${s || 14}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${PD_IC[n] || ''}</svg>`;
 const pdKey = () => 'payDesk_' + PD.ym;
-const pdHow = (h) => h === 'bank' ? 'Bank' : (h === 'other' ? 'Other way' : 'Cash');
+const pdHow = (h) => h === 'bank' ? 'Bank' : (h === 'other' ? 'Other way' : (h === 'hold' ? 'On hold' : 'Cash'));
+const pdIsPaid = (x) => !!x && x.h !== 'hold';
+const pdNum = (n) => Math.round(Number(n) || 0).toLocaleString('en-US');
+// salary amounts come from the salary sheets of the month (3 small reads, only when someone asks to see them)
+async function pdAmtLoad(){
+  if(PD.amt[PD.ym] || PD.amtLoading) return; const ym = PD.ym; PD.amtLoading = true;
+  try{
+    const out = {};
+    for(const sec of ['operator', 'sponsor', 'nonsponsor']){
+      const d = await a2LoadDoc0(sec, ym); if(!d) continue;
+      d.rows.forEach(r => { let n = r.net; if(sec === 'sponsor'){ if(!r.v){ try{ A2.jym = ym; a2Calc(sec, r); }catch(e){} A2.jym = ''; } n = (r.v || {}).net; } if(n != null && isFinite(Number(n))) out[r.id] = { net: Number(n), from: r.dueFrom || [] }; });
+    }
+    PD.amt[ym] = out;
+  }catch(e){ console.error(e); PD.amt[ym] = {}; toast('Could not read the salary sheet'); }
+  PD.amtLoading = false; if(A2.view === 'pay') pdDrawBody();
+}
+const pdShow = (id) => PD.amtOn !== PD.rev.has(id);
+const pdAmtOf = (id) => (PD.amt[PD.ym] || {})[id];
 const pdDoc = () => PD.docs[PD.ym];
 const pdPaid = () => (pdDoc() && pdDoc().paid) || {};
 const pdIsNon = (u) => ((u.profile || {}).employmentType) === 'Non-Sponsor';
@@ -26313,7 +26349,7 @@ function pdPeople(){
 function pdFiltered(all){
   const q = PD.q.trim().toLowerCase(), paid = pdPaid();
   return all.filter(u => (!PD.dept || u.department === PD.dept) && (!PD.cat || pdCatOf(u) === PD.cat) && (!PD.pos || ((u.profile || {}).position || '') === PD.pos)
-    && (PD.st === 'all' || (PD.st === 'paid') === !!paid[u.loginId]) && (!q || (u.loginId + ' ' + u.name + ' ' + (u.department || '') + ' ' + ((u.profile || {}).position || '')).toLowerCase().includes(q)));
+    && (PD.st === 'all' || (PD.st === 'paid' ? pdIsPaid(paid[u.loginId]) : PD.st === 'hold' ? (paid[u.loginId] && paid[u.loginId].h === 'hold') : !pdIsPaid(paid[u.loginId]))) && (!q || (u.loginId + ' ' + u.name + ' ' + (u.department || '') + ' ' + ((u.profile || {}).position || '')).toLowerCase().includes(q)));
 }
 async function pdLoad(force){
   if(!PD.ym) PD.ym = A2.ym || acYmNow();
@@ -26339,8 +26375,9 @@ function pdDraw(){
       <span class="pdMonth" title="Salary month ${pdDayTxt(r.from)} - ${pdDayTxt(r.to)}"><button type="button" class="iconBtn" data-pd="prev" title="Previous month">&lsaquo;</button><b>${acYmLabel(PD.ym)}<small>${pdDayTxt(r.from)} – ${pdDayTxt(r.to)}</small></b><button type="button" class="iconBtn" data-pd="next" title="Next month">&rsaquo;</button></span>
       <input type="text" class="pdQ" id="pdQ" placeholder="Search name or ID" value="${acEsc(PD.q)}">
       <button type="button" class="pillBtn${fN ? ' ok' : ''}" data-pd="ftog">${a2Svg('filter', 13)}Filter${fN ? ' ' + fN : ''}</button>
-      <span class="pdSeg">${[['all', 'All'], ['no', 'Not paid'], ['paid', 'Paid']].map(x => `<button type="button" data-pd="st" data-v="${x[0]}" class="${PD.st === x[0] ? 'on' : ''}">${x[1]}</button>`).join('')}</span>
+      <span class="pdSeg">${[['all', 'All'], ['no', 'Not paid'], ['paid', 'Paid'], ['hold', 'On hold']].map(x => `<button type="button" data-pd="st" data-v="${x[0]}" class="${PD.st === x[0] ? 'on' : ''}">${x[1]}</button>`).join('')}</span>
       <span style="flex:1;"></span>
+      <button type="button" class="iconBtn${PD.amtOn ? ' on' : ''}" data-pd="eyeall" title="${PD.amtOn ? 'Hide all salary amounts' : 'Show all salary amounts'}">${pdSvg(PD.amtOn ? 'eye' : 'eyeoff', 15)}</button>
       ${ed ? `<button type="button" class="iconBtn${PD.edit ? ' on' : ''}" data-pd="edit" title="${PD.edit ? 'Stop adding photos' : 'Add or change photos'}">${pdSvg('cam', 15)}</button>` : ''}
       <button type="button" class="pillBtn" data-pd="pdf" title="Download as PDF">${MP_DL}PDF</button><button type="button" class="pillBtn" data-pd="xlsx" title="Download as Excel">${MP_DL}Excel</button>
     </div>
@@ -26352,24 +26389,30 @@ function pdDraw(){
 function pdDrawBody(){
   const body = document.getElementById('pdBody'); if(!body) return;
   const ed = acCanEdit(), all = pdPeople(), list = pdFiltered(all), paid = pdPaid();
-  const nPaid = all.filter(u => paid[u.loginId]).length, left = list.filter(u => !paid[u.loginId]);
+  const nPaid = all.filter(u => pdIsPaid(paid[u.loginId])).length, nHold = all.filter(u => paid[u.loginId] && paid[u.loginId].h === 'hold').length, left = list.filter(u => !paid[u.loginId]);
   const shown = list.slice(0, PD.shown), ticked = Array.from(PD.sel).filter(id => list.some(u => u.loginId === id));
+  const pdAmtHtml = (u, pd) => {
+    const id = u.loginId, show = pdShow(id), a = pdAmtOf(id), eye = `<button type="button" class="pdIc" data-pd="eye" data-id="${acEsc(id)}" title="${show ? 'Hide the amount' : 'Show the amount'}" aria-label="${show ? 'Hide the amount' : 'Show the amount'}">${pdSvg(show ? 'eye' : 'eyeoff', 15)}</button>`;
+    if(!show) return eye;
+    if(!PD.amt[PD.ym]) return `<span class="pdAmt">…</span>` + eye;
+    return (a ? `<span class="pdAmt" title="Net pay from this month's salary sheet${a.from.length ? ' (includes ' + a.from.map(y => acYmLabel(y).split(' ')[0]).join(', ') + ' due)' : ''}">${pdNum(a.net)}<small>SAR</small></span>` : `<span class="pdAmt no" title="This person is not in the salary sheet of this month">–</span>`) + eye;
+  };
   const row = (u) => {
     const p = u.profile || {}, pd = paid[u.loginId], ini = (u.name || '?').trim().split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase();
     const doc = (k, lbl) => (p[k] && p[k].attachment) ? `<button type="button" class="pdChip" data-pd="doc" data-ref="${acEsc(p[k].attachment)}" title="Open the ${lbl}">${lbl}</button>` : `<span class="pdChip no" title="No ${lbl} attached">${lbl}</span>`;
-    return `<div class="pdRow${pd ? ' paid' : ''}" data-id="${acEsc(u.loginId)}">
+    return `<div class="pdRow${pd ? (pd.h === 'hold' ? ' hold' : ' paid') : ''}" data-id="${acEsc(u.loginId)}">
       <input type="checkbox" data-pd="tick" data-id="${acEsc(u.loginId)}" ${PD.sel.has(u.loginId) ? 'checked' : ''}>
       <div class="pdPh${p.photoDataUrl ? '' : ' none'}" ${p.photoDataUrl ? 'data-pd="big"' : ''} data-id="${acEsc(u.loginId)}">${p.photoDataUrl ? `<img src="${p.photoDataUrl}" alt="">` : acEsc(ini)}${PD.edit && ed ? `<label class="pdCam" title="Take or change the photo">${pdSvg('cam', 11)}<input type="file" accept="image/*" capture="environment" data-pd="photo" data-id="${acEsc(u.loginId)}"></label>` : ''}</div>
       <div style="min-width:0;"><div class="pdNm">${acEsc(u.name)}<span class="pdCat">${acEsc(pdCatOf(u) || '-')}</span></div><div class="pdMeta">ID ${acEsc(u.loginId)} &middot; ${acEsc(u.department || '-')} &middot; ${acEsc(p.position || '-')}</div></div>
       <div class="pdDocs">${doc('iqama', 'Iqama')}${doc('passport', 'Passport')}</div>
-      <div class="pdAct">${ed && !pd ? `<button type="button" class="pdBtn pdAlt" data-pd="payo" data-id="${acEsc(u.loginId)}" title="Paid outside the salary sheet (at exit, in hand, by transfer). He is left out of this month's sheet.">Other way</button>` : ''}
-${ed ? `<button type="button" class="pdBtn${pd ? ' done' : ''}" data-pd="pay" data-id="${acEsc(u.loginId)}" title="${pd ? 'Tap to undo' : 'Mark as paid (' + pdMethodOf(u) + ')'}">${pd ? 'Paid · ' + pdHow(pd.h) + ' · ' + pdDayTxt(pd.d) : 'Mark paid'}</button>` : `<span class="pdBtn done" style="cursor:default;">${pd ? 'Paid · ' + pdHow(pd.h) : 'Not paid'}</span>`}</div>
+      <div class="pdAct">${pdAmtHtml(u, pd)}${ed && !pd ? `<button type="button" class="pdIc" data-pd="hold" data-id="${acEsc(u.loginId)}" title="Hold this month: he leaves this month's sheet and the amount is added to next month as due" aria-label="Hold this month">${pdSvg('hold', 15)}</button>` : ''}
+${ed ? (pd && pd.h === 'hold' ? `<button type="button" class="pdBtn hold" data-pd="unhold" data-id="${acEsc(u.loginId)}" title="On hold. Tap to release the hold.">On hold${pd.amt ? ' · ' + pdNum(pd.amt) : ''}</button>` : `<button type="button" class="pdBtn${pd ? ' done' : ''}" data-pd="pay" data-id="${acEsc(u.loginId)}" title="${pd ? 'Tap to undo' : 'Mark as paid (' + pdMethodOf(u) + ')'}">${pd ? 'Paid · ' + pdHow(pd.h) + ' · ' + pdDayTxt(pd.d) : 'Mark paid'}</button>`) : `<span class="pdBtn done" style="cursor:default;">${pd ? (pd.h === 'hold' ? 'On hold' : 'Paid · ' + pdHow(pd.h)) : 'Not paid'}</span>`}</div>
     </div>`;
   };
   body.innerHTML = `
-    <div class="pdSum"><span><b>${nPaid}</b> of <b>${all.length}</b> paid</span><span class="pdProg"><i style="width:${all.length ? Math.round(nPaid / all.length * 100) : 0}%"></i></span><span>${left.length} not paid in this list</span>
+    <div class="pdSum"><span><b>${nPaid}</b> of <b>${all.length}</b> paid${nHold ? ' · <b>' + nHold + '</b> on hold' : ''}</span><span class="pdProg"><i style="width:${all.length ? Math.round(nPaid / all.length * 100) : 0}%"></i></span><span>${left.length} not paid in this list</span>
       ${ed && left.length ? `<button type="button" class="pillBtn ok" data-pd="markall" title="Marks everyone shown below who is not paid yet. Sponsor staff as Bank, the others as Cash.">Mark all ${left.length} as paid</button>` : ''}</div>
-    ${ed && ticked.length ? `<div class="pdSel"><b>${ticked.length} ticked</b><button type="button" class="pillBtn ok" data-pd="bulk" data-v="bank">Paid · Bank</button><button type="button" class="pillBtn ok" data-pd="bulk" data-v="cash">Paid · Cash</button><button type="button" class="pillBtn ok" data-pd="bulk" data-v="other" title="Paid outside the salary sheet, for example at exit. He is then left out of that month's sheet.">Paid · Other way</button><button type="button" class="pillBtn" data-pd="bulk" data-v="undo">Not paid</button><button type="button" class="pillBtn" data-pd="clearsel">Clear</button></div>` : ''}
+    ${ed && ticked.length ? `<div class="pdSel"><b>${ticked.length} ticked</b><button type="button" class="pillBtn ok" data-pd="bulk" data-v="bank">Paid · Bank</button><button type="button" class="pillBtn ok" data-pd="bulk" data-v="cash">Paid · Cash</button><button type="button" class="pillBtn" data-pd="bulk" data-v="undo">Not paid</button><button type="button" class="pillBtn" data-pd="clearsel">Clear</button></div>` : ''}
     <div class="pdList"><div class="pdHead">${ed ? `<input type="checkbox" data-pd="tickall" title="Tick everyone in this list" ${list.length && ticked.length === list.length ? 'checked' : ''}>` : ''}<span>${list.length} ${list.length === 1 ? 'person' : 'people'}</span></div>
       ${shown.map(row).join('') || '<div class="empty-state" style="padding:18px;">Nobody matches.</div>'}
       ${list.length > shown.length ? `<button type="button" class="pdMore" data-pd="more">Show ${Math.min(40, list.length - shown.length)} more (${list.length - shown.length} left)</button>` : ''}</div>`;
@@ -26378,6 +26421,8 @@ ${ed ? `<button type="button" class="pdBtn${pd ? ' done' : ''}" data-pd="pay" da
 async function pdMark(ids, how){
   if(!acCanEdit() || PD.busy || !ids.length) return;
   const d = pdDoc(), before = JSON.stringify(d.paid), by = (state.user && (state.user.name || state.user.loginId)) || '';
+  if(how !== 'undo') ids = ids.filter(id => !(d.paid[id] && d.paid[id].h === 'hold'));
+  if(!ids.length) return;
   ids.forEach(id => {
     if(how === 'undo'){ delete d.paid[id]; return; }
     const u = (state.users || []).find(x => x.loginId === id);
@@ -26388,6 +26433,19 @@ async function pdMark(ids, how){
   catch(err){ console.error(err); d.paid = JSON.parse(before); toast('Could not save - nothing was changed'); }
   PD.busy = false; PD.sel.clear(); pdDrawBody();
 }
+async function pdHold(id){
+  if(!acCanEdit() || PD.busy) return; const u = (state.users || []).find(x => x.loginId === id); if(!u) return;
+  if(!PD.amt[PD.ym]){ toast('Reading the salary sheet...'); await pdAmtLoad(); }
+  const a = pdAmtOf(id); if(!a || !(a.net > 0)){ toast('He is not in this month\'s salary sheet yet. Create and save the sheet first, then hold.'); return; }
+  const nxt = acYmLabel(acYmShift(PD.ym, 1));
+  if(!confirm('Hold ' + u.name + ' for ' + acYmLabel(PD.ym) + '?\n\nHis ' + pdNum(a.net) + ' SAR leaves this month\'s sheet and is added to ' + nxt + ' as "' + acYmLabel(PD.ym).split(' ')[0] + ' due".\nYou can release the hold any time before then.')) return;
+  const d = pdDoc(), before = JSON.stringify(d.paid), by = (state.user && (state.user.name || state.user.loginId)) || '';
+  d.paid[id] = { h: 'hold', d: pdToday(), b: by, amt: a.net, from: [PD.ym].concat(a.from || []) };
+  PD.busy = true; pdDrawBody();
+  try{ await window.__db.saveConfigObject(pdKey(), { paid: d.paid }); toast('On hold. ' + pdNum(a.net) + ' SAR goes to ' + nxt); }
+  catch(err){ console.error(err); d.paid = JSON.parse(before); toast('Could not save - nothing was changed'); }
+  PD.busy = false; pdDrawBody();
+}
 async function pdPhoto(id, file){
   if(!file || !acCanEdit() || !requireDb()) return;
   try{ const du = await compressImageSafe(file); await saveProfilePhoto(id, du); toast('Photo saved'); pdDrawBody(); }
@@ -26395,7 +26453,7 @@ async function pdPhoto(id, file){
 }
 function pdExportRows(){
   const paid = pdPaid();
-  return pdFiltered(pdPeople()).map(u => { const p = u.profile || {}, x = paid[u.loginId]; return [u.loginId, u.name, u.department || '', p.position || '', pdCatOf(u), x ? 'Paid' : 'Not paid', x ? pdHow(x.h) : '', x ? x.d : '', x ? (x.b || '') : '']; });
+  return pdFiltered(pdPeople()).map(u => { const p = u.profile || {}, x = paid[u.loginId]; return [u.loginId, u.name, u.department || '', p.position || '', pdCatOf(u), x ? (x.h === 'hold' ? 'On hold' : 'Paid') : 'Not paid', x ? pdHow(x.h) : '', x ? x.d : '', x ? (x.b || '') : '']; });
 }
 function pdDownload(kind){
   const rows = pdExportRows(), head = ['ID', 'Name', 'Department', 'Position', 'Category', 'Salary', 'How', 'Date', 'Marked by'], n = rows.filter(r => r[5] === 'Paid').length;
@@ -26407,7 +26465,7 @@ function pdDownload(kind){
 document.addEventListener('click', (e) => {
   const t = e.target.closest('[data-pd]'); if(!t || !document.getElementById('accountsBody') || !document.getElementById('accountsBody').contains(t)) return;
   const a = t.dataset.pd, id = t.dataset.id;
-  if(a === 'prev' || a === 'next'){ PD.ym = acYmShift(PD.ym, a === 'next' ? 1 : -1); PD.sel.clear(); PD.shown = 40; pdDraw(); }
+  if(a === 'prev' || a === 'next'){ PD.ym = acYmShift(PD.ym, a === 'next' ? 1 : -1); PD.sel.clear(); PD.rev.clear(); PD.shown = 40; if(PD.amtOn) pdAmtLoad(); pdDraw(); }
   else if(a === 'ftog'){ PD.fopen = !PD.fopen; pdDraw(); }
   else if(a === 'fclear'){ PD.dept = PD.cat = PD.pos = ''; PD.exited = false; PD.shown = 40; pdDraw(); }
   else if(a === 'st'){ PD.st = t.dataset.v; PD.shown = 40; PD.sel.clear(); pdDraw(); }
@@ -26418,7 +26476,10 @@ document.addEventListener('click', (e) => {
   else if(a === 'tick'){ if(t.checked) PD.sel.add(id); else PD.sel.delete(id); pdDrawBody(); }
   else if(a === 'tickall'){ const list = pdFiltered(pdPeople()); if(t.checked) list.forEach(u => PD.sel.add(u.loginId)); else PD.sel.clear(); pdDrawBody(); }
   else if(a === 'clearsel'){ PD.sel.clear(); pdDrawBody(); }
-  else if(a === 'payo'){ pdMark([id], 'other'); }
+  else if(a === 'hold'){ pdHold(id); }
+  else if(a === 'unhold'){ const u = (state.users || []).find(v => v.loginId === id); if(confirm('Release the hold on ' + (u ? u.name : id) + '?\n\nHe comes back to this month\'s sheet and the amount is taken off next month.')) pdMark([id], 'undo'); }
+  else if(a === 'eyeall'){ PD.amtOn = !PD.amtOn; PD.rev.clear(); if(PD.amtOn) pdAmtLoad(); pdDraw(); }
+  else if(a === 'eye'){ if(PD.rev.has(id)) PD.rev.delete(id); else PD.rev.add(id); if(pdShow(id)) pdAmtLoad(); pdDrawBody(); }
   else if(a === 'pay'){ const x = pdPaid()[id]; if(x){ const u = (state.users || []).find(v => v.loginId === id); if(confirm('Mark ' + (u ? u.name : id) + ' as NOT paid?')) pdMark([id], 'undo'); } else pdMark([id], 'auto'); }
   else if(a === 'bulk'){ const list = pdFiltered(pdPeople()), ids = Array.from(PD.sel).filter(i => list.some(u => u.loginId === i)), v = t.dataset.v;
     if(ids.length > 10 && !confirm((v === 'undo' ? 'Mark ' + ids.length + ' people as NOT paid?' : 'Mark ' + ids.length + ' people as paid (' + v + ')?'))) return; pdMark(ids, v); }
@@ -26748,6 +26809,7 @@ document.addEventListener('click', (e) => { if(e.target.closest && e.target.clos
 /* HOW TO KEEP IT UP TO DATE: numbers and lists that come from Settings, the Calendar or profiles are read live, so they update by themselves.
    When a rule is changed inside the app code, add one line to ACG_LOG below (month, short sentence). */
 const ACG_LOG = [
+  ['2026-11', 'Pay desk: Other way is replaced by a small Hold button. A person on hold leaves that month\'s sheet and his amount comes into next month\'s sheet in the Due column. The eye button shows or hides the net pay in the Pay desk.'],
   ['2026-11', 'Leave deductions (days of pay) use all the fixed pay: basic salary plus fixed overtime. Premium, overtime by hours, tying / beaming and extra money are not cut.'],
   ['2026-11', 'Overtime by hours uses the total working hours set in Settings, minus the person\'s own overtime hours.'],
   ['2026-11', 'Total salary and Net pay are shown in whole riyals.'],
@@ -26826,12 +26888,12 @@ function acgHtml(){
     <tr><td>Left after the salary month</td><td>Left off. Listed at the top: you decide to keep him or not.</td></tr>
     <tr><td>On vacation the whole month</td><td>Not in the sheet. A line at the top says who and why.</td></tr>
     <tr><td>On vacation part of the month</td><td>Paid up to his <b>last working day</b> and again from his <b>work start date</b>. The days between are not paid. The vacation form asks for the last working day. The work start date is asked when he is changed from Vacation to On the job.</td></tr>
-    <tr><td>Paid another way</td><td>Mark him <b>Paid · Other way</b> in the Pay desk. He is left off that month's sheet and listed at the top. Mark him not paid to put him back.</td></tr></table>
+    <tr><td>On hold</td><td>Press the small <b>hold</b> button in the Pay desk. He is left off that month's sheet and listed at the top, and his amount comes into next month's sheet as <b>Due</b>. Release the hold to put him back.</td></tr></table>
     <p>The sheet never removes anyone by itself: it shows the change at the top and you press <b>Apply changes</b>. Sheets older than last month are history and are not changed.</p>`));
   b.push(acgSec(7, 'Pay desk', `
-    <p>The Pay desk is where you mark who was paid in a month: <b>Bank</b> (Sponsor staff by default), <b>Cash</b> (the others) or <b>Other way</b>. It does not change any amount.</p>
+    <p>The Pay desk is where you mark who was paid in a month: <b>Bank</b> (Sponsor staff by default) or <b>Cash</b> (the others). It does not change any amount. The small <b>pause</b> button holds a person for the month (he is on vacation, or you keep his pay due): his amount is added to next month's sheet as <b>Due</b>. The <b>eye</b> shows the net pay of one person, the eye at the top shows everyone.</p>
     <ul><li>Search a name to find someone who left, they are hidden until you search.</li>
-    <li><i>Paid · Other way</i> is for money paid outside the sheet: at exit, in hand, or by transfer. The person is then left out of that month's sheet.</li>
+    <li><i>Hold</i> keeps a person's pay due: he leaves this month's sheet and next month's sheet shows his amount in the <b>Due</b> column with the remark <i>Nov due</i> (the month held). Release the hold if it was pressed by mistake.</li>
     <li>You can mark many people at once: tick them and use the buttons.</li></ul>`));
   const cust = (() => { try { return acCols().filter(c => !c.builtin); } catch(e){ return []; } })();
   b.push(acgSec(8, 'Setting up a person (Salary Info)', `
@@ -27058,12 +27120,12 @@ function acgHtml(){
       ['Left after the salary month', 'Not in the sheet. Listed at the top so you decide.'],
       ['On vacation the whole month', 'Not in the sheet. A line at the top says who.'],
       ['On vacation part of the month', 'Paid up to his <b>last working day</b> and again from his <b>work start date</b>. The days between are not paid. The vacation form asks the last working day. The work start date is asked when he comes back to work.'],
-      ['Paid another way', 'Mark him <b>Paid - Other way</b> in the Pay desk. He leaves that month\'s sheet and is listed at the top. Mark him not paid to put him back.']])}
+      ['On hold', 'Press the pause button in the Pay desk. He leaves that month\'s sheet and the amount comes into next month as Due. Release the hold to put him back.']])}
     <p>The app never removes anyone silently. It shows the change at the top and you press <b>Apply changes</b>. Sheets older than last month are history and are not changed.</p>`));
   // 9
   b.push(acgSection(9, 'Paying (Pay desk)', `
     <p>The Pay desk records who was paid. It does <b>not</b> change any amount.</p>
-    ${acgTbl([['Mark'], ['Use it when']], [['Bank', 'Paid into the bank. This is the usual way for Sponsor staff.'], ['Cash', 'Paid in cash. This is the usual way for Non Sponsor people.'], ['Other way', 'Paid outside the sheet (at exit, in hand, by transfer). He is left out of that month\'s sheet.']])}
+    ${acgTbl([['Mark'], ['Use it when']], [['Bank', 'Paid into the bank. This is the usual way for Sponsor staff.'], ['Cash', 'Paid in cash. This is the usual way for Non Sponsor people.'], ['Hold', 'Keep his pay due this month (for example he is on vacation). He leaves this month\'s sheet and the amount is added to next month as Due.']])}
     <ul><li>People who have left are hidden until you search for their name.</li><li>Tick many people and use the buttons on top to mark them together.</li></ul>`));
   // 10
   const cust = (() => { try{ return acCols().filter(c => !c.builtin); }catch(e){ return []; } })();
@@ -27736,6 +27798,12 @@ body.rvfBusy #screen-dashboard .card{ opacity:.5; transition:opacity .2s; }
 .skCard .bd small{ display:block; }
 
 @media (min-width:761px){ .skRow .act{ flex:0 0 250px; justify-content:flex-end; } }
+
+.pdIc{ width:30px; height:30px; border-radius:50%; border:1px solid transparent; background:transparent; color:var(--muted); display:inline-flex; align-items:center; justify-content:center; cursor:pointer; padding:0; flex:none; }
+.pdIc:hover{ background:#eceef5; color:var(--text); }
+.pdAmt{ font-size:13px; font-weight:600; color:var(--text-strong); white-space:nowrap; font-variant-numeric:tabular-nums; } .pdAmt small{ font-size:10px; font-weight:500; color:var(--muted); margin-left:3px; } .pdAmt.no{ color:var(--muted); font-weight:400; }
+.pdRow.hold{ background:rgba(217,119,6,.07); }
+.pdBtn.hold{ border-color:transparent; background:#fef3c7; color:#92400e; font-weight:600; }
 </style>
 <div id="rvfBusy"><i></i><span id="rvfBusyTxt">Loading data…</span></div>
 <script>
