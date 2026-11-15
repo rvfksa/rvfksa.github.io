@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261115-175008">
+<meta name="rvf-build" content="20261115-175357">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -11828,6 +11828,7 @@ async function rvfMakePdf(blocks, filename, opts){
   wrap.style.cssText = 'position:fixed; left:-10000px; top:0; width:' + (LS ? 1100 : 760) + 'px; background:#fff; color:#0f172a; padding:0; z-index:-1;';
   const els = blocks.map(h => { const d = document.createElement('div'); d.className = 'pdfBlock'; d.innerHTML = h; wrap.appendChild(d); return d; });
   document.body.appendChild(wrap);
+  try{ await Promise.all(Array.from(wrap.querySelectorAll('img')).map(im => (im.complete && im.naturalWidth) ? (im.decode ? im.decode().catch(() => {}) : 0) : new Promise(r => { im.onload = im.onerror = r; setTimeout(r, 4000); }))); }catch(e){}
   try{
     const pdf = new window.jspdf.jsPDF({ unit:'mm', format:(opts && opts.format) || 'a4', orientation: LS ? 'landscape' : 'portrait' });
     const pw = pdf.internal.pageSize.getWidth(), ph = pdf.internal.pageSize.getHeight(), m = (opts && opts.m != null) ? opts.m : 10, usableW = pw - 2 * m, usableH = ph - 2 * m;
