@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261115-111723">
+<meta name="rvf-build" content="20261115-112010">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -27990,7 +27990,7 @@ function chkIssues(){
   // 5. bank problems
   { const l = us.filter(u => { const s = ((u.profile || {}).salary) || {}; return s.bankAcc && s.iban && rvfIban(s.bankAcc) !== s.iban; }); if(l.length) out.push({ sev: 'bad', title: 'IBAN does not match the account number', why: 'The bank would reject these.', items: l.map(who), fixes: [{ id: 'iban', label: 'Recalculate the IBAN from the account number' }] }); }
   { const l = us.filter(u => { const s = ((u.profile || {}).salary) || {}; return s.bankAcc && !s.iban; }); if(l.length) out.push({ sev: 'warn', title: 'Bank account without an IBAN', why: 'The bank transfer list needs the IBAN.', items: l.map(who), fixes: [{ id: 'iban', label: 'Calculate the IBAN' }] }); }
-  { const l = us.filter(u => { const s = ((u.profile || {}).salary) || {}; return salaried(u) && !s.bankAcc && !s.payBy; }); if(l.length) out.push({ sev: 'warn', title: 'Not known if paid by bank or cash', why: 'No bank account and not marked cash.', items: l.map(who), fixes: [{ id: 'cash', label: 'Mark all of them as cash' }] }); }
+  { const l = us.filter(u => { const s = ((u.profile || {}).salary) || {}; return salaried(u) && (u.profile || {}).employmentType !== 'Non-Sponsor' && !s.bankAcc && !s.payBy; }); if(l.length) out.push({ sev: 'warn', title: 'Not known if paid by bank or cash', why: 'No bank account and not marked cash.', items: l.map(who), fixes: [{ id: 'cash', label: 'Mark all of them as cash' }] }); }
   { const m = {}; us.forEach(u => { const a = (((u.profile || {}).salary) || {}).bankAcc; if(a) (m[a] = m[a] || []).push(u); }); const l = []; Object.keys(m).forEach(a => { if(m[a].length > 1) m[a].forEach(u => l.push({ k: u.loginId, l: u.loginId + ' - ' + u.name + ' (same account as ' + m[a].filter(x => x !== u).map(x => x.loginId).join(', ') + ')' })); }); if(l.length) out.push({ sev: 'bad', title: 'Same bank account on more than one person', why: 'One of them is wrong. Money would go to the wrong person.', items: l }); }
   // 6. ID numbers
   { const m = {}; us.forEach(u => { const a = ((u.profile || {}).iqama || {}).no; if(a) (m[a] = m[a] || []).push(u); }); const l = []; Object.keys(m).forEach(a => { if(m[a].length > 1) m[a].forEach(u => l.push({ k: u.loginId, l: u.loginId + ' - ' + u.name + ' (Iqama ' + a + ')' })); }); if(l.length) out.push({ sev: 'bad', title: 'Same Iqama number on more than one person', why: 'Check which one is right.', items: l }); }
@@ -28009,7 +28009,7 @@ async function chkFix(id, arg, pick){
     else if(id === 'iban' || id === 'cash'){
       const us = (state.users || []).filter(u => !u.spare && !(typeof isExitedEmployee === 'function' && isExitedEmployee(u))), ch = [];
       us.forEach(u => { const s = ((u.profile || {}).salary) || {}; if(id === 'iban' && s.bankAcc && rvfIban(s.bankAcc) && rvfIban(s.bankAcc) !== s.iban) ch.push({ loginId: u.loginId, fields: { 'profile.salary.iban': rvfIban(s.bankAcc) }, ap: (p) => { p.salary.iban = rvfIban(s.bankAcc); } });
-        if(id === 'cash' && !s.bankAcc && !s.payBy && (u.profile || {}).employmentType && !s.noSalary) ch.push({ loginId: u.loginId, fields: { 'profile.salary.payBy': 'cash' }, ap: (p) => { p.salary.payBy = 'cash'; } }); });
+        if(id === 'cash' && !s.bankAcc && !s.payBy && (u.profile || {}).employmentType && (u.profile || {}).employmentType !== 'Non-Sponsor' && !s.noSalary) ch.push({ loginId: u.loginId, fields: { 'profile.salary.payBy': 'cash' }, ap: (p) => { p.salary.payBy = 'cash'; } }); });
       if(ch.length) await db.updateUsersBatch(ch.map(c => ({ loginId: c.loginId, fields: c.fields })));
       ch.forEach(c => { const u = (state.users || []).find(x => x.loginId === c.loginId); if(u){ u.profile = u.profile || {}; u.profile.salary = u.profile.salary || {}; c.ap(u.profile); } });
     }
