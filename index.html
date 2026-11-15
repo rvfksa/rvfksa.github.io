@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261115-103107">
+<meta name="rvf-build" content="20261115-110605">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -3620,6 +3620,10 @@ table.pkPdf tr.tot td{ background:#eef2ff !important; border-top:1px solid #c7d2
 .smBar{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin:2px 0 10px; } .smBar select{ height:38px; padding:0 32px 0 12px; line-height:1.2; width:auto; max-width:200px; }
 .smGrid{ display:grid; grid-template-columns:minmax(0,1.6fr) minmax(0,1fr); gap:16px; align-items:start; } @media(max-width:760px){ .smGrid{ grid-template-columns:1fr; } }
 .smSign{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin:0 0 10px; } .smSign .field{ margin:0; } .smApp{ height:38px; display:flex; align-items:center; padding:0 12px; border:1px solid var(--border,#e2e8f0); border-radius:10px; background:#f8fafc; font-size:13px; color:#475569; } @media(max-width:620px){ .smSign{ grid-template-columns:1fr; } }
+.chkCard{ border:1px solid var(--border,#e2e8f0); border-left:4px solid #f59e0b; border-radius:12px; padding:10px 12px; margin:0 0 10px; background:#fff; } .chkCard.bad{ border-left-color:#e11d48; }
+.chkT{ display:flex; align-items:center; gap:8px; } .chkN{ margin-left:auto; font-size:11px; font-weight:700; background:#f1f5f9; border-radius:999px; padding:2px 9px; color:#475569; }
+.chkL{ font-size:12px; color:#475569; max-height:180px; overflow:auto; padding:6px 0; } .chkF{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:8px; } .chkF select{ height:34px; padding:0 28px 0 10px; width:auto; }
+.chkOk{ padding:16px; border-radius:12px; background:#ecfdf5; color:#047857; font-weight:600; } .admBad{ display:inline-block; margin-left:6px; min-width:17px; padding:0 5px; border-radius:999px; background:#e11d48; color:#fff; font-size:10.5px; line-height:17px; text-align:center; font-weight:700; }
 .smT{ font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin:0 0 6px; }
 .smTbl td,.smTbl th{ padding:7px 10px; } .smTbl tr.smGt td{ background:#eef2ff; } .smTbl tr.smCur td{ background:#f8fafc; font-weight:600; }
 .a2Rn{ white-space:normal; font-size:10.5px; color:#64748b; cursor:help; border-bottom:1px dotted #cbd5e1; padding:0 1px; } .a2RnC{ font-size:10.5px; color:#94a3b8; margin-right:3px; }
@@ -4589,6 +4593,7 @@ table.a2T td .a2In{ width:100%; min-width:36px; }
         <div class="auth-tab" data-admintab="config">Dropdowns</div>
         <div class="auth-tab" data-admintab="purchase">Purchase</div>
         <div class="auth-tab" data-admintab="letterhead">Letterhead</div>
+        <div class="auth-tab" data-admintab="checks">Problems check</div>
         <div class="auth-tab" data-admintab="ai">AI &amp; Letters</div>
         <div class="auth-tab" data-admintab="maint">Maintenance</div>
       </div>
@@ -4869,6 +4874,8 @@ table.a2T td .a2In{ width:100%; min-width:36px; }
       <div class="auth-pane" id="admin-purchase"></div>
 
       <div class="auth-pane" id="admin-letterhead"></div>
+
+      <div class="auth-pane" id="admin-checks"></div>
 
       <div class="auth-pane" id="admin-ai"></div>
 
@@ -24116,6 +24123,7 @@ const ADM_G = [
   { n: 'Factory', t: [['machines', 'Machines'], ['shifttime', 'Shift & Timing'], ['holidays', 'Calendar'], ['salarymonth', 'Salary Month']] },
   { n: 'Lists', t: [['config', 'Dropdowns']] },
   { n: 'Documents', t: [['purchase', 'Purchase'], ['letterhead', 'Letterhead'], ['ai', 'AI & Letters']] },
+  { n: 'Checks', t: [['checks', 'Problems check']] },
   { n: 'Maintenance', t: [['maint', 'Clean up & refresh']] }
 ];
 function admDraw(cur){
@@ -24124,6 +24132,7 @@ function admDraw(cur){
   const g = ADM_G.find(x => x.t.some(t => t[0] === cur)) || ADM_G[0];
   box.innerHTML = `<div class="auth-tabs wrap-tabs admRow1">${ADM_G.map(x => `<div class="auth-tab${x === g ? ' active' : ''}" data-adm="${x.t[0][0]}" data-g="${x.n}">${x.n}</div>`).join('')}</div>`
     + (g.t.length > 1 ? `<div class="admRow2">${g.t.map(t => `<button type="button" class="admSub${t[0] === cur ? ' active' : ''}" data-adm="${t[0]}">${t[1]}</button>`).join('')}</div>` : '');
+  if(typeof chkBadge === 'function') setTimeout(chkBadge, 0);
 }
 document.addEventListener('click', (e) => {
   const a = e.target.closest && e.target.closest('[data-adm]');
@@ -27958,6 +27967,71 @@ async function smExport(kind){
 document.addEventListener('click', async (e) => { const t = e.target.closest && e.target.closest('[data-sm]'); if(!t || t.tagName === 'SELECT' || t.tagName === 'INPUT') return; const a = t.dataset.sm; if(a === 'mtog'){ SM.open = SM.open === t.dataset.v ? '' : t.dataset.v; smPaint(); } else if(a === 'ftog'){ SM.fOpen = !SM.fOpen; smPaint(); } else if(a === 'fclear'){ SM.secs = []; SM.dept = []; SM.pos = []; SM.nat = []; SM.et = []; SM.open = ''; a2DrawSummary(); } else if(a === 'pdf' || a === 'pdfy' || a === 'xlsx') smExport(a); });
 document.addEventListener('change', async (e) => { const t = e.target; if(!t || !t.dataset) return; if(t.classList && t.classList.contains('smChk')){ const k = t.dataset.k, i = SM[k].indexOf(t.value); if(t.checked && i < 0) SM[k].push(t.value); if(!t.checked && i >= 0) SM[k].splice(i, 1); if(['dept', 'pos', 'nat', 'et'].indexOf(k) >= 0) await a2DrawSummary(); else smPaint(); return; } const a = t.dataset.sm; if(!a) return;
   if(a === 'ym'){ SM.ym = t.value; a2DrawSummary(); } else if(a === 'grp'){ SM.grp = t.value; smPaint(); } else if(a === 'sort'){ SM.sort = t.value; smPaint(); } else if(a === 'nsone'){ SM.nsOne = t.checked; smPaint(); } else if(a === 'nop'){ SM.nop = t.checked; smPaint(); } else if(a === 'prep'){ SM.prep = t.value; BK.prep = t.value; bkKeep(); } else if(a === 'chk'){ SM.chk = t.value; BK.chk = t.value; bkKeep(); } });
+
+
+/* ===== p226: Admin > Problems check (finds common data mistakes and gives the fix) ===== */
+const CHK_ES = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+function chkIssues(){
+  const us = (state.users || []).filter(u => !u.spare), deps = state.departments || [], poss = state.positions || [], out = [], who = (u) => ({ k: u.loginId, l: u.loginId + ' - ' + (u.name || '') });
+  const salaried = (u) => { const s = (u.profile || {}).salary || {}; return !s.noSalary && (u.profile || {}).employmentType; };
+  // 1. department deleted or misspelled while people still use it
+  const byDep = {}; us.forEach(u => { if(u.department && deps.indexOf(u.department) < 0) (byDep[u.department] = byDep[u.department] || []).push(u); });
+  Object.keys(byDep).forEach(d => out.push({ sev: 'bad', title: 'Department "' + d + '" is not in the list', why: (byDep[d].length === 1 ? '1 person is' : byDep[d].length + ' people are') + ' still in it. It was probably deleted or renamed by mistake.', items: byDep[d].map(who),
+    fixes: [{ id: 'adddep', label: 'Add "' + d + '" back to the list', arg: d }, { id: 'movedep', label: 'Move them to', pick: deps, arg: d }] }));
+  (state.machines || []).forEach(() => {}); { const bm = {}; (state.machines || []).forEach(m => { if(m.department && deps.indexOf(m.department) < 0 && !byDep[m.department]) (bm[m.department] = bm[m.department] || []).push(m); }); Object.keys(bm).forEach(d => out.push({ sev: 'bad', title: 'Machines use a department that is not in the list: "' + d + '"', why: bm[d].length + ' machines.', items: bm[d].map(m => ({ k: m.id, l: 'Machine ' + (m.name || m.id) })), fixes: [{ id: 'adddep', label: 'Add "' + d + '" back to the list', arg: d }] })); }
+  // 2. no department
+  { const l = us.filter(u => !u.department && u.role !== 'admin'); if(l.length) out.push({ sev: 'warn', title: 'People with no department', why: 'They will not show in department filters or summaries. Set it in Users or Operators & machines.', items: l.map(who) }); }
+  // 3. position not in the list
+  const byPos = {}; us.forEach(u => { const p = String(((u.profile || {}).position) || '').trim(); if(p && poss.indexOf(p) < 0) (byPos[p] = byPos[p] || []).push(u); });
+  Object.keys(byPos).forEach(p => out.push({ sev: 'warn', title: 'Position "' + p + '" is not in the list', why: (byPos[p].length === 1 ? '1 person has' : byPos[p].length + ' people have') + ' it.', items: byPos[p].map(who), fixes: [{ id: 'addpos', label: 'Add "' + p + '" back to the list', arg: p }] }));
+  // 4. salary people with no employment type / no salary
+  { const l = us.filter(u => { const p = u.profile || {}, s = p.salary || {}; return !s.noSalary && !p.employmentType && u.role !== 'admin' && (s.basicSalary || s.bankAcc); }); if(l.length) out.push({ sev: 'bad', title: 'People with salary info but no Employment type', why: 'They are not in any salary sheet. Open the profile and choose Sponsor, Non-Sponsor or Saudi.', items: l.map(who) }); }
+  { const l = us.filter(u => salaried(u) && !(((u.profile || {}).salary || {}).basicSalary)); if(l.length) out.push({ sev: 'warn', title: 'In the salary sheets but no Basic Salary on the profile', why: 'Their sheet row will start at 0.', items: l.map(who) }); }
+  // 5. bank problems
+  { const l = us.filter(u => { const s = ((u.profile || {}).salary) || {}; return s.bankAcc && s.iban && rvfIban(s.bankAcc) !== s.iban; }); if(l.length) out.push({ sev: 'bad', title: 'IBAN does not match the account number', why: 'The bank would reject these.', items: l.map(who), fixes: [{ id: 'iban', label: 'Recalculate the IBAN from the account number' }] }); }
+  { const l = us.filter(u => { const s = ((u.profile || {}).salary) || {}; return s.bankAcc && !s.iban; }); if(l.length) out.push({ sev: 'warn', title: 'Bank account without an IBAN', why: 'The bank transfer list needs the IBAN.', items: l.map(who), fixes: [{ id: 'iban', label: 'Calculate the IBAN' }] }); }
+  { const l = us.filter(u => { const s = ((u.profile || {}).salary) || {}; return salaried(u) && !s.bankAcc && !s.payBy; }); if(l.length) out.push({ sev: 'warn', title: 'Not known if paid by bank or cash', why: 'No bank account and not marked cash.', items: l.map(who), fixes: [{ id: 'cash', label: 'Mark all of them as cash' }] }); }
+  { const m = {}; us.forEach(u => { const a = (((u.profile || {}).salary) || {}).bankAcc; if(a) (m[a] = m[a] || []).push(u); }); const l = []; Object.keys(m).forEach(a => { if(m[a].length > 1) m[a].forEach(u => l.push({ k: u.loginId, l: u.loginId + ' - ' + u.name + ' (same account as ' + m[a].filter(x => x !== u).map(x => x.loginId).join(', ') + ')' })); }); if(l.length) out.push({ sev: 'bad', title: 'Same bank account on more than one person', why: 'One of them is wrong. Money would go to the wrong person.', items: l }); }
+  // 6. ID numbers
+  { const m = {}; us.forEach(u => { const a = ((u.profile || {}).iqama || {}).no; if(a) (m[a] = m[a] || []).push(u); }); const l = []; Object.keys(m).forEach(a => { if(m[a].length > 1) m[a].forEach(u => l.push({ k: u.loginId, l: u.loginId + ' - ' + u.name + ' (Iqama ' + a + ')' })); }); if(l.length) out.push({ sev: 'bad', title: 'Same Iqama number on more than one person', why: 'Check which one is right.', items: l }); }
+  { const l = us.filter(u => (u.profile || {}).employmentType === 'Saudi' && !(u.profile || {}).saudiId); if(l.length) out.push({ sev: 'warn', title: 'Saudi people without a Saudi ID', why: 'It is needed on the bank list.', items: l.map(who) }); }
+  { const l = us.filter(u => { const p = u.profile || {}; return salaried(u) && p.employmentType !== 'Saudi' && !(p.iqama || {}).no && (((p.salary || {}).bankAcc) || ''); }); if(l.length) out.push({ sev: 'warn', title: 'Paid by bank but no Iqama number', why: 'Needed on the bank list.', items: l.map(who) }); }
+  // 7. operators with machines that do not exist
+  { const ids = new Set((state.machines || []).map(m => String(m.id))); const l = us.filter(u => (u.assignedMachines || []).some(x => !ids.has(String(x)))); if(l.length && (state.machines || []).length) out.push({ sev: 'warn', title: 'Operators assigned to a machine that no longer exists', why: 'Open Operators & machines and re-assign.', items: l.map(who) }); }
+  return out;
+}
+async function chkFix(id, arg, pick){
+  const db = window.__db; if(!requireDb()) return;
+  try{
+    if(id === 'adddep'){ const l = (state.departments || []).concat([arg]); await db.saveConfigList('departments', l); state.departments = l; }
+    else if(id === 'addpos'){ const l = (state.positions || []).concat([arg]); await db.saveConfigList('positions', l); state.positions = l; }
+    else if(id === 'movedep'){ if(!pick){ toast('Choose a department first'); return; } const l = (state.users || []).filter(u => u.department === arg); await db.updateUsersBatch(l.map(u => ({ loginId: u.loginId, fields: { department: pick } }))); l.forEach(u => { u.department = pick; }); }
+    else if(id === 'iban' || id === 'cash'){
+      const us = (state.users || []).filter(u => !u.spare), ch = [];
+      us.forEach(u => { const s = ((u.profile || {}).salary) || {}; if(id === 'iban' && s.bankAcc && rvfIban(s.bankAcc) && rvfIban(s.bankAcc) !== s.iban) ch.push({ loginId: u.loginId, fields: { 'profile.salary.iban': rvfIban(s.bankAcc) }, ap: (p) => { p.salary.iban = rvfIban(s.bankAcc); } });
+        if(id === 'cash' && !s.bankAcc && !s.payBy && (u.profile || {}).employmentType && !s.noSalary) ch.push({ loginId: u.loginId, fields: { 'profile.salary.payBy': 'cash' }, ap: (p) => { p.salary.payBy = 'cash'; } }); });
+      if(ch.length) await db.updateUsersBatch(ch.map(c => ({ loginId: c.loginId, fields: c.fields })));
+      ch.forEach(c => { const u = (state.users || []).find(x => x.loginId === c.loginId); if(u){ u.profile = u.profile || {}; u.profile.salary = u.profile.salary || {}; c.ap(u.profile); } });
+    }
+    toast('Fixed'); chkRender();
+  }catch(err){ console.error(err); toast('Could not fix - check your connection'); }
+}
+function chkRender(){
+  const p = document.getElementById('admin-checks'); if(!p) return; const list = chkIssues(), bad = list.filter(x => x.sev === 'bad').length;
+  window.__chkI = list;
+  p.innerHTML = `<div class="sub" style="margin-bottom:10px;">Looks for common mistakes in the lists and people (a department deleted by mistake, wrong bank account, missing IDs...). Each problem says what is wrong and gives the fix. It uses the data already loaded, so it costs nothing to run.</div>
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;"><button type="button" class="btn btn-ghost btn-sm" data-chk="run">Check again</button><span class="hrNote" style="margin:0;">${list.length ? '<b>' + list.length + '</b> to look at' + (bad ? ' (<b>' + bad + '</b> important)' : '') : ''}</span></div>
+    ${list.length ? list.map((x, i) => `<div class="chkCard ${x.sev}"><div class="chkT"><span class="chkDot"></span><b>${CHK_ES(x.title)}</b><span class="chkN">${x.items.length}</span></div><div class="hrNote" style="margin:3px 0 6px;">${CHK_ES(x.why)}</div>
+      <details><summary>Show who</summary><div class="chkL">${x.items.slice(0, 60).map(t => `<div>${CHK_ES(t.l)}</div>`).join('')}${x.items.length > 60 ? '<div>+ ' + (x.items.length - 60) + ' more</div>' : ''}</div></details>
+      ${(x.fixes || []).length ? `<div class="chkF">${x.fixes.map((f, j) => (f.pick ? `<select data-chk="pick" data-i="${i}" data-j="${j}"><option value="">${CHK_ES(f.label)}...</option>${f.pick.map(d => `<option>${CHK_ES(d)}</option>`).join('')}</select>` : '') + `<button type="button" class="pillBtn ok" data-chk="fix" data-i="${i}" data-j="${j}">${f.pick ? 'Move' : CHK_ES(f.label)}</button>`).join('')}</div>` : ''}</div>`).join('') : '<div class="chkOk">No problems found.</div>'}`;
+  chkBadge();
+}
+function chkBadge(){ try{ const n = chkIssues().filter(x => x.sev === 'bad').length; document.querySelectorAll('[data-adm="checks"]').forEach(b => { b.querySelectorAll('.admBad').forEach(x => x.remove()); if(n) b.insertAdjacentHTML('beforeend', `<span class="admBad">${n}</span>`); }); }catch(e){} }
+document.addEventListener('click', (e) => { const t = e.target.closest && e.target.closest('[data-chk]'); if(!t || t.tagName === 'SELECT') return; const a = t.dataset.chk;
+  if(a === 'run') chkRender();
+  else if(a === 'fix'){ const x = (window.__chkI || [])[Number(t.dataset.i)]; if(!x) return; const f = x.fixes[Number(t.dataset.j)], sel = f.pick ? document.querySelector(`select[data-chk="pick"][data-i="${t.dataset.i}"][data-j="${t.dataset.j}"]`) : null; chkFix(f.id, f.arg, sel ? sel.value : null); } });
+(function(){ const t = document.querySelector('.auth-tab[data-admintab="checks"]'); if(t) t.addEventListener('click', () => chkRender()); })();
+setTimeout(() => { try{ chkBadge(); }catch(e){} }, 4000);
 
 </script>
 <style>
