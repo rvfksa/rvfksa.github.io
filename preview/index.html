@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head><meta name="robots" content="noindex">
-<meta name="rvf-build" content="20261115-154241">
+<meta name="rvf-build" content="20261115-154530">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -27922,7 +27922,7 @@ const SM_SECN = { operator: 'Operator', sponsor: 'Sponsor', nonsponsor: 'Non Spo
 async function smDoc(sec, ym){ const k = ym + '_' + sec; if(SM.docs[k]) return SM.docs[k]; const idx = await a2LoadIndex(); if(!idx.items[k]) return (SM.docs[k] = { rows: [] }); const d = (A2.docs && A2.docs[k] && A2.docs[k].savedAt) ? A2.docs[k] : await window.__db.getConfigObject('salary_' + k, {}); return (SM.docs[k] = d || { rows: [] }); }
 function smEntries(ym){
   const out = []; ['operator', 'sponsor', 'nonsponsor', 'saudi'].forEach(sec => { const d = SM.docs[ym + '_' + sec]; if(!d || !d.rows) return; if(SM.secs.length && SM.secs.indexOf(sec) < 0) return;
-    d.rows.forEach(r => { const u = smUser(r.id), p = u.profile || {}, e = { sec, id: r.id, name: r.name || u.name || '', dept: r.dept || u.department || '-', pos: r.pos || a2PosOf(u) || '-', nat: p.homeCountry || p.nationality || (sec === 'saudi' ? 'Saudi Arabia' : '-'), et: p.employmentType || SM_SECN[sec], net: sec2net(sec, r) };
+    d.rows.forEach(r => { const u = smUser(r.id), p = u.profile || {}, e = { sec, id: r.id, name: r.name || u.name || '', dept: r.dept || u.department || '-', pos: r.pos || a2PosOf(u) || '-', nat: p.homeCountry || p.nationality || (sec === 'saudi' ? 'Saudi Arabia' : 'Not set'), et: p.employmentType || SM_SECN[sec], net: sec2net(sec, r) };
       if(SM.dept.length && SM.dept.indexOf(e.dept) < 0) return; if(SM.pos.length && SM.pos.indexOf(e.pos) < 0) return; if(SM.nat.length && SM.nat.indexOf(e.nat) < 0) return; if(SM.et.length && SM.et.indexOf(e.et) < 0) return; out.push(e); }); });
   return out;
 }
@@ -27950,7 +27950,7 @@ async function a2DrawSummary(){
 }
 function smPaint(){
   const yms = SM.yms || [];
-  const mn = $('acMain'); if(!mn || A2.view !== 'sum') return; const b = smBuild(), months = smMonths(SM.months || []), base = []; ['operator', 'sponsor', 'nonsponsor', 'saudi'].forEach(sec => { const d = SM.docs[SM.ym + '_' + sec]; if(d && d.rows) d.rows.forEach(r => { const u = smUser(r.id), p = u.profile || {}; base.push({ dept: r.dept || u.department || '-', pos: r.pos || a2PosOf(u) || '-', nat: p.homeCountry || p.nationality || (sec === 'saudi' ? 'Saudi Arabia' : '-'), et: p.employmentType || SM_SECN[sec] }); }); });
+  const mn = $('acMain'); if(!mn || A2.view !== 'sum') return; const b = smBuild(), months = smMonths(SM.months || []), base = []; ['operator', 'sponsor', 'nonsponsor', 'saudi'].forEach(sec => { const d = SM.docs[SM.ym + '_' + sec]; if(d && d.rows) d.rows.forEach(r => { const u = smUser(r.id), p = u.profile || {}; base.push({ dept: r.dept || u.department || '-', pos: r.pos || a2PosOf(u) || '-', nat: p.homeCountry || p.nationality || (sec === 'saudi' ? 'Saudi Arabia' : 'Not set'), et: p.employmentType || SM_SECN[sec] }); }); });
   const uniq = (f) => Array.from(new Set(base.map(f).filter(Boolean))).sort(), n = [SM.secs.length, SM.dept.length, SM.pos.length, SM.nat.length, SM.et.length].filter(Boolean).length;
   const gl = { dept: 'Department', pos: 'Position', cat: 'Category', nat: 'Country', et: 'Employment type' }[SM.grp];
   const gT = acYmLabel(SM.ym), rowsH = b.groups.map(g => `<tr><td>${acEsc(g.k)}</td><td class="a2N">SAR ${acMoney(g.amt) || '0'}</td>${SM.nop ? `<td class="a2N">${g.n}</td>` : ''}</tr>`);
