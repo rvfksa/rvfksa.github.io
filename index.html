@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261115-175357">
+<meta name="rvf-build" content="20261115-175822">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -11828,19 +11828,18 @@ async function rvfMakePdf(blocks, filename, opts){
   wrap.style.cssText = 'position:fixed; left:-10000px; top:0; width:' + (LS ? 1100 : 760) + 'px; background:#fff; color:#0f172a; padding:0; z-index:-1;';
   const els = blocks.map(h => { const d = document.createElement('div'); d.className = 'pdfBlock'; d.innerHTML = h; wrap.appendChild(d); return d; });
   document.body.appendChild(wrap);
-  try{ await Promise.all(Array.from(wrap.querySelectorAll('img')).map(im => (im.complete && im.naturalWidth) ? (im.decode ? im.decode().catch(() => {}) : 0) : new Promise(r => { im.onload = im.onerror = r; setTimeout(r, 4000); }))); }catch(e){}
   try{
     const pdf = new window.jspdf.jsPDF({ unit:'mm', format:(opts && opts.format) || 'a4', orientation: LS ? 'landscape' : 'portrait' });
     const pw = pdf.internal.pageSize.getWidth(), ph = pdf.internal.pageSize.getHeight(), m = (opts && opts.m != null) ? opts.m : 10, usableW = pw - 2 * m, usableH = ph - 2 * m;
     let y = m;
     for(const el of els){
       if(el.querySelector('[data-pgbreak]') && y > m){ pdf.addPage(); y = m; }
-      if(!el.querySelector('[data-raster]') && (!RVF_AR.test(el.textContent) || await rvfArReady(pdf))){
+      if(!RVF_AR.test(el.textContent) || await rvfArReady(pdf)){
         const kk = usableW / el.offsetWidth; let hh = el.offsetHeight * kk, sc = 1; if(hh > usableH){ sc = usableH / hh; hh = usableH; }
         if(y + hh > ph - m && y > m){ pdf.addPage(); y = m; }
         await rvfVecBlock(pdf, el, m, y, kk * sc); y += hh + 1.5; continue;
       }
-      const canvas = await window.html2canvas(el, { scale:el.querySelector('[data-raster]') ? 2.5 : 2, backgroundColor:'#ffffff', logging:false });
+      const canvas = await window.html2canvas(el, { scale:2, backgroundColor:'#ffffff', logging:false });
       let w = usableW, h = canvas.height * w / canvas.width;
       if(h > usableH){ w = w * usableH / h; h = usableH; }
       if(y + h > ph - m && y > m){ pdf.addPage(); y = m; }
@@ -27846,17 +27845,25 @@ function smSignHtml(prep, chk){
 /* one page of the letterhead paper: header, title, a piece of the table, (signatures on the last page), footer */
 function smPages(title, sub, th, rows, o){
   o = o || {}; const c = smComp(), lh = c.lh, pg = (typeof lhPage === 'function') ? lhPage(lh) : { pT: 50, pR: 50, pB: 50, pL: 50, pxH: 1075 };
-  const per = o.per || 20, lastMax = o.lastMax || 10, chunks = []; let rem = rows.slice();
-  while(rem.length > per){ chunks.push(rem.slice(0, per)); rem = rem.slice(per); }
-  if(rem.length > lastMax){ const k = rem.length - Math.min(8, lastMax); chunks.push(rem.slice(0, k)); rem = rem.slice(k); }
-  chunks.push(rem);
-  return chunks.map((ch, i) => { const last = i === chunks.length - 1;
-    return `<div style="width:760px;min-height:${pg.pxH}px;box-sizing:border-box;padding:${pg.pT}px ${pg.pR}px ${pg.pB}px ${pg.pL}px;background:#ffffff;color:#0f172a;font-family:'Inter',sans-serif;display:flex;flex-direction:column;">
-      ${typeof lhHeaderHtml === 'function' ? lhHeaderHtml(lh, c.company) : ''}
-      <div style="text-align:center;margin:16px 0 2px;font-family:'Oswald',sans-serif;font-size:19px;font-weight:700;letter-spacing:.02em;">${acEsc(title)}</div>${sub ? `<div style="text-align:center;font-size:11.5px;color:#475569;margin-bottom:10px;">${acEsc(sub)}${chunks.length > 1 ? ' - page ' + (i + 1) + '/' + chunks.length : ''}</div>` : ''}
+  const head = typeof lhHeaderHtml === 'function' ? lhHeaderHtml(lh, c.company) : '';
+  const page = (ch, last, label, minH) => `<div style="width:760px;min-height:${minH}px;box-sizing:border-box;padding:${pg.pT}px ${pg.pR}px ${pg.pB}px ${pg.pL}px;background:#ffffff;color:#0f172a;font-family:'Inter',sans-serif;display:flex;flex-direction:column;">
+      ${head}
+      <div style="text-align:center;margin:16px 0 2px;font-family:'Oswald',sans-serif;font-size:19px;font-weight:700;letter-spacing:.02em;">${acEsc(title)}</div>${sub ? `<div style="text-align:center;font-size:11.5px;color:#475569;margin-bottom:10px;">${acEsc(sub)}${label}</div>` : ''}
       ${SM_CSS}${smTbl(th, ch, 'ovPdfT', o.cols)}
-      <div style="flex:1"></div>${last && o.sign ? o.sign : ''}
-      ${lh && lh.footer ? `<div style="margin-top:16px;padding-top:10px;border-top:1px solid #e2e8f0;font-size:10.5px;color:#64748b;text-align:center;">${acEsc(lh.footer)}</div>` : ''}</div>`; });
+      <div style="flex:1"></div>${last && o.sign ? '<div style="margin-top:18px;">' + o.sign + '</div>' : ''}
+      ${lh && lh.footer ? `<div style="margin-top:16px;padding-top:10px;border-top:1px solid #e2e8f0;font-size:10.5px;color:#64748b;text-align:center;">${acEsc(lh.footer)}</div>` : ''}</div>`;
+  const box = document.createElement('div'); box.style.cssText = 'position:fixed;left:-10000px;top:0;width:760px;visibility:hidden;'; document.body.appendChild(box);
+  const fits = (ch, last) => { box.innerHTML = page(ch, last, ' - page 9/9', 0); return box.firstElementChild.offsetHeight <= pg.pxH - 4; };
+  const chunks = []; let rem = rows.slice();
+  try{
+    while(rem.length){
+      if(fits(rem, true)){ chunks.push(rem); rem = []; break; }
+      let k = 1; while(k < rem.length && fits(rem.slice(0, k + 1), false)) k++;
+      chunks.push(rem.slice(0, k)); rem = rem.slice(k);
+    }
+  } finally { box.remove(); }
+  if(!chunks.length) chunks.push([]);
+  return chunks.map((ch, i) => page(ch, i === chunks.length - 1, chunks.length > 1 ? ' - page ' + (i + 1) + '/' + chunks.length : '', pg.pxH));
 }
 const smPdfOpt = () => { const lh = smComp().lh; return { m: 0, format: (typeof lhPage === 'function' ? lhPage(lh).fmt : 'a4') }; };
 function smHeadHtml(title, sub){ const c = smComp(); return `<div style="padding:6px 6px 0;">${typeof lhHeaderHtml === 'function' ? lhHeaderHtml(c.lh, c.company) : ''}<div style="text-align:center;margin:14px 0 4px;font-family:'Oswald',sans-serif;font-size:19px;font-weight:700;letter-spacing:.02em;">${acEsc(title)}</div>${sub ? `<div style="text-align:center;font-size:11.5px;color:#475569;margin-bottom:8px;">${acEsc(sub)}</div>` : ''}</div>`; }
