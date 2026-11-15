@@ -3617,7 +3617,7 @@ table.pkPdf tr.tot td{ background:#eef2ff !important; border-top:1px solid #c7d2
 .a2FPanel .a2DetL input{ margin-top:2px; flex:none; } .a2FPanel .a2DetL span{ min-width:0; overflow-wrap:anywhere; }
 .a2Ab{ width:20px; height:20px; border-radius:50%; border:1px solid var(--line); background:#ffffff; color:#64748b; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; padding:0; }
 .a2Ab:hover{ background:#eef2ff; color:#4f46e5; border-color:#c7d2fe; }
-.a2Rn{ font-size:10.5px; color:#64748b; cursor:help; border-bottom:1px dotted #cbd5e1; padding:0 1px; } .a2RnC{ font-size:10.5px; color:#94a3b8; margin-right:3px; }
+.a2Rn{ white-space:normal; font-size:10.5px; color:#64748b; cursor:help; border-bottom:1px dotted #cbd5e1; padding:0 1px; } .a2RnC{ font-size:10.5px; color:#94a3b8; margin-right:3px; }
 .a2DdCard{ max-width:440px; }
 .a2DdBody{ margin-top:12px; } .a2DdL{ display:grid; grid-template-columns:110px 1fr 24px; gap:8px; align-items:center; margin-bottom:8px; }
 .a2DdA, .a2DdR{ height:36px; border-radius:999px; border:1px solid var(--line); background:#ffffff; padding:0 12px; font:inherit; font-size:13px; width:100%; min-width:0; }
@@ -23380,12 +23380,14 @@ function a2DedReasons(){ return (AC.set && Array.isArray(AC.set.dedReasons)) ? A
 function a2ReasonName(r, id){ const x = a2DedReasons().find(y => Number(y.id) === Number(id)); if(x) return x.name; const l = (r.dl || []).find(y => Number(y.r) === Number(id) && y.n); return l ? l.n : 'Reason ' + id; }
 function a2RmNums(r){ const s = new Set(); (r.dl || []).forEach(l => { if(l.r) s.add(Number(l.r)); }); return Array.from(s).sort((a, b) => a - b); }
 function a2RmTip(r, id){ return (r.dl || []).filter(l => Number(l.r) === Number(id)).map(l => a2ReasonName(r, id) + ': ' + acMoney(l.a) + ' SAR').join('\n'); }
-function a2RmHtml(r){ const n = a2RmNums(r); if(!n.length) return ''; if(A2.pdf) return n.join(', '); return n.map(i => `<span class="a2Rn" title="${acEsc(a2RmTip(r, i))}">${i}</span>`).join('<span class="a2RnC">,</span>'); }
+function a2RmLbl(r, id){ const nm = a2ReasonName(r, id), dys = (r.dl || []).filter(l => Number(l.r) === Number(id)).reduce((a, l) => a + acNum(l.lv), 0); return id + ' ' + nm + (dys > 0 ? ' - ' + dys + (dys === 1 ? ' day' : ' days') : ''); }
+function a2RmTxt(r, sep){ return a2RmNums(r).map(i => a2RmLbl(r, i)).join(sep || ', '); }
+function a2RmHtml(r){ const n = a2RmNums(r); if(!n.length) return ''; if(A2.pdf) return a2RmTxt(r); return n.map(i => `<span class="a2Rn" title="${acEsc(a2RmTip(r, i))}">${acEsc(a2RmLbl(r, i))}</span>`).join('<span class="a2RnC">,</span>'); }
 function a2UsedReasons(rows){ const m = new Map(); (rows || []).forEach(r => (r.dl || []).forEach(l => { if(l.r && !m.has(Number(l.r))) m.set(Number(l.r), a2ReasonName(r, l.r)); })); return Array.from(m.entries()).sort((a, b) => a[0] - b[0]); }
 function a2HasCut(){ const d = a2Doc(); return acNum(AC.set && AC.set.premCut) > 0 || !!(d && d.rows.some(r => r.cutPct > 0)); }
 function a2Warn(p){ let mx = 0; ((AC.tbl && AC.tbl.tables) || []).forEach(t => (t.rows || []).forEach(r => { if(r[0] > mx) mx = r[0]; })); return p > (mx ? mx * 1.25 : 12000); }
 function a2Peek(r, m){ return `<button type="button" class="a2Pk${a2Warn(m.p) ? ' warn' : ''}" data-a2="peek" data-id="${acEsc(r.id)}" data-m="${acEsc(m.m)}" title="${a2Warn(m.p) ? 'Very high for one machine - check the readings. ' : ''}See the days">${a2I(m.p)}</button>`; }
-const a2Screen = (sec) => a2Cols(sec).filter(c => c.def);
+const a2Screen = (sec) => a2Cols(sec).filter(c => c.def && !(sec === 'saudi' && (c.k === 'dept' || c.k === 'pos') && !A2.saDp));
 function a2Cols0(sec, all){
   const ed = acCanEdit();
   if(sec === 'operator'){
@@ -23414,7 +23416,7 @@ function a2Cols0(sec, all){
       { k: 'gt', l: 'Total', g: 'Pay', def: 1, num: 1, bold: 1, sum: 1, calc: 1, text: r => a2W(a2OpGt(r)) || '0', raw: r => a2OpGt(r), sv: r => a2OpGt(r), html: r => a2W(a2OpGt(r)) || '0' },
       { k: 'ded', l: 'Deduction', g: 'Pay', def: 1, num: 1, sum: 1, calc: 1, text: r => a2W(acNum(r.ded)), raw: r => acNum(r.ded) || '', sv: r => acNum(r.ded), html: r => a2W(acNum(r.ded)), dedCol: 0 },
       { k: 'net', l: 'Net pay', g: 'Pay', def: 1, num: 1, bold: 1, sum: 1, calc: 1, text: r => a2W(r.net) || '0', raw: r => r.net, sv: r => r.net, html: r => a2W(r.net) || '0' },
-      { k: 'rm', l: 'Remarks', g: 'Pay', def: 1, calc: 1, text: r => a2RmNums(r).join(','), html: (r) => a2RmHtml(r) },
+      { k: 'rm', l: 'Remarks', g: 'Pay', def: 1, calc: 1, text: r => a2RmTxt(r), html: (r) => a2RmHtml(r) },
       { k: 'ac', l: '', g: 'Pay', def: ed ? 1 : 0, scr: 1, calc: 0, text: () => '', html: (r) => (ed && !A2.pdf) ? `<button type="button" class="a2Ab" data-ad="open" data-id="${acEsc(r.id)}" title="Deduct from this person's pay" aria-label="Deduct"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg></button>` : '' }
     ]);
   }
@@ -23430,7 +23432,7 @@ function a2Cols0(sec, all){
       money('tot', 'Total salary', r => r.tadd, { bold: 1, text: r => a2W(r.tadd) || '0', html: r => a2W(r.tadd) || '0' }),
       money('ded', 'Deduction', r => acNum(r.ded), { dedCol: 0 }),
       money('net', 'Net payment', r => r.net, { bold: 1, text: r => a2W(r.net) || '0', html: r => a2W(r.net) || '0' }),
-      { k: 'rm', l: 'Remarks', g: 'Pay', def: 1, calc: 1, text: r => a2RmNums(r).join(', '), html: (r) => a2RmHtml(r) },
+      { k: 'rm', l: 'Remarks', g: 'Pay', def: 1, calc: 1, text: r => a2RmTxt(r), html: (r) => a2RmHtml(r) },
       { k: 'ac', l: '', g: 'Pay', def: ed ? 1 : 0, scr: 1, calc: 0, text: () => '', html: (r) => (ed && !A2.pdf) ? `<button type="button" class="a2Ab" data-ad="open" data-id="${acEsc(r.id)}" title="Deduct from this person's pay" aria-label="Deduct"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg></button>` : '' }
     ]);
   }
@@ -23441,7 +23443,7 @@ function a2Cols0(sec, all){
       { k: 'fx', l: 'Salary', g: 'Pay', def: 1, num: 1, sum: 1, calc: 1, text: r => a2M(acNum(r.fx)), raw: r => acNum(r.fx) || '', sv: r => acNum(r.fx), html: r => a2M(acNum(r.fx)) },
       { k: 'ded', l: 'Deduction', g: 'Pay', def: 1, num: 1, sum: 1, calc: 1, text: r => a2M(acNum(r.ded)), raw: r => acNum(r.ded) || '', sv: r => acNum(r.ded), html: r => a2M(acNum(r.ded)), dedCol: 0 },
       { k: 'net', l: 'Net pay', g: 'Pay', def: 1, num: 1, bold: 1, sum: 1, calc: 1, text: r => a2W(r.net) || '0', raw: r => r.net, sv: r => r.net, html: r => a2W(r.net) || '0' },
-      { k: 'rm', l: 'Remarks', g: 'Pay', def: 1, calc: 1, text: r => a2RmNums(r).join(','), html: (r) => a2RmHtml(r) },
+      { k: 'rm', l: 'Remarks', g: 'Pay', def: 1, calc: 1, text: r => a2RmTxt(r), html: (r) => a2RmHtml(r) },
       { k: 'ac', l: '', g: 'Pay', def: ed ? 1 : 0, scr: 1, calc: 0, text: () => '', html: (r) => (ed && !A2.pdf) ? `<button type="button" class="a2Ab" data-ad="open" data-id="${acEsc(r.id)}" title="Deduct from this person's pay" aria-label="Deduct"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg></button>` : '' }
     ]);
   }
@@ -23457,7 +23459,7 @@ function a2Cols0(sec, all){
     money('tot', 'Total salary', r => (r.v || {}).gross, { bold: 1, text: r => a2W((r.v || {}).gross) || '0', html: r => a2W((r.v || {}).gross) || '0' }),
     money('ded', 'Deduction', r => acNum(r.ded), { dedCol: 0 }),
     money('net', 'Net payment', r => (r.v || {}).net, { bold: 1, text: r => a2W((r.v || {}).net) || '0', html: r => a2W((r.v || {}).net) || '0' }),
-    { k: 'rm', l: 'Remarks', g: 'Pay', def: 1, calc: 1, text: r => (acNum(r.ty) ? ['Beaming/Tying'] : []).concat(a2RmNums(r)).join(', '), html: (r) => (acNum(r.ty) ? `<span class="a2RnT" title="Beaming/Tying commission ${acEsc(acMoney(r.ty))} SAR">Beaming/Tying</span>` + (a2RmNums(r).length ? '<span class="a2RnC">,</span>' : '') : '') + a2RmHtml(r) },
+    { k: 'rm', l: 'Remarks', g: 'Pay', def: 1, calc: 1, text: r => (acNum(r.ty) ? ['Beaming/Tying'] : []).concat(a2RmNums(r).map(i => a2RmLbl(r, i))).join(', '), html: (r) => (acNum(r.ty) ? `<span class="a2RnT" title="Beaming/Tying commission ${acEsc(acMoney(r.ty))} SAR">Beaming/Tying</span>` + (a2RmNums(r).length ? '<span class="a2RnC">,</span>' : '') : '') + a2RmHtml(r) },
     { k: 'ac', l: '', g: 'Pay', def: ed ? 1 : 0, scr: 1, calc: 0, text: () => '', html: (r) => (ed && !A2.pdf) ? `<button type="button" class="a2Ab" data-ad="open" data-id="${acEsc(r.id)}" title="Deduct from this person's pay" aria-label="Deduct"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg></button>` : '' }
   ]);
 }
@@ -23679,6 +23681,7 @@ function a2DrawSheet0(){
       ${depts.length > 1 ? a2Multi('dept', 'department', 'All departments', depts) : ''}
       ${poss.length > 1 ? a2Multi('pos', 'position', 'All positions', poss) : ''}
       ${!op && nats.length > 1 ? `<select id="a2Nat">${opts(nats.map(x => [x, x]), A2.nat, 'All nationalities')}</select>` : ''}
+      ${sec === 'saudi' ? `<div class="a2FCols"><span class="a2FT">Columns to show</span><label class="a2Fx a2DetL"><input type="checkbox" id="a2Sdp" ${A2.saDp ? 'checked' : ''}><span>Department and Position</span></label></div>` : ''}
       ${op ? `<select id="a2Shift">${opts([['D', 'Day'], ['N', 'Night']], A2.shift, 'Both shifts')}</select>` : ''}
       ${op ? `<div class="a2FCols"><span class="a2FT">Columns to show</span><label class="a2Fx a2DetL"><input type="checkbox" id="a2Det" ${A2.det !== false ? 'checked' : ''}><span>Machine details (MC, Picks, Rate)</span></label><label class="a2Fx a2DetL"><input type="checkbox" id="a2Tp" ${A2.tp !== false ? 'checked' : ''}><span>Total picks</span></label><label class="a2Fx a2DetL"><input type="checkbox" id="a2Av" ${A2.av !== false ? 'checked' : ''}><span>Avg rate</span></label></div>` : ''}
       ${a2NjCount(rows) || A2.hideNj ? `<label class="a2Fx a2DetL"><input type="checkbox" id="a2Hnj" ${A2.hideNj ? 'checked' : ''}><span>Hide people who had not joined yet in this salary month (${a2NjCount(rows)})</span></label>` : ''}${fN ? '<button type="button" class="pillBtn" data-a2="fclear">Clear</button>' : ''}</div>` : '';
@@ -23932,6 +23935,7 @@ document.addEventListener('input', (e) => {
 document.addEventListener('change', async (e) => {
   const t = e.target; if(!$('accountsBody') || !$('accountsBody').contains(t)) return;
   if(t.id === 'a2From' || t.id === 'a2To'){ const d = a2Doc(); if(d){ d.from = $('a2From').value || d.from; d.to = $('a2To').value || d.to; a2Touch(); a2DirtyUi(); const cb = document.querySelector('.a2CycB'); if(cb && typeof pdDayTxt === 'function') cb.innerHTML = pdDayTxt(d.from) + ' &ndash; ' + pdDayTxt(d.to); } return; }
+  if(t.id === 'a2Sdp'){ A2.saDp = t.checked; a2DrawSheet(); return; }
   if(t.id === 'a2Hnj'){ A2.hideNj = t.checked; a2DrawSheet(); return; }
   if(t.id === 'a2Det'){ A2.det = t.checked; a2DrawSheet(); return; }
   if(t.id === 'a2Tp'){ A2.tp = t.checked; a2DrawSheet(); return; }
@@ -24629,7 +24633,7 @@ function a2Cols1(sec, all){
     }
     if(c.k === 'rm' && sec === 'sponsor'){
       const ln = (r) => [r.jdt || '', acNum(r.ty) ? 'Tying ' + acMoney(r.ty) : '', acNum(r.extra) ? 'Extra ' + acMoney(r.extra) : ''].filter(Boolean);
-      c.text = (r) => ln(r).concat(a2RmNums(r).length ? [a2RmNums(r).join(',')] : []).join(', ');
+      c.text = (r) => ln(r).concat(a2RmNums(r).length ? [a2RmTxt(r)] : []).join(', ');
       c.html = (r) => { const l = ln(r), n = a2RmHtml(r); return n + (n && l.length ? '<br>' : '') + (l.length ? `<span class="a2Jn" title="${acEsc(r.jdl || '')}">${l.map(acEsc).join('<br>')}</span>` : ''); };
     } else if(c.k === 'rm'){
       const t0 = c.text, h0 = c.html;
