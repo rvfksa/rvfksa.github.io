@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261115-141738">
+<meta name="rvf-build" content="20261115-154241">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -27922,14 +27922,14 @@ const SM_SECN = { operator: 'Operator', sponsor: 'Sponsor', nonsponsor: 'Non Spo
 async function smDoc(sec, ym){ const k = ym + '_' + sec; if(SM.docs[k]) return SM.docs[k]; const idx = await a2LoadIndex(); if(!idx.items[k]) return (SM.docs[k] = { rows: [] }); const d = (A2.docs && A2.docs[k] && A2.docs[k].savedAt) ? A2.docs[k] : await window.__db.getConfigObject('salary_' + k, {}); return (SM.docs[k] = d || { rows: [] }); }
 function smEntries(ym){
   const out = []; ['operator', 'sponsor', 'nonsponsor', 'saudi'].forEach(sec => { const d = SM.docs[ym + '_' + sec]; if(!d || !d.rows) return; if(SM.secs.length && SM.secs.indexOf(sec) < 0) return;
-    d.rows.forEach(r => { const u = smUser(r.id), p = u.profile || {}, e = { sec, id: r.id, name: r.name || u.name || '', dept: r.dept || u.department || '-', pos: r.pos || a2PosOf(u) || '-', nat: p.nationality || '-', et: p.employmentType || SM_SECN[sec], net: sec2net(sec, r) };
+    d.rows.forEach(r => { const u = smUser(r.id), p = u.profile || {}, e = { sec, id: r.id, name: r.name || u.name || '', dept: r.dept || u.department || '-', pos: r.pos || a2PosOf(u) || '-', nat: p.homeCountry || p.nationality || (sec === 'saudi' ? 'Saudi Arabia' : '-'), et: p.employmentType || SM_SECN[sec], net: sec2net(sec, r) };
       if(SM.dept.length && SM.dept.indexOf(e.dept) < 0) return; if(SM.pos.length && SM.pos.indexOf(e.pos) < 0) return; if(SM.nat.length && SM.nat.indexOf(e.nat) < 0) return; if(SM.et.length && SM.et.indexOf(e.et) < 0) return; out.push(e); }); });
   return out;
 }
 const smRowFilt = () => !!(SM.dept.length || SM.pos.length || SM.nat.length || SM.et.length);
 function smGroups(list){ const key = { dept: e => e.dept, pos: e => e.pos, cat: e => SM_SECN[e.sec], nat: e => e.nat, et: e => e.et }[SM.grp] || (e => e.dept), m = {}; list.forEach(e => { const k = key(e); (m[k] = m[k] || { k, amt: 0, n: 0 }); m[k].amt += e.net; m[k].n++; }); const g = Object.keys(m).map(k => m[k]); g.sort(SM.sort === 'az' ? (a, b) => a.k.localeCompare(b.k) : (a, b) => b.amt - a.amt || a.k.localeCompare(b.k)); return g; }
 function smBuild(){
-  const all = smEntries(SM.ym), one = SM.nsOne && SM.grp !== 'cat' && !(SM.secs.length && SM.secs.indexOf('nonsponsor') < 0), main = one ? all.filter(e => e.sec !== 'nonsponsor') : all, ns = one ? all.filter(e => e.sec === 'nonsponsor') : [];
+  const all = smEntries(SM.ym), one = false, main = one ? all.filter(e => e.sec !== 'nonsponsor') : all, ns = one ? all.filter(e => e.sec === 'nonsponsor') : [];
   const S = (l) => ({ amt: acR2(l.reduce((a, e) => a + e.net, 0)), n: l.length }); return { groups: smGroups(main), tot: S(main), ns: ns.length ? S(ns) : null, grand: S(all), one };
 }
 async function smLoadYear(year){ const months = []; for(let m = 1; m <= 12; m++) months.push(year + '-' + String(m).padStart(2, '0')); if(smRowFilt()){ for(const ym of months) for(const sec of ['operator', 'sponsor', 'nonsponsor', 'saudi']) await smDoc(sec, ym); } return months; }
@@ -27950,7 +27950,7 @@ async function a2DrawSummary(){
 }
 function smPaint(){
   const yms = SM.yms || [];
-  const mn = $('acMain'); if(!mn || A2.view !== 'sum') return; const b = smBuild(), months = smMonths(SM.months || []), base = []; ['operator', 'sponsor', 'nonsponsor', 'saudi'].forEach(sec => { const d = SM.docs[SM.ym + '_' + sec]; if(d && d.rows) d.rows.forEach(r => { const u = smUser(r.id), p = u.profile || {}; base.push({ dept: r.dept || u.department || '-', pos: r.pos || a2PosOf(u) || '-', nat: p.nationality || '-', et: p.employmentType || SM_SECN[sec] }); }); });
+  const mn = $('acMain'); if(!mn || A2.view !== 'sum') return; const b = smBuild(), months = smMonths(SM.months || []), base = []; ['operator', 'sponsor', 'nonsponsor', 'saudi'].forEach(sec => { const d = SM.docs[SM.ym + '_' + sec]; if(d && d.rows) d.rows.forEach(r => { const u = smUser(r.id), p = u.profile || {}; base.push({ dept: r.dept || u.department || '-', pos: r.pos || a2PosOf(u) || '-', nat: p.homeCountry || p.nationality || (sec === 'saudi' ? 'Saudi Arabia' : '-'), et: p.employmentType || SM_SECN[sec] }); }); });
   const uniq = (f) => Array.from(new Set(base.map(f).filter(Boolean))).sort(), n = [SM.secs.length, SM.dept.length, SM.pos.length, SM.nat.length, SM.et.length].filter(Boolean).length;
   const gl = { dept: 'Department', pos: 'Position', cat: 'Category', nat: 'Country', et: 'Employment type' }[SM.grp];
   const gT = acYmLabel(SM.ym), rowsH = b.groups.map(g => `<tr><td>${acEsc(g.k)}</td><td class="a2N">SAR ${acMoney(g.amt) || '0'}</td>${SM.nop ? `<td class="a2N">${g.n}</td>` : ''}</tr>`);
@@ -27965,7 +27965,7 @@ function smPaint(){
       <button type="button" class="pillBtn" data-sm="pdf" title="Summary of the month on the letterhead">${DL_ICON}PDF</button><button type="button" class="pillBtn" data-sm="pdfy" title="Month by month of the year on the letterhead">${DL_ICON}Year PDF</button><button type="button" class="pillBtn" data-sm="xlsx">${DL_ICON}Excel</button></div>
     <div class="smSign"><div class="field"><label>Prepared by</label><select data-sm="prep">${smSignOpts(SM.prep)}</select></div><div class="field"><label>Checked by</label><select data-sm="chk">${smSignOpts(SM.chk)}</select></div><div class="field"><label>Approved by</label><div class="smApp">${acEsc(smComp().gm || 'not set - add it in Admin > Letterhead')}</div></div></div>
     ${SM.fOpen ? `<div class="a2FPanel">${smMulti('secs', 'sheets', 'All sheets', Object.keys(SM_SECN).map(k => [k, SM_SECN[k]]))}${smMulti('et', 'types', 'All employment types', uniq(x => x.et))}${smMulti('dept', 'departments', 'All departments', uniq(x => x.dept))}${smMulti('pos', 'positions', 'All positions', uniq(x => x.pos))}${smMulti('nat', 'countries', 'All countries', uniq(x => x.nat))}
-      <div class="a2FCols"><span class="a2FT">Show</span><label class="a2Fx a2DetL"><input type="checkbox" data-sm="nsone" ${SM.nsOne ? 'checked' : ''}><span>Non Sponsor as one line (like your Excel)</span></label><label class="a2Fx a2DetL"><input type="checkbox" data-sm="nop" ${SM.nop ? 'checked' : ''}><span>Number of people (NOP)</span></label></div>${n ? '<button type="button" class="pillBtn" data-sm="fclear">Clear filters</button>' : ''}</div>` : ''}
+      <div class="a2FCols"><span class="a2FT">Show</span><label class="a2Fx a2DetL"><input type="checkbox" data-sm="nop" ${SM.nop ? 'checked' : ''}><span>Number of people (NOP)</span></label></div>${n ? '<button type="button" class="pillBtn" data-sm="fclear">Clear filters</button>' : ''}</div>` : ''}
     <div class="smGrid"><div><div class="smT">${acEsc(gl)} - ${acEsc(gT)}</div><div class="table-scroll"><table class="report-table smTbl"><thead><tr><th>${acEsc(gl.toUpperCase())}</th><th class="a2N">AMOUNT</th>${SM.nop ? '<th class="a2N">NOP</th>' : ''}</tr></thead><tbody>${rowsH.join('') || '<tr><td colspan="3">Nothing matches.</td></tr>'}${tail}</tbody></table></div></div>
     <div><div class="smT">Month by month - ${acEsc(SM.ym.slice(0, 4))}</div><div class="table-scroll"><table class="report-table smTbl"><thead><tr><th>MONTH</th><th class="a2N">AMOUNT</th>${SM.nop ? '<th class="a2N">NOP</th>' : ''}</tr></thead><tbody>${mRows}<tr class="smGt"><td><b>G TOTAL</b></td><td class="a2N"><b>${acMoney(gTot) || '0'}</b></td>${SM.nop ? '<td></td>' : ''}</tr><tr><td><b>AVG/MONTH</b></td><td class="a2N"><b>${acMoney(avg) || '0'}</b></td>${SM.nop ? `<td class="a2N"><b>${avgN}</b></td>` : ''}</tr></tbody></table></div></div></div>
     <div class="hrNote" style="margin-top:8px;">Made from the saved sheets only. Pick Prepared by and Checked by above; Approved by is the boss from Admin &rarr; Letterhead. The PDF is the month summary; Year PDF is the month by month page.</div>`;
