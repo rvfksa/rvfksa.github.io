@@ -8339,6 +8339,12 @@ async function addConfigItem(key, inputId){
 
 async function removeConfigItem(key, val){
   if(!requireDb()) return;
+  if(key === 'departments' || key === 'positions'){
+    let n = 0, m = 0;
+    try{ const us = await window.__db.listUsersOnce(); n = us.filter(u => key === 'departments' ? u.department === val : (u.profile && u.profile.position === val)).length; if(key === 'departments'){ const ms = await window.__db.getMachines(); m = ms.filter(x => x.department === val).length; } }
+    catch(e){ console.error(e); toast('Could not check who uses it - nothing was deleted'); return; }
+    if(n || m){ toast('Not deleted: ' + (n ? n + (n === 1 ? ' person' : ' people') : '') + (n && m ? ' and ' : '') + (m ? m + (m === 1 ? ' machine' : ' machines') : '') + ' still use "' + val + '". Move them first, or rename it instead.'); return; }
+  }
   const list = (state[key] || []).filter(v => v !== val);
   try{
     await window.__db.saveConfigList(key, list);
