@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261115-110605">
+<meta name="rvf-build" content="20261115-111723">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -27972,7 +27972,7 @@ document.addEventListener('change', async (e) => { const t = e.target; if(!t || 
 /* ===== p226: Admin > Problems check (finds common data mistakes and gives the fix) ===== */
 const CHK_ES = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 function chkIssues(){
-  const us = (state.users || []).filter(u => !u.spare), deps = state.departments || [], poss = state.positions || [], out = [], who = (u) => ({ k: u.loginId, l: u.loginId + ' - ' + (u.name || '') });
+  const us = (state.users || []).filter(u => !u.spare && !(typeof isExitedEmployee === 'function' && isExitedEmployee(u))), deps = state.departments || [], poss = state.positions || [], out = [], who = (u) => ({ k: u.loginId, l: u.loginId + ' - ' + (u.name || '') });
   const salaried = (u) => { const s = (u.profile || {}).salary || {}; return !s.noSalary && (u.profile || {}).employmentType; };
   // 1. department deleted or misspelled while people still use it
   const byDep = {}; us.forEach(u => { if(u.department && deps.indexOf(u.department) < 0) (byDep[u.department] = byDep[u.department] || []).push(u); });
@@ -28007,7 +28007,7 @@ async function chkFix(id, arg, pick){
     else if(id === 'addpos'){ const l = (state.positions || []).concat([arg]); await db.saveConfigList('positions', l); state.positions = l; }
     else if(id === 'movedep'){ if(!pick){ toast('Choose a department first'); return; } const l = (state.users || []).filter(u => u.department === arg); await db.updateUsersBatch(l.map(u => ({ loginId: u.loginId, fields: { department: pick } }))); l.forEach(u => { u.department = pick; }); }
     else if(id === 'iban' || id === 'cash'){
-      const us = (state.users || []).filter(u => !u.spare), ch = [];
+      const us = (state.users || []).filter(u => !u.spare && !(typeof isExitedEmployee === 'function' && isExitedEmployee(u))), ch = [];
       us.forEach(u => { const s = ((u.profile || {}).salary) || {}; if(id === 'iban' && s.bankAcc && rvfIban(s.bankAcc) && rvfIban(s.bankAcc) !== s.iban) ch.push({ loginId: u.loginId, fields: { 'profile.salary.iban': rvfIban(s.bankAcc) }, ap: (p) => { p.salary.iban = rvfIban(s.bankAcc); } });
         if(id === 'cash' && !s.bankAcc && !s.payBy && (u.profile || {}).employmentType && !s.noSalary) ch.push({ loginId: u.loginId, fields: { 'profile.salary.payBy': 'cash' }, ap: (p) => { p.salary.payBy = 'cash'; } }); });
       if(ch.length) await db.updateUsersBatch(ch.map(c => ({ loginId: c.loginId, fields: c.fields })));
