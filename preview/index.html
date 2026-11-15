@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta name="robots" content="noindex, nofollow">
-<meta name="rvf-build" content="20261115-093020">
+<meta name="rvf-build" content="20261115-093248">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -2236,7 +2236,8 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
   .pcItTotal{ display:flex; justify-content:space-between; align-items:center; padding:10px 14px; background:var(--panel-2); font-size:12.5px; color:var(--muted); font-weight:600; } .pcItTotal b{ font-family:'JetBrains Mono',monospace; font-size:14px; color:var(--text-strong); }
   .pcSigRow{ display:flex; gap:8px; align-items:center; margin-bottom:6px; } .pcSigRow b{ flex:none; max-width:44%; font-size:12.5px; } .pcSigRow input{ flex:1; min-width:0; height:34px; padding:0 10px; }
   @media (hover:hover) and (pointer:fine){
-    .navbar{ flex-wrap:wrap; overflow-x:visible; }
+    .navbar{ flex-wrap:nowrap; overflow-x:auto; gap:4px; padding-left:18px; padding-right:18px; }
+    .navbar .nav-btn{ padding:8px 11px; font-size:12px; }
     .pcChips{ flex-wrap:wrap; overflow-x:visible; }
   }
   /* ---- v4: use the width — column layout on computers, clear panel when opened ---- */
@@ -6203,11 +6204,10 @@ function renderNav(){
   const nav = $('navbar');
   nav.innerHTML = '';
   const pages = userPages(state.user).slice();
-  if(state.user.role === 'admin' && !pages.includes('aichat')) pages.push('aichat');
   if(state.user.role === 'admin' && !pages.includes('stock')) pages.push('stock');
   pages.forEach(key => {
     const def = PAGE_DEFS[key];
-    if(!def) return;
+    if(!def || key === 'aichat') return;   // the AI page is switched off for everyone (nothing deleted)
     const b = document.createElement('div');
     b.className = 'nav-btn';
     b.textContent = def.label;
@@ -6833,7 +6833,7 @@ function buildPagesGrid(u){
   if(!grid) return;
   grid.innerHTML = '';
   const assigned = userPages(u);
-  Object.keys(PAGE_DEFS).forEach(key => {
+  Object.keys(PAGE_DEFS).filter(k => k !== 'aichat').forEach(key => {
     const lbl = document.createElement('label');
     lbl.innerHTML = `<input type="checkbox" value="${key}" ${assigned.includes(key) ? 'checked' : ''}> ${PAGE_DEFS[key].label}`;
     grid.appendChild(lbl);
