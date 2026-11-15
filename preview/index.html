@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta name="robots" content="noindex, nofollow">
-<meta name="rvf-build" content="20261115-090738">
+<meta name="rvf-build" content="20261115-091104">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -23348,6 +23348,23 @@ function a2NewRow(sec, u){ return sec === 'operator' ? a2NewOp(u) : sec === 'spo
 // Absent day = Basic / 30 (always 30), rounded; only the Basic is cut. Net = Total addition - Total deduction (+ any due held from last month).
 function a2SaFromProfile(r, u){ const s = ((u.profile || {}).salary) || {}; r.name = u.name; r.dept = u.department || ''; r.pos = a2PosOf(u); r.basic = s.basicSalary || ''; r.hous = s.housing || ''; r.extra = s.extraMoney || ''; r.tb = s.tBonus || ''; if(s.gosi && (r.gosi === '' || r.gosi == null)) r.gosi = s.gosi; }
 function a2NewSa(u){ const r = { id: u.loginId, name: '', dept: '', pos: '', gosi: '', adv: '', abd: '', abo: '', rm: '', net: 0 }; a2SaFromProfile(r, u); a2SaCalc(r); return r; }
+function a2SaOpen(id){
+  const d = a2Doc(), r = d && d.rows.find(x => x.id === id); if(!r || !acCanEdit()) return; A2.saId = id;
+  let ov = document.getElementById('dlOv'); if(ov) ov.remove(); ov = document.createElement('div'); ov.id = 'dlOv'; ov.className = 'dlOv'; document.body.appendChild(ov);
+  const f = (k, l, ph) => `<div class="field"><label>${l}</label><input type="text" inputmode="decimal" data-sa="f" data-k="${k}" value="${acEsc(r[k] == null ? '' : r[k])}"${ph ? ` placeholder="${acEsc(ph)}"` : ''}></div>`;
+  ov.innerHTML = `<div class="dlCard" style="max-width:460px;"><div class="dlHead"><b>${acEsc(r.name)} &middot; this month</b><button type="button" class="dlX" data-sa="x" aria-label="Close">&times;</button></div>
+    <div class="hrNote" style="margin:6px 0 10px;">Only for this month's sheet. The profile is not changed.</div>
+    <div class="grid-2">${f('abd', 'Absent days')}${f('abo', 'Abs deduction by hand', 'automatic')}${f('gosi', 'GOSI / Food')}${f('adv', 'Advance')}</div>
+    <div class="hrNote" style="margin:2px 0 8px;">Each absent day = Basic / 30. To stop the whole pay, type the full amount in <i>Abs deduction by hand</i>.</div>
+    <div class="grid-2">${f('basic', 'Basic')}${f('hous', 'Housing / Premium')}${f('extra', 'Extra')}${f('tb', 'T Bonus')}</div>
+    <div class="field"><label>Remarks</label><input type="text" data-sa="f" data-k="rm" value="${acEsc(r.rm || '')}"></div>
+    <div class="a2SaLive" id="a2SaLive" style="font-weight:700;margin:6px 0 10px;"></div>
+    <div style="display:flex;justify-content:flex-end;"><button type="button" class="pillBtn ok" data-sa="x">Done</button></div></div>`;
+  a2SaLive();
+}
+function a2SaLive(){ const d = a2Doc(), r = d && d.rows.find(x => x.id === A2.saId), el = document.getElementById('a2SaLive'); if(!r || !el) return; el.textContent = 'Total addition ' + acMoney(r.tadd) + '  |  Deduction ' + acMoney(r.ded) + '  |  Net payable ' + acMoney(r.net) + ' SAR'; }
+document.addEventListener('input', (e) => { const t = e.target; if(!t || !t.dataset || t.dataset.sa !== 'f') return; const d = a2Doc(), r = d && d.rows.find(x => x.id === A2.saId); if(!r) return; r[t.dataset.k] = t.value.trim(); a2Calc('saudi', r); a2Touch(); a2SaLive(); a2DrawTable(); a2DirtyUi(); });
+document.addEventListener('click', (e) => { const t = e.target.closest && e.target.closest('[data-sa]'); if(!t) return; const a = t.dataset.sa; if(a === 'open') a2SaOpen(t.dataset.id); else if(a === 'x'){ const ov = document.getElementById('dlOv'); if(ov) ov.remove(); A2.saId = ''; a2DrawSheet(); } });
 function a2SaCalc(r){
   const b = acNum(r.basic), tadd = acR2(b + acNum(r.hous) + acNum(r.extra) + acNum(r.tb)), hand = !(r.abo === undefined || r.abo === null || String(r.abo).trim() === '');
   r.tadd = tadd; r.absded = hand ? acR2(acNum(r.abo)) : Math.round(b / 30 * acNum(r.abd));
@@ -23409,18 +23426,19 @@ function a2Cols0(sec, all){
   if(sec === 'saudi'){
     const dd = a2Doc(), rw = dd ? dd.rows : [], any = (k) => rw.some(r => acNum(r[k]) > 0), shw = !!A2.sax;
     const m = (k, l, val, o) => Object.assign({ k, l, g: 'Pay', def: 1, num: 1, sum: 1, calc: 1, text: r => a2M(val(r)), raw: r => val(r) || '', sv: r => Number(val(r)) || 0, html: r => a2M(val(r)) }, o || {});
-    const inp = (k, l, o) => m(k, l, r => acNum(r[k]), Object.assign({ calc: 0, html: (r, e) => (e && !A2.pdf) ? a2In(r, k, r[k]) : a2M(acNum(r[k])) }, o || {}));
+    const inp = (k, l, o) => m(k, l, r => acNum(r[k]), o || {});
     return a2Common().concat([
       { k: 'dept', l: 'Department', g: 'Person', def: 0, rep: 1, text: r => r.dept, html: r => acEsc(r.dept) },
       { k: 'pos', l: 'Position', g: 'Person', def: 0, rep: 1, text: r => a2PosNs(r), html: r => acEsc(a2PosNs(r)) },
       inp('basic', 'Basic'), inp('hous', 'Housing / Prem'), inp('extra', 'Extra'), inp('tb', 'T Bonus'),
       m('tadd', 'Total addition', r => r.tadd, { bold: 1 }),
       inp('gosi', 'GOSI / Food', { def: (shw || any('gosi')) ? 1 : 0 }), inp('adv', 'Advance', { def: (shw || any('adv')) ? 1 : 0 }),
-      { k: 'abd', l: 'Abs days', g: 'Pay', def: 1, num: 1, sum: 0, calc: 0, text: r => acNum(r.abd) || '', raw: r => acNum(r.abd) || '', sv: r => acNum(r.abd), html: (r, e) => (e && !A2.pdf) ? a2In(r, 'abd', r.abd) : (acNum(r.abd) || '') },
-      m('absded', 'Abs deduction', r => r.absded, { def: shw ? 1 : 0, html: (r, e) => (e && !A2.pdf) ? a2In(r, 'abo', (r.abo === undefined || r.abo === null || String(r.abo).trim() === '') ? (r.absded || '') : r.abo) : a2M(r.absded) }),
+      { k: 'abd', l: 'Abs days', g: 'Pay', def: 1, num: 1, sum: 0, calc: 0, text: r => acNum(r.abd) || '', raw: r => acNum(r.abd) || '', sv: r => acNum(r.abd), html: r => acNum(r.abd) || '' },
+      m('absded', 'Abs deduction', r => r.absded, { def: shw ? 1 : 0 }),
       m('ded', 'Total deduction', r => acNum(r.ded), { dedCol: 0 }),
       m('net', 'Net payable', r => r.net, { bold: 1, text: r => a2W(r.net) || '0', html: r => a2W(r.net) || '0' }),
-      { k: 'rm', l: 'Remarks', g: 'Pay', def: 1, calc: 0, text: r => r.rm || '', html: (r, e) => (e && !A2.pdf) ? a2In(r, 'rm', r.rm, '', 'a2Rm') : acEsc(r.rm || '') }
+      { k: 'rm', l: 'Remarks', g: 'Pay', def: 1, calc: 0, text: r => r.rm || '', html: r => acEsc(r.rm || '') },
+      { k: 'ac', l: '', g: 'Pay', def: ed ? 1 : 0, scr: 1, calc: 0, text: () => '', html: (r) => (ed && !A2.pdf) ? `<button type="button" class="a2Ab" data-sa="open" data-id="${acEsc(r.id)}" title="Absent days, GOSI, advance, remarks for this month" aria-label="Edit this month"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg></button>` : '' }
     ]);
   }
   if(sec === 'nonsponsor'){
