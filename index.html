@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261115-091934">
+<meta name="rvf-build" content="20261115-092500">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -6633,7 +6633,7 @@ function renderUserRows(container, users){
     row.innerHTML = `
       <div class="top">
         <div>
-          <div class="nm">${u.name} <span class="badge ${badgeClass}">${ROLE_LABEL[u.role] || u.role}</span>${statusTag}${approverWarnTag}</div>
+          <div class="nm">${u.name} <span class="badge ${badgeClass}">${ROLE_LABEL[u.role] || u.role}</span>${statusTag}${approverWarnTag}${u.spare ? '<span class="badge" style="margin-left:6px;background:var(--panel-2);color:var(--muted);">BACKUP</span>' : ''}</div>
           <div class="meta">ID: ${u.loginId} &middot; ${u.department || '—'}${shiftTag}</div>
           ${(u.role === 'operator' || u.role === 'supervisor') ? `<div class="meta">Machines: ${machinesTxt}</div>` : ''}
           ${(u.role === 'operator' && !isExitedEmployee(u)) ? ((ds && ds.loginId) ? `<div class="meta">Approver: <b>${(state.users.find(x => x.loginId === ds.loginId) || ds).name || ds.loginId}</b></div>` : `<div class="meta" style="color:var(--danger);">No approver set</div>`) : ''}
@@ -6675,6 +6675,9 @@ function renderUserRows(container, users){
         <div class="field">
           <label>Department <span style="text-transform:none; font-weight:400; color:var(--muted);">(saved for this person &mdash; shown on their card and used by the Department filter at the top)</span></label>
           <select class="deptSelect" data-id="${u.loginId}">${userDeptOptions(u)}</select>
+        </div>
+        <div class="field">
+          <label class="salTick" style="display:flex;align-items:flex-start;gap:8px;text-transform:none;font-weight:600;color:var(--text);cursor:pointer;"><input type="checkbox" class="spareChk" data-id="${u.loginId}" style="width:auto;margin-top:3px;" ${u.spare ? 'checked' : ''}><span>Backup account <span style="font-weight:400;color:var(--muted);">(not counted anywhere: not in employee numbers, lists, reports, salary sheets or the Pay desk. The login and its access stay as they are. Use it for a second Admin kept only as a spare.)</span></span></label>
         </div>
         <div class="field machineAssignField" id="machineField-${u.loginId}" style="display:${(u.role==='operator'||u.role==='supervisor')?'block':'none'};">
           <label>Filter by Department first <span style="text-transform:none; font-weight:400; color:var(--muted);">(only narrows the machine list below &mdash; it does not change anyone's department)</span></label>
@@ -6884,6 +6887,8 @@ async function saveUserEdits(loginId){
     update['profile.shiftPref'] = profile.shiftPref;
     if(isExit && exitDate !== ((existing.profile || {}).endDate || '')){ update['profile.endDate'] = exitDate; profile.endDate = exitDate; }   // same single write, only when the date changed
     if(isExit && profile.passport){ ['location','locationReason','locationChangedAt','drawer','box','section','pendingLocationChange'].forEach(k => { update['profile.passport.' + k] = profile.passport[k]; }); }
+    const spareBox = document.querySelector(`.spareChk[data-id="${loginId}"]`);
+    if(spareBox && spareBox.checked !== !!existing.spare) update.spare = spareBox.checked;   // only written when it was changed
     const deptBox = document.querySelector(`.deptSelect[data-id="${loginId}"]`);
     if(deptBox && deptBox.value !== (existing.department || '')) update.department = deptBox.value;   // only written when it was actually changed
     await window.__db.updateUser(loginId, update);
@@ -6895,11 +6900,11 @@ async function saveUserEdits(loginId){
     toast('User updated');
     const wasExitedBefore = existing.profile && (existing.profile.employmentStatus === 'terminated' || existing.profile.employmentStatus === 'final_exit');
     if(state.user.loginId === loginId){
-      state.user.role = role; state.user.assignedMachines = assignedMachines; state.user.assignedShift = assignedShift; state.user.pages = pages; state.user.profile = profile; if('department' in update) state.user.department = update.department;
+      state.user.role = role; state.user.assignedMachines = assignedMachines; state.user.assignedShift = assignedShift; state.user.pages = pages; state.user.profile = profile; if('department' in update) state.user.department = update.department; if('spare' in update) state.user.spare = update.spare;
       renderWho(); renderNav(); route();
     }
     { const ex = state.users.find(x => x.loginId === loginId);
-      if(ex){ ex.role = role; ex.assignedMachines = assignedMachines; ex.assignedShift = assignedShift; ex.pages = pages; ex.profile = profile; if('department' in update) ex.department = update.department; ex._machinePicks = null; renderUsersList(); }
+      if(ex){ ex.role = role; ex.assignedMachines = assignedMachines; ex.assignedShift = assignedShift; ex.pages = pages; ex.profile = profile; if('department' in update) ex.department = update.department; if('spare' in update) ex.spare = update.spare; ex._machinePicks = null; renderUsersList(); }
       else await loadUsersForAdmin(); }
     // The moment someone is newly marked Exit/Terminated, immediately show
     // Admin everywhere that person is still relied on as an approver — so
@@ -8010,7 +8015,7 @@ function passportPermissionLabel(permission){
 function renderPassportAccessTab(){
   const addSel = $('paAddUser');
   const already = new Set((state.passportAccess.users || []).map(u => u.loginId));
-  const candidates = (state.users || []).filter(u => u.role !== 'pending' && !already.has(u.loginId) && !isExitedEmployee(u)).sort((a,b) => a.name.localeCompare(b.name));
+  const candidates = (state.users || []).filter(u => u.role !== 'pending' && !u.spare && !already.has(u.loginId) && !isExitedEmployee(u)).sort((a,b) => a.name.localeCompare(b.name));
   addSel.innerHTML = candidates.length
     ? candidates.map(u => `<option value="${u.loginId}">${u.name} (${u.loginId})</option>`).join('')
     : '<option value="">No one left to add</option>';
@@ -13991,8 +13996,8 @@ function hrDaysText(n){ if(n === null || n === undefined) return ''; if(n === 0)
 function hrYearsText(y){ if(y === null || y === undefined || !isFinite(y)) return '-'; const yr = Math.floor(y), mo = Math.floor((y - yr) * 12); return (yr ? yr + (yr === 1 ? ' year' : ' years') : '') + (yr && mo ? ' ' : '') + (mo || !yr ? mo + (mo === 1 ? ' month' : ' months') : ''); }
 function hrTenure(u){ const p = u.profile || {}, j = hrParse(p.joiningDate); if(!j) return null; const e = (isExitedEmployee(u) && hrParse(p.endDate)) || new Date(); return Math.max(0, (e - j) / (365.25 * 864e5)); }
 function hrCanEdit(){ return !!(state.user && state.user.role === 'admin'); }
-function hrActive(){ return (state.users || []).filter(u => u.role !== 'pending' && !isExitedEmployee(u)); }
-function hrAllPeople(){ return (state.users || []).filter(u => u.role !== 'pending'); }
+function hrActive(){ return (state.users || []).filter(u => u.role !== 'pending' && !u.spare && !isExitedEmployee(u)); }
+function hrAllPeople(){ return (state.users || []).filter(u => u.role !== 'pending' && !u.spare); }
 function hrFind(id){ return (state.users || []).find(u => u.loginId === id); }
 function hrIsSaudi(u){ const c = ((u.profile && u.profile.homeCountry) || '').toLowerCase(); return c === 'saudi arabia' || c === 'saudi' || c === 'ksa'; }
 function hrIni(name){ return (name || '?').split(/\s+/).slice(0, 2).map(w => w[0] || '').join('').toUpperCase(); }
@@ -14683,7 +14688,7 @@ function renderPassportLocationStats(users){
   // Exit/Terminated employees are excluded entirely — their passport status
   // no longer matters once they're no longer with the company. Anyone Admin
   // has manually marked "Not Applicable" is excluded too.
-  const tracked = users.filter(u => u.role !== 'pending' && !isExitedEmployee(u) && !(u.profile && (u.profile.employmentType === 'Non-Sponsor' || u.profile.employmentType === 'Saudi')) &&
+  const tracked = users.filter(u => u.role !== 'pending' && !u.spare && !isExitedEmployee(u) && !(u.profile && (u.profile.employmentType === 'Non-Sponsor' || u.profile.employmentType === 'Saudi')) &&
     passportLocationBucket((u.profile && u.profile.passport) || {}) !== 'not_applicable');
   passportLocDrillTracked = tracked;
   $('kpiPassportOffice').textContent = tracked.filter(u => passportLocationBucket((u.profile||{}).passport||{}) === 'office').length;
@@ -14890,7 +14895,7 @@ function isExitedEmployee(u){
   return s === 'terminated' || s === 'final_exit';
 }
 function renderEmployeeOverviewBox(users){
-  const withProfile = users.filter(u => u.role !== 'pending');
+  const withProfile = users.filter(u => u.role !== 'pending' && !u.spare);
   // CEO Dashboard headline counts only ever reflect currently running employees —
   // someone marked Exit/Terminated drops out of Total/Sponsor/Non-Sponsor immediately (item 4).
   const activeProfile = withProfile.filter(u => !isExitedEmployee(u));
@@ -14928,7 +14933,7 @@ function renderDocumentRenewalsBox(users){
   // Someone who's left doesn't need their passport/iqama tracked for
   // renewal anymore — this feeds both lists below, so excluding it here
   // covers both in one place.
-  const withProfile = users.filter(u => u.role !== 'pending' && !isExitedEmployee(u));
+  const withProfile = users.filter(u => u.role !== 'pending' && !u.spare && !isExitedEmployee(u));
   const savedDaysPassport = localStorage.getItem('mr_expiryDaysPassport') || '30';
   const savedDaysIqama = localStorage.getItem('mr_expiryDaysIqama') || '30';
   $('ceoExpiryDaysPassport').value = savedDaysPassport;
@@ -15138,18 +15143,18 @@ async function savePassportRenewalStatus(loginId, renewalStatus){
   try{
     await saveProfileFields(loginId, { 'passport.renewalStatus': renewalStatus });
     toast('Updated');
-    renderExpiringPassports(state.users.filter(u => u.role !== 'pending'), $('ceoExpiryDaysPassport').value);
+    renderExpiringPassports(state.users.filter(u => u.role !== 'pending' && !u.spare), $('ceoExpiryDaysPassport').value);
   }catch(err){ console.error(err); toast('Could not save — check your connection'); }
 }
 $('ceoExpiryDaysPassport').addEventListener('change', () => {
   const period = $('ceoExpiryDaysPassport').value;
   localStorage.setItem('mr_expiryDaysPassport', period);
-  renderExpiringPassports(state.users.filter(u => u.role !== 'pending'), period);
+  renderExpiringPassports(state.users.filter(u => u.role !== 'pending' && !u.spare), period);
 });
 $('ceoExpiryDaysIqama').addEventListener('change', () => {
   const days = Number($('ceoExpiryDaysIqama').value);
   localStorage.setItem('mr_expiryDaysIqama', String(days));
-  renderExpiringIqamas(state.users.filter(u => u.role !== 'pending'), days);
+  renderExpiringIqamas(state.users.filter(u => u.role !== 'pending' && !u.spare), days);
 });
 
 // Total Employees tile still drills to "everyone" — kept for the general case.
@@ -15180,7 +15185,7 @@ const OV_BRK = {
 function renderEmpBreakdown(){
   const panel = $('ovBrkPanel'); if(!panel || panel.style.display === 'none') return;
   const by = $('ovBrkBy').value, body = $('ovBrkBody');
-  const people = (state.users || []).filter(u => u.role !== 'pending');
+  const people = (state.users || []).filter(u => u.role !== 'pending' && !u.spare);
   if(by === 'flow'){
     const now = new Date(), rows = [];
     for(let k = 0; k < 6; k++){
@@ -15220,7 +15225,7 @@ $('ovBrkBy').addEventListener('change', renderEmpBreakdown);
 let empDrillKind = null;
 function empDrillCompute(kind0){
   const kind = kind0 || empDrillKind;
-  const withProfile = state.users.filter(u => u.role !== 'pending');
+  const withProfile = state.users.filter(u => u.role !== 'pending' && !u.spare);
   let list = withProfile;
   let title = 'All Employees';
   OVV.back = new Set();
@@ -15961,7 +15966,7 @@ async function loadAccountsPage(){
   try{
     const users = await window.__db.listUsersOnce();
     state.users = users;
-    const withProfile = users.filter(u => u.role !== 'pending');
+    const withProfile = users.filter(u => u.role !== 'pending' && !u.spare);
     const body = $('accountsBody');
     body.innerHTML = withProfile.map(u => {
       const p = u.profile || {};
@@ -16191,7 +16196,7 @@ function pcMergeOrders(){
   }));
 }
 async function pcLoadUsers(){
-  if(!pc.users){ const us = await window.__db.listUsersOnce(); state.users = us; pc.users = us.filter(u => u.role !== 'pending' && !isExitedEmployee(u)).sort((a, b) => (a.name || '').localeCompare(b.name || '')); }
+  if(!pc.users){ const us = await window.__db.listUsersOnce(); state.users = us; pc.users = us.filter(u => u.role !== 'pending' && !u.spare && !isExitedEmployee(u)).sort((a, b) => (a.name || '').localeCompare(b.name || '')); }
   return pc.users;
 }
 function pcPhone(u){
@@ -19391,7 +19396,7 @@ async function aiRenderAdmin(){
 function aiAdminDraw(){
   const p = $('admin-ai'); if(!p || !AI.cfg) return;
   const C = AI.cfg, K = AI.conn, T = C.types.find(t => t.id === aiA.sel) || C.types[0]; aiA.sel = T.id;
-  const users = (state.users || []).filter(u => u.role !== 'pending').sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+  const users = (state.users || []).filter(u => u.role !== 'pending' && !u.spare).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
   const preset = /groq\.com/.test(K.baseUrl) ? 'groq' : /openai\.com/.test(K.baseUrl) ? 'openai' : /generativelanguage\.googleapis\.com/.test(K.baseUrl) ? 'gemini' : 'custom';
   const uopt = (sel) => '<option value="">Choose from the user list…</option>' + users.map(u => `<option value="${aiAEsc(u.loginId)}" ${u.loginId === sel ? 'selected' : ''}>${aiAEsc(u.name)} (${aiAEsc(u.loginId)})</option>`).join('');
   const fld = (l, inner, wide) => `<div class="field${wide ? ' wide' : ''}"><label>${l}</label>${inner}</div>`;
@@ -21246,7 +21251,7 @@ const ovSort = (list) => list.map((u, i) => [u, i]).sort((a, b) => ovType(a[0]) 
 function ovLeftHidden(){
   if(typeof empDrillKind === 'undefined' || empDrillKind !== 'highlight:newJoin') return [];
   const dr = getDetailsDateRange();
-  return (state.users || []).filter(u => u.role !== 'pending' && u.profile && u.profile.joiningDate && dateWithinDetailsRange(u.profile.joiningDate, dr) && isExitedEmployee(u) && u.profile.employmentType === 'Non-Sponsor');
+  return (state.users || []).filter(u => u.role !== 'pending' && !u.spare && u.profile && u.profile.joiningDate && dateWithinDetailsRange(u.profile.joiningDate, dr) && isExitedEmployee(u) && u.profile.employmentType === 'Non-Sponsor');
 }
 // New Joined: someone who is no longer On The Job gets his current job status as a small remark under the name
 function ovRemark(u){
@@ -21309,7 +21314,7 @@ function ovPeriodText(){
 }
 async function ovDownload(kind, sectionOnly){
   const r = empDrillCompute(empDrillKind || 'all'), picked = OVC.pick.size > 0;
-  const list0 = ovSort(picked ? (state.users || []).filter(u => u.role !== 'pending' && OVC.pick.has(String(u.loginId))) : r.list);
+  const list0 = ovSort(picked ? (state.users || []).filter(u => u.role !== 'pending' && !u.spare && OVC.pick.has(String(u.loginId))) : r.list);
   // Saudi staff are shown on the screen, but are not in the New Joined / Exit / Vacation downloads (unless Type = Saudi is chosen, or people are ticked by hand)
   const isSa = (u) => ((u.profile || {}).employmentType) === 'Saudi';
   const saOut = !picked && ['highlight:newJoin', 'highlight:exited', 'highlight:vacationNow'].indexOf(empDrillKind) >= 0 && ((document.getElementById('ceoFilterType') || {}).value !== 'Saudi');
@@ -21629,7 +21634,7 @@ function acRow(u){
   return r;
 }
 function acBuildRows(){
-  const list = (state.users || []).filter(u => u.role !== 'pending');
+  const list = (state.users || []).filter(u => u.role !== 'pending' && !u.spare);
   AC.rows = list.map(acRow).sort((a, b) => String(a.id).localeCompare(String(b.id), undefined, { numeric: true }));
   return AC.rows;
 }
@@ -21671,7 +21676,7 @@ function acDraw(){
   if(AC.tab === 'sheet') acDrawSheet(); else if(AC.tab === 'set') acDrawSettings(); else acDrawPeople();
 }
 function acDrawPeople(){
-  const list = (state.users || []).filter(u => u.role !== 'pending');
+  const list = (state.users || []).filter(u => u.role !== 'pending' && !u.spare);
   $('acMain').innerHTML = list.map(u => { const p = u.profile || {}; return `<div class="card row"><span class="k">${acEsc(u.name)} (${acEsc(u.loginId)})</span><span>${acEsc(p.employmentType || '—')} &middot; ${acEsc(u.department || '—')}</span></div>`; }).join('') || '<div class="empty-state">No employees yet.</div>';
 }
 /* ---------- the sheet ---------- */
@@ -21902,7 +21907,7 @@ function acDrawSettings(){
     <div class="hrNote">For people with the standard salary the typed Basic is this share of the total, and Housing and Transport are worked out from it. People marked <b>fixed</b> get only what is typed.</div>
     <div class="acGrid"><label>Absent day is paid from<select data-sk="abs_base"><option value="basic" ${S.absent.base === 'basic' ? 'selected' : ''}>Basic</option><option value="gross" ${S.absent.base === 'gross' ? 'selected' : ''}>Basic + Housing + Transport</option></select></label><label>Divided by days<input class="acNum" data-sk="abs_days" value="${S.absent.days}" inputmode="numeric"></label></div>
 `;
-  const posAll = Array.from(new Set((state.positions || []).concat((state.users || []).filter(u => u.role !== 'pending').map(u => ((u.profile || {}).position) || '').filter(Boolean)))).sort(), opPos = Array.isArray(S.opPos) ? S.opPos : [];
+  const posAll = Array.from(new Set((state.positions || []).concat((state.users || []).filter(u => u.role !== 'pending' && !u.spare).map(u => ((u.profile || {}).position) || '').filter(Boolean)))).sort(), opPos = Array.isArray(S.opPos) ? S.opPos : [];
   const whoHtml = `<div class="hrNote" style="margin-bottom:8px;">Tick the positions that are paid on the Operator sheet. People with other positions go to Sponsor or Non Sponsor, by their employment type. If nothing is ticked, every person with the operator role is listed. A ticked position is listed even without a machine.</div><div class="checkbox-grid">${posAll.map(x => `<label><input type="checkbox" data-sk="oppos" value="${acEsc(x)}" ${opPos.some(y => String(y).toLowerCase() === x.toLowerCase()) ? 'checked' : ''}> ${acEsc(x)}</label>`).join('') || '<div class="hrNote">No positions yet.</div>'}</div>`;
   const drs = Array.isArray(S.dedReasons) ? S.dedReasons : (S.dedReasons = []);
   const dedHtml = `<div class="hrNote" style="margin-bottom:8px;">The reasons you can pick when you deduct from someone's pay (the small minus button at the end of each row). The number of the reason shows in the Remarks column, and the PDF explains the numbers on its last page.<br><b>Amount typed by hand</b>: you type the amount when you deduct (for example Violation).<br><b>Days of pay</b>: set how many days of pay are cut for 1 day of leave, for Non Sponsor and for Sponsor (0 = nothing is cut, the reason still shows in Remarks). When you deduct you only type the days of leave and the amount is worked out: daily pay = all the fixed pay (basic salary + fixed overtime; Non Sponsor: fixed salary) divided by the days of that salary month. Premium, overtime counted by hours, tying / beaming commission and extra money are not part of it. The Operator sheet always uses typed amounts.</div>`
@@ -22613,7 +22618,7 @@ function astWhen(r){ const d = new Date(r); if(!isFinite(d)) return ''; const n 
   const tm = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }), tom = new Date(n.getTime() + 86400000), yes = new Date(n.getTime() - 86400000);
   return (day(d) === day(n) ? 'Today' : day(d) === day(tom) ? 'Tomorrow' : day(d) === day(yes) ? 'Yesterday' : d.toLocaleDateString([], { day: 'numeric', month: 'short', year: d.getFullYear() === n.getFullYear() ? undefined : 'numeric' })) + ', ' + tm; }
 const astLocal = (ms) => { const d = new Date(ms - new Date(ms).getTimezoneOffset() * 60000); return d.toISOString().slice(0, 16); };
-const astPeople = () => (state.users || []).filter(u => u.role !== 'pending' && !(typeof isExitedEmployee === 'function' && isExitedEmployee(u))).map(u => u.name).filter(Boolean).sort();
+const astPeople = () => (state.users || []).filter(u => u.role !== 'pending' && !u.spare && !(typeof isExitedEmployee === 'function' && isExitedEmployee(u))).map(u => u.name).filter(Boolean).sort();
 
 function astRender(){
   const b = $('hrBody'); if(!b) return; astReset();
@@ -22996,7 +23001,7 @@ function tkDocW(key, label){
 async function tkUp(list){ const refs = []; for(const f of (list || [])) refs.push({ ref: await window.__db.savePhotoBlob(f.dataUrl), name: f.name }); return refs; }
 function tkFormHtml(){
   const D = TK.D, m = TK.mode, title = { new: 'New ticket', edit: 'Edit ticket', resched: 'Reschedule', ret: 'Return ticket', rebook: 'Rebook' }[m] || 'Ticket';
-  const emps = (state.users || []).filter(u => u.role !== 'pending').sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+  const emps = (state.users || []).filter(u => u.role !== 'pending' && !u.spare).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
   const empTxt = D.emp ? tkName(D.emp) + ' (' + D.emp + ')' : '';
   return `<div class="tkWrap tkFormV"><div class="tkTop"><button class="pillBtn" data-tk="back">${tkIc('chev', 14).replace('<svg', '<svg style="transform:rotate(90deg)"')} Back</button><b>${title}</b></div>
     ${m === 'resched' ? `<div class="tkNotice">${tkIc('info', 14)} The old flight details are kept in this ticket's history. Type the new details below.</div>` : ''}
@@ -23373,8 +23378,8 @@ function a2SaCalc(r){
   r.tadd = tadd; r.absded = hand ? acR2(acNum(r.abo)) : Math.round(b / 30 * acNum(r.abd));
   r.ded = acR2(acNum(r.gosi) + acNum(r.adv) + r.absded); r.net = Math.round(tadd - r.ded + acNum(r.due));
 }
-const a2Skip = (u) => !!(((u.profile || {}).salary || {}).noSalary);
-function a2People(sec, withExited){ return (state.users || []).filter(u => u.role !== 'pending' && !a2Skip(u) && !a2Off(u) && a2Group(u) === sec && (withExited || !isExitedEmployee(u) || !a2ExitWhy(u))); }
+const a2Skip = (u) => !!(((u.profile || {}).salary || {}).noSalary) || !!u.spare;   // a backup account (Admin > Users) is never on a salary sheet
+function a2People(sec, withExited){ return (state.users || []).filter(u => u.role !== 'pending' && !u.spare && !a2Skip(u) && !a2Off(u) && a2Group(u) === sec && (withExited || !isExitedEmployee(u) || !a2ExitWhy(u))); }
 
 /* ---------- columns (screen, PDF and Excel all come from this list) ---------- */
 const a2In = (r, k, val, ph, cls) => `<input class="a2In${cls ? ' ' + cls : ''}" data-a2="in" data-id="${acEsc(r.id)}" data-k="${k}" value="${acEsc(val == null ? '' : val)}" inputmode="${cls === 'a2Rm' ? 'text' : 'decimal'}"${ph ? ` placeholder="${acEsc(ph)}"` : ''}>`;
@@ -25286,18 +25291,18 @@ function a2VioInner(){
 function a2VioFill(){ const b = document.getElementById('a2VioBox'); if(b) b.innerHTML = a2VioInner(); }
 function a2VacList(){
   if(!OVV.loaded || !A2.ym) return []; const sec = A2.sec;
-  return (state.users || []).filter(u => u.role !== 'pending' && !a2Skip(u) && !isExitedEmployee(u) && a2Group(u) === sec && a2VacWhole(u)).map(u => { const f = a2VacAbs(u, A2.ym).list[0], b = f && (a2D8(f.v.workStart) ? f.v.workStart : f.v.to); return u.name + (a2D8(b) ? ' (back ' + fmtDate(b) + ')' : ''); });
+  return (state.users || []).filter(u => u.role !== 'pending' && !u.spare && !a2Skip(u) && !isExitedEmployee(u) && a2Group(u) === sec && a2VacWhole(u)).map(u => { const f = a2VacAbs(u, A2.ym).list[0], b = f && (a2D8(f.v.workStart) ? f.v.workStart : f.v.to); return u.name + (a2D8(b) ? ' (back ' + fmtDate(b) + ')' : ''); });
 }
 function a2OtherList(){
   if(!A2.ym) return []; const sec = A2.sec;
-  return (state.users || []).filter(u => u.role !== 'pending' && !a2Skip(u) && a2Group(u) === sec && a2OtherWhy(u)).map(u => u.name);
+  return (state.users || []).filter(u => u.role !== 'pending' && !u.spare && !a2Skip(u) && a2Group(u) === sec && a2OtherWhy(u)).map(u => u.name);
 }
 function a2VacNoteText(){ const l = a2VacList(), o = a2OtherList(); return [l.length ? 'Not in this sheet, on vacation the whole salary month: ' + l.join(', ') : '', o.length ? 'Not in this sheet, paid another way: ' + o.join(', ') : ''].filter(Boolean).join('. '); }
 function a2OtherNote(){ const o = a2OtherList(); return o.length ? `<div class="hrNote a2VacN" style="margin:8px 0;"><b>Not in this sheet, paid another way (Pay desk):</b> ${o.map(acEsc).join(', ')}. To put one back, mark him not paid in the Pay desk.</div>` : ''; }
 function a2VacNote(){ const l = a2VacList(); return l.length ? `<div class="hrNote a2VacN" style="margin:8px 0;"><b>Not in this sheet, on vacation the whole salary month:</b> ${l.map(acEsc).join(', ')}</div>` : ''; }
 function a2DecideList(){   // people not in this sheet who joined or left after the salary month: you decide
   const d = a2Doc(); if(!d || !A2.ym) return []; const have = new Set(d.rows.map(r => r.id));
-  return (state.users || []).filter(u => u.role !== 'pending' && !a2Skip(u) && a2Group(u) === d.sec && !have.has(u.loginId) && a2Decide(u) && !a2Kept(u) && (A2.jym ? true : true));
+  return (state.users || []).filter(u => u.role !== 'pending' && !u.spare && !a2Skip(u) && a2Group(u) === d.sec && !have.has(u.loginId) && a2Decide(u) && !a2Kept(u) && (A2.jym ? true : true));
 }
 function a2DecideNote(){
   const l = a2DecideList(); if(!l.length) return '';
@@ -26832,7 +26837,7 @@ $('accProfBack').addEventListener('click', () => { A2.view = 'users'; goTo('acco
 const ACU = { q: '', dept: '', old: false };
 function acuList(){
   const q = ACU.q.trim().toLowerCase(), admin = state.user && state.user.role === 'admin';
-  return (state.users || []).filter(u => u.role !== 'pending' && (admin || u.role !== 'admin') && (ACU.old || !isExitedEmployee(u))
+  return (state.users || []).filter(u => u.role !== 'pending' && !u.spare && (admin || u.role !== 'admin') && (ACU.old || !isExitedEmployee(u))
     && (!ACU.dept || (u.department || '') === ACU.dept)
     && (!q || ((u.name || '') + ' ' + u.loginId + ' ' + (u.department || '') + ' ' + a2PosOf(u)).toLowerCase().includes(q))).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
 }
@@ -27020,7 +27025,7 @@ Object.assign(ACU, { st: 'running', sheet: '', pos: '', et: '', shift: '' });
 const acuSheetOf = (u) => a2Skip(u) ? 'left' : a2Group(u);
 const acuSheetName = (k) => ({ operator: 'Operator', sponsor: 'Sponsor', nonsponsor: 'Non Sponsor', saudi: 'Saudi', left: 'Left out of sheets' }[k] || '');
 const acuShiftOf = (u) => { const p = u.profile || {}, pf = (p.shiftPref === 'Day' || p.shiftPref === 'Night') ? p.shiftPref : ''; return (u.assignedShift === 'Day' || u.assignedShift === 'Night') ? u.assignedShift : pf; };
-function acuBase(){ const admin = state.user && state.user.role === 'admin'; return (state.users || []).filter(u => u.role !== 'pending' && (admin || u.role !== 'admin')); }
+function acuBase(){ const admin = state.user && state.user.role === 'admin'; return (state.users || []).filter(u => u.role !== 'pending' && !u.spare && (admin || u.role !== 'admin')); }
 function acuList(){
   const q = ACU.q.trim().toLowerCase();
   return acuBase().filter(u => (isExitedEmployee(u) === (ACU.st === 'exited'))
@@ -27074,6 +27079,7 @@ function a2Fit(){
 /* ===== Accounts > Rules, second edition: plain words, every setting shown, printable, signed ===== */
 /* KEEP IT TRUE: everything from Settings, the Calendar and Admin is read live. A rule that lives inside the app code is written once in ACG_LOG
    (month + one short sentence). The printed "Rules code" changes when any setting or any log line changes, so a printed copy can be checked against the screen. */
+ACG_LOG.push(['2026-11', 'Backup account: switch in Admin > Users. A backup account is not counted in employee numbers, lists, reports, salary sheets or the Pay desk.']);
 ACG_LOG.push(['2026-11', 'Saudi: new employment type and salary sheet (Basic, Housing / Premium, Extra, T Bonus; absent day = Basic / 30). First sheet: October 2026.']);
 ACG_LOG.push(['2026-11', 'Rules page shows every setting; the printed copy carries a Rules code, the date and the signatures.']);
 function acgHash(str){ let h = 5381; for(let i = 0; i < str.length; i++) h = ((h << 5) + h + str.charCodeAt(i)) >>> 0; return h.toString(16).toUpperCase().padStart(8, '0').slice(0, 8); }
@@ -27088,7 +27094,7 @@ function acgHtml(){
   const rnd = S.round || {}, step = Math.max(1, acNum(rnd.step) || 100), from = acNum(rnd.from) || step / 2, cut = acNum(S.premCut), wh = a2WorkHours(), tyr = a2TyRate();
   const reasons = Array.isArray(S.dedReasons) ? S.dedReasons : [], inst = Array.isArray(S.instTypes) ? S.instTypes : [], opPos = Array.isArray(S.opPos) ? S.opPos : [];
   const tables = ((AC.tbl && AC.tbl.tables) || []), LD = S.ladders || { groups: [], rows: [], every: 0 }, groups = LD.groups || [], sd = Number(state.salaryCycleStartDay) || 1;
-  const cnt = {}; try{ ['operator', 'sponsor', 'nonsponsor', 'saudi'].forEach(k => { cnt[k] = a2People(k).length; }); cnt.left = (state.users || []).filter(u => u.role !== 'pending' && !isExitedEmployee(u) && a2Skip(u)).length; }catch(e){}
+  const cnt = {}; try{ ['operator', 'sponsor', 'nonsponsor', 'saudi'].forEach(k => { cnt[k] = a2People(k).length; }); cnt.left = (state.users || []).filter(u => u.role !== 'pending' && !u.spare && !isExitedEmployee(u) && a2Skip(u)).length; }catch(e){}
   const mname = (id) => { try{ return a2McName(id); }catch(e){ return String(id); } };
   const daysReasons = reasons.filter(x => x.kind === 'days');
   // ---- a worked example from the real tables ----
