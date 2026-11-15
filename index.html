@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261115-121803">
+<meta name="rvf-build" content="20261115-140532">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -27853,13 +27853,15 @@ function smPages(title, sub, th, rows, o){
     return `<div style="width:760px;min-height:${pg.pxH}px;box-sizing:border-box;padding:${pg.pT}px ${pg.pR}px ${pg.pB}px ${pg.pL}px;background:#ffffff;color:#0f172a;font-family:'Inter',sans-serif;display:flex;flex-direction:column;">
       ${typeof lhHeaderHtml === 'function' ? lhHeaderHtml(lh, c.company) : ''}
       <div style="text-align:center;margin:16px 0 2px;font-family:'Oswald',sans-serif;font-size:19px;font-weight:700;letter-spacing:.02em;">${acEsc(title)}</div>${sub ? `<div style="text-align:center;font-size:11.5px;color:#475569;margin-bottom:10px;">${acEsc(sub)}${chunks.length > 1 ? ' - page ' + (i + 1) + '/' + chunks.length : ''}</div>` : ''}
-      ${smTbl(th, ch)}
+      ${SM_CSS}${smTbl(th, ch, 'ovPdfT', o.cols)}
       <div style="flex:1"></div>${last && o.sign ? o.sign : ''}
       ${lh && lh.footer ? `<div style="margin-top:16px;padding-top:10px;border-top:1px solid #e2e8f0;font-size:10.5px;color:#64748b;text-align:center;">${acEsc(lh.footer)}</div>` : ''}</div>`; });
 }
 const smPdfOpt = () => { const lh = smComp().lh; return { m: 0, format: (typeof lhPage === 'function' ? lhPage(lh).fmt : 'a4') }; };
 function smHeadHtml(title, sub){ const c = smComp(); return `<div style="padding:6px 6px 0;">${typeof lhHeaderHtml === 'function' ? lhHeaderHtml(c.lh, c.company) : ''}<div style="text-align:center;margin:14px 0 4px;font-family:'Oswald',sans-serif;font-size:19px;font-weight:700;letter-spacing:.02em;">${acEsc(title)}</div>${sub ? `<div style="text-align:center;font-size:11.5px;color:#475569;margin-bottom:8px;">${acEsc(sub)}</div>` : ''}</div>`; }
-const smTbl = (head, rows, cls) => `<table class="report-table ${cls || 'ovPdfT'}" style="width:100%;"><thead><tr>${head}</tr></thead><tbody>${rows.join('')}</tbody></table>`;
+const smTbl = (head, rows, cls, cols) => `<table class="report-table ${cls || 'ovPdfT'} smP" style="width:100%;table-layout:${cols ? 'fixed' : 'auto'};border-collapse:collapse;">${cols ? '<colgroup>' + cols.map(w => `<col style="width:${w}%">`).join('') + '</colgroup>' : ''}<thead><tr>${head}</tr></thead><tbody>${rows.join('')}</tbody></table>`;
+const SM_CSS = '<style>.smP th,.smP td{vertical-align:middle !important;padding:7px 8px !important;line-height:1.35 !important;font-size:10.5px !important;overflow:hidden;} .smP td.nw{white-space:nowrap;} .smP th{font-size:9.5px !important;}</style>';
+async function smPreload(blocks){ const srcs = new Set(); blocks.forEach(h => { (String(h).match(/src="data:[^"]+"/g) || []).forEach(m => srcs.add(m.slice(5, -1))); }); await Promise.all(Array.from(srcs).map(u => new Promise(r => { const im = new Image(); im.onload = im.onerror = () => { (im.decode ? im.decode().catch(() => {}) : Promise.resolve()).then(r); }; im.src = u; }))); }
 
 /* ---------- bank transfer (inside Accounts) ---------- */
 const BK = { prep: '', chk: '', ids: true, cash: false };
@@ -27906,10 +27908,10 @@ async function bkGo(kind){
     const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Bank transfer'); XLSX.utils.book_append_sheet(wb, s2, 'Summary'); XLSX.writeFile(wb, file + '.xlsx'); toast('Excel file downloaded'); return;
   }
   const th = '<th>#</th><th>ID</th><th>Name</th>' + (BK.ids ? `<th>${sec === 'saudi' ? 'Saudi ID' : 'Iqama'}</th>` : '') + '<th>IBAN</th><th style="text-align:right">Deduction</th><th style="text-align:right">Net payable</th>';
-  const rows = list.map((r, i) => `<tr><td>${i + 1}</td><td>${acEsc(r.id)}</td><td>${acEsc(r.name)}</td>${BK.ids ? `<td>${acEsc(r.idn)}</td>` : ''}<td style="white-space:nowrap;">${acEsc(r.iban || 'CASH')}</td><td style="text-align:right">${r.ded ? acMoney(r.ded) : ''}</td><td style="text-align:right"><b>${acMoney(r.net) || '0'}</b></td></tr>`);
+  const rows = list.map((r, i) => `<tr><td>${i + 1}</td><td class="nw">${acEsc(r.id)}</td><td>${acEsc(r.name)}</td>${BK.ids ? `<td class="nw">${acEsc(r.idn)}</td>` : ''}<td class="nw">${acEsc(r.iban || 'CASH')}</td><td style="text-align:right">${r.ded ? acMoney(r.ded) : ''}</td><td style="text-align:right"><b>${acMoney(r.net) || '0'}</b></td></tr>`);
   rows.push(`<tr style="background:#f1f5f9;font-weight:700;"><td colspan="${3 + (BK.ids ? 1 : 0) + 1}">Total (${list.length})</td><td style="text-align:right">${acMoney(tded) || '0'}</td><td style="text-align:right">${acMoney(tot) || '0'}</td></tr>`);
-  toast('Making the PDF...'); const blocks = smPages(title.toUpperCase(), sub, th, rows, { sign: smSignHtml(BK.prep, BK.chk) });
-  await rvfMakePdf(blocks, file + '.pdf', smPdfOpt());
+  toast('Making the PDF...'); const blocks = smPages(title.toUpperCase(), sub, th, rows, { sign: smSignHtml(BK.prep, BK.chk), cols: BK.ids ? [4, 7, 25, 15, 26, 10, 13] : [4, 8, 36, 28, 11, 13] });
+  await smPreload(blocks); await rvfMakePdf(blocks, file + '.pdf', smPdfOpt());
 }
 document.addEventListener('click', (e) => { const t = e.target.closest && e.target.closest('[data-bk]'); if(!t || t.tagName === 'SELECT' || t.tagName === 'INPUT') return; const a = t.dataset.bk; if(a === 'close'){ const o = document.getElementById('bkOv'); if(o) o.remove(); } else if(a === 'pdf' || a === 'xlsx') bkGo(a); });
 document.addEventListener('change', (e) => { const t = e.target; if(!t || !t.dataset || !t.dataset.bk) return; const a = t.dataset.bk; if(a === 'ids'){ BK.ids = t.checked; bkKeep(); bkDraw(); } else if(a === 'cash'){ BK.cash = t.checked; bkKeep(); bkDraw(); } else if(a === 'prep'){ BK.prep = t.value; bkKeep(); } else if(a === 'chk'){ BK.chk = t.value; bkKeep(); } });
@@ -27984,7 +27986,7 @@ async function smExport(kind){
   const mr = months.map(m => `<tr><td>${acEsc(acYmLabel(m.ym).split(' ')[0].toUpperCase())}</td><td style="text-align:right">${m.has ? acMoney(m.amt) : ''}</td>${SM.nop ? `<td style="text-align:right">${m.has ? m.n : ''}</td>` : ''}</tr>`).concat([`<tr style="font-weight:700;background:#f1f5f9;"><td>G TOTAL</td><td style="text-align:right">${acMoney(gTot) || '0'}</td>${SM.nop ? '<td></td>' : ''}</tr>`, `<tr style="font-weight:700;"><td>AVG/MONTH</td><td style="text-align:right">${acMoney(avg) || '0'}</td>${SM.nop ? `<td style="text-align:right">${avgN}</td>` : ''}</tr>`]);
   const thM = `<th>MONTH</th><th style="text-align:right">AMOUNT</th>${SM.nop ? '<th style="text-align:right">NOP</th>' : ''}`;
   const blocks = kind === 'pdfy' ? smPages('MONTH BY MONTH SUMMARY', 'Year ' + SM.ym.slice(0, 4), thM, mr, { sign, per: 28, lastMax: 17 }) : smPages('SALARY SUMMARY', 'For the month of ' + T, th, body, { sign });
-  toast('Making the PDF...'); await rvfMakePdf(blocks, (kind === 'pdfy' ? 'salary-by-month-' + SM.ym.slice(0, 4) + '-' + stamp : file) + '.pdf', smPdfOpt());
+  toast('Making the PDF...'); await smPreload(blocks); await rvfMakePdf(blocks, (kind === 'pdfy' ? 'salary-by-month-' + SM.ym.slice(0, 4) + '-' + stamp : file) + '.pdf', smPdfOpt());
 }
 document.addEventListener('click', async (e) => { const t = e.target.closest && e.target.closest('[data-sm]'); if(!t || t.tagName === 'SELECT' || t.tagName === 'INPUT') return; const a = t.dataset.sm; if(a === 'mtog'){ SM.open = SM.open === t.dataset.v ? '' : t.dataset.v; smPaint(); } else if(a === 'ftog'){ SM.fOpen = !SM.fOpen; smPaint(); } else if(a === 'fclear'){ SM.secs = []; SM.dept = []; SM.pos = []; SM.nat = []; SM.et = []; SM.open = ''; a2DrawSummary(); } else if(a === 'pdf' || a === 'pdfy' || a === 'xlsx') smExport(a); });
 document.addEventListener('change', async (e) => { const t = e.target; if(!t || !t.dataset) return; if(t.classList && t.classList.contains('smChk')){ const k = t.dataset.k, i = SM[k].indexOf(t.value); if(t.checked && i < 0) SM[k].push(t.value); if(!t.checked && i >= 0) SM[k].splice(i, 1); if(['dept', 'pos', 'nat', 'et'].indexOf(k) >= 0) await a2DrawSummary(); else smPaint(); return; } const a = t.dataset.sm; if(!a) return;
