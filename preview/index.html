@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head><meta name="robots" content="noindex">
-<meta name="rvf-build" content="20261115-112356">
+<meta name="rvf-build" content="20261115-112834">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -3624,6 +3624,8 @@ table.pkPdf tr.tot td{ background:#eef2ff !important; border-top:1px solid #c7d2
 .chkT{ display:flex; align-items:center; gap:8px; } .chkN{ margin-left:auto; font-size:11px; font-weight:700; background:#f1f5f9; border-radius:999px; padding:2px 9px; color:#475569; }
 .chkL{ font-size:12px; color:#475569; max-height:180px; overflow:auto; padding:6px 0; } .chkF{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:8px; } .chkF select{ height:34px; padding:0 28px 0 10px; width:auto; }
 .chkOk{ padding:16px; border-radius:12px; background:#ecfdf5; color:#047857; font-weight:600; } .admBad{ display:inline-block; margin-left:6px; min-width:17px; padding:0 5px; border-radius:999px; background:#e11d48; color:#fff; font-size:10.5px; line-height:17px; text-align:center; font-weight:700; }
+@media (min-width:901px){ .a2Tool{ flex-wrap:nowrap; align-items:center; } .a2Tool .a2Srch, .a2Tool .acQ{ flex:1 1 120px; min-width:100px; max-width:200px; } .a2Tool .a2StW{ min-width:0; margin-left:auto; } .a2Tool .a2Stat{ white-space:nowrap; } }
+.a2Tool .a2Sv .a2Lbl{ display:none; } .a2Tool .a2Sv .pillBtn[data-a2="dl"], .a2Tool .a2Sv .pillBtn[data-a2="bank"]{ padding:0 11px; }
 .smT{ font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin:0 0 6px; }
 .smTbl td,.smTbl th{ padding:7px 10px; } .smTbl tr.smGt td{ background:#eef2ff; } .smTbl tr.smCur td{ background:#f8fafc; font-weight:600; }
 .a2Rn{ white-space:normal; font-size:10.5px; color:#64748b; cursor:help; border-bottom:1px dotted #cbd5e1; padding:0 1px; } .a2RnC{ font-size:10.5px; color:#94a3b8; margin-right:3px; }
@@ -23720,7 +23722,7 @@ function a2DrawSheet0(){
       ${ed && op ? `<span class="a2Grp"><button type="button" class="pillBtn${needCalc ? ' ok' : ' ok'}" data-a2="calc" ${A2.busy ? 'disabled' : ''} title="${d && d.calcAt ? 'Picks counted ' + a2Stamp(d.calcAt) + '. ' : ''}Count the picks again for the dates shown">${A2.busy ? 'Calculating…' : (d && d.calcAt ? 'Recalculate' : 'Calculate picks')}</button>${full ? `<button type="button" class="pillBtn" data-a2="recalc" title="Apply the latest settings to the saved picks and amounts">Update rates</button>` : ''}${full ? `<button type="button" class="pillBtn a2Ic" data-a2="refresh" title="Refresh: add new operators" aria-label="Refresh">${a2Svg('refresh', 14)}</button>` : ''}</span>` : ''}
       ${ed && full && !op ? `<span class="a2Grp"><button type="button" class="pillBtn" data-a2="refresh" title="Add new people and update from profiles">${a2Svg('refresh', 13)}Refresh</button>${sec === 'sponsor' ? `<button type="button" class="pillBtn${A2.tyOpen ? ' ok' : ''}" data-ty="toggle" title="Beaming / Tying commission">Tying commission</button>` : ''}</span>` : ''}
       <span class="a2StW">${full ? `<span class="a2Stat">${status}</span>` : ''}</span>
-      ${full ? `<div class="a2Sv"><div class="a2SvRow"><button type="button" class="pillBtn" data-a2="dl" title="Download PDF or Excel">${DL_ICON}Download</button><button type="button" class="pillBtn" data-a2="bank" title="Bank transfer list (PDF or Excel for the bank)">${a2Svg('wallet', 14)}<span>Bank</span></button>${ed ? `<button type="button" class="pillBtn ok" data-a2="save" ${d.dirty && !A2.busy ? '' : 'disabled'}>Save sheet</button>` : ''}</div></div>` : ''}</div>`; }
+      ${full ? `<div class="a2Sv"><div class="a2SvRow"><button type="button" class="pillBtn" data-a2="dl" title="Download PDF or Excel" aria-label="Download">${DL_ICON}<span class="a2Lbl">Download</span></button><button type="button" class="pillBtn" data-a2="bank" title="Bank transfer list (PDF or Excel for the bank)" aria-label="Bank transfer">${a2Svg('wallet', 14)}<span class="a2Lbl">Bank</span></button>${ed ? `<button type="button" class="pillBtn ok" data-a2="save" ${d.dirty && !A2.busy ? '' : 'disabled'}>Save sheet</button>` : ''}</div></div>` : ''}</div>`; }
   if(!d || !rows.length){
     $('acMain').innerHTML = `<div class="a2Empty"><div class="a2EmptyT">No ${A2_SEC[sec].n.toLowerCase()} sheet for ${acYmLabel(A2.ym)} yet</div>
       <div class="hrNote">${op ? 'Press Calculate picks above. It makes the operator list and counts the picks once. Nothing is read until you press it.' : 'Create the sheet to list everyone and start from the profile salary.'}</div>
