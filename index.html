@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261115-112834">
+<meta name="rvf-build" content="20261115-121803">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -27838,10 +27838,26 @@ const smUser = (id) => (state.users || []).find(u => u.loginId === id) || {};
 const smComp = () => { const S = state.hrSettings || {}, lh = S.letterhead || {}; return { lh, company: lh.company || S.company || 'Riyadh Velvet Factory', gm: lh.signName || '', gmT: lh.signTitle || '' }; };
 function smSignOpts(cur){ const us = (state.users || []).filter(u => !u.spare && u.name).sort((a, b) => a.name.localeCompare(b.name)); return '<option value="">- choose -</option>' + us.map(u => `<option value="${acEsc(u.loginId)}" ${cur === u.loginId ? 'selected' : ''}>${acEsc(u.name)}</option>`).join(''); }
 function smSignHtml(prep, chk){
-  const c = smComp(), col = (lb, nm, tt) => `<div style="flex:1;text-align:center;"><div style="font-size:11px;color:#475569;text-align:left;">${lb}</div><div style="height:34px;border-bottom:1px solid #0f172a;"></div><div style="font-size:11.5px;font-weight:700;margin-top:4px;">${acEsc(nm || '')}</div><div style="font-size:10.5px;color:#475569;">${acEsc(tt || '')}</div></div>`;
+  const c = smComp(), col = (lb, nm, tt) => `<div style="flex:1 1 0;min-width:0;text-align:center;"><div style="font-size:11.5px;color:#475569;text-align:left;">${lb}</div><div style="height:96px"></div><div style="border-top:1px solid #0f172a;padding-top:6px;font-size:12.5px;font-weight:700;color:#0f172a;">${acEsc(nm || '\u00A0')}</div><div style="font-size:11px;color:#475569;min-height:14px;">${acEsc(tt || '')}</div></div>`;
   const pu = smUser(prep), cu = smUser(chk);
-  return `<div style="display:flex;gap:28px;margin-top:34px;padding:0 6px;">${col('Prepared by:', pu.name, pu.profile && pu.profile.position)}${col('Checked by:', cu.name, cu.profile && cu.profile.position)}${col('Approved by:', c.gm, c.gmT)}</div>`;
+  return `<div style="display:flex;gap:26px;align-items:flex-end;margin-top:26px;">${col('Prepared by', pu.name, pu.profile && pu.profile.position)}${col('Checked by', cu.name, cu.profile && cu.profile.position)}${col('Approved by', c.gm, c.gmT)}</div>`;
 }
+/* one page of the letterhead paper: header, title, a piece of the table, (signatures on the last page), footer */
+function smPages(title, sub, th, rows, o){
+  o = o || {}; const c = smComp(), lh = c.lh, pg = (typeof lhPage === 'function') ? lhPage(lh) : { pT: 50, pR: 50, pB: 50, pL: 50, pxH: 1075 };
+  const per = o.per || 31, lastMax = o.lastMax || 15, chunks = []; let rem = rows.slice();
+  while(rem.length > per){ chunks.push(rem.slice(0, per)); rem = rem.slice(per); }
+  if(rem.length > lastMax){ const k = rem.length - Math.min(8, lastMax); chunks.push(rem.slice(0, k)); rem = rem.slice(k); }
+  chunks.push(rem);
+  return chunks.map((ch, i) => { const last = i === chunks.length - 1;
+    return `<div style="width:760px;min-height:${pg.pxH}px;box-sizing:border-box;padding:${pg.pT}px ${pg.pR}px ${pg.pB}px ${pg.pL}px;background:#ffffff;color:#0f172a;font-family:'Inter',sans-serif;display:flex;flex-direction:column;">
+      ${typeof lhHeaderHtml === 'function' ? lhHeaderHtml(lh, c.company) : ''}
+      <div style="text-align:center;margin:16px 0 2px;font-family:'Oswald',sans-serif;font-size:19px;font-weight:700;letter-spacing:.02em;">${acEsc(title)}</div>${sub ? `<div style="text-align:center;font-size:11.5px;color:#475569;margin-bottom:10px;">${acEsc(sub)}${chunks.length > 1 ? ' - page ' + (i + 1) + '/' + chunks.length : ''}</div>` : ''}
+      ${smTbl(th, ch)}
+      <div style="flex:1"></div>${last && o.sign ? o.sign : ''}
+      ${lh && lh.footer ? `<div style="margin-top:16px;padding-top:10px;border-top:1px solid #e2e8f0;font-size:10.5px;color:#64748b;text-align:center;">${acEsc(lh.footer)}</div>` : ''}</div>`; });
+}
+const smPdfOpt = () => { const lh = smComp().lh; return { m: 0, format: (typeof lhPage === 'function' ? lhPage(lh).fmt : 'a4') }; };
 function smHeadHtml(title, sub){ const c = smComp(); return `<div style="padding:6px 6px 0;">${typeof lhHeaderHtml === 'function' ? lhHeaderHtml(c.lh, c.company) : ''}<div style="text-align:center;margin:14px 0 4px;font-family:'Oswald',sans-serif;font-size:19px;font-weight:700;letter-spacing:.02em;">${acEsc(title)}</div>${sub ? `<div style="text-align:center;font-size:11.5px;color:#475569;margin-bottom:8px;">${acEsc(sub)}</div>` : ''}</div>`; }
 const smTbl = (head, rows, cls) => `<table class="report-table ${cls || 'ovPdfT'}" style="width:100%;"><thead><tr>${head}</tr></thead><tbody>${rows.join('')}</tbody></table>`;
 
@@ -27859,8 +27875,9 @@ function bkRows(){
   });
   return out;
 }
-function bkOpen(){
+async function bkOpen(){
   const d = a2Doc(); if(!d || !(d.rows || []).length){ toast('Open a sheet with people first'); return; }
+  try{ await hrLoadSettings(); }catch(e){}
   let ov = document.getElementById('bkOv'); if(ov) ov.remove(); ov = document.createElement('div'); ov.id = 'bkOv'; ov.className = 'dlOv'; document.body.appendChild(ov); bkDraw();
 }
 function bkDraw(){
@@ -27875,6 +27892,7 @@ function bkDraw(){
     <div class="dlGo"><span class="hrNote">The Excel is made for uploading to the bank: one row per person, IBAN, amount.</span><span style="flex:1"></span><button type="button" class="pillBtn" data-bk="pdf">${DL_ICON}PDF</button><button type="button" class="pillBtn" data-bk="xlsx">${DL_ICON}Excel</button></div></div>`;
 }
 async function bkGo(kind){
+  try{ await hrLoadSettings(); }catch(e){}
   const x = bkRows(), list = x.bank.concat(BK.cash ? x.cash : []), sec = A2.sec, ym = A2.ym, title = 'Bank transfer - ' + A2_SEC[sec].n + ' salary', sub = acYmLabel(ym) + ' - Alinma Bank', stamp = rvfDateStamp(), file = 'bank-transfer-' + sec + '-' + ym + '-' + stamp;
   if(!list.length){ toast('Nobody to list'); return; }
   const tot = acR2(list.reduce((a, r) => a + r.net, 0)), tded = acR2(list.reduce((a, r) => a + r.ded, 0));
@@ -27887,12 +27905,11 @@ async function bkGo(kind){
     const c = smComp(), pu = smUser(BK.prep), cu = smUser(BK.chk), s2 = XLSX.utils.aoa_to_sheet([[title], ['Month', acYmLabel(ym)], ['Bank', 'Alinma Bank'], ['People', list.length], ['Total deduction', tded], ['Total net payable', tot], [], ['Prepared by', pu.name || ''], ['Checked by', cu.name || ''], ['Approved by', c.gm || '']]); s2['!cols'] = [{ wch: 22 }, { wch: 34 }];
     const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Bank transfer'); XLSX.utils.book_append_sheet(wb, s2, 'Summary'); XLSX.writeFile(wb, file + '.xlsx'); toast('Excel file downloaded'); return;
   }
-  const th = '<th>#</th><th>ID</th><th>Name</th>' + (BK.ids ? `<th>${sec === 'saudi' ? 'Saudi ID' : 'Iqama'}</th>` : '') + '<th>IBAN</th><th class="a2N" style="text-align:right">Deduction</th><th style="text-align:right">Net payable</th>';
+  const th = '<th>#</th><th>ID</th><th>Name</th>' + (BK.ids ? `<th>${sec === 'saudi' ? 'Saudi ID' : 'Iqama'}</th>` : '') + '<th>IBAN</th><th style="text-align:right">Deduction</th><th style="text-align:right">Net payable</th>';
   const rows = list.map((r, i) => `<tr><td>${i + 1}</td><td>${acEsc(r.id)}</td><td>${acEsc(r.name)}</td>${BK.ids ? `<td>${acEsc(r.idn)}</td>` : ''}<td style="white-space:nowrap;">${acEsc(r.iban || 'CASH')}</td><td style="text-align:right">${r.ded ? acMoney(r.ded) : ''}</td><td style="text-align:right"><b>${acMoney(r.net) || '0'}</b></td></tr>`);
-  const span = 3 + (BK.ids ? 1 : 0) + 1, per = 30, blocks = [smHeadHtml(title, sub)];
-  for(let i = 0; i < rows.length; i += per){ const last = i + per >= rows.length; blocks.push(`<div style="padding:0 6px;">${smTbl(th, rows.slice(i, i + per).concat(last ? [`<tr style="background:#f1f5f9;font-weight:700;"><td colspan="${span}">Total (${list.length})</td><td style="text-align:right">${acMoney(tded) || '0'}</td><td style="text-align:right">${acMoney(tot) || '0'}</td></tr>`] : []))}</div>`); }
-  blocks.push(smSignHtml(BK.prep, BK.chk)); toast('Making the PDF...');
-  await rvfMakePdf(blocks, file + '.pdf', { m: 10 });
+  rows.push(`<tr style="background:#f1f5f9;font-weight:700;"><td colspan="${3 + (BK.ids ? 1 : 0) + 1}">Total (${list.length})</td><td style="text-align:right">${acMoney(tded) || '0'}</td><td style="text-align:right">${acMoney(tot) || '0'}</td></tr>`);
+  toast('Making the PDF...'); const blocks = smPages(title.toUpperCase(), sub, th, rows, { sign: smSignHtml(BK.prep, BK.chk) });
+  await rvfMakePdf(blocks, file + '.pdf', smPdfOpt());
 }
 document.addEventListener('click', (e) => { const t = e.target.closest && e.target.closest('[data-bk]'); if(!t || t.tagName === 'SELECT' || t.tagName === 'INPUT') return; const a = t.dataset.bk; if(a === 'close'){ const o = document.getElementById('bkOv'); if(o) o.remove(); } else if(a === 'pdf' || a === 'xlsx') bkGo(a); });
 document.addEventListener('change', (e) => { const t = e.target; if(!t || !t.dataset || !t.dataset.bk) return; const a = t.dataset.bk; if(a === 'ids'){ BK.ids = t.checked; bkKeep(); bkDraw(); } else if(a === 'cash'){ BK.cash = t.checked; bkKeep(); bkDraw(); } else if(a === 'prep'){ BK.prep = t.value; bkKeep(); } else if(a === 'chk'){ BK.chk = t.value; bkKeep(); } });
@@ -27920,6 +27937,7 @@ function smMonths(months){
 }
 function smMulti(k, noun, all, list){ const sel = SM[k], open = SM.open === k, label = sel.length ? (sel.length === 1 ? (SM_SECN[sel[0]] || sel[0]) : sel.length + ' ' + noun) : all; return `<div class="a2Multi" style="min-width:150px;flex:1;"><button type="button" class="a2MBtn" data-sm="mtog" data-v="${k}"><span>${acEsc(label)}</span><i>${open ? '▴' : '▾'}</i></button>${open ? `<div class="a2MList">${list.map(v => { const val = Array.isArray(v) ? v[0] : v, lb = Array.isArray(v) ? v[1] : v; return `<label class="a2DetL"><input type="checkbox" class="smChk" data-k="${k}" value="${acEsc(val)}" ${sel.indexOf(val) >= 0 ? 'checked' : ''}><span>${acEsc(lb)}</span></label>`; }).join('')}</div>` : ''}</div>`; }
 async function a2DrawSummary(){
+  try{ await hrLoadSettings(); }catch(e){}
   $('a2Top').innerHTML = ''; $('a2Head').innerHTML = ''; const mn = $('acMain'); mn.innerHTML = '<div class="empty-state">Loading...</div>';
   try{ await a2LoadIndex(); }catch(err){ mn.innerHTML = '<div class="empty-state">Could not load. Check your connection.</div>'; return; }
   const items = Object.keys(A2.idx.items).map(k => A2.idx.items[k]), yms = Array.from(new Set(items.map(x => x.ym))).sort().reverse();
@@ -27943,7 +27961,7 @@ function smPaint(){
       <select data-sm="sort"><option value="amt" ${SM.sort === 'amt' ? 'selected' : ''}>Biggest first</option><option value="az" ${SM.sort === 'az' ? 'selected' : ''}>A to Z</option></select>
       <button type="button" class="pillBtn" data-sm="ftog">${a2Svg('filter', 14)}Filter${n ? ' <b>' + n + '</b>' : ''}</button><span style="flex:1"></span>
       <button type="button" class="pillBtn" data-sm="pdf" title="Summary of the month on the letterhead">${DL_ICON}PDF</button><button type="button" class="pillBtn" data-sm="pdfy" title="Month by month of the year on the letterhead">${DL_ICON}Year PDF</button><button type="button" class="pillBtn" data-sm="xlsx">${DL_ICON}Excel</button></div>
-    <div class="smSign"><div class="field"><label>Prepared by</label><select data-sm="prep">${smSignOpts(SM.prep)}</select></div><div class="field"><label>Checked by</label><select data-sm="chk">${smSignOpts(SM.chk)}</select></div><div class="field"><label>Approved by</label><div class="smApp">${acEsc(smComp().gm || 'not set')}</div></div></div>
+    <div class="smSign"><div class="field"><label>Prepared by</label><select data-sm="prep">${smSignOpts(SM.prep)}</select></div><div class="field"><label>Checked by</label><select data-sm="chk">${smSignOpts(SM.chk)}</select></div><div class="field"><label>Approved by</label><div class="smApp">${acEsc(smComp().gm || 'not set - add it in Admin > Letterhead')}</div></div></div>
     ${SM.fOpen ? `<div class="a2FPanel">${smMulti('secs', 'sheets', 'All sheets', Object.keys(SM_SECN).map(k => [k, SM_SECN[k]]))}${smMulti('et', 'types', 'All employment types', uniq(x => x.et))}${smMulti('dept', 'departments', 'All departments', uniq(x => x.dept))}${smMulti('pos', 'positions', 'All positions', uniq(x => x.pos))}${smMulti('nat', 'countries', 'All countries', uniq(x => x.nat))}
       <div class="a2FCols"><span class="a2FT">Show</span><label class="a2Fx a2DetL"><input type="checkbox" data-sm="nsone" ${SM.nsOne ? 'checked' : ''}><span>Non Sponsor as one line (like your Excel)</span></label><label class="a2Fx a2DetL"><input type="checkbox" data-sm="nop" ${SM.nop ? 'checked' : ''}><span>Number of people (NOP)</span></label></div>${n ? '<button type="button" class="pillBtn" data-sm="fclear">Clear filters</button>' : ''}</div>` : ''}
     <div class="smGrid"><div><div class="smT">${acEsc(gl)} - ${acEsc(gT)}</div><div class="table-scroll"><table class="report-table smTbl"><thead><tr><th>${acEsc(gl.toUpperCase())}</th><th class="a2N">AMOUNT</th>${SM.nop ? '<th class="a2N">NOP</th>' : ''}</tr></thead><tbody>${rowsH.join('') || '<tr><td colspan="3">Nothing matches.</td></tr>'}${tail}</tbody></table></div></div>
@@ -27951,6 +27969,7 @@ function smPaint(){
     <div class="hrNote" style="margin-top:8px;">Made from the saved sheets only. Pick Prepared by and Checked by above; Approved by is the boss from Admin &rarr; Letterhead. The PDF is the month summary; Year PDF is the month by month page.</div>`;
 }
 async function smExport(kind){
+  try{ await hrLoadSettings(); }catch(e){}
   const b = smBuild(), months = smMonths(SM.months || []), have = months.filter(m => m.has), gTot = acR2(have.reduce((a, m) => a + m.amt, 0)), avg = have.length ? acR2(gTot / have.length) : 0, avgN = have.length ? Math.round(have.reduce((a, m) => a + m.n, 0) / have.length) : 0, gl = { dept: 'DEPARTMENT', pos: 'POSITION', cat: 'CATEGORY', nat: 'COUNTRY', et: 'EMPLOYMENT TYPE' }[SM.grp], T = acYmLabel(SM.ym), stamp = rvfDateStamp(), file = 'salary-summary-' + SM.ym + '-' + stamp;
   const lines = b.groups.map(g => [g.k, g.amt, g.n]).concat(b.one ? [['TOTAL', b.tot.amt, b.tot.n]].concat(b.ns ? [['NON SPONSOR', b.ns.amt, b.ns.n]] : []).concat([['GRAND TOTAL', b.grand.amt, b.grand.n]]) : [['TOTAL', b.grand.amt, b.grand.n]]);
   if(kind === 'xlsx'){
@@ -27961,10 +27980,11 @@ async function smExport(kind){
     XLSX.writeFile(wb, file + '.xlsx'); toast('Excel file downloaded'); return;
   }
   const th = `<th>${gl}</th><th style="text-align:right">AMOUNT</th>${SM.nop ? '<th style="text-align:right">NOP</th>' : ''}`, tr = (r, bold) => `<tr style="${bold ? 'font-weight:700;background:#f1f5f9;' : ''}"><td>${acEsc(r[0])}</td><td style="text-align:right">SAR ${acMoney(r[1]) || '0'}</td>${SM.nop ? `<td style="text-align:right">${r[2]}</td>` : ''}</tr>`;
-  const nG = b.groups.length, body = lines.map((r, i) => tr(r, i >= nG)), mr = months.map(m => `<tr><td>${acEsc(acYmLabel(m.ym).split(' ')[0].toUpperCase())}</td><td style="text-align:right">${m.has ? acMoney(m.amt) : ''}</td>${SM.nop ? `<td style="text-align:right">${m.has ? m.n : ''}</td>` : ''}</tr>`).concat([`<tr style="font-weight:700;background:#f1f5f9;"><td>G TOTAL</td><td style="text-align:right">${acMoney(gTot) || '0'}</td>${SM.nop ? '<td></td>' : ''}</tr>`, `<tr style="font-weight:700;"><td>AVG/MONTH</td><td style="text-align:right">${acMoney(avg) || '0'}</td>${SM.nop ? `<td style="text-align:right">${avgN}</td>` : ''}</tr>`]);
-  const yTbl = smTbl(`<th>MONTH</th><th style="text-align:right">AMOUNT</th>${SM.nop ? '<th style="text-align:right">NOP</th>' : ''}`, mr);
-  const blocks = kind === 'pdfy' ? [smHeadHtml('MONTH BY MONTH SUMMARY', 'Year ' + SM.ym.slice(0, 4)), `<div style="padding:0 6px;">${yTbl}</div>`, smSignHtml(SM.prep, SM.chk)] : [smHeadHtml('SALARY SUMMARY', 'For the month of ' + T)].concat(rvfTableBlocks(th, body, 34, 'ovPdfT').map(h => `<div style="padding:0 6px;">${h}</div>`), [smSignHtml(SM.prep, SM.chk)]);
-  toast('Making the PDF...'); await rvfMakePdf(blocks, (kind === 'pdfy' ? 'salary-by-month-' + SM.ym.slice(0, 4) + '-' + stamp : file) + '.pdf', { m: 10 });
+  const nG = b.groups.length, body = lines.map((r, i) => tr(r, i >= nG)), sign = smSignHtml(SM.prep, SM.chk);
+  const mr = months.map(m => `<tr><td>${acEsc(acYmLabel(m.ym).split(' ')[0].toUpperCase())}</td><td style="text-align:right">${m.has ? acMoney(m.amt) : ''}</td>${SM.nop ? `<td style="text-align:right">${m.has ? m.n : ''}</td>` : ''}</tr>`).concat([`<tr style="font-weight:700;background:#f1f5f9;"><td>G TOTAL</td><td style="text-align:right">${acMoney(gTot) || '0'}</td>${SM.nop ? '<td></td>' : ''}</tr>`, `<tr style="font-weight:700;"><td>AVG/MONTH</td><td style="text-align:right">${acMoney(avg) || '0'}</td>${SM.nop ? `<td style="text-align:right">${avgN}</td>` : ''}</tr>`]);
+  const thM = `<th>MONTH</th><th style="text-align:right">AMOUNT</th>${SM.nop ? '<th style="text-align:right">NOP</th>' : ''}`;
+  const blocks = kind === 'pdfy' ? smPages('MONTH BY MONTH SUMMARY', 'Year ' + SM.ym.slice(0, 4), thM, mr, { sign, per: 28, lastMax: 17 }) : smPages('SALARY SUMMARY', 'For the month of ' + T, th, body, { sign });
+  toast('Making the PDF...'); await rvfMakePdf(blocks, (kind === 'pdfy' ? 'salary-by-month-' + SM.ym.slice(0, 4) + '-' + stamp : file) + '.pdf', smPdfOpt());
 }
 document.addEventListener('click', async (e) => { const t = e.target.closest && e.target.closest('[data-sm]'); if(!t || t.tagName === 'SELECT' || t.tagName === 'INPUT') return; const a = t.dataset.sm; if(a === 'mtog'){ SM.open = SM.open === t.dataset.v ? '' : t.dataset.v; smPaint(); } else if(a === 'ftog'){ SM.fOpen = !SM.fOpen; smPaint(); } else if(a === 'fclear'){ SM.secs = []; SM.dept = []; SM.pos = []; SM.nat = []; SM.et = []; SM.open = ''; a2DrawSummary(); } else if(a === 'pdf' || a === 'pdfy' || a === 'xlsx') smExport(a); });
 document.addEventListener('change', async (e) => { const t = e.target; if(!t || !t.dataset) return; if(t.classList && t.classList.contains('smChk')){ const k = t.dataset.k, i = SM[k].indexOf(t.value); if(t.checked && i < 0) SM[k].push(t.value); if(!t.checked && i >= 0) SM[k].splice(i, 1); if(['dept', 'pos', 'nat', 'et'].indexOf(k) >= 0) await a2DrawSummary(); else smPaint(); return; } const a = t.dataset.sm; if(!a) return;
