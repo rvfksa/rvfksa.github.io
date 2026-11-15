@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta name="robots" content="noindex, nofollow">
-<meta name="rvf-build" content="20261115-093513">
+<meta name="rvf-build" content="20261115-093835">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -1824,7 +1824,7 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
   }
 
   @media (min-width:1100px){
-    .app{ max-width:none; }   /* the page uses the whole screen, left to right */
+    .app{ max-width:1180px; }
     main{ padding:30px 36px 70px; }
     header.topbar{ padding:16px 30px; }
     .navbar{ padding:10px 30px; top:65px; }
@@ -2237,7 +2237,7 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
   .pcSigRow{ display:flex; gap:8px; align-items:center; margin-bottom:6px; } .pcSigRow b{ flex:none; max-width:44%; font-size:12.5px; } .pcSigRow input{ flex:1; min-width:0; height:34px; padding:0 10px; }
   @media (hover:hover) and (pointer:fine){
     .navbar{ flex-wrap:nowrap; overflow-x:auto; gap:4px; padding-left:18px; padding-right:18px; }
-    .navbar .nav-btn{ padding:8px 11px; font-size:12px; }
+    .navbar .nav-btn{ padding:8px 11px; font-size:12px; flex:1 1 auto; text-align:center; }   /* the Pages panel: one line, tabs share the full panel width */
     .pcChips{ flex-wrap:wrap; overflow-x:visible; }
   }
   /* ---- v4: use the width — column layout on computers, clear panel when opened ---- */
