@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261115-091104">
+<meta name="rvf-build" content="20261115-091934">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -21309,9 +21309,13 @@ function ovPeriodText(){
 }
 async function ovDownload(kind, sectionOnly){
   const r = empDrillCompute(empDrillKind || 'all'), picked = OVC.pick.size > 0;
-  const list = ovSort(picked ? (state.users || []).filter(u => u.role !== 'pending' && OVC.pick.has(String(u.loginId))) : r.list);
+  const list0 = ovSort(picked ? (state.users || []).filter(u => u.role !== 'pending' && OVC.pick.has(String(u.loginId))) : r.list);
+  // Saudi staff are shown on the screen, but are not in the New Joined / Exit / Vacation downloads (unless Type = Saudi is chosen, or people are ticked by hand)
+  const isSa = (u) => ((u.profile || {}).employmentType) === 'Saudi';
+  const saOut = !picked && ['highlight:newJoin', 'highlight:exited', 'highlight:vacationNow'].indexOf(empDrillKind) >= 0 && ((document.getElementById('ceoFilterType') || {}).value !== 'Saudi');
+  const hidSa = saOut ? list0.filter(isSa) : [], list = saOut ? list0.filter(u => !isSa(u)) : list0;
   if(!list.length){ toast('Nobody to download'); return; }
-  const cols = ovSelCols(), filt = picked ? ['Chosen people only (' + list.length + ' ticked)', ovFilterText()].filter(Boolean).join(' · ') : ovFilterText(), title = r.title;
+  const cols = ovSelCols(), filt = (picked ? ['Chosen people only (' + list.length + ' ticked)', ovFilterText()].filter(Boolean).join(' · ') : ovFilterText()) + (hidSa.length ? (picked ? '' : (ovFilterText() ? ' · ' : '')) + 'Saudi staff not included (' + hidSa.length + ')' : ''), title = r.title;
   const count = (fn) => list.filter(fn).length, T = (u) => (u.profile || {}).employmentType;
   const sumAoa = [['Employees — ' + title], ['Period', ovPeriodText()], ['Created', rvfNowText()], ['Filters', filt || 'none'], [], ['People listed', list.length], ['  Sponsor', count(u => T(u) === 'Sponsor')], ['  Non-Sponsor', count(u => T(u) === 'Non-Sponsor')], ['  Saudi', count(u => T(u) === 'Saudi')], ['Columns', cols.map(c => c.l).join(', ')]].concat(picked ? [] : ovLeftHidden().length ? [['Joined & already left (not listed)', ovLeftHidden().map(u => u.name + ' (' + u.loginId + ')').join(', ')]] : []);
   await dlExport({ kind, title: 'Employees', file: 'employees', sheet: 'Employees', cols, items: list, sumAoa, headLines: [title + ' · ' + list.length + ' people · ' + ovPeriodText() + ' · ' + rvfNowText(), filt, (!picked && ovLeftHidden().length) ? ovLeftHidden().length + ' Non-Sponsor joined in this period and has already left (not listed): ' + ovLeftHidden().map(u => u.name + ' (' + u.loginId + ')').join(', ') : ''],
