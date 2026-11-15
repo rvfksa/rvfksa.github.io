@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261115-161933">
+<meta name="rvf-build" content="20261115-162030">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -27973,7 +27973,7 @@ function smPaint(){
 async function smExport(kind){
   try{ await hrLoadSettings(); }catch(e){}
   const b = smBuild(), months = smMonths(SM.months || []), have = months.filter(m => m.has), gTot = acR2(have.reduce((a, m) => a + m.amt, 0)), avg = have.length ? acR2(gTot / have.length) : 0, avgN = have.length ? Math.round(have.reduce((a, m) => a + m.n, 0) / have.length) : 0, gl = { dept: 'DEPARTMENT', pos: 'POSITION', cat: 'CATEGORY', catdept: 'CATEGORY', nat: 'COUNTRY', et: 'EMPLOYMENT TYPE' }[SM.grp], T = acYmLabel(SM.ym), stamp = rvfDateStamp(), file = 'salary-summary-' + SM.ym + '-' + stamp;
-  const lines = [].concat(...b.groups.map((g, gi) => (SM.grp === 'catdept' && gi ? [['', '', '', 3]] : []).concat([[g.k, g.amt, g.n, g.subs.length ? 2 : 0]]).concat(g.subs.map(x => ['   ' + x.k, x.amt, x.n, 1]))))).concat(b.one ? [['TOTAL', b.tot.amt, b.tot.n]].concat(b.ns ? [['NON SPONSOR', b.ns.amt, b.ns.n]] : []).concat([['GRAND TOTAL', b.grand.amt, b.grand.n]]) : [['TOTAL', b.grand.amt, b.grand.n]]);
+  const lines = [].concat(...b.groups.map((g, gi) => (SM.grp === 'catdept' && gi ? [['', '', '', 3]] : []).concat([[g.k, g.amt, g.n, g.subs.length ? 2 : 0]]).concat(g.subs.map(x => ['   ' + x.k, x.amt, x.n, 1])))).concat(b.one ? [['TOTAL', b.tot.amt, b.tot.n]].concat(b.ns ? [['NON SPONSOR', b.ns.amt, b.ns.n]] : []).concat([['GRAND TOTAL', b.grand.amt, b.grand.n]]) : [['TOTAL', b.grand.amt, b.grand.n]]);
   if(kind === 'xlsx'){
     if(typeof XLSX === 'undefined'){ toast('Excel tool not loaded - check your connection'); return; }
     const hd = [gl, 'AMOUNT'].concat(SM.nop ? ['NOP'] : []), cut = (r) => SM.nop ? r.slice(0, 3) : r.slice(0, 2), wb = XLSX.utils.book_new();
