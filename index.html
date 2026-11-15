@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261115-083853">
+<meta name="rvf-build" content="20261115-090738">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -4599,6 +4599,7 @@ table.a2T td .a2In{ width:100%; min-width:36px; }
                 <option value="">Any</option>
                 <option value="Sponsor">Sponsor</option>
                 <option value="Non-Sponsor">Non-Sponsor</option>
+                <option value="Saudi">Saudi</option>
                 <option value="__unset__">Not Set</option>
               </select>
             </div>
@@ -5347,7 +5348,7 @@ table.a2T td .a2In{ width:100%; min-width:36px; }
         <span style="font-size:9.5px; color:var(--muted); font-weight:500; text-transform:none; letter-spacing:0;">Live &middot; current status</span>
       </h2>
       <div class="card" style="margin-bottom:22px;">
-        <div class="grid-3" style="gap:12px; margin-bottom:16px;">
+        <div class="grid-3 ceoEmpGrid" style="gap:12px; margin-bottom:16px; grid-template-columns:repeat(auto-fit,minmax(150px,1fr));">
           <div class="ceoEmpStat" data-filter="all" style="cursor:pointer; background:var(--panel-2); border-radius:16px; padding:18px 14px;">
             <div class="kpi-icon" style="background:var(--acc-blue-soft); color:var(--acc-blue); width:40px; height:40px; margin:0 0 12px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:19px; height:19px;"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg></div>
             <div style="font-family:'JetBrains Mono',monospace; font-size:28px; font-weight:700; color:var(--text-strong); line-height:1;" id="kpiTotalEmp">0</div>
@@ -5362,6 +5363,11 @@ table.a2T td .a2In{ width:100%; min-width:36px; }
             <div class="kpi-icon" style="background:var(--acc-purple-soft); color:var(--acc-purple); width:40px; height:40px; margin:0 0 12px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:19px; height:19px;"><circle cx="12" cy="12" r="9"/><path d="M9 12h6"/></svg></div>
             <div style="font-family:'JetBrains Mono',monospace; font-size:28px; font-weight:700; color:var(--text-strong); line-height:1;" id="kpiNonSponsor">0</div>
             <div style="font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; font-weight:600; margin-top:6px;">Non-Sponsor</div>
+          </div>
+          <div class="ceoEmpStat" data-filter="Saudi" style="cursor:pointer; background:var(--panel-2); border-radius:16px; padding:18px 14px;">
+            <div class="kpi-icon" style="background:var(--acc-blue-soft); color:var(--acc-blue); width:40px; height:40px; margin:0 0 12px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:19px; height:19px;"><path d="M12 2l2.4 5 5.6.8-4 3.9.9 5.6-4.9-2.6-4.9 2.6.9-5.6-4-3.9 5.6-.8z"/></svg></div>
+            <div style="font-family:'JetBrains Mono',monospace; font-size:28px; font-weight:700; color:var(--text-strong); line-height:1;" id="kpiSaudi">0</div>
+            <div style="font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; font-weight:600; margin-top:6px;">Saudi</div>
           </div>
         </div>
 
@@ -5414,7 +5420,7 @@ table.a2T td .a2In{ width:100%; min-width:36px; }
               <div class="field"><label>Position</label><select id="ceoFilterPosition"><option value="">All</option></select></div>
             </div>
             <div class="field ovColsField"><details class="ovColsD" id="ovColsD"><summary><span class="ovColsT">Columns in the list and downloads</span><span class="ovColsN" id="ovColsCnt"></span><span class="ovColsA">Choose</span></summary><div id="ceoColsBox"></div></details></div>
-            <div class="field"><label>Sponsor type</label><select id="ceoFilterType"><option value="">Both</option><option value="Sponsor">Sponsor only</option><option value="Non-Sponsor">Non-Sponsor only</option></select></div>
+            <div class="field"><label>Sponsor type</label><select id="ceoFilterType"><option value="">All types</option><option value="Sponsor">Sponsor only</option><option value="Non-Sponsor">Non-Sponsor only</option><option value="Saudi">Saudi only</option></select></div>
             <div class="field"><label>Current job status</label><select id="ceoFilterStatus"><option value="">All</option><option value="running">On The Job</option><option value="vacation">Vacation</option><option value="leave">On Leave</option><option value="terminated">Exit / Terminated</option></select></div>
             <div class="field"><label>Tenure (years)</label><select id="ceoFilterTenure"><option value="0">Any</option><option value="1">1+</option><option value="5">5+</option><option value="10">10+</option></select></div>
             <div class="field">
@@ -12664,7 +12670,7 @@ function renderGeneralTab(){
       <div class="field"><label>Home Country</label><input type="text" id="pf-homeCountry" list="countryNameList" value="${p.homeCountry||''}"></div>
       <div class="field"><label>Home Country Airport</label><input type="text" id="pf-homeCountryAirport" value="${p.homeCountryAirport||''}"></div>
       <div class="field"><label>Position</label><select id="pf-position"><option value="">— Select —</option>${state.positions.map(x=>`<option ${p.position===x?'selected':''}>${x}</option>`).join('')}</select></div>
-      <div class="field"><label>Employment Type</label><select id="pf-employmentType"><option value="">— Select —</option><option ${p.employmentType==='Sponsor'?'selected':''}>Sponsor</option><option ${p.employmentType==='Non-Sponsor'?'selected':''}>Non-Sponsor</option></select></div>
+      <div class="field"><label>Employment Type</label><select id="pf-employmentType"><option value="">— Select —</option><option ${p.employmentType==='Sponsor'?'selected':''}>Sponsor</option><option ${p.employmentType==='Non-Sponsor'?'selected':''}>Non-Sponsor</option><option ${p.employmentType==='Saudi'?'selected':''}>Saudi</option></select></div>
       <div class="field"><label>Shift <span style="text-transform:none;color:var(--muted);">(same as Admin &rarr; Users)</span></label><select id="pf-shiftPref"><option value="">— Select —</option><option ${userShiftOf(u)==='Day'?'selected':''}>Day</option><option ${userShiftOf(u)==='Night'?'selected':''}>Night</option></select></div>
       <div class="field"><label>Joining Date</label><input type="date" id="pf-joiningDate" value="${p.joiningDate||''}"></div>
       <div class="field"><label>End Date <span style="text-transform:none;color:var(--muted);">(if exited)</span></label><input type="date" id="pf-endDate" value="${p.endDate||''}"></div>
@@ -14677,7 +14683,7 @@ function renderPassportLocationStats(users){
   // Exit/Terminated employees are excluded entirely — their passport status
   // no longer matters once they're no longer with the company. Anyone Admin
   // has manually marked "Not Applicable" is excluded too.
-  const tracked = users.filter(u => u.role !== 'pending' && !isExitedEmployee(u) && !(u.profile && u.profile.employmentType === 'Non-Sponsor') &&
+  const tracked = users.filter(u => u.role !== 'pending' && !isExitedEmployee(u) && !(u.profile && (u.profile.employmentType === 'Non-Sponsor' || u.profile.employmentType === 'Saudi')) &&
     passportLocationBucket((u.profile && u.profile.passport) || {}) !== 'not_applicable');
   passportLocDrillTracked = tracked;
   $('kpiPassportOffice').textContent = tracked.filter(u => passportLocationBucket((u.profile||{}).passport||{}) === 'office').length;
@@ -14891,6 +14897,7 @@ function renderEmployeeOverviewBox(users){
   $('kpiTotalEmp').textContent = activeProfile.length;
   $('kpiSponsor').textContent = activeProfile.filter(u => u.profile && u.profile.employmentType === 'Sponsor').length;
   $('kpiNonSponsor').textContent = activeProfile.filter(u => u.profile && u.profile.employmentType === 'Non-Sponsor').length;
+  if($('kpiSaudi')) $('kpiSaudi').textContent = activeProfile.filter(u => u.profile && u.profile.employmentType === 'Saudi').length;
   $('ceoEmpDrill').style.display = 'none'; empDrillExtra = null;
 
   const deptSel = $('ceoFilterDept'); deptSel.innerHTML = '<option value="">All</option>' + state.departments.map(d=>`<option>${d}</option>`).join('');
@@ -14903,7 +14910,7 @@ function renderEmployeeOverviewBox(users){
   const newJoinCount = withProfile.filter(u => u.profile && inCyc(u.profile.joiningDate)).length;
   const vacationCount = withProfile.filter(u => u.profile && u.profile.employmentStatus === 'vacation').length;
   $('kpiNewJoin').textContent = newJoinCount;
-  const spTxt = (arr) => { const n = (t) => arr.filter(u => u.profile && u.profile.employmentType === t).length; return 'Sponsor <b>' + n('Sponsor') + '</b> &middot; Non-Sponsor <b>' + n('Non-Sponsor') + '</b>'; };
+  const spTxt = (arr) => { const n = (t) => arr.filter(u => u.profile && u.profile.employmentType === t).length; return 'Sponsor <b>' + n('Sponsor') + '</b> &middot; Non-Sponsor <b>' + n('Non-Sponsor') + '</b>' + (n('Saudi') ? ' &middot; Saudi <b>' + n('Saudi') + '</b>' : ''); };
   $('kpiNewJoinSp').innerHTML = spTxt(withProfile.filter(u => u.profile && inCyc(u.profile.joiningDate)));
   $('kpiVacationNow').textContent = vacationCount;
   // The tile itself always shows the current-month figure now that its own
@@ -15227,7 +15234,7 @@ function empDrillCompute(kind0){
     // drop out of this list the moment Admin marks them (item 4).
     list = list.filter(u => stF || !isExitedEmployee(u));
     onlyRunning = false;
-  } else if(kind === 'Sponsor' || kind === 'Non-Sponsor'){
+  } else if(kind === 'Sponsor' || kind === 'Non-Sponsor' || kind === 'Saudi'){
     title = kind + ' Employees';
     list = list.filter(u => u.profile && u.profile.employmentType === kind && (stF || !isExitedEmployee(u)));
     onlyRunning = false;
@@ -17940,7 +17947,7 @@ const BK_FIELDS = [
   { k: 'joining', t: 'Joining date', kind: 'date' },
   { k: 'dept', t: 'Department', kind: 'dept' },
   { k: 'position', t: 'Position', kind: 'pos' },
-  { k: 'empType', t: 'Employment type', kind: 'sel', opts: [['', '—'], ['Sponsor', 'Sponsor'], ['Non-Sponsor', 'Non-Sponsor']] },
+  { k: 'empType', t: 'Employment type', kind: 'sel', opts: [['', '—'], ['Sponsor', 'Sponsor'], ['Non-Sponsor', 'Non-Sponsor'], ['Saudi', 'Saudi']] },
   { k: 'salary', t: 'Basic salary', kind: 'num' },
   { k: 'overtime', t: 'Overtime (fixed)', kind: 'num' },
   { k: 'country', t: 'Home country', kind: 'country' },
@@ -17996,7 +18003,7 @@ function bkParseDate(v){
 }
 function bkYmd(y, mo, d){ if(!(y >= 1900 && y <= 2100 && mo >= 1 && mo <= 12 && d >= 1 && d <= 31)) return ''; const t = new Date(y, mo - 1, d); if(t.getMonth() !== mo - 1) return ''; return y + '-' + pad(mo) + '-' + pad(d); }
 function bkNum(v){ const s = String(v == null ? '' : v).replace(/[,\s]/g, '').replace(/[^\d.]/g, ''); return s && !isNaN(parseFloat(s)) ? String(parseFloat(s)) : ''; }
-function bkType(v){ const s = String(v || '').toLowerCase().replace(/[^a-z]/g, ''); if(!s) return ''; if(s.startsWith('non') || s === 'ns' || s === 'nonsponsor') return 'Non-Sponsor'; if(s.startsWith('spon') || s === 's') return 'Sponsor'; return ''; }
+function bkType(v){ const s = String(v || '').toLowerCase().replace(/[^a-z]/g, ''); if(!s) return ''; if(s.startsWith('saudi')) return 'Saudi'; if(s.startsWith('non') || s === 'ns' || s === 'nonsponsor') return 'Non-Sponsor'; if(s.startsWith('spon') || s === 's') return 'Sponsor'; return ''; }
 function bkPick(list, v){ const s = String(v || '').trim(); if(!s) return ''; const f = (list || []).find(x => String(x).toLowerCase() === s.toLowerCase()); return f || s; }
 // "Filipino" -> "Philippines" (the app keeps country names); a country name that is already right stays as it is
 const BK_NAT = { filipino: 'Philippines', filipina: 'Philippines', yemeni: 'Yemen', bangladeshi: 'Bangladesh', indian: 'India', egyptian: 'Egypt', saudi: 'Saudi Arabia', pakistani: 'Pakistan', nepali: 'Nepal', nepalese: 'Nepal', moroccan: 'Morocco', sudanese: 'Sudan', syrian: 'Syria', jordanian: 'Jordan', lebanese: 'Lebanon', indonesian: 'Indonesia', srilankan: 'Sri Lanka', ethiopian: 'Ethiopia', kenyan: 'Kenya', ugandan: 'Uganda', afghan: 'Afghanistan', turkish: 'Turkey', iraqi: 'Iraq', palestinian: 'Palestine', tunisian: 'Tunisia', eritrean: 'Eritrea' };
@@ -18261,7 +18268,7 @@ function bkEditHtml(p){
   const sel = (k, l, opts) => `<div class="field"><label>${l}</label><select data-bk="ef" data-k="${k}">${opts.map(o => `<option value="${bkEsc(o[0])}" ${p[k] === o[0] ? 'selected' : ''}>${bkEsc(o[1])}</option>`).join('')}</select></div>`;
   const dl = (arr, cur) => [['', '—']].concat(arr.map(x => [x, x])).concat(cur && !arr.includes(cur) ? [[cur, cur]] : []);
   return `<div class="bkItem edit"><div class="hrForm bkEdit">${inp('id', 'Employee ID')}${inp('name', 'Full name')}${sel('dept', 'Department', dl(state.departments || [], p.dept))}${sel('position', 'Position', dl(state.positions || [], p.position))}
-    ${sel('empType', 'Employment type', [['', '—'], ['Sponsor', 'Sponsor'], ['Non-Sponsor', 'Non-Sponsor']])}${inp('joining', 'Joining date', 'date')}${inp('salary', 'Basic salary')}<div class="field"><label>Home country</label><input type="text" list="countryNameList" data-bk="ef" data-k="country" value="${bkEsc(p.country)}"></div>
+    ${sel('empType', 'Employment type', [['', '—'], ['Sponsor', 'Sponsor'], ['Non-Sponsor', 'Non-Sponsor'], ['Saudi', 'Saudi']])}${inp('joining', 'Joining date', 'date')}${inp('salary', 'Basic salary')}<div class="field"><label>Home country</label><input type="text" list="countryNameList" data-bk="ef" data-k="country" value="${bkEsc(p.country)}"></div>
     ${inp('phone', 'Phone')}${sel('role', 'Account type', BK_ROLES)}${sel('shift', 'Shift', [['', '—'], ['Day', 'Day'], ['Night', 'Night']])}${sel('vac', 'Vacation eligibility', [['', '—'], ['1', '1 year'], ['2', '2 years']])}
     ${inp('passportNo', 'Passport number')}${inp('passportIssue', 'Passport issue date', 'date')}${inp('passportExpiry', 'Passport expiry date', 'date')}${inp('dob', 'Date of birth', 'date')}
     ${inp('iqamaNo', 'Iqama number')}${inp('iqamaExpiry', 'Iqama expiry date', 'date')}${inp('airport', 'Home country airport')}${inp('endDate', 'End date (if exited)', 'date')}
@@ -20854,7 +20861,7 @@ async function dlExport(o){
   // ----- PDF: real text, the same look as the lists on screen -----
   const n = cols.length, land = n > 7, cls = land ? (n > 14 ? 'ovPdfT ovW3' : n > 10 ? 'ovPdfT ovW2' : 'ovPdfT') : 'ovPdfT';   // many columns: a wide (landscape) page
   const hd = '<tr><th>#</th>' + cols.map(c => `<th>${dlEsc(c.l)}</th>`).join('') + '</tr>';
-  const rows = []; let last = -1, sn = 0; const cnt = [0, 0, 0, 0]; if(o.group) items.forEach(it => cnt[o.group.of(it)]++);
+  const rows = []; let last = -1, sn = 0; const cnt = [0, 0, 0, 0, 0]; if(o.group) items.forEach(it => cnt[o.group.of(it)]++);
   items.forEach((it, i) => {
     if(o.group){ const g = o.group.of(it); if(g !== last){ last = g; sn = 0; rows.push(`<tr class="ovGrp"><td colspan="${n + 1}">${dlEsc(o.group.labels[g])} &middot; ${cnt[g]}</td></tr>`); } }
     rows.push(`<tr><td>${++sn}</td>${cols.map(c => { if(c.img) return `<td>${thumbs[i].map(p => `<img src="${p.url}" style="height:44px;width:auto;margin-right:3px;border-radius:4px;vertical-align:middle;">`).join('')}</td>`; return `<td>${dlEsc(c.get(it)) || '—'}</td>`; }).join('')}</tr>`);
@@ -21232,8 +21239,8 @@ function ovColsCount(){ const c = document.getElementById('ovColsCnt'); if(c){ t
 function ovColsDraw(){ const b = document.getElementById('ceoColsBox'); if(b) b.innerHTML = ovColsHtml(); ovColsCount(); }
 
 // the screen list: # first, then the chosen columns, then the View button
-const ovType = (u) => { if(OVV.back.has(String(u.loginId))) return 3; const t = (u.profile || {}).employmentType; return t === 'Sponsor' ? 0 : t === 'Non-Sponsor' ? 1 : 2; };
-const OV_GL = ['Sponsor', 'Non-Sponsor', 'Type not set', 'Came back from vacation'];
+const ovType = (u) => { if(OVV.back.has(String(u.loginId))) return 4; const t = (u.profile || {}).employmentType; return t === 'Sponsor' ? 0 : t === 'Non-Sponsor' ? 1 : t === 'Saudi' ? 2 : 3; };
+const OV_GL = ['Sponsor', 'Non-Sponsor', 'Saudi', 'Type not set', 'Came back from vacation'];
 const ovSort = (list) => list.map((u, i) => [u, i]).sort((a, b) => ovType(a[0]) - ovType(b[0]) || a[1] - b[1]).map(x => x[0]);   // Sponsor first, then Non-Sponsor; the old order is kept inside each group
 // New Joined: Non-Sponsors who joined in the period but have already left are not listed - say so, so the numbers add up
 function ovLeftHidden(){
@@ -21255,7 +21262,7 @@ function empDrillPaint(title, list0){
   document.getElementById('ceoEmpDrillTitle').textContent = `${title} (${list.length})`;
   if(!document.getElementById('ceoColsBox') || !document.getElementById('ceoColsBox').firstChild || OVC.drawnKind !== ovKind()){ ovLoadSel(); OVC.drawnKind = ovKind(); ovColsDraw(); }
   const box = document.getElementById('ceoEmpDrillList');
-  const shown = list.slice(0, 100), nc = cols.length + 3, cnt = [0, 0, 0, 0]; list.forEach(u => cnt[ovType(u)]++);
+  const shown = list.slice(0, 100), nc = cols.length + 3, cnt = [0, 0, 0, 0, 0]; list.forEach(u => cnt[ovType(u)]++);
   const sum = `<div class="ovSum">${cnt.map((n, k) => (k < 2 || n) ? `<span>${OV_GL[k]} <b>${n}</b></span>` : '').join('')}${(() => { const h = ovLeftHidden(); return h.length ? `<span style="color:var(--danger);" title="${esc(h.map(u => u.name + ' (' + u.loginId + ')').join(', '))}">Joined &amp; already left (not listed) <b>${h.length}</b></span>` : ''; })()}</div>`;
   const pickBar = `<div class="ovPickBar"><span id="ovPickTxt"></span><button type="button" class="pillBtn" id="ovPickShown">Tick all shown</button><button type="button" class="pillBtn" id="ovPickClear">Clear</button></div>`;
   let body = '', last = -1, sn = 0;
@@ -21306,17 +21313,17 @@ async function ovDownload(kind, sectionOnly){
   if(!list.length){ toast('Nobody to download'); return; }
   const cols = ovSelCols(), filt = picked ? ['Chosen people only (' + list.length + ' ticked)', ovFilterText()].filter(Boolean).join(' · ') : ovFilterText(), title = r.title;
   const count = (fn) => list.filter(fn).length, T = (u) => (u.profile || {}).employmentType;
-  const sumAoa = [['Employees — ' + title], ['Period', ovPeriodText()], ['Created', rvfNowText()], ['Filters', filt || 'none'], [], ['People listed', list.length], ['  Sponsor', count(u => T(u) === 'Sponsor')], ['  Non-Sponsor', count(u => T(u) === 'Non-Sponsor')], ['Columns', cols.map(c => c.l).join(', ')]].concat(picked ? [] : ovLeftHidden().length ? [['Joined & already left (not listed)', ovLeftHidden().map(u => u.name + ' (' + u.loginId + ')').join(', ')]] : []);
+  const sumAoa = [['Employees — ' + title], ['Period', ovPeriodText()], ['Created', rvfNowText()], ['Filters', filt || 'none'], [], ['People listed', list.length], ['  Sponsor', count(u => T(u) === 'Sponsor')], ['  Non-Sponsor', count(u => T(u) === 'Non-Sponsor')], ['  Saudi', count(u => T(u) === 'Saudi')], ['Columns', cols.map(c => c.l).join(', ')]].concat(picked ? [] : ovLeftHidden().length ? [['Joined & already left (not listed)', ovLeftHidden().map(u => u.name + ' (' + u.loginId + ')').join(', ')]] : []);
   await dlExport({ kind, title: 'Employees', file: 'employees', sheet: 'Employees', cols, items: list, sumAoa, headLines: [title + ' · ' + list.length + ' people · ' + ovPeriodText() + ' · ' + rvfNowText(), filt, (!picked && ovLeftHidden().length) ? ovLeftHidden().length + ' Non-Sponsor joined in this period and has already left (not listed): ' + ovLeftHidden().map(u => u.name + ' (' + u.loginId + ')').join(', ') : ''],
     pre: picked ? [] : sectionOnly ? [ovSectionSummary(title, list)] : mpTilesBlock('#employeeOverviewBlock > .card'), group: { of: ovType, labels: OV_GL }, width: c => c.k === 'name' ? 28 : (c.k === 'dept' || c.k === 'pos') ? 20 : 15 });
 }
 
 // the small summary on top of a section-only PDF: how many people, and how they split
 function ovSectionSummary(title, list){
-  const cnt = [0, 0, 0, 0]; list.forEach(u => cnt[ovType(u)]++);
+  const cnt = [0, 0, 0, 0, 0]; list.forEach(u => cnt[ovType(u)]++);
   const st = {}; list.forEach(u => { const k = empStatusLabel((u.profile || {}).employmentStatus); st[k] = (st[k] || 0) + 1; });
   const box = (n, l, c) => `<div style="flex:1; min-width:90px; background:#f6f7fb; border-radius:12px; padding:10px 12px;"><div style="font-size:20px; font-weight:700; color:${c || '#0f172a'};">${n}</div><div style="font-size:9.5px; letter-spacing:.05em; text-transform:uppercase; color:#64748b; margin-top:2px;">${assignEsc(l)}</div></div>`;
-  return `<div style="display:flex; gap:8px; flex-wrap:wrap; margin:0 0 12px;">${box(list.length, title)}${cnt.map((n, k) => (k < 2 || n) ? box(n, OV_GL[k], k === 3 ? '#166534' : '') : '').join('')}${Object.keys(st).filter(k => k !== 'On The Job').map(k => box(st[k], k, '#b45309')).join('')}${ovLeftHidden().length ? box(ovLeftHidden().length, 'Joined & already left (not listed)', '#dc2626') : ''}</div>`;
+  return `<div style="display:flex; gap:8px; flex-wrap:wrap; margin:0 0 12px;">${box(list.length, title)}${cnt.map((n, k) => (k < 2 || n) ? box(n, OV_GL[k], k === 4 ? '#166534' : '') : '').join('')}${Object.keys(st).filter(k => k !== 'On The Job').map(k => box(st[k], k, '#b45309')).join('')}${ovLeftHidden().length ? box(ovLeftHidden().length, 'Joined & already left (not listed)', '#dc2626') : ''}</div>`;
 }
 // top bar of the Employee Overview: filter / columns, PDF, Excel (same look as Team & Machine Summary)
 function ovInitToolbar(){
@@ -22127,6 +22134,7 @@ function renderSalaryTab(){
       ${fieldRow('Basic Salary', s.basicSalary)}
       ${fieldRow('Overtime (fixed)', s.overtime)}
       ${s.extraMoney ? fieldRow('Extra money (every month)', s.extraMoney) : ''}
+      ${s.housing ? fieldRow('Housing / Premium (every month)', s.housing) : ''}${s.tBonus ? fieldRow('T Bonus (every month)', s.tBonus) : ''}${s.gosi ? fieldRow('GOSI / Food (every month)', s.gosi) : ''}
       ${s.noSalary ? fieldRow('Salary sheets', 'Left out (not listed or counted)') : ''}
       ${s.otHours ? fieldRow('Overtime hours per working day', s.otPerDay || '-') : ''}
       ${s.tying ? fieldRow('Beaming / Tying team', s.tyFixed ? 'Yes - fixed amount (no commission)' : 'Yes') : ''}
@@ -22141,6 +22149,7 @@ function renderSalaryTab(){
       <div class="field"><label>Basic Salary</label><input type="text" inputmode="decimal" id="sal-basic" value="${s.basicSalary||''}"></div>
       <div class="field"><label>Overtime (fixed)</label><input type="text" inputmode="decimal" id="sal-ot" value="${s.overtime||''}"></div>
       <div class="field"><label>Extra money (every month)</label><input type="text" inputmode="decimal" id="sal-extra" value="${s.extraMoney||''}"></div>
+      ${((profileCache.user.profile || {}).employmentType === 'Saudi') ? `<div class="field"><label>Housing / Premium (every month)</label><input type="text" inputmode="decimal" id="sal-hous" value="${acEsc(s.housing || '')}"></div><div class="field"><label>T Bonus (every month)</label><input type="text" inputmode="decimal" id="sal-tb" value="${acEsc(s.tBonus || '')}"></div><div class="field"><label>GOSI / Food (every month, if any)</label><input type="text" inputmode="decimal" id="sal-gosi" value="${acEsc(s.gosi || '')}"></div>` : ''}
     </div>
     <div class="field">
       <label style="display:flex; align-items:center; gap:8px; text-transform:none; font-weight:600; color:var(--text); cursor:pointer;">
@@ -22171,6 +22180,7 @@ async function saveSalaryInfo(){
   const salary = Object.assign({}, old, {
     basicSalary: $('sal-basic').value.trim(),
     extraMoney: $('sal-extra').value.trim(),
+    housing: $('sal-hous') ? $('sal-hous').value.trim() : (old.housing || ''), tBonus: $('sal-tb') ? $('sal-tb').value.trim() : (old.tBonus || ''), gosi: $('sal-gosi') ? $('sal-gosi').value.trim() : (old.gosi || ''),
     premiumEligible: $('sal-premium').checked,
     noSalary: $('sal-skip').checked, otHours: $('sal-oth').checked, otPerDay: $('sal-oth').checked ? $('sal-othd').value.trim() : '', tying: $('sal-tying').checked, tyFixed: $('sal-tying').checked && $('sal-tyfix').checked,
     overtime: $('sal-ot').value.trim(), instl: salInstRead(),
@@ -23277,7 +23287,7 @@ const a2Sh = (u) => { const s = userShiftOf(u); return s === 'Day' ? 'D' : s ===
 const a2OpPos = () => (AC.set && Array.isArray(AC.set.opPos)) ? AC.set.opPos : [];   // nothing ticked = every operator
 const a2PosOf = (u) => String(((u.profile || {}).position) || '').trim();
 const a2IsOp = (u) => a2OpPos().length ? a2OpPos().some(x => String(x).trim().toLowerCase() === a2PosOf(u).toLowerCase()) : u.role === 'operator';   // a ticked position goes to the Operator sheet even without a machine or the operator role (Trainee Weaver)
-const a2Group = (u) => a2IsOp(u) ? 'operator' : (((u.profile || {}).employmentType) === 'Non-Sponsor' ? 'nonsponsor' : 'sponsor');
+const a2Group = (u) => ((u.profile || {}).employmentType) === 'Saudi' ? 'saudi' : a2IsOp(u) ? 'operator' : (((u.profile || {}).employmentType) === 'Non-Sponsor' ? 'nonsponsor' : 'sponsor');
 const a2Num = (a, b) => String(a).localeCompare(String(b), undefined, { numeric: true });
 const a2Stamp = (iso) => { try{ return new Date(iso).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }); }catch(e){ return ''; } };
 const a2McName = (m) => { const x = (state.machines || []).find(k => String(k.id) === String(m)); return x ? String(x.name) : String(m); };
@@ -23331,8 +23341,17 @@ function a2SpCalc(r){
 function a2NewNs(u){ const sal = (u.profile && u.profile.salary) || {}; const r = { id: u.loginId, name: u.name, dept: u.department || '', pos: a2PosOf(u), fx: sal.basicSalary || '', ded: '', rm: '', net: 0 }; a2NsCalc(r); return r; }
 function a2PosNs(r){ if(r.pos) return r.pos; const u = (state.users || []).find(x => x.loginId === r.id); return u ? a2PosOf(u) : ''; }
 function a2NsCalc(r){ a2JoinSet(r, r.fx); r.net = Math.round(acNum(r.fx) - acNum(r.ded) - acNum(r.jded) + acNum(r.due)); }
-function a2Calc(sec, r){ if(sec === 'operator') a2OpNet(r); else if(sec === 'sponsor') a2SpCalc(r); else a2NsCalc(r); }
-function a2NewRow(sec, u){ return sec === 'operator' ? a2NewOp(u) : sec === 'sponsor' ? a2NewSp(u) : a2NewNs(u); }
+function a2Calc(sec, r){ if(sec === 'operator') a2OpNet(r); else if(sec === 'sponsor') a2SpCalc(r); else if(sec === 'saudi') a2SaCalc(r); else a2NsCalc(r); }
+function a2NewRow(sec, u){ return sec === 'operator' ? a2NewOp(u) : sec === 'sponsor' ? a2NewSp(u) : sec === 'saudi' ? a2NewSa(u) : a2NewNs(u); }
+// Saudi sheet: Basic + Housing/Premium + Extra + T Bonus = Total addition. Deduction = GOSI/Food + Advance + Absent days.
+// Absent day = Basic / 30 (always 30), rounded; only the Basic is cut. Net = Total addition - Total deduction (+ any due held from last month).
+function a2SaFromProfile(r, u){ const s = ((u.profile || {}).salary) || {}; r.name = u.name; r.dept = u.department || ''; r.pos = a2PosOf(u); r.basic = s.basicSalary || ''; r.hous = s.housing || ''; r.extra = s.extraMoney || ''; r.tb = s.tBonus || ''; if(s.gosi && (r.gosi === '' || r.gosi == null)) r.gosi = s.gosi; }
+function a2NewSa(u){ const r = { id: u.loginId, name: '', dept: '', pos: '', gosi: '', adv: '', abd: '', abo: '', rm: '', net: 0 }; a2SaFromProfile(r, u); a2SaCalc(r); return r; }
+function a2SaCalc(r){
+  const b = acNum(r.basic), tadd = acR2(b + acNum(r.hous) + acNum(r.extra) + acNum(r.tb)), hand = !(r.abo === undefined || r.abo === null || String(r.abo).trim() === '');
+  r.tadd = tadd; r.absded = hand ? acR2(acNum(r.abo)) : Math.round(b / 30 * acNum(r.abd));
+  r.ded = acR2(acNum(r.gosi) + acNum(r.adv) + r.absded); r.net = Math.round(tadd - r.ded + acNum(r.due));
+}
 const a2Skip = (u) => !!(((u.profile || {}).salary || {}).noSalary);
 function a2People(sec, withExited){ return (state.users || []).filter(u => u.role !== 'pending' && !a2Skip(u) && !a2Off(u) && a2Group(u) === sec && (withExited || !isExitedEmployee(u) || !a2ExitWhy(u))); }
 
@@ -23384,6 +23403,23 @@ function a2Cols0(sec, all){
       { k: 'net', l: 'Net pay', g: 'Pay', def: 1, num: 1, bold: 1, sum: 1, calc: 1, text: r => a2W(r.net) || '0', raw: r => r.net, sv: r => r.net, html: r => a2W(r.net) || '0' },
       { k: 'rm', l: 'Remarks', g: 'Pay', def: 1, calc: 1, text: r => a2RmNums(r).join(','), html: (r) => a2RmHtml(r) },
       { k: 'ac', l: '', g: 'Pay', def: ed ? 1 : 0, scr: 1, calc: 0, text: () => '', html: (r) => (ed && !A2.pdf) ? `<button type="button" class="a2Ab" data-ad="open" data-id="${acEsc(r.id)}" title="Deduct from this person's pay" aria-label="Deduct"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg></button>` : '' }
+    ]);
+  }
+  if(sec === 'saudi'){
+    const dd = a2Doc(), rw = dd ? dd.rows : [], any = (k) => rw.some(r => acNum(r[k]) > 0), shw = !!A2.sax;
+    const m = (k, l, val, o) => Object.assign({ k, l, g: 'Pay', def: 1, num: 1, sum: 1, calc: 1, text: r => a2M(val(r)), raw: r => val(r) || '', sv: r => Number(val(r)) || 0, html: r => a2M(val(r)) }, o || {});
+    const inp = (k, l, o) => m(k, l, r => acNum(r[k]), Object.assign({ calc: 0, html: (r, e) => (e && !A2.pdf) ? a2In(r, k, r[k]) : a2M(acNum(r[k])) }, o || {}));
+    return a2Common().concat([
+      { k: 'dept', l: 'Department', g: 'Person', def: 0, rep: 1, text: r => r.dept, html: r => acEsc(r.dept) },
+      { k: 'pos', l: 'Position', g: 'Person', def: 0, rep: 1, text: r => a2PosNs(r), html: r => acEsc(a2PosNs(r)) },
+      inp('basic', 'Basic'), inp('hous', 'Housing / Prem'), inp('extra', 'Extra'), inp('tb', 'T Bonus'),
+      m('tadd', 'Total addition', r => r.tadd, { bold: 1 }),
+      inp('gosi', 'GOSI / Food', { def: (shw || any('gosi')) ? 1 : 0 }), inp('adv', 'Advance', { def: (shw || any('adv')) ? 1 : 0 }),
+      { k: 'abd', l: 'Abs days', g: 'Pay', def: 1, num: 1, sum: 0, calc: 0, text: r => acNum(r.abd) || '', raw: r => acNum(r.abd) || '', sv: r => acNum(r.abd), html: (r, e) => (e && !A2.pdf) ? a2In(r, 'abd', r.abd) : (acNum(r.abd) || '') },
+      m('absded', 'Abs deduction', r => r.absded, { def: shw ? 1 : 0, html: (r, e) => (e && !A2.pdf) ? a2In(r, 'abo', (r.abo === undefined || r.abo === null || String(r.abo).trim() === '') ? (r.absded || '') : r.abo) : a2M(r.absded) }),
+      m('ded', 'Total deduction', r => acNum(r.ded), { dedCol: 0 }),
+      m('net', 'Net payable', r => r.net, { bold: 1, text: r => a2W(r.net) || '0', html: r => a2W(r.net) || '0' }),
+      { k: 'rm', l: 'Remarks', g: 'Pay', def: 1, calc: 0, text: r => r.rm || '', html: (r, e) => (e && !A2.pdf) ? a2In(r, 'rm', r.rm, '', 'a2Rm') : acEsc(r.rm || '') }
     ]);
   }
   if(sec === 'nonsponsor'){
@@ -23544,6 +23580,7 @@ async function a2Refresh(){
       if(!r){ d.rows.push(a2NewRow(d.sec, u)); return; }
       if(d.sec === 'operator'){ r.name = u.name; r.dept = u.department || ''; r.pos = a2PosOf(u); r.sh = a2Sh(u); a2OpRates(r); }
       else if(d.sec === 'sponsor'){ a2SpFromProfile(r, u); a2SpCalc(r); }
+      else if(d.sec === 'saudi'){ a2SaFromProfile(r, u); a2SaCalc(r); }
       else { r.name = u.name; r.dept = u.department || ''; r.pos = a2PosOf(u); r.fx = ((u.profile || {}).salary || {}).basicSalary || ''; a2NsCalc(r); }
     });
     a2Touch(); toast('Updated');
@@ -23589,11 +23626,11 @@ function a2TilesHtml(){ return '';
 // held last month: the amount comes into this month's sheet as "Due" (only for this month and the coming ones; older sheets are history)
 function a2DueMap(ym){ const m = {}, h = a2PaidMap(acYmShift(ym, -1)); Object.keys(h).forEach(id => { const x = h[id]; if(x && x.h === 'hold' && Number(x.amt) > 0) m[id] = x; }); return m; }
 function a2DueSync(d){
-  if(!d || !(d.sec === 'operator' || d.sec === 'sponsor' || d.sec === 'nonsponsor') || d.ym < acYmShift(acYmNow(), -1)) return false;
+  if(!d || !(d.sec === 'operator' || d.sec === 'sponsor' || d.sec === 'nonsponsor' || d.sec === 'saudi') || d.ym < acYmShift(acYmNow(), -1)) return false;
   const m = a2DueMap(d.ym); let ch = false; A2.jym = d.ym;
   try{
     Object.keys(m).forEach(id => { if(d.rows.some(r => r.id === id)) return; const u = (state.users || []).find(z => z.loginId === id); if(!u || a2Group(u) !== d.sec) return;
-      const r = a2NewRow(d.sec, u); r.dueOnly = true; r.basic = r.basic ? 0 : r.basic; if(d.sec === 'sponsor'){ r.basic = 0; r.ot = ''; r.extra = ''; r.oth = ''; r.ty = ''; r.othf = false; } if(d.sec === 'nonsponsor') r.fx = 0; if(d.sec === 'operator'){ r.prem = 0; r.extra = 0; }
+      const r = a2NewRow(d.sec, u); r.dueOnly = true; r.basic = r.basic ? 0 : r.basic; if(d.sec === 'sponsor'){ r.basic = 0; r.ot = ''; r.extra = ''; r.oth = ''; r.ty = ''; r.othf = false; } if(d.sec === 'nonsponsor') r.fx = 0; if(d.sec === 'saudi'){ r.basic = 0; r.hous = 0; r.extra = 0; r.tb = 0; } if(d.sec === 'operator'){ r.prem = 0; r.extra = 0; }
       r.rm = 'On vacation'; d.rows.push(r); d.rows.sort((a, b) => a2Num(a.id, b.id)); ch = true; });
     d.rows.forEach(r => { const x = m[r.id], due = x ? Number(x.amt) : 0, from = x ? (x.from && x.from.length ? x.from : [acYmShift(d.ym, -1)]) : [];
     if(acNum(r.due) !== due || JSON.stringify(r.dueFrom || []) !== JSON.stringify(from)){ r.due = due; r.dueFrom = from; a2Calc(d.sec, r); ch = true; } }); }catch(e){ console.error(e); }
@@ -23613,7 +23650,6 @@ function a2Draw(){
   if(A2.view === 'guide') return a2DrawGuide();
   if(A2.view === 'saved') return a2DrawSaved();
   if(A2.view === 'set') return a2DrawSet();
-  if(A2.sec === 'saudi'){ $('a2Head').innerHTML = ''; $('acMain').innerHTML = '<div class="a2Empty"><div class="a2EmptyT">Saudi salary sheet</div><div class="hrNote">This section is ready and waiting. Its salary format will be added once it is decided.</div></div>'; return; }
   a2DrawSheet();
 }
 function a2DrawSheet0(){
@@ -23633,6 +23669,7 @@ function a2DrawSheet0(){
       ${!op && nats.length > 1 ? `<select id="a2Nat">${opts(nats.map(x => [x, x]), A2.nat, 'All nationalities')}</select>` : ''}
       ${op ? `<select id="a2Shift">${opts([['D', 'Day'], ['N', 'Night']], A2.shift, 'Both shifts')}</select>` : ''}
       ${op ? `<div class="a2FCols"><span class="a2FT">Columns to show</span><label class="a2Fx a2DetL"><input type="checkbox" id="a2Det" ${A2.det !== false ? 'checked' : ''}><span>Machine details (MC, Picks, Rate)</span></label><label class="a2Fx a2DetL"><input type="checkbox" id="a2Tp" ${A2.tp !== false ? 'checked' : ''}><span>Total picks</span></label><label class="a2Fx a2DetL"><input type="checkbox" id="a2Av" ${A2.av !== false ? 'checked' : ''}><span>Avg rate</span></label></div>` : ''}
+      ${sec === 'saudi' ? `<div class="a2FCols"><span class="a2FT">Columns to show</span><label class="a2Fx a2DetL"><input type="checkbox" id="a2Sax" ${A2.sax ? 'checked' : ''}><span>GOSI / Food, Advance and Abs deduction</span></label></div>` : ''}
       ${a2NjCount(rows) || A2.hideNj ? `<label class="a2Fx a2DetL"><input type="checkbox" id="a2Hnj" ${A2.hideNj ? 'checked' : ''}><span>Hide people who had not joined yet in this salary month (${a2NjCount(rows)})</span></label>` : ''}${fN ? '<button type="button" class="pillBtn" data-a2="fclear">Clear</button>' : ''}</div>` : '';
     const fCnt = [A2.dept.length, A2.pos.length, A2.shift, A2.nat, A2.hideNj].filter(Boolean).length;
     const needCalc = op && ed && !(d && d.calcAt), cyc = sh(rg0.from) + ' &ndash; ' + sh(rg0.to);
@@ -23697,6 +23734,10 @@ function a2DrawTable(){
     <div class="hrNote" style="margin-top:8px;">${A2.sec === 'operator' ? 'Picks are the approved daily totals plus stop-time picks. Click a number to see its days. If they look low, run Refresh All Calculations (Admin, Shift &amp; Timing) first.' : 'Changes here are for this month only. The salary on the profile is not changed.' + (a2Filtered().some(r => r.jd) ? ' In Remarks: days in the month - days before joining = W (days worked and paid).' : '')}</div>`;
 }
 function a2RefreshRow(r){
+  a2RefreshRow0(r);
+  if(A2.sec === 'saudi'){ const c = r.abo === undefined || r.abo === null || String(r.abo).trim() === ''; if(c) document.querySelectorAll(`#a2Tbl td[data-rid="${CSS.escape(r.id)}"][data-c="absded"] input`).forEach(i => { if(document.activeElement !== i) i.value = r.absded || ''; }); }
+}
+function a2RefreshRow0(r){
   a2Calc(A2.sec, r); const cols = a2Screen(A2.sec), ed = acCanEdit();
   cols.forEach(c => { if(!c.calc) return; document.querySelectorAll(`#a2Tbl td[data-rid="${CSS.escape(r.id)}"][data-c="${c.k}"]`).forEach(td => { if(!td.querySelector('input')) td.innerHTML = c.html(r, false, 0); }); });
   const f = document.querySelector('#a2Tbl tfoot'); if(f) f.innerHTML = a2FootHtml(cols, a2Filtered(), ed);
@@ -23712,7 +23753,7 @@ async function a2DrawSaved(){
   const order = { operator: 0, sponsor: 1, nonsponsor: 2, saudi: 3 }, months = [];
   items.forEach(x => { let m = months.find(k => k.ym === x.ym); if(!m){ m = { ym: x.ym, list: [] }; months.push(m); } m.list.push(x); });
   months.forEach(m => m.list.sort((a, b) => (order[a.sec] == null ? 9 : order[a.sec]) - (order[b.sec] == null ? 9 : order[b.sec])));
-  $('acMain').innerHTML = items.length ? months.map(m => `<div class="a2Mo"><div class="a2MoH"><b>${acYmLabel(m.ym)}</b><span class="hrNote" style="margin:0;">${m.list.length} of 3 sheets saved</span><span style="flex:1"></span><span class="a2MoT">Total net payable <b>${acMoney(m.list.reduce((a, x) => a + (Number(x.total) || 0), 0))}</b> SAR</span></div>
+  $('acMain').innerHTML = items.length ? months.map(m => `<div class="a2Mo"><div class="a2MoH"><b>${acYmLabel(m.ym)}</b><span class="hrNote" style="margin:0;">${m.list.length} of 4 sheets saved</span><span style="flex:1"></span><span class="a2MoT">Total net payable <b>${acMoney(m.list.reduce((a, x) => a + (Number(x.total) || 0), 0))}</b> SAR</span></div>
       <div class="table-scroll"><table class="report-table ovTbl a2T"><thead><tr><th class="serial">#</th><th>Section</th><th class="a2N">People</th><th class="a2N">Net payable</th><th>Saved</th><th></th></tr></thead><tbody>${m.list.map((x, i) => `<tr><td class="serial">${i + 1}</td><td>${acEsc((A2_SEC[x.sec] || {}).n || x.sec)}</td><td class="a2N">${x.count}</td><td class="a2N a2B">${acMoney(x.total)}</td><td>${a2Stamp(x.savedAt)}${x.by ? ' &middot; ' + acEsc(x.by) : ''}</td><td><button type="button" class="pillBtn" data-a2="open" data-ym="${x.ym}" data-v="${x.sec}">Open</button></td></tr>`).join('')}</tbody></table></div></div>`).join('')
     : '<div class="a2Empty"><div class="a2EmptyT">No saved salary yet</div><div class="hrNote">When a sheet is saved it appears here. Open it any time to change it and save again.</div></div>';
 }
@@ -23779,6 +23820,9 @@ async function a2Export(o){
         if(base && col('net')) set('net', 'ROUND(' + (col('bs') ? 'N(' + cell('bs') + ')+' : '') + (col('otm') ? 'N(' + cell('otm') + ')+' : '') + 'N(' + base + ')' + (col('extra') ? '+N(' + cell('extra') + ')' : '') + (col('ded') ? '-N(' + cell('ded') + ')' : '') + ',0)', r.net);
       }
     });
+    if(sec === 'saudi'){ const ci = (k) => { const i = cols.findIndex(c => c.k === k); return i < 0 ? 0 : i + 2; }, L = (n) => ws.getColumn(n).letter, aC = ci('tadd'), dC = ci('ded'), nC = ci('net'), uC = ci('due'), add = ['basic', 'hous', 'extra', 'tb'].map(ci).filter(Boolean);
+      for(let rr = 2; rr <= rowNo; rr++){ if(aC && add.length){ const cur = ws.getCell(rr, aC).value; ws.getCell(rr, aC).value = { formula: 'ROUND(' + add.map(c => 'N(' + L(c) + rr + ')').join('+') + ',2)', result: typeof cur === 'number' ? cur : 0 }; }
+        if(nC && aC){ const cur = ws.getCell(rr, nC).value; ws.getCell(rr, nC).value = { formula: 'ROUND(N(' + L(aC) + rr + ')' + (dC ? '-N(' + L(dC) + rr + ')' : '') + (uC ? '+N(' + L(uC) + rr + ')' : '') + ',0)', result: typeof cur === 'number' ? cur : 0 }; } } }
     if(sec === 'nonsponsor'){ const ci = (k) => { const i = cols.findIndex(c => c.k === k); return i < 0 ? 0 : i + 2; }, fxC = ci('fx'), dC = ci('ded'), nC = ci('net'); if(fxC && nC){ for(let rr = 2; rr <= rowNo; rr++){ const cur = ws.getCell(rr, nC).value; ws.getCell(rr, nC).value = { formula: 'ROUND(N(' + ws.getColumn(fxC).letter + rr + ')' + (dC ? '-N(' + ws.getColumn(dC).letter + rr + ')' : '') + ',2)', result: typeof cur === 'number' ? cur : 0 }; } } }
     if(sec === 'sponsor'){ const ci = (k) => { const i = cols.findIndex(c => c.k === k); return i < 0 ? 0 : i + 2; }, L = (n) => ws.getColumn(n).letter, bC = ci('basic'), oC = ci('otv'), eC = ci('exv'), tC = ci('tot'), dC = ci('ded'), nC = ci('net');
       for(let rr = 2; rr <= rowNo; rr++){ if(tC && bC){ const cur = ws.getCell(rr, tC).value; ws.getCell(rr, tC).value = { formula: 'ROUND(N(' + L(bC) + rr + ')' + (oC ? '+N(' + L(oC) + rr + ')' : '') + (eC ? '+N(' + L(eC) + rr + ')' : '') + ',2)', result: typeof cur === 'number' ? cur : 0 }; }
@@ -23786,7 +23830,7 @@ async function a2Export(o){
     const tr = ws.addRow([null].concat(cols.map(c => tot(c))));
     if(sec === 'operator' && rowNo > 1){ cols.forEach((c, i) => { if(c.sum && !c.ml){ const L2 = ws.getColumn(i + 2).letter, cur = tr.getCell(i + 2).value; tr.getCell(i + 2).value = { formula: 'SUM(' + L2 + '2:' + L2 + rowNo + ')', result: typeof cur === 'number' ? cur : 0 }; } }); }
     tr.eachCell({ includeEmpty: true }, (cell, ci) => { const c = cols[ci - 2]; cell.font = { bold: true }; cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F3F9' } }; cell.border = { top: { style: 'medium', color: { argb: 'FFCDD3E2' } }, left: line, bottom: line, right: line }; if(typeof cell.value === 'number'){ cell.numFmt = fmt(c); cell.alignment = { horizontal: 'right' }; } });
-    ws.getColumn(1).width = 5; cols.forEach((c, i) => { ws.getColumn(i + 2).width = ({ id: 6, name: 22, ds: 8, bs: 8, otm: 9, mc: 14, mcp: 7, total: 8, mcr: 6, avg: 8, prem: 9, cut: 8, np: 9, extra: 8, ded: 9, gt: 9, net: 9, rm: 10, dept: 16, pos: 16, fx: 11, nat: 14, basic: 12, oth: 8, otv: 10, exv: 10, tot: 12 })[c.k] || 10; });
+    ws.getColumn(1).width = 5; cols.forEach((c, i) => { ws.getColumn(i + 2).width = ({ id: 6, name: 22, ds: 8, bs: 8, otm: 9, mc: 14, mcp: 7, total: 8, mcr: 6, avg: 8, prem: 9, cut: 8, np: 9, extra: 8, ded: 9, gt: 9, net: 9, rm: 10, dept: 16, pos: 16, fx: 11, nat: 14, basic: 12, oth: 8, otv: 10, exv: 10, tot: 12, hous: 12, tb: 10, tadd: 12, gosi: 10, adv: 10, abd: 8, absded: 11 })[c.k] || 10; });
     const buf = await wb.xlsx.writeBuffer(); dlSaveBlob(new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), o.file + '-' + stamp + '.xlsx'); toast('Excel file downloaded'); return true;
   }
   const land = sec !== 'operator' && cols.length > 12, cls = 'ovPdfT a2PdfT' + (land ? (cols.length > 14 ? ' ovW3' : ' ovW2') : (sec === 'operator' ? ' a2P a2Fit' : ' a2P'));
@@ -23828,7 +23872,7 @@ async function a2Export(o){
 document.addEventListener('click', async (e) => {
   const t = e.target.closest('[data-a2]'); if(!t || !$('accountsBody') || !($('accountsBody').contains(t) || t.dataset.a2 === 'peekx' || t.dataset.a2 === 'grpx' || t.dataset.a2 === 'grpset')) return;
   const a = t.dataset.a2;
-  if(a === 'sec'){ A2.sec = t.dataset.v; A2.view = 'sheet'; A2.q = ''; A2.dept = []; A2.shift = ''; A2.pos = []; A2.nat = ''; try{ if(A2.sec !== 'saudi') await a2LoadDoc(A2.sec, A2.ym); a2Draw(); }catch(err){ console.error(err); toast('Could not load'); } }
+  if(a === 'sec'){ A2.sec = t.dataset.v; A2.view = 'sheet'; A2.q = ''; A2.dept = []; A2.shift = ''; A2.pos = []; A2.nat = ''; try{ await a2LoadDoc(A2.sec, A2.ym); a2Draw(); }catch(err){ console.error(err); toast('Could not load'); } }
   else if(a === 'saved'){ A2.view = 'saved'; a2Draw(); }
   else if(a === 'pay'){ A2.view = 'pay'; a2Draw(); }
   else if(a === 'users'){ A2.view = 'users'; a2Draw(); }
@@ -23877,6 +23921,7 @@ document.addEventListener('input', (e) => {
 document.addEventListener('change', async (e) => {
   const t = e.target; if(!$('accountsBody') || !$('accountsBody').contains(t)) return;
   if(t.id === 'a2From' || t.id === 'a2To'){ const d = a2Doc(); if(d){ d.from = $('a2From').value || d.from; d.to = $('a2To').value || d.to; a2Touch(); a2DirtyUi(); const cb = document.querySelector('.a2CycB'); if(cb && typeof pdDayTxt === 'function') cb.innerHTML = pdDayTxt(d.from) + ' &ndash; ' + pdDayTxt(d.to); } return; }
+  if(t.id === 'a2Sax'){ A2.sax = t.checked; a2DrawSheet(); return; }
   if(t.id === 'a2Hnj'){ A2.hideNj = t.checked; a2DrawSheet(); return; }
   if(t.id === 'a2Det'){ A2.det = t.checked; a2DrawSheet(); return; }
   if(t.id === 'a2Tp'){ A2.tp = t.checked; a2DrawSheet(); return; }
@@ -24678,7 +24723,7 @@ function a2ChgHtml0(){
 function a2ChgApply(){
   const d = a2Doc(); if(!d || !acCanEdit()) return; const c = a2Changes(), sec = d.sec;
   const drop = new Set(c.moved.map(x => x.r.id));
-  c.idch.forEach(x => { if(x.same){ x.r.id = x.u.loginId; const u = x.u; if(sec === 'operator'){ x.r.name = u.name; x.r.dept = u.department || ''; x.r.pos = a2PosOf(u); x.r.sh = a2Sh(u); a2OpRates(x.r); } else if(sec === 'sponsor'){ a2SpFromProfile(x.r, u); a2SpCalc(x.r); } else { x.r.name = u.name; x.r.dept = u.department || ''; x.r.pos = a2PosOf(u); x.r.fx = ((u.profile || {}).salary || {}).basicSalary || ''; a2NsCalc(x.r); } } else drop.add(x.r.id); });
+  c.idch.forEach(x => { if(x.same){ x.r.id = x.u.loginId; const u = x.u; if(sec === 'operator'){ x.r.name = u.name; x.r.dept = u.department || ''; x.r.pos = a2PosOf(u); x.r.sh = a2Sh(u); a2OpRates(x.r); } else if(sec === 'sponsor'){ a2SpFromProfile(x.r, u); a2SpCalc(x.r); } else if(sec === 'saudi'){ a2SaFromProfile(x.r, u); a2SaCalc(x.r); } else { x.r.name = u.name; x.r.dept = u.department || ''; x.r.pos = a2PosOf(u); x.r.fx = ((u.profile || {}).salary || {}).basicSalary || ''; a2NsCalc(x.r); } } else drop.add(x.r.id); });
   d.rows = d.rows.filter(r => !drop.has(r.id));
   c.fresh.forEach(u => d.rows.push(a2NewRow(sec, u)));
   d.rows.sort((a, b) => a2Num(a.id, b.id)); a2Touch(); toast('Changes applied. Press Save sheet to keep them.'); a2Draw();
@@ -26322,7 +26367,7 @@ async function pdAmtLoad(){
   if(PD.amt[PD.ym] || PD.amtLoading) return; const ym = PD.ym; PD.amtLoading = true;
   try{
     const out = {};
-    for(const sec of ['operator', 'sponsor', 'nonsponsor']){
+    for(const sec of ['operator', 'sponsor', 'nonsponsor', 'saudi']){
       const d = await a2LoadDoc0(sec, ym); if(!d) continue;
       d.rows.forEach(r => { let n = r.net; if(sec === 'sponsor'){ if(!r.v){ try{ A2.jym = ym; a2Calc(sec, r); }catch(e){} A2.jym = ''; } n = (r.v || {}).net; } if(n != null && isFinite(Number(n))) out[r.id] = { net: Number(n), from: r.dueFrom || [] }; });
     }
@@ -26951,7 +26996,7 @@ document.addEventListener('click', (e) => {
 /* ===== Users page: filters like the Admin page, plus the salary sheet ===== */
 Object.assign(ACU, { st: 'running', sheet: '', pos: '', et: '', shift: '' });
 const acuSheetOf = (u) => a2Skip(u) ? 'left' : a2Group(u);
-const acuSheetName = (k) => ({ operator: 'Operator', sponsor: 'Sponsor', nonsponsor: 'Non Sponsor', left: 'Left out of sheets' }[k] || '');
+const acuSheetName = (k) => ({ operator: 'Operator', sponsor: 'Sponsor', nonsponsor: 'Non Sponsor', saudi: 'Saudi', left: 'Left out of sheets' }[k] || '');
 const acuShiftOf = (u) => { const p = u.profile || {}, pf = (p.shiftPref === 'Day' || p.shiftPref === 'Night') ? p.shiftPref : ''; return (u.assignedShift === 'Day' || u.assignedShift === 'Night') ? u.assignedShift : pf; };
 function acuBase(){ const admin = state.user && state.user.role === 'admin'; return (state.users || []).filter(u => u.role !== 'pending' && (admin || u.role !== 'admin')); }
 function acuList(){
@@ -26975,10 +27020,10 @@ function a2DrawUsers(){
   const opt = (list, cur, all, unset) => `<option value="">${all}</option>` + list.map(v => { const val = Array.isArray(v) ? v[0] : v, lb = Array.isArray(v) ? v[1] : v; return `<option value="${acEsc(val)}" ${val === cur ? 'selected' : ''}>${acEsc(lb)}</option>`; }).join('') + (unset ? `<option value="__unset__" ${cur === '__unset__' ? 'selected' : ''}>Not set</option>` : '');
   const n = [ACU.sheet, ACU.dept, ACU.pos, ACU.et, ACU.shift].filter(Boolean).length;
   const panel = ACU.fOpen ? `<div class="a2FPanel">
-      <select id="acuSheet" title="Salary sheet">${opt([['operator', 'Operator'], ['sponsor', 'Sponsor'], ['nonsponsor', 'Non Sponsor'], ['left', 'Left out of sheets']], ACU.sheet, 'All salary sheets')}</select>
+      <select id="acuSheet" title="Salary sheet">${opt([['operator', 'Operator'], ['sponsor', 'Sponsor'], ['nonsponsor', 'Non Sponsor'], ['saudi', 'Saudi'], ['left', 'Left out of sheets']], ACU.sheet, 'All salary sheets')}</select>
       <select id="acuDept">${opt(uniq(u => u.department || ''), ACU.dept, 'All departments')}</select>
       <select id="acuPos">${opt(uniq(a2PosOf), ACU.pos, 'All positions')}</select>
-      <select id="acuEt">${opt(['Sponsor', 'Non-Sponsor'], ACU.et, 'Any employment type', 1)}</select>
+      <select id="acuEt">${opt(['Sponsor', 'Non-Sponsor', 'Saudi'], ACU.et, 'Any employment type', 1)}</select>
       <select id="acuShift">${opt(['Day', 'Night'], ACU.shift, 'Any shift', 1)}</select>${n ? '<button type="button" class="pillBtn" data-acu="clear">Clear</button>' : ''}</div>` : '';
   $('acMain').innerHTML = `<div class="a2Tool">
       <span class="pdSeg"><button type="button" data-acu="st" data-v="running" class="${ACU.st === 'running' ? 'on' : ''}">Running</button><button type="button" data-acu="st" data-v="exited" class="${ACU.st === 'exited' ? 'on' : ''}">Exit / Terminated</button></span>
@@ -27007,6 +27052,7 @@ function a2Fit(){
 /* ===== Accounts > Rules, second edition: plain words, every setting shown, printable, signed ===== */
 /* KEEP IT TRUE: everything from Settings, the Calendar and Admin is read live. A rule that lives inside the app code is written once in ACG_LOG
    (month + one short sentence). The printed "Rules code" changes when any setting or any log line changes, so a printed copy can be checked against the screen. */
+ACG_LOG.push(['2026-11', 'Saudi: new employment type and salary sheet (Basic, Housing / Premium, Extra, T Bonus; absent day = Basic / 30). First sheet: October 2026.']);
 ACG_LOG.push(['2026-11', 'Rules page shows every setting; the printed copy carries a Rules code, the date and the signatures.']);
 function acgHash(str){ let h = 5381; for(let i = 0; i < str.length; i++) h = ((h << 5) + h + str.charCodeAt(i)) >>> 0; return h.toString(16).toUpperCase().padStart(8, '0').slice(0, 8); }
 function acgCode(){ try{ return acgHash(JSON.stringify([AC.set, (AC.tbl || {}).tables, state.salaryCycleStartDay, ACG_LOG])); }catch(e){ return '--------'; } }
@@ -27020,7 +27066,7 @@ function acgHtml(){
   const rnd = S.round || {}, step = Math.max(1, acNum(rnd.step) || 100), from = acNum(rnd.from) || step / 2, cut = acNum(S.premCut), wh = a2WorkHours(), tyr = a2TyRate();
   const reasons = Array.isArray(S.dedReasons) ? S.dedReasons : [], inst = Array.isArray(S.instTypes) ? S.instTypes : [], opPos = Array.isArray(S.opPos) ? S.opPos : [];
   const tables = ((AC.tbl && AC.tbl.tables) || []), LD = S.ladders || { groups: [], rows: [], every: 0 }, groups = LD.groups || [], sd = Number(state.salaryCycleStartDay) || 1;
-  const cnt = {}; try{ ['operator', 'sponsor', 'nonsponsor'].forEach(k => { cnt[k] = a2People(k).length; }); cnt.left = (state.users || []).filter(u => u.role !== 'pending' && !isExitedEmployee(u) && a2Skip(u)).length; }catch(e){}
+  const cnt = {}; try{ ['operator', 'sponsor', 'nonsponsor', 'saudi'].forEach(k => { cnt[k] = a2People(k).length; }); cnt.left = (state.users || []).filter(u => u.role !== 'pending' && !isExitedEmployee(u) && a2Skip(u)).length; }catch(e){}
   const mname = (id) => { try{ return a2McName(id); }catch(e){ return String(id); } };
   const daysReasons = reasons.filter(x => x.kind === 'days');
   // ---- a worked example from the real tables ----
@@ -27055,9 +27101,10 @@ function acgHtml(){
     <p>The app checks these in order. The first one that fits decides.</p>
     <ol><li><b>Left out</b>: "Leave out of all salary sheets" is ticked in his profile. He is never listed.</li>
     <li><b>Operator</b>: his position is ticked under <i>Settings > Who is an operator</i>${opPos.length ? '' : ' (nothing is ticked now, so everyone with the operator role)'}.</li>
+    <li><b>Saudi</b>: his Employment type is Saudi. This is checked before the operator position.</li>
     <li><b>Non Sponsor</b>: his Employment type is Non-Sponsor.</li>
     <li><b>Sponsor</b>: everyone else.</li></ol>
-    ${acgNow('Operator positions', (opPos.length ? '<p>' + opPos.map(acgE).join(', ') + '</p>' : '<p>No position ticked. Everyone with the operator role is an operator.</p>') + (cnt.operator != null ? '<p>People on the sheets now: Operator <b>' + cnt.operator + '</b> &middot; Sponsor <b>' + cnt.sponsor + '</b> &middot; Non Sponsor <b>' + cnt.nonsponsor + '</b> &middot; Left out <b>' + cnt.left + '</b>.</p>' : ''))}
+    ${acgNow('Operator positions', (opPos.length ? '<p>' + opPos.map(acgE).join(', ') + '</p>' : '<p>No position ticked. Everyone with the operator role is an operator.</p>') + (cnt.operator != null ? '<p>People on the sheets now: Operator <b>' + cnt.operator + '</b> &middot; Sponsor <b>' + cnt.sponsor + '</b> &middot; Saudi <b>' + cnt.saudi + '</b> &middot; Non Sponsor <b>' + cnt.nonsponsor + '</b> &middot; Left out <b>' + cnt.left + '</b>.</p>' : ''))}
     <p>If you change a person's position or employment type, he leaves the old sheet and is added to the new one when you open it. Press the refresh button if he is not listed yet.</p>`));
   // 4
   const rateTables = tables.length ? tables.map(t => {
@@ -27100,9 +27147,17 @@ function acgHtml(){
   b.push(acgSection(6, 'Non Sponsor sheet', `
     <div class="acgF">Net pay = Fixed salary - Deductions</div>
     <ul><li>The fixed salary is the <b>Basic salary</b> in his profile.</li><li>There is no overtime, premium or commission on this sheet.</li></ul>`));
+  b.push(acgSection(7, 'Saudi sheet', `
+    <div class="acgF">Total addition = Basic + Housing / Premium + Extra + T Bonus<br>Net payable = Total addition - Total deduction</div>
+    <ul><li>He is on this sheet when his Employment type is <b>Saudi</b>. There is no overtime.</li>
+    <li>The four amounts come from his profile (Salary Info). Typed changes on the sheet are for that month only.</li>
+    <li><b>Total deduction</b> = GOSI / Food + Advance + Absent-days deduction.</li>
+    <li><b>Absent day</b> = Basic / 30 for each day, rounded. It is always 30, and only the Basic is cut (not Housing, Extra or T Bonus). Example: Basic 2,900, 1 day = 97.</li>
+    <li>If a person is not to be paid at all, type the whole amount in <i>Abs deduction</i> (tick <i>Columns to show</i> in the Filter). The net becomes 0.</li>
+    <li>GOSI / Food, Advance and Abs deduction are kept hidden until they are needed. Hold, the Pay desk and the downloads work like the other sheets. Saudi staff are paid into the bank.</li></ul>`));
   // 7
   const rTab = reasons.length ? acgTbl([['No.'], ['Reason'], ['Type'], ['Days of pay: Sponsor', 1], ['Days of pay: Non Sponsor', 1]], reasons.map(x => [acgE(x.id), acgE(x.name), x.kind === 'days' ? 'Days of pay' : 'Amount typed by hand', x.kind === 'days' ? acgE(x.sp) : '-', x.kind === 'days' ? acgE(x.ns) : '-'])) : '<p>No reason is set yet.</p>';
-  b.push(acgSection(7, 'Deductions', `
+  b.push(acgSection(8, 'Deductions', `
     <p>Press the small minus button at the end of a person's row. Choose a <b>reason</b> from the list. There are two kinds:</p>
     <ul><li><b>Amount typed by hand.</b> You write the amount.</li><li><b>Days of pay.</b> You write the days. The app works out the money.</li></ul>
     <div class="acgF">1 day of pay = fixed pay / days of the salary month<br>Deduction = days x (days of pay set for the reason) x 1 day of pay</div>
@@ -27115,7 +27170,7 @@ function acgHtml(){
     <h4>Violations</h4>
     <ul><li>An amount from a violation waits at the top of the sheet. It is added only after you approve it.</li></ul>`));
   // 8
-  b.push(acgSection(8, 'Joining, leaving and vacation', `
+  b.push(acgSection(9, 'Joining, leaving and vacation', `
     <p>A person who is not here for the whole month is paid <b>day by day</b>: fixed pay / days of the salary month, for each day he was away.</p>
     ${acgTbl([['What happened'], ['What the sheet does']], [
       ['Joined during the month', 'Paid from his joining date. Remarks shows, for example, "From 10 Oct - 30-14=16W": 30 days, 14 before joining, 16 worked.'],
@@ -27127,16 +27182,16 @@ function acgHtml(){
       ['On hold', 'Press the pause button in the Pay desk. He leaves that month\'s sheet and the amount comes into next month as Due. Release the hold to put him back.']])}
     <p>The app never removes anyone silently. It shows the change at the top and you press <b>Apply changes</b>. Sheets older than last month are history and are not changed.</p>`));
   // 9
-  b.push(acgSection(9, 'Paying (Pay desk)', `
+  b.push(acgSection(10, 'Paying (Pay desk)', `
     <p>The Pay desk records who was paid. It does <b>not</b> change any amount.</p>
     ${acgTbl([['Mark'], ['Use it when']], [['Bank', 'Paid into the bank. This is the usual way for Sponsor staff.'], ['Cash', 'Paid in cash. This is the usual way for Non Sponsor people.'], ['Hold', 'Keep his pay due this month (for example he is on vacation). He leaves this month\'s sheet and the amount is added to next month as Due.']])}
     <ul><li>People who have left are hidden until you search for their name.</li><li>Tick many people and use the buttons on top to mark them together.</li></ul>`));
   // 10
   const cust = (() => { try{ return acCols().filter(c => !c.builtin); }catch(e){ return []; } })();
-  b.push(acgSection(10, 'Setting up a person (Salary Info)', `
+  b.push(acgSection(11, 'Setting up a person (Salary Info)', `
     <p>Open <b>Accounts > Users</b>, find the person, press <i>Edit profile</i>. Salary Info decides how he is paid.</p>
     ${acgTbl([['Field'], ['What it does']], [
-      ['Employment type', 'Sponsor or Non-Sponsor. Decides his sheet (an operator position comes first).'],
+      ['Employment type', 'Sponsor, Non-Sponsor or Saudi. Decides his sheet (Saudi first, then an operator position).'],
       ['Position', 'If the position is ticked in Settings as an operator position, he is on the Operator sheet.'],
       ['Basic salary', 'His fixed monthly pay. Base for overtime by the hour and for leave deductions. Non Sponsor: the whole fixed salary.'],
       ['Overtime (fixed)', 'A fixed monthly amount. Counts as fixed pay.'],
@@ -27154,13 +27209,13 @@ function acgHtml(){
     <li><b>Take a loan back in parts:</b> add an instalment (type, total, months, first month).</li>
     <li><b>Do not list him at all:</b> tick "Leave out of all salary sheets".</li></ul>`));
   // 11
-  b.push(acgSection(11, 'Who can do what', `
+  b.push(acgSection(12, 'Who can do what', `
     <ul><li>Anyone with the <b>Accounts</b> page can open the sheets, deduct, mark paid and save.</li>
     <li>The same people can edit a profile from <b>Accounts > Users</b>. Roles, page access and the Employee ID stay with the Admin.</li>
     <li>Every profile change is written in <b>Admin > People > Profile changes</b>: who, when, old and new value.</li>
     <li>Saved sheets are kept in <b>Saved</b>. Opening an old month does not recalculate it.</li></ul>`));
   // 12
-  b.push(acgSection(12, 'Rule history', `<p>When a rule inside the app is added or changed, one line is written here.</p>${acgTbl([['Month'], ['Rule']], ACG_LOG.slice().reverse().map(x => [acgE(x[0]), acgE(x[1])]))}`));
+  b.push(acgSection(13, 'Rule history', `<p>When a rule inside the app is added or changed, one line is written here.</p>${acgTbl([['Month'], ['Rule']], ACG_LOG.slice().reverse().map(x => [acgE(x[0]), acgE(x[1])]))}`));
   const now = new Date(), stamp = now.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) + ' ' + now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
   return `<div class="acg"><div class="acgBar"><span style="flex:1"></span><button type="button" class="pillBtn" data-acg="all">Open all</button><button type="button" class="pillBtn" data-acg="none">Close all</button><button type="button" class="pillBtn ok" data-acg="print" title="Print or save as PDF (all sections open, with the signature page)">Print</button></div>
     <div class="acgCover"><h2>Salary Rules</h2><div style="color:var(--muted);font-size:13px;">Riyadh Velvet Factory &middot; how the salary sheets work</div>
