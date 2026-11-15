@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261115-175857">
+<meta name="rvf-build" content="20261115-180935">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -16076,7 +16076,9 @@ async function rvfVecBlock(pdf, root, ox, oy, k){
         if(i === 0) pdf.line(x1, y1, x2, y1); else if(i === 2) pdf.line(x1, y2, x2, y2); else if(i === 1) pdf.line(x2, y1, x2, y2); else pdf.line(x1, y1, x1, y2); });
       if(tag === 'IMG' && el.naturalWidth){ try{ let src = el.currentSrc || el.src, fmt = /image\/png/.test(src) ? 'PNG' : 'JPEG';
         if(!/^data:/.test(src)){ const c = document.createElement('canvas'); c.width = el.naturalWidth; c.height = el.naturalHeight; c.getContext('2d').drawImage(el, 0, 0); src = c.toDataURL('image/png'); fmt = 'PNG'; }
-        pdf.addImage(src, fmt, X(r.left), Y(r.top), w, h); }catch(e){ console.warn('pdf image skipped', e); } }
+        let ix = X(r.left), iy = Y(r.top), iw = w, ih = h; const of = (cs && cs.objectFit) || getComputedStyle(el).objectFit;
+        if((of === 'contain' || of === 'scale-down') && el.naturalWidth && el.naturalHeight && w > 0 && h > 0){ const ar = el.naturalWidth / el.naturalHeight; if(w / h > ar){ iw = h * ar; ix += (w - iw) / 2; } else { ih = w / ar; iy += (h - ih) / 2; } }
+        pdf.addImage(src, fmt, ix, iy, iw, ih); }catch(e){ console.warn('pdf image skipped', e); } }
     }
     el.childNodes.forEach(n => { if(n.nodeType === 3) drawText(n, cs); else if(n.nodeType === 1) walk(n); });
   };
