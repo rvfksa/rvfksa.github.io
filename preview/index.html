@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta name="robots" content="noindex, nofollow">
-<meta name="rvf-build" content="20261115-073011">
+<meta name="rvf-build" content="20261115-083853">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -23592,7 +23592,11 @@ function a2DueMap(ym){ const m = {}, h = a2PaidMap(acYmShift(ym, -1)); Object.ke
 function a2DueSync(d){
   if(!d || !(d.sec === 'operator' || d.sec === 'sponsor' || d.sec === 'nonsponsor') || d.ym < acYmShift(acYmNow(), -1)) return false;
   const m = a2DueMap(d.ym); let ch = false; A2.jym = d.ym;
-  try{ d.rows.forEach(r => { const x = m[r.id], due = x ? Number(x.amt) : 0, from = x ? (x.from && x.from.length ? x.from : [acYmShift(d.ym, -1)]) : [];
+  try{
+    Object.keys(m).forEach(id => { if(d.rows.some(r => r.id === id)) return; const u = (state.users || []).find(z => z.loginId === id); if(!u || a2Group(u) !== d.sec) return;
+      const r = a2NewRow(d.sec, u); r.dueOnly = true; r.basic = r.basic ? 0 : r.basic; if(d.sec === 'sponsor'){ r.basic = 0; r.ot = ''; r.extra = ''; r.oth = ''; r.ty = ''; r.othf = false; } if(d.sec === 'nonsponsor') r.fx = 0; if(d.sec === 'operator'){ r.prem = 0; r.extra = 0; }
+      r.rm = 'On vacation'; d.rows.push(r); d.rows.sort((a, b) => a2Num(a.id, b.id)); ch = true; });
+    d.rows.forEach(r => { const x = m[r.id], due = x ? Number(x.amt) : 0, from = x ? (x.from && x.from.length ? x.from : [acYmShift(d.ym, -1)]) : [];
     if(acNum(r.due) !== due || JSON.stringify(r.dueFrom || []) !== JSON.stringify(from)){ r.due = due; r.dueFrom = from; a2Calc(d.sec, r); ch = true; } }); }catch(e){ console.error(e); }
   A2.jym = ''; return ch;
 }
@@ -23859,7 +23863,7 @@ document.addEventListener('click', async (e) => {
   else if(a === 'datesreset'){ const d = a2Doc(); if(d){ const g = acDefaultRange(A2.ym); d.from = g.from; d.to = g.to; a2Touch(); } A2.dOpen = false; a2DrawSheet(); }
   else if(a === 'fclear'){ A2.q = A2.shift = A2.nat = ''; A2.dept = []; A2.pos = []; A2.mOpen = ''; A2.hideNj = false; a2DrawSheet(); }
   else if(a === 'mtog'){ A2.mOpen = A2.mOpen === t.dataset.v ? '' : t.dataset.v; a2DrawSheet(); }
-  else if(a === 'del'){ const d = a2Doc(), r = d && d.rows.find(x => x.id === t.dataset.id); if(!r || !confirm('Take ' + r.name + ' out of this month\'s sheet? Their profile is not changed.')) return; d.rows = d.rows.filter(x => x.id !== r.id); a2Touch(); a2DrawSheet(); }
+  else if(a === 'del'){ const d = a2Doc(), r = d && d.rows.find(x => x.id === t.dataset.id); if(r && acNum(r.due) > 0){ toast(r.name + ' has a due amount, so he stays in this sheet'); return; } if(!r || !confirm('Take ' + r.name + ' out of this month\'s sheet? Their profile is not changed.')) return; d.rows = d.rows.filter(x => x.id !== r.id); a2Touch(); a2DrawSheet(); }
 });
 document.addEventListener('mousedown', (e) => { if((A2.fOpen || A2.tOpen || A2.dOpen) && !e.target.closest('.a2Fl') && document.getElementById('a2Top')){ A2.fOpen = false; A2.tOpen = false; A2.dOpen = false; if(A2.view === 'sheet') a2DrawSheet(); } });
 document.addEventListener('input', (e) => {
@@ -26894,7 +26898,7 @@ function acgHtml(){
   b.push(acgSec(7, 'Pay desk', `
     <p>The Pay desk is where you mark who was paid in a month: <b>Bank</b> (Sponsor staff by default) or <b>Cash</b> (the others). It does not change any amount. The small <b>pause</b> button holds a person for the month (he is on vacation, or you keep his pay due): his amount is added to next month's sheet as <b>Due</b>. The <b>eye</b> shows the net pay of one person, the eye at the top shows everyone.</p>
     <ul><li>Search a name to find someone who left, they are hidden until you search.</li>
-    <li><i>Hold</i> keeps a person's pay due: he leaves this month's sheet and next month's sheet shows his amount in the <b>Due</b> column with the remark <i>Nov due</i> (the month held). Release the hold if it was pressed by mistake.</li>
+    <li><i>Hold</i> keeps a person's pay due: he leaves this month's sheet and next month's sheet shows his amount in the <b>Due</b> column with the remark <i>Nov due</i> (the month held). If he is on vacation and not in next month's sheet, he is added there with no salary, only the due, and stays until it is paid. A person with a due cannot be taken out of the sheet. Release the hold if it was pressed by mistake.</li>
     <li>You can mark many people at once: tick them and use the buttons.</li></ul>`));
   const cust = (() => { try { return acCols().filter(c => !c.builtin); } catch(e){ return []; } })();
   b.push(acgSec(8, 'Setting up a person (Salary Info)', `
