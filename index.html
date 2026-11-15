@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261115-095001">
+<meta name="rvf-build" content="20261115-102842">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -3617,6 +3617,10 @@ table.pkPdf tr.tot td{ background:#eef2ff !important; border-top:1px solid #c7d2
 .a2FPanel .a2DetL input{ margin-top:2px; flex:none; } .a2FPanel .a2DetL span{ min-width:0; overflow-wrap:anywhere; }
 .a2Ab{ width:20px; height:20px; border-radius:50%; border:1px solid var(--line); background:#ffffff; color:#64748b; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; padding:0; }
 .a2Ab:hover{ background:#eef2ff; color:#4f46e5; border-color:#c7d2fe; }
+.smBar{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin:2px 0 10px; } .smBar select{ height:38px; padding:0 32px 0 12px; line-height:1.2; width:auto; max-width:200px; }
+.smGrid{ display:grid; grid-template-columns:minmax(0,1.6fr) minmax(0,1fr); gap:16px; align-items:start; } @media(max-width:760px){ .smGrid{ grid-template-columns:1fr; } }
+.smT{ font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin:0 0 6px; }
+.smTbl td,.smTbl th{ padding:7px 10px; } .smTbl tr.smGt td{ background:#eef2ff; } .smTbl tr.smCur td{ background:#f8fafc; font-weight:600; }
 .a2Rn{ white-space:normal; font-size:10.5px; color:#64748b; cursor:help; border-bottom:1px dotted #cbd5e1; padding:0 1px; } .a2RnC{ font-size:10.5px; color:#94a3b8; margin-right:3px; }
 .a2DdCard{ max-width:440px; }
 .a2DdBody{ margin-top:12px; } .a2DdL{ display:grid; grid-template-columns:110px 1fr 24px; gap:8px; align-items:center; margin-bottom:8px; }
@@ -22146,6 +22150,8 @@ function renderSalaryTab(){
       ${s.extraMoney ? fieldRow('Extra money (every month)', s.extraMoney) : ''}
       ${s.housing ? fieldRow('Housing / Premium (every month)', s.housing) : ''}${s.tBonus ? fieldRow('T Bonus (every month)', s.tBonus) : ''}${s.gosi ? fieldRow('GOSI / Food (every month)', s.gosi) : ''}
       ${s.noSalary ? fieldRow('Salary sheets', 'Left out (not listed or counted)') : ''}
+      ${s.bankAcc ? fieldRow('Bank account (Alinma)', acEsc(s.bankAcc)) + fieldRow('IBAN', acEsc(s.iban || rvfIban(s.bankAcc))) : (s.payBy === 'cash' ? fieldRow('Paid by', 'Cash') : '')}
+      ${(profileCache.user.profile || {}).saudiId ? fieldRow('Saudi ID', acEsc(profileCache.user.profile.saudiId)) : ''}
       ${s.otHours ? fieldRow('Overtime hours per working day', s.otPerDay || '-') : ''}
       ${s.tying ? fieldRow('Beaming / Tying team', s.tyFixed ? 'Yes - fixed amount (no commission)' : 'Yes') : ''}
       ${fieldRow('Premium &amp; extra money', (s.premiumEligible || (profileCache.user && profileCache.user.role === 'operator')) ? 'Yes' : 'No')}
@@ -22160,6 +22166,8 @@ function renderSalaryTab(){
       <div class="field"><label>Overtime (fixed)</label><input type="text" inputmode="decimal" id="sal-ot" value="${s.overtime||''}"></div>
       <div class="field"><label>Extra money (every month)</label><input type="text" inputmode="decimal" id="sal-extra" value="${s.extraMoney||''}"></div>
       ${((profileCache.user.profile || {}).employmentType === 'Saudi') ? `<div class="field"><label>Housing / Premium (every month)</label><input type="text" inputmode="decimal" id="sal-hous" value="${acEsc(s.housing || '')}"></div><div class="field"><label>T Bonus (every month)</label><input type="text" inputmode="decimal" id="sal-tb" value="${acEsc(s.tBonus || '')}"></div><div class="field"><label>GOSI / Food (every month, if any)</label><input type="text" inputmode="decimal" id="sal-gosi" value="${acEsc(s.gosi || '')}"></div>` : ''}
+      <div class="field"><label>Bank account no. or IBAN (empty = paid in cash)</label><input type="text" id="sal-bank" value="${acEsc(s.bankAcc || '')}" placeholder="Alinma account or SA... IBAN"><div class="hrNote" style="margin:3px 0 0;" id="sal-iban">${s.bankAcc ? 'IBAN: ' + acEsc(s.iban || rvfIban(s.bankAcc)) : ''}</div></div>
+      ${((profileCache.user.profile || {}).employmentType === 'Saudi') ? `<div class="field"><label>Saudi ID</label><input type="text" inputmode="numeric" id="sal-sid" value="${acEsc((profileCache.user.profile || {}).saudiId || '')}"></div>` : ''}
     </div>
     <div class="field">
       <label style="display:flex; align-items:center; gap:8px; text-transform:none; font-weight:600; color:var(--text); cursor:pointer;">
@@ -22193,11 +22201,12 @@ async function saveSalaryInfo(){
     housing: $('sal-hous') ? $('sal-hous').value.trim() : (old.housing || ''), tBonus: $('sal-tb') ? $('sal-tb').value.trim() : (old.tBonus || ''), gosi: $('sal-gosi') ? $('sal-gosi').value.trim() : (old.gosi || ''),
     premiumEligible: $('sal-premium').checked,
     noSalary: $('sal-skip').checked, otHours: $('sal-oth').checked, otPerDay: $('sal-oth').checked ? $('sal-othd').value.trim() : '', tying: $('sal-tying').checked, tyFixed: $('sal-tying').checked && $('sal-tyfix').checked,
-    overtime: $('sal-ot').value.trim(), instl: salInstRead(),
+    overtime: $('sal-ot').value.trim(), instl: salInstRead(), bankAcc: rvfBankNorm($('sal-bank') ? $('sal-bank').value : old.bankAcc).acc, iban: rvfBankNorm($('sal-bank') ? $('sal-bank').value : old.bankAcc).iban, payBy: rvfBankNorm($('sal-bank') ? $('sal-bank').value : old.bankAcc).acc ? 'bank' : 'cash',
     components, cv, fl
   });
   try{
-    await saveProfileFields(profileCache.user.loginId, { salary });
+    const pf = { salary }; if($('sal-sid')) pf.saudiId = $('sal-sid').value.trim();
+    await saveProfileFields(profileCache.user.loginId, pf);
     toast('Salary info saved');
   }catch(err){ console.error(err); toast('Could not save — check your connection'); }
 }
@@ -23517,7 +23526,7 @@ async function a2Boot(){
     AC.set = set; AC.tbl = tbl; if(!Array.isArray(AC.tbl.tables)) AC.tbl.tables = []; acTblNormalize();
   }
   if(!state.users || !state.users.length) state.users = await window.__db.listUsersOnce();
-  if(A2.view !== 'saved' && A2.view !== 'set' && A2.view !== 'pay') await a2LoadDoc(A2.sec, A2.ym);
+  if(A2.view !== 'saved' && A2.view !== 'set' && A2.view !== 'pay' && A2.view !== 'sum') await a2LoadDoc(A2.sec, A2.ym);
   AC.ready = true;
 }
 async function loadAccountsPage(){
@@ -23656,9 +23665,11 @@ function a2Draw(){
   const tabs = ['operator', 'sponsor', 'nonsponsor', 'saudi'].map(s => `<button type="button" class="${A2.view === 'sheet' || A2.view === 'set' ? (A2.sec === s ? 'active' : '') : ''}" data-a2="sec" data-v="${s}">${a2Svg(s)}<span class="hrLbl">${A2_SEC[s].n}</span></button>`).join('')
     + `<button type="button" class="${A2.view === 'saved' ? 'active' : ''}" data-a2="saved">${a2Svg('saved')}<span class="hrLbl">Saved</span></button>`
     + `<button type="button" class="${A2.view === 'pay' ? 'active' : ''}" data-a2="pay">${a2Svg('wallet')}<span class="hrLbl">Pay desk</span></button>`
+    + `<button type="button" class="${A2.view === 'sum' ? 'active' : ''}" data-a2="sum">${a2Svg('saved')}<span class="hrLbl">Summary</span></button>`
     + `<button type="button" class="${A2.view === 'users' ? 'active' : ''}" data-a2="users">${a2Svg('users')}<span class="hrLbl">Users</span></button>`
     + `<button type="button" class="${A2.view === 'guide' ? 'active' : ''}" data-a2="guide">${a2Svg('saved')}<span class="hrLbl">Rules</span></button>`;
   body.innerHTML = `<div class="card hrBox a2Box"><div class="a2TabRow"><div class="hrTabs">${tabs}</div><div class="a2Top" id="a2Top"></div></div><div id="a2Head"></div><div id="acMain"></div></div>`;
+  if(A2.view === 'sum') return a2DrawSummary();
   if(A2.view === 'pay') return pdDraw();
   if(A2.view === 'users') return a2DrawUsers();
   if(A2.view === 'guide') return a2DrawGuide();
@@ -23695,7 +23706,7 @@ function a2DrawSheet0(){
       ${ed && op ? `<span class="a2Grp"><button type="button" class="pillBtn${needCalc ? ' ok' : ' ok'}" data-a2="calc" ${A2.busy ? 'disabled' : ''} title="${d && d.calcAt ? 'Picks counted ' + a2Stamp(d.calcAt) + '. ' : ''}Count the picks again for the dates shown">${A2.busy ? 'Calculating…' : (d && d.calcAt ? 'Recalculate' : 'Calculate picks')}</button>${full ? `<button type="button" class="pillBtn" data-a2="recalc" title="Apply the latest settings to the saved picks and amounts">Update rates</button>` : ''}${full ? `<button type="button" class="pillBtn a2Ic" data-a2="refresh" title="Refresh: add new operators" aria-label="Refresh">${a2Svg('refresh', 14)}</button>` : ''}</span>` : ''}
       ${ed && full && !op ? `<span class="a2Grp"><button type="button" class="pillBtn" data-a2="refresh" title="Add new people and update from profiles">${a2Svg('refresh', 13)}Refresh</button>${sec === 'sponsor' ? `<button type="button" class="pillBtn${A2.tyOpen ? ' ok' : ''}" data-ty="toggle" title="Beaming / Tying commission">Tying commission</button>` : ''}</span>` : ''}
       <span class="a2StW">${full ? `<span class="a2Stat">${status}</span>` : ''}</span>
-      ${full ? `<div class="a2Sv"><div class="a2SvRow"><button type="button" class="pillBtn" data-a2="dl" title="Download PDF or Excel">${DL_ICON}Download</button>${ed ? `<button type="button" class="pillBtn ok" data-a2="save" ${d.dirty && !A2.busy ? '' : 'disabled'}>Save sheet</button>` : ''}</div></div>` : ''}</div>`; }
+      ${full ? `<div class="a2Sv"><div class="a2SvRow"><button type="button" class="pillBtn" data-a2="dl" title="Download PDF or Excel">${DL_ICON}Download</button><button type="button" class="pillBtn" data-a2="bank" title="Bank transfer list (PDF or Excel for the bank)">${a2Svg('wallet', 14)}<span>Bank</span></button>${ed ? `<button type="button" class="pillBtn ok" data-a2="save" ${d.dirty && !A2.busy ? '' : 'disabled'}>Save sheet</button>` : ''}</div></div>` : ''}</div>`; }
   if(!d || !rows.length){
     $('acMain').innerHTML = `<div class="a2Empty"><div class="a2EmptyT">No ${A2_SEC[sec].n.toLowerCase()} sheet for ${acYmLabel(A2.ym)} yet</div>
       <div class="hrNote">${op ? 'Press Calculate picks above. It makes the operator list and counts the picks once. Nothing is read until you press it.' : 'Create the sheet to list everyone and start from the profile salary.'}</div>
@@ -23889,6 +23900,8 @@ document.addEventListener('click', async (e) => {
   if(a === 'sec'){ A2.sec = t.dataset.v; A2.view = 'sheet'; A2.q = ''; A2.dept = []; A2.shift = ''; A2.pos = []; A2.nat = ''; try{ await a2LoadDoc(A2.sec, A2.ym); a2Draw(); }catch(err){ console.error(err); toast('Could not load'); } }
   else if(a === 'saved'){ A2.view = 'saved'; a2Draw(); }
   else if(a === 'pay'){ A2.view = 'pay'; a2Draw(); }
+  else if(a === 'sum'){ A2.view = 'sum'; a2Draw(); }
+  else if(a === 'bank'){ bkOpen(); }
   else if(a === 'users'){ A2.view = 'users'; a2Draw(); }
   else if(a === 'guide'){ A2.view = 'guide'; a2Draw(); }
   else if(a === 'prev' || a === 'next'){ A2.ym = acYmShift(A2.ym, a === 'next' ? 1 : -1); try{ await a2LoadDoc(A2.sec, A2.ym); a2Draw(); }catch(err){ console.error(err); toast('Could not load that month'); } }
@@ -27798,6 +27811,145 @@ document.addEventListener('change', (e) => {
     const m = /^Early vacation:\s*(.*?)(?:\s*\(year [^)]*\))?$/i.exec(r.reason || ''); if(m && m[1]) hfUI.val.reason = m[1];
     hfBar(); hfDet(); hfDraw(); }
 });
+
+
+/* ===== p224: bank accounts, bank transfer download, summary tab ===== */
+function rvfIban(acc){ const a = String(acc || '').replace(/\s/g, ''); if(/^SA\d{22}$/.test(a)) return a; if(!/^\d{1,18}$/.test(a)) return ''; const b = '05' + a.padStart(18, '0'); let r = 0; for(const ch of b + 'SA00'){ const v = /[A-Z]/.test(ch) ? String(ch.charCodeAt(0) - 55) : ch; for(const d of v) r = (r * 10 + Number(d)) % 97; } return 'SA' + ('0' + (98 - r)).slice(-2) + b; }
+function rvfBankNorm(v){ const a = String(v || '').replace(/\s/g, '').toUpperCase(); if(!a || a === 'CASH' || a === 'N/A') return { acc: '', iban: '' }; if(/^SA\d{22}$/.test(a)) return { acc: a.slice(10).replace(/^0+/, ''), iban: a }; if(/^\d{1,18}$/.test(a)) return { acc: a, iban: rvfIban(a) }; return { acc: a, iban: '' }; }
+const smUser = (id) => (state.users || []).find(u => u.loginId === id) || {};
+const smComp = () => { const S = state.hrSettings || {}, lh = S.letterhead || {}; return { lh, company: lh.company || S.company || 'Riyadh Velvet Factory', gm: lh.signName || '', gmT: lh.signTitle || '' }; };
+function smSignOpts(cur){ const us = (state.users || []).filter(u => !u.spare && u.name).sort((a, b) => a.name.localeCompare(b.name)); return '<option value="">- choose -</option>' + us.map(u => `<option value="${acEsc(u.loginId)}" ${cur === u.loginId ? 'selected' : ''}>${acEsc(u.name)}</option>`).join(''); }
+function smSignHtml(prep, chk){
+  const c = smComp(), col = (lb, nm, tt) => `<div style="flex:1;text-align:center;"><div style="font-size:11px;color:#475569;text-align:left;">${lb}</div><div style="height:34px;border-bottom:1px solid #0f172a;"></div><div style="font-size:11.5px;font-weight:700;margin-top:4px;">${acEsc(nm || '')}</div><div style="font-size:10.5px;color:#475569;">${acEsc(tt || '')}</div></div>`;
+  const pu = smUser(prep), cu = smUser(chk);
+  return `<div style="display:flex;gap:28px;margin-top:34px;padding:0 6px;">${col('Prepared by:', pu.name, pu.profile && pu.profile.position)}${col('Checked by:', cu.name, cu.profile && cu.profile.position)}${col('Approved by:', c.gm, c.gmT)}</div>`;
+}
+function smHeadHtml(title, sub){ const c = smComp(); return `<div style="padding:6px 6px 0;">${typeof lhHeaderHtml === 'function' ? lhHeaderHtml(c.lh, c.company) : ''}<div style="text-align:center;margin:14px 0 4px;font-family:'Oswald',sans-serif;font-size:19px;font-weight:700;letter-spacing:.02em;">${acEsc(title)}</div>${sub ? `<div style="text-align:center;font-size:11.5px;color:#475569;margin-bottom:8px;">${acEsc(sub)}</div>` : ''}</div>`; }
+const smTbl = (head, rows, cls) => `<table class="report-table ${cls || 'ovPdfT'}" style="width:100%;"><thead><tr>${head}</tr></thead><tbody>${rows.join('')}</tbody></table>`;
+
+/* ---------- bank transfer (inside Accounts) ---------- */
+const BK = { prep: '', chk: '', ids: true, cash: false };
+try{ Object.assign(BK, JSON.parse(localStorage.getItem('rvfBk') || '{}')); }catch(e){}
+const bkKeep = () => { try{ localStorage.setItem('rvfBk', JSON.stringify(BK)); }catch(e){} };
+function bkRows(){
+  const sec = A2.sec, d = a2Doc(); if(!d) return { bank: [], cash: [] };
+  const out = { bank: [], cash: [] };
+  a2Filtered().forEach(r => {
+    const u = smUser(r.id), p = u.profile || {}, s = p.salary || {}, net = sec2net(sec, r), ded = sec === 'sponsor' ? acNum((r.v || {}).totded) : acNum(r.ded) + acNum(r.jded);
+    const x = { id: r.id, name: r.name || u.name || '', idn: sec === 'saudi' ? (p.saudiId || '') : ((p.iqama || {}).no || ''), acc: s.bankAcc || '', iban: s.iban || rvfIban(s.bankAcc), ded, net };
+    if(net <= 0 && !ded) return; (x.iban ? out.bank : out.cash).push(x);
+  });
+  return out;
+}
+function bkOpen(){
+  const d = a2Doc(); if(!d || !(d.rows || []).length){ toast('Open a sheet with people first'); return; }
+  let ov = document.getElementById('bkOv'); if(ov) ov.remove(); ov = document.createElement('div'); ov.id = 'bkOv'; ov.className = 'dlOv'; document.body.appendChild(ov); bkDraw();
+}
+function bkDraw(){
+  const ov = document.getElementById('bkOv'); if(!ov) return; const x = bkRows(), c = smComp(), sum = (l) => acR2(l.reduce((a, r) => a + r.net, 0));
+  ov.innerHTML = `<div class="dlCard"><div class="dlHead"><b>Bank transfer - ${acEsc(A2_SEC[A2.sec].n)} - ${acEsc(acYmLabel(A2.ym))}</b><button type="button" class="dlX" data-bk="close" aria-label="Close">&times;</button></div>
+    <div class="hrNote" style="margin:4px 0 10px;"><b>${x.bank.length}</b> people paid by bank, <b>${acMoney(sum(x.bank)) || '0'}</b> SAR (Alinma Bank). ${x.cash.length ? `<b>${x.cash.length}</b> have no bank account (cash): ${acMoney(sum(x.cash)) || '0'} SAR.` : ''}</div>
+    <label class="ovColChip${BK.ids ? ' on' : ''}"><input type="checkbox" data-bk="ids" ${BK.ids ? 'checked' : ''}> Show ID number (${A2.sec === 'saudi' ? 'Saudi ID' : 'Iqama'})</label>
+    ${x.cash.length ? `<label class="ovColChip${BK.cash ? ' on' : ''}"><input type="checkbox" data-bk="cash" ${BK.cash ? 'checked' : ''}> Also list the cash people (${x.cash.length})</label>` : ''}
+    <div class="ovColGL" style="margin-top:12px;">Signatures (PDF)</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;"><div class="field"><label>Prepared by</label><select data-bk="prep">${smSignOpts(BK.prep)}</select></div><div class="field"><label>Checked by</label><select data-bk="chk">${smSignOpts(BK.chk)}</select></div></div>
+    <div class="hrNote">Approved by: ${acEsc(c.gm || 'not set')} ${acEsc(c.gmT)} (from Admin &rarr; Letterhead)</div>
+    <div class="dlGo"><span class="hrNote">The Excel is made for uploading to the bank: one row per person, IBAN, amount.</span><span style="flex:1"></span><button type="button" class="pillBtn" data-bk="pdf">${DL_ICON}PDF</button><button type="button" class="pillBtn" data-bk="xlsx">${DL_ICON}Excel</button></div></div>`;
+}
+async function bkGo(kind){
+  const x = bkRows(), list = x.bank.concat(BK.cash ? x.cash : []), sec = A2.sec, ym = A2.ym, title = 'Bank transfer - ' + A2_SEC[sec].n + ' salary', sub = acYmLabel(ym) + ' - Alinma Bank', stamp = rvfDateStamp(), file = 'bank-transfer-' + sec + '-' + ym + '-' + stamp;
+  if(!list.length){ toast('Nobody to list'); return; }
+  const tot = acR2(list.reduce((a, r) => a + r.net, 0)), tded = acR2(list.reduce((a, r) => a + r.ded, 0));
+  if(kind === 'xlsx'){
+    if(typeof XLSX === 'undefined'){ toast('Excel tool not loaded - check your connection'); return; }
+    const head = ['SL', 'EMP CODE', 'EMPLOYEE NAME'].concat(BK.ids ? [sec === 'saudi' ? 'SAUDI ID' : 'IQAMA'] : []).concat(['IBAN', 'ACCOUNT NO.', 'TOTAL DEDUCTION', 'NET PAYABLE']);
+    const rows = list.map((r, i) => [i + 1, r.id, r.name].concat(BK.ids ? [r.idn] : []).concat([r.iban || 'CASH', r.acc, acR2(r.ded), acR2(r.net)]));
+    const ws = XLSX.utils.aoa_to_sheet([head].concat(rows)); ws['!cols'] = head.map(h => ({ wch: h === 'EMPLOYEE NAME' ? 34 : h === 'IBAN' ? 28 : 16 }));
+    rows.forEach((r, i) => head.forEach((h, j) => { const cell = ws[XLSX.utils.encode_cell({ r: i + 1, c: j })]; if(cell && (h === 'IBAN' || h === 'ACCOUNT NO.' || h === 'IQAMA' || h === 'SAUDI ID' || h === 'EMP CODE')){ cell.t = 's'; cell.v = String(cell.v == null ? '' : cell.v); } }));
+    const c = smComp(), pu = smUser(BK.prep), cu = smUser(BK.chk), s2 = XLSX.utils.aoa_to_sheet([[title], ['Month', acYmLabel(ym)], ['Bank', 'Alinma Bank'], ['People', list.length], ['Total deduction', tded], ['Total net payable', tot], [], ['Prepared by', pu.name || ''], ['Checked by', cu.name || ''], ['Approved by', c.gm || '']]); s2['!cols'] = [{ wch: 22 }, { wch: 34 }];
+    const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Bank transfer'); XLSX.utils.book_append_sheet(wb, s2, 'Summary'); XLSX.writeFile(wb, file + '.xlsx'); toast('Excel file downloaded'); return;
+  }
+  const th = '<th>#</th><th>ID</th><th>Name</th>' + (BK.ids ? `<th>${sec === 'saudi' ? 'Saudi ID' : 'Iqama'}</th>` : '') + '<th>IBAN</th><th class="a2N" style="text-align:right">Deduction</th><th style="text-align:right">Net payable</th>';
+  const rows = list.map((r, i) => `<tr><td>${i + 1}</td><td>${acEsc(r.id)}</td><td>${acEsc(r.name)}</td>${BK.ids ? `<td>${acEsc(r.idn)}</td>` : ''}<td style="white-space:nowrap;">${acEsc(r.iban || 'CASH')}</td><td style="text-align:right">${r.ded ? acMoney(r.ded) : ''}</td><td style="text-align:right"><b>${acMoney(r.net) || '0'}</b></td></tr>`);
+  const span = 3 + (BK.ids ? 1 : 0) + 1, per = 30, blocks = [smHeadHtml(title, sub)];
+  for(let i = 0; i < rows.length; i += per){ const last = i + per >= rows.length; blocks.push(`<div style="padding:0 6px;">${smTbl(th, rows.slice(i, i + per).concat(last ? [`<tr style="background:#f1f5f9;font-weight:700;"><td colspan="${span}">Total (${list.length})</td><td style="text-align:right">${acMoney(tded) || '0'}</td><td style="text-align:right">${acMoney(tot) || '0'}</td></tr>`] : []))}</div>`); }
+  blocks.push(smSignHtml(BK.prep, BK.chk)); toast('Making the PDF...');
+  await rvfMakePdf(blocks, file + '.pdf', { m: 10 });
+}
+document.addEventListener('click', (e) => { const t = e.target.closest && e.target.closest('[data-bk]'); if(!t || t.tagName === 'SELECT' || t.tagName === 'INPUT') return; const a = t.dataset.bk; if(a === 'close'){ const o = document.getElementById('bkOv'); if(o) o.remove(); } else if(a === 'pdf' || a === 'xlsx') bkGo(a); });
+document.addEventListener('change', (e) => { const t = e.target; if(!t || !t.dataset || !t.dataset.bk) return; const a = t.dataset.bk; if(a === 'ids'){ BK.ids = t.checked; bkKeep(); bkDraw(); } else if(a === 'cash'){ BK.cash = t.checked; bkKeep(); bkDraw(); } else if(a === 'prep'){ BK.prep = t.value; bkKeep(); } else if(a === 'chk'){ BK.chk = t.value; bkKeep(); } });
+
+/* ---------- Summary tab ---------- */
+const SM = { ym: '', grp: 'dept', sort: 'amt', nsOne: true, nop: true, secs: [], dept: [], pos: [], nat: [], et: [], open: '', docs: {}, busy: false, ready: false, prep: BK.prep, chk: BK.chk };
+const SM_SECN = { operator: 'Operator', sponsor: 'Sponsor', nonsponsor: 'Non Sponsor', saudi: 'Saudi' };
+async function smDoc(sec, ym){ const k = ym + '_' + sec; if(SM.docs[k]) return SM.docs[k]; const idx = await a2LoadIndex(); if(!idx.items[k]) return (SM.docs[k] = { rows: [] }); const d = (A2.docs && A2.docs[k] && A2.docs[k].savedAt) ? A2.docs[k] : await window.__db.getConfigObject('salary_' + k, {}); return (SM.docs[k] = d || { rows: [] }); }
+function smEntries(ym){
+  const out = []; ['operator', 'sponsor', 'nonsponsor', 'saudi'].forEach(sec => { const d = SM.docs[ym + '_' + sec]; if(!d || !d.rows) return; if(SM.secs.length && SM.secs.indexOf(sec) < 0) return;
+    d.rows.forEach(r => { const u = smUser(r.id), p = u.profile || {}, e = { sec, id: r.id, name: r.name || u.name || '', dept: r.dept || u.department || '-', pos: r.pos || a2PosOf(u) || '-', nat: p.nationality || '-', et: p.employmentType || SM_SECN[sec], net: sec2net(sec, r) };
+      if(SM.dept.length && SM.dept.indexOf(e.dept) < 0) return; if(SM.pos.length && SM.pos.indexOf(e.pos) < 0) return; if(SM.nat.length && SM.nat.indexOf(e.nat) < 0) return; if(SM.et.length && SM.et.indexOf(e.et) < 0) return; out.push(e); }); });
+  return out;
+}
+const smRowFilt = () => !!(SM.dept.length || SM.pos.length || SM.nat.length || SM.et.length);
+function smGroups(list){ const key = { dept: e => e.dept, pos: e => e.pos, cat: e => SM_SECN[e.sec], nat: e => e.nat, et: e => e.et }[SM.grp] || (e => e.dept), m = {}; list.forEach(e => { const k = key(e); (m[k] = m[k] || { k, amt: 0, n: 0 }); m[k].amt += e.net; m[k].n++; }); const g = Object.keys(m).map(k => m[k]); g.sort(SM.sort === 'az' ? (a, b) => a.k.localeCompare(b.k) : (a, b) => b.amt - a.amt || a.k.localeCompare(b.k)); return g; }
+function smBuild(){
+  const all = smEntries(SM.ym), one = SM.nsOne && SM.grp !== 'cat' && !(SM.secs.length && SM.secs.indexOf('nonsponsor') < 0), main = one ? all.filter(e => e.sec !== 'nonsponsor') : all, ns = one ? all.filter(e => e.sec === 'nonsponsor') : [];
+  const S = (l) => ({ amt: acR2(l.reduce((a, e) => a + e.net, 0)), n: l.length }); return { groups: smGroups(main), tot: S(main), ns: ns.length ? S(ns) : null, grand: S(all), one };
+}
+async function smLoadYear(year){ const months = []; for(let m = 1; m <= 12; m++) months.push(year + '-' + String(m).padStart(2, '0')); if(smRowFilt()){ for(const ym of months) for(const sec of ['operator', 'sponsor', 'nonsponsor', 'saudi']) await smDoc(sec, ym); } return months; }
+function smMonths(months){
+  const idx = A2.idx ? A2.idx.items : {}; return months.map(ym => { let amt = 0, n = 0, has = false; ['operator', 'sponsor', 'nonsponsor', 'saudi'].forEach(sec => { if(SM.secs.length && SM.secs.indexOf(sec) < 0) return;
+    if(smRowFilt()){ const l = smEntries(ym).filter(e => e.sec === sec); if(SM.docs[ym + '_' + sec] && (SM.docs[ym + '_' + sec].rows || []).length){ has = true; amt += l.reduce((a, e) => a + e.net, 0); n += l.length; } } else { const it = idx[ym + '_' + sec]; if(it){ has = true; amt += Number(it.total) || 0; n += Number(it.count) || 0; } } }); return { ym, amt: acR2(amt), n, has }; });
+}
+function smMulti(k, noun, all, list){ const sel = SM[k], open = SM.open === k, label = sel.length ? (sel.length === 1 ? (SM_SECN[sel[0]] || sel[0]) : sel.length + ' ' + noun) : all; return `<div class="a2Multi" style="min-width:150px;flex:1;"><button type="button" class="a2MBtn" data-sm="mtog" data-v="${k}"><span>${acEsc(label)}</span><i>${open ? '▴' : '▾'}</i></button>${open ? `<div class="a2MList">${list.map(v => { const val = Array.isArray(v) ? v[0] : v, lb = Array.isArray(v) ? v[1] : v; return `<label class="a2DetL"><input type="checkbox" class="smChk" data-k="${k}" value="${acEsc(val)}" ${sel.indexOf(val) >= 0 ? 'checked' : ''}><span>${acEsc(lb)}</span></label>`; }).join('')}</div>` : ''}</div>`; }
+async function a2DrawSummary(){
+  $('a2Top').innerHTML = ''; $('a2Head').innerHTML = ''; const mn = $('acMain'); mn.innerHTML = '<div class="empty-state">Loading...</div>';
+  try{ await a2LoadIndex(); }catch(err){ mn.innerHTML = '<div class="empty-state">Could not load. Check your connection.</div>'; return; }
+  const items = Object.keys(A2.idx.items).map(k => A2.idx.items[k]), yms = Array.from(new Set(items.map(x => x.ym))).sort().reverse();
+  if(!yms.length){ mn.innerHTML = '<div class="empty-state">No saved salary sheet yet. Save a sheet first.</div>'; return; }
+  SM.yms = yms; if(!SM.ym || yms.indexOf(SM.ym) < 0) SM.ym = yms[0];
+  SM.busy = true; try{ for(const sec of ['operator', 'sponsor', 'nonsponsor', 'saudi']) await smDoc(sec, SM.ym); const months = await smLoadYear(SM.ym.slice(0, 4)); SM.months = months; }catch(err){ console.error(err); toast('Could not load the sheets'); }
+  SM.busy = false; smPaint(yms);
+}
+function smPaint(){
+  const yms = SM.yms || [];
+  const mn = $('acMain'); if(!mn || A2.view !== 'sum') return; const b = smBuild(), months = smMonths(SM.months || []), base = []; ['operator', 'sponsor', 'nonsponsor', 'saudi'].forEach(sec => { const d = SM.docs[SM.ym + '_' + sec]; if(d && d.rows) d.rows.forEach(r => { const u = smUser(r.id), p = u.profile || {}; base.push({ dept: r.dept || u.department || '-', pos: r.pos || a2PosOf(u) || '-', nat: p.nationality || '-', et: p.employmentType || SM_SECN[sec] }); }); });
+  const uniq = (f) => Array.from(new Set(base.map(f).filter(Boolean))).sort(), n = [SM.secs.length, SM.dept.length, SM.pos.length, SM.nat.length, SM.et.length].filter(Boolean).length;
+  const gl = { dept: 'Department', pos: 'Position', cat: 'Category', nat: 'Country', et: 'Employment type' }[SM.grp];
+  const gT = acYmLabel(SM.ym), rowsH = b.groups.map(g => `<tr><td>${acEsc(g.k)}</td><td class="a2N">SAR ${acMoney(g.amt) || '0'}</td>${SM.nop ? `<td class="a2N">${g.n}</td>` : ''}</tr>`);
+  const tr = (lb, s, cls) => `<tr class="${cls || ''}"><td><b>${lb}</b></td><td class="a2N"><b>SAR ${acMoney(s.amt) || '0'}</b></td>${SM.nop ? `<td class="a2N"><b>${s.n}</b></td>` : ''}</tr>`;
+  const tail = (b.one ? tr('TOTAL', b.tot) + (b.ns ? tr('NON SPONSOR', b.ns) : '') : '') + tr(b.one ? 'GRAND TOTAL' : 'TOTAL', b.grand, 'smGt');
+  const have = months.filter(m => m.has), gTot = acR2(have.reduce((a, m) => a + m.amt, 0)), avg = have.length ? acR2(gTot / have.length) : 0, avgN = have.length ? Math.round(have.reduce((a, m) => a + m.n, 0) / have.length) : 0;
+  const mRows = months.map(m => `<tr class="${m.ym === SM.ym ? 'smCur' : ''}"><td>${acEsc(acYmLabel(m.ym).split(' ')[0].toUpperCase())}</td><td class="a2N">${m.has ? acMoney(m.amt) : ''}</td>${SM.nop ? `<td class="a2N">${m.has ? m.n : ''}</td>` : ''}</tr>`).join('');
+  mn.innerHTML = `<div class="smBar"><select data-sm="ym">${yms.map(y => `<option value="${y}" ${y === SM.ym ? 'selected' : ''}>${acEsc(acYmLabel(y))}</option>`).join('')}</select>
+      <select data-sm="grp">${[['dept', 'By department'], ['pos', 'By position'], ['cat', 'By category'], ['nat', 'By country'], ['et', 'By employment type']].map(o => `<option value="${o[0]}" ${SM.grp === o[0] ? 'selected' : ''}>${o[1]}</option>`).join('')}</select>
+      <select data-sm="sort"><option value="amt" ${SM.sort === 'amt' ? 'selected' : ''}>Biggest first</option><option value="az" ${SM.sort === 'az' ? 'selected' : ''}>A to Z</option></select>
+      <button type="button" class="pillBtn" data-sm="ftog">${a2Svg('filter', 14)}Filter${n ? ' <b>' + n + '</b>' : ''}</button><span style="flex:1"></span>
+      <button type="button" class="pillBtn" data-sm="pdf">${DL_ICON}PDF</button><button type="button" class="pillBtn" data-sm="xlsx">${DL_ICON}Excel</button></div>
+    ${SM.fOpen ? `<div class="a2FPanel">${smMulti('secs', 'sheets', 'All sheets', Object.keys(SM_SECN).map(k => [k, SM_SECN[k]]))}${smMulti('et', 'types', 'All employment types', uniq(x => x.et))}${smMulti('dept', 'departments', 'All departments', uniq(x => x.dept))}${smMulti('pos', 'positions', 'All positions', uniq(x => x.pos))}${smMulti('nat', 'countries', 'All countries', uniq(x => x.nat))}
+      <div class="a2FCols"><span class="a2FT">Show</span><label class="a2Fx a2DetL"><input type="checkbox" data-sm="nsone" ${SM.nsOne ? 'checked' : ''}><span>Non Sponsor as one line (like your Excel)</span></label><label class="a2Fx a2DetL"><input type="checkbox" data-sm="nop" ${SM.nop ? 'checked' : ''}><span>Number of people (NOP)</span></label></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px;"><div class="field"><label>Prepared by</label><select data-sm="prep">${smSignOpts(SM.prep)}</select></div><div class="field"><label>Checked by</label><select data-sm="chk">${smSignOpts(SM.chk)}</select></div></div>${n ? '<button type="button" class="pillBtn" data-sm="fclear">Clear filters</button>' : ''}</div>` : ''}
+    <div class="smGrid"><div><div class="smT">${acEsc(gl)} - ${acEsc(gT)}</div><div class="table-scroll"><table class="report-table smTbl"><thead><tr><th>${acEsc(gl.toUpperCase())}</th><th class="a2N">AMOUNT</th>${SM.nop ? '<th class="a2N">NOP</th>' : ''}</tr></thead><tbody>${rowsH.join('') || '<tr><td colspan="3">Nothing matches.</td></tr>'}${tail}</tbody></table></div></div>
+    <div><div class="smT">Month by month - ${acEsc(SM.ym.slice(0, 4))}</div><div class="table-scroll"><table class="report-table smTbl"><thead><tr><th>MONTH</th><th class="a2N">AMOUNT</th>${SM.nop ? '<th class="a2N">NOP</th>' : ''}</tr></thead><tbody>${mRows}<tr class="smGt"><td><b>G TOTAL</b></td><td class="a2N"><b>${acMoney(gTot) || '0'}</b></td>${SM.nop ? '<td></td>' : ''}</tr><tr><td><b>AVG/MONTH</b></td><td class="a2N"><b>${acMoney(avg) || '0'}</b></td>${SM.nop ? `<td class="a2N"><b>${avgN}</b></td>` : ''}</tr></tbody></table></div></div></div>
+    <div class="hrNote" style="margin-top:8px;">Made from the saved sheets only. Prepared by / Checked by are chosen under Filter; Approved by is the boss from Admin &rarr; Letterhead.</div>`;
+}
+async function smExport(kind){
+  const b = smBuild(), months = smMonths(SM.months || []), have = months.filter(m => m.has), gTot = acR2(have.reduce((a, m) => a + m.amt, 0)), avg = have.length ? acR2(gTot / have.length) : 0, avgN = have.length ? Math.round(have.reduce((a, m) => a + m.n, 0) / have.length) : 0, gl = { dept: 'DEPARTMENT', pos: 'POSITION', cat: 'CATEGORY', nat: 'COUNTRY', et: 'EMPLOYMENT TYPE' }[SM.grp], T = acYmLabel(SM.ym), stamp = rvfDateStamp(), file = 'salary-summary-' + SM.ym + '-' + stamp;
+  const lines = b.groups.map(g => [g.k, g.amt, g.n]).concat(b.one ? [['TOTAL', b.tot.amt, b.tot.n]].concat(b.ns ? [['NON SPONSOR', b.ns.amt, b.ns.n]] : []).concat([['GRAND TOTAL', b.grand.amt, b.grand.n]]) : [['TOTAL', b.grand.amt, b.grand.n]]);
+  if(kind === 'xlsx'){
+    if(typeof XLSX === 'undefined'){ toast('Excel tool not loaded - check your connection'); return; }
+    const hd = [gl, 'AMOUNT'].concat(SM.nop ? ['NOP'] : []), cut = (r) => SM.nop ? r : r.slice(0, 2), wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet([['RIYADH VELVET FACTORY'], ['FOR THE MONTH OF ' + T.toUpperCase()], [], hd].concat(lines.map(cut))); ws['!cols'] = [{ wch: 30 }, { wch: 16 }, { wch: 10 }]; XLSX.utils.book_append_sheet(wb, ws, 'Summary');
+    const ws2 = XLSX.utils.aoa_to_sheet([['MONTH', 'AMOUNT'].concat(SM.nop ? ['NOP'] : [])].concat(months.map(m => cut([acYmLabel(m.ym).split(' ')[0].toUpperCase(), m.has ? m.amt : '', m.has ? m.n : '']))).concat([cut(['G TOTAL', gTot, '']), cut(['AVG/MONTH', avg, avgN])])); ws2['!cols'] = [{ wch: 16 }, { wch: 16 }, { wch: 10 }]; XLSX.utils.book_append_sheet(wb, ws2, 'Month by month');
+    XLSX.writeFile(wb, file + '.xlsx'); toast('Excel file downloaded'); return;
+  }
+  const th = `<th>${gl}</th><th style="text-align:right">AMOUNT</th>${SM.nop ? '<th style="text-align:right">NOP</th>' : ''}`, tr = (r, bold) => `<tr style="${bold ? 'font-weight:700;background:#f1f5f9;' : ''}"><td>${acEsc(r[0])}</td><td style="text-align:right">SAR ${acMoney(r[1]) || '0'}</td>${SM.nop ? `<td style="text-align:right">${r[2]}</td>` : ''}</tr>`;
+  const nG = b.groups.length, body = lines.map((r, i) => tr(r, i >= nG)), mr = months.map(m => `<tr><td>${acEsc(acYmLabel(m.ym).split(' ')[0].toUpperCase())}</td><td style="text-align:right">${m.has ? acMoney(m.amt) : ''}</td>${SM.nop ? `<td style="text-align:right">${m.has ? m.n : ''}</td>` : ''}</tr>`).concat([`<tr style="font-weight:700;background:#f1f5f9;"><td>G TOTAL</td><td style="text-align:right">${acMoney(gTot) || '0'}</td>${SM.nop ? '<td></td>' : ''}</tr>`, `<tr style="font-weight:700;"><td>AVG/MONTH</td><td style="text-align:right">${acMoney(avg) || '0'}</td>${SM.nop ? `<td style="text-align:right">${avgN}</td>` : ''}</tr>`]);
+  const blocks = [smHeadHtml('SALARY SUMMARY', 'For the month of ' + T)].concat(rvfTableBlocks(th, body, 34, 'ovPdfT').map(h => `<div style="padding:0 6px;">${h}</div>`), [`<div style="padding:14px 6px 0;"><div style="font-weight:700;font-size:12px;margin-bottom:4px;">Month by month - ${acEsc(SM.ym.slice(0, 4))}</div>${smTbl(`<th>MONTH</th><th style="text-align:right">AMOUNT</th>${SM.nop ? '<th style="text-align:right">NOP</th>' : ''}`, mr)}</div>`, smSignHtml(SM.prep, SM.chk)]);
+  toast('Making the PDF...'); await rvfMakePdf(blocks, file + '.pdf', { m: 10 });
+}
+document.addEventListener('click', async (e) => { const t = e.target.closest && e.target.closest('[data-sm]'); if(!t || t.tagName === 'SELECT' || t.tagName === 'INPUT') return; const a = t.dataset.sm; if(a === 'mtog'){ SM.open = SM.open === t.dataset.v ? '' : t.dataset.v; smPaint(); } else if(a === 'ftog'){ SM.fOpen = !SM.fOpen; smPaint(); } else if(a === 'fclear'){ SM.secs = []; SM.dept = []; SM.pos = []; SM.nat = []; SM.et = []; SM.open = ''; a2DrawSummary(); } else if(a === 'pdf' || a === 'xlsx') smExport(a); });
+document.addEventListener('change', async (e) => { const t = e.target; if(!t || !t.dataset) return; if(t.classList && t.classList.contains('smChk')){ const k = t.dataset.k, i = SM[k].indexOf(t.value); if(t.checked && i < 0) SM[k].push(t.value); if(!t.checked && i >= 0) SM[k].splice(i, 1); if(['dept', 'pos', 'nat', 'et'].indexOf(k) >= 0) await a2DrawSummary(); else smPaint(); return; } const a = t.dataset.sm; if(!a) return;
+  if(a === 'ym'){ SM.ym = t.value; a2DrawSummary(); } else if(a === 'grp'){ SM.grp = t.value; smPaint(); } else if(a === 'sort'){ SM.sort = t.value; smPaint(); } else if(a === 'nsone'){ SM.nsOne = t.checked; smPaint(); } else if(a === 'nop'){ SM.nop = t.checked; smPaint(); } else if(a === 'prep'){ SM.prep = t.value; BK.prep = t.value; bkKeep(); } else if(a === 'chk'){ SM.chk = t.value; BK.chk = t.value; bkKeep(); } });
 
 </script>
 <style>
