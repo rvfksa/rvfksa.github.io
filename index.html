@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261115-140532">
+<meta name="rvf-build" content="20261115-140826">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -27845,7 +27845,7 @@ function smSignHtml(prep, chk){
 /* one page of the letterhead paper: header, title, a piece of the table, (signatures on the last page), footer */
 function smPages(title, sub, th, rows, o){
   o = o || {}; const c = smComp(), lh = c.lh, pg = (typeof lhPage === 'function') ? lhPage(lh) : { pT: 50, pR: 50, pB: 50, pL: 50, pxH: 1075 };
-  const per = o.per || 31, lastMax = o.lastMax || 15, chunks = []; let rem = rows.slice();
+  const per = o.per || 20, lastMax = o.lastMax || 10, chunks = []; let rem = rows.slice();
   while(rem.length > per){ chunks.push(rem.slice(0, per)); rem = rem.slice(per); }
   if(rem.length > lastMax){ const k = rem.length - Math.min(8, lastMax); chunks.push(rem.slice(0, k)); rem = rem.slice(k); }
   chunks.push(rem);
@@ -27860,7 +27860,7 @@ function smPages(title, sub, th, rows, o){
 const smPdfOpt = () => { const lh = smComp().lh; return { m: 0, format: (typeof lhPage === 'function' ? lhPage(lh).fmt : 'a4') }; };
 function smHeadHtml(title, sub){ const c = smComp(); return `<div style="padding:6px 6px 0;">${typeof lhHeaderHtml === 'function' ? lhHeaderHtml(c.lh, c.company) : ''}<div style="text-align:center;margin:14px 0 4px;font-family:'Oswald',sans-serif;font-size:19px;font-weight:700;letter-spacing:.02em;">${acEsc(title)}</div>${sub ? `<div style="text-align:center;font-size:11.5px;color:#475569;margin-bottom:8px;">${acEsc(sub)}</div>` : ''}</div>`; }
 const smTbl = (head, rows, cls, cols) => `<table class="report-table ${cls || 'ovPdfT'} smP" style="width:100%;table-layout:${cols ? 'fixed' : 'auto'};border-collapse:collapse;">${cols ? '<colgroup>' + cols.map(w => `<col style="width:${w}%">`).join('') + '</colgroup>' : ''}<thead><tr>${head}</tr></thead><tbody>${rows.join('')}</tbody></table>`;
-const SM_CSS = '<style>.smP th,.smP td{vertical-align:middle !important;padding:7px 8px !important;line-height:1.35 !important;font-size:10.5px !important;overflow:hidden;} .smP td.nw{white-space:nowrap;} .smP th{font-size:9.5px !important;}</style>';
+const SM_CSS = '<style>.smP th,.smP td{vertical-align:middle !important;padding:6px 8px !important;line-height:1.35 !important;font-size:10.5px !important;overflow:hidden;} .smP td.nw{white-space:nowrap;} .smP th{font-size:9.5px !important;}</style>';
 async function smPreload(blocks){ const srcs = new Set(); blocks.forEach(h => { (String(h).match(/src="data:[^"]+"/g) || []).forEach(m => srcs.add(m.slice(5, -1))); }); await Promise.all(Array.from(srcs).map(u => new Promise(r => { const im = new Image(); im.onload = im.onerror = () => { (im.decode ? im.decode().catch(() => {}) : Promise.resolve()).then(r); }; im.src = u; }))); }
 
 /* ---------- bank transfer (inside Accounts) ---------- */
