@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head><meta name="robots" content="noindex">
-<meta name="rvf-build" content="20261115-140826">
+<meta name="rvf-build" content="20261115-141002">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -11834,12 +11834,12 @@ async function rvfMakePdf(blocks, filename, opts){
     let y = m;
     for(const el of els){
       if(el.querySelector('[data-pgbreak]') && y > m){ pdf.addPage(); y = m; }
-      if(!RVF_AR.test(el.textContent) || await rvfArReady(pdf)){
+      if(!el.querySelector('[data-raster]') && (!RVF_AR.test(el.textContent) || await rvfArReady(pdf))){
         const kk = usableW / el.offsetWidth; let hh = el.offsetHeight * kk, sc = 1; if(hh > usableH){ sc = usableH / hh; hh = usableH; }
         if(y + hh > ph - m && y > m){ pdf.addPage(); y = m; }
         await rvfVecBlock(pdf, el, m, y, kk * sc); y += hh + 1.5; continue;
       }
-      const canvas = await window.html2canvas(el, { scale:2, backgroundColor:'#ffffff', logging:false });
+      const canvas = await window.html2canvas(el, { scale:el.querySelector('[data-raster]') ? 2.5 : 2, backgroundColor:'#ffffff', logging:false });
       let w = usableW, h = canvas.height * w / canvas.width;
       if(h > usableH){ w = w * usableH / h; h = usableH; }
       if(y + h > ph - m && y > m){ pdf.addPage(); y = m; }
@@ -27850,7 +27850,7 @@ function smPages(title, sub, th, rows, o){
   if(rem.length > lastMax){ const k = rem.length - Math.min(8, lastMax); chunks.push(rem.slice(0, k)); rem = rem.slice(k); }
   chunks.push(rem);
   return chunks.map((ch, i) => { const last = i === chunks.length - 1;
-    return `<div style="width:760px;min-height:${pg.pxH}px;box-sizing:border-box;padding:${pg.pT}px ${pg.pR}px ${pg.pB}px ${pg.pL}px;background:#ffffff;color:#0f172a;font-family:'Inter',sans-serif;display:flex;flex-direction:column;">
+    return `<div data-raster="1" style="width:760px;min-height:${pg.pxH}px;box-sizing:border-box;padding:${pg.pT}px ${pg.pR}px ${pg.pB}px ${pg.pL}px;background:#ffffff;color:#0f172a;font-family:'Inter',sans-serif;display:flex;flex-direction:column;">
       ${typeof lhHeaderHtml === 'function' ? lhHeaderHtml(lh, c.company) : ''}
       <div style="text-align:center;margin:16px 0 2px;font-family:'Oswald',sans-serif;font-size:19px;font-weight:700;letter-spacing:.02em;">${acEsc(title)}</div>${sub ? `<div style="text-align:center;font-size:11.5px;color:#475569;margin-bottom:10px;">${acEsc(sub)}${chunks.length > 1 ? ' - page ' + (i + 1) + '/' + chunks.length : ''}</div>` : ''}
       ${SM_CSS}${smTbl(th, ch, 'ovPdfT', o.cols)}
