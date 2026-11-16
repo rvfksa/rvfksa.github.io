@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head><meta name="robots" content="noindex">
-<meta name="rvf-build" content="20261115-180935">
+<meta name="rvf-build" content="20261116-070137">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -4065,7 +4065,7 @@ table.a2T td .a2In{ width:100%; min-width:36px; }
 .acgRates{ font-size:11.5px; } .acgRates td{ padding:3px 7px; }
 .acgBar{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:8px; }
 .acgSign{ display:grid; grid-template-columns:repeat(3,1fr); gap:18px; margin-top:26px; }
-.acgSign div{ border-top:1px solid #cbd5e1; padding-top:6px; font-size:12px; color:var(--muted); min-height:46px; }
+.acgSign{ margin-top:0 !important; } .acgSign > div{ border-top:1px solid #0f172a; margin-top:96px; padding-top:6px; font-size:12px; color:var(--muted); min-height:0; } .acgSign b{ display:block; color:#0f172a; font-size:12.5px; }
 .acgSign span{ display:block; color:var(--text); }
 #acgPrint{ display:none; }
 @media print{
@@ -27032,6 +27032,7 @@ function acgHtml(){
 function a2DrawGuide(){
   $('a2Top').innerHTML = ''; $('a2Head').innerHTML = '';
   if(!(AC.set && AC.tbl)){ $('acMain').innerHTML = '<div class="empty-state">Loading…</div>'; acEnsureLoaded().then(() => { if(A2.view === 'guide') a2DrawGuide(); }).catch(() => {}); return; }
+  if(!(state.hrSettings && state.hrSettings.letterhead) && typeof hrLoadSettings === 'function' && !A2._lhTry){ A2._lhTry = 1; hrLoadSettings().then(() => { if(A2.view === 'guide') a2DrawGuide(); }).catch(() => {}); }
   $('acMain').innerHTML = acgHtml();
 }
 document.addEventListener('click', (e) => {
@@ -27271,7 +27272,7 @@ function acgHtml(){
       <div class="acgMeta"><span>Rules code <b>${acgCode()}</b></span><span>Last rule change <b>${acgE(acgVer())}</b></span><span>Printed <b>${stamp}</b></span></div>
       <div class="hrNote" style="margin-top:8px;">Boxes marked "from Settings" are read live, so this page is always the same as the app. If the Rules code on a printed copy is the same as the code on the screen, the rules have not changed since it was printed.</div></div>
     ${b.join('')}
-    <div class="acgB" style="margin-top:10px;"><div class="acgSign"><div><span>Prepared by (Accounts)</span>Name and signature</div><div><span>Checked by</span>Name and signature</div><div><span>Approved by (Boss)</span>Signature and date</div></div></div></div>`;
+    <div class="acgB" style="margin-top:10px;"><div class="acgSign"><div><span>Prepared by (Accounts)</span>Name and signature</div><div><span>Checked by</span>Name and signature</div><div><span>Approved by (Boss)</span>${(() => { const L = (state.hrSettings || {}).letterhead || {}; return L.signName ? '<b>' + acgE(L.signName) + '</b>' + acgE(L.signTitle || '') + ' &middot; ' : ''; })()}Signature and date</div></div></div></div>`;
 }
 function acgPrint(){
   document.querySelectorAll('.acg details').forEach(d => { d.open = true; });
