@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261116-123919">
+<meta name="rvf-build" content="20261116-124647">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -28164,6 +28164,7 @@ function a2NtRows(){
   it.dec.forEach(x => { if(!a2Hid('dec', x.id)) rows.push(`<div class="ntRow"><span class="ntTag d">Decide</span><span class="ntTx">${acEsc(x.t)}</span><span class="ntAct">${acCanEdit() ? `<button type="button" class="ntAdd" data-a2x="keep" data-id="${acEsc(x.id)}">Add to sheet</button>` : ''}${a2HBtn('dec', x.id, 'After the salary month: ' + x.t)}</span></div>`); });
   return rows;
 }
+function a2HidList(){ const d = a2Doc(); if(!d || !d.keep) return []; return Object.keys(d.keep).filter(k => k.indexOf('h|') === 0 && d.keep[k] && typeof d.keep[k] === 'object').map(k => ({ k, v: d.keep[k] })); }
 function a2HidBox(){
   const l = a2HidList(); if(!l.length) return '';
   return `<details class="ntHid"${A2.hidOpen ? ' open' : ''}><summary>Hidden notices (${l.length})</summary>${l.map(x => `<div class="ntRow"><span class="ntTx">${acEsc(x.v.t || x.k)}</span><span class="ntAct">${acCanEdit() ? `<button type="button" class="ntHide" data-a2h="show" data-k="${encodeURIComponent(x.k)}">Show again</button>` : ''}</span></div>`).join('')}</details>`;
