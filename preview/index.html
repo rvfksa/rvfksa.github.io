@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head><meta name="robots" content="noindex">
-<meta name="rvf-build" content="20261116-112758">
+<meta name="rvf-build" content="20261116-113457">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -24762,6 +24762,10 @@ function a2JoinRefresh(d){   // the joining date on the profile counts at once
   A2.jym = ''; if(ch) a2Touch();
 }
 function a2Changes(){
+  const o = a2ChangesRaw(), d = a2Doc(), hid = (k) => !!(d && d.keep && d.keep['h|chg|' + k]);
+  return { moved: o.moved.filter(x => !hid('m|' + x.r.id)), idch: o.idch.filter(x => !hid('i|' + x.r.id + '>' + x.u.loginId)), gone: o.gone.filter(x => !hid('g|' + x.r.id)), fresh: o.fresh.filter(x => !hid('f|' + x.loginId)) };
+}
+function a2ChangesRaw(){
   const d = a2Doc(), out = { moved: [], idch: [], gone: [], fresh: [] }; if(!d || !(state.users && state.users.length)) return out;
   const sec = d.sec, users = state.users, byId = {}, nm = (x) => String(x || '').trim().toLowerCase(); users.forEach(u => { byId[u.loginId] = u; });
   d.rows.forEach(r => {
@@ -24777,10 +24781,11 @@ function a2Changes(){
 function a2ChgHtml0(){
   const c = a2Changes(), n = c.moved.length + c.idch.length + c.gone.length + c.fresh.length; if(!n) return '';
   const L = (x) => x ? (A2_SEC[x] || {}).n || x : '', li = [];
-  c.moved.forEach(x => li.push(`<b>${acEsc(x.r.name)}</b> (ID ${acEsc(x.r.id)}) ${x.why ? x.why + '. He is taken out of the salary.' + (acCanEdit() && x.u && a2Decide(x.u) ? ` <button type="button" class="pillBtn" data-a2x="keep2" data-id="${acEsc(x.r.id)}">Keep him</button>` : '') : 'is now ' + (x.to ? 'in the ' + acEsc(L(x.to)) + ' sheet' : 'marked as no salary') + '. He leaves this sheet.'}`));
-  c.idch.forEach(x => li.push(`<b>${acEsc(x.r.name)}</b>: ID ${acEsc(x.r.id)} is now ${acEsc(x.u.loginId)}${x.same ? '. The row will use the new ID.' : (x.why ? ', and he ' + x.why + '. He is taken out of the salary.' : (x.to ? ', and he is now in the ' + acEsc(L(x.to)) + ' sheet. He leaves this sheet.' : ', marked as no salary. He leaves this sheet.'))}`));
-  c.gone.forEach(x => li.push(`<b>${acEsc(x.r.name)}</b> (ID ${acEsc(x.r.id)}) is not in the people list any more. Nothing is changed for him. Check, then delete the row if it is not needed.`));
-  if(c.fresh.length) li.push(`${c.fresh.length} new ${c.fresh.length === 1 ? 'person' : 'people'} for this sheet: ${c.fresh.slice(0, 6).map(u => acEsc(u.name)).join(', ')}${c.fresh.length > 6 ? ' and ' + (c.fresh.length - 6) + ' more' : ''}. They are added with their salary and joining date.`);
+  c.moved.forEach(x => li.push(a2HB2('m|' + x.r.id, x.r.name + ' (ID ' + x.r.id + ') change') + `<b>${acEsc(x.r.name)}</b> (ID ${acEsc(x.r.id)}) ${x.why ? x.why + '. He is taken out of the salary.' + (acCanEdit() && x.u && a2Decide(x.u) ? ` <button type="button" class="pillBtn" data-a2x="keep2" data-id="${acEsc(x.r.id)}">Keep him</button>` : '') : 'is now ' + (x.to ? 'in the ' + acEsc(L(x.to)) + ' sheet' : 'marked as no salary') + '. He leaves this sheet.'}`));
+  c.idch.forEach(x => li.push(a2HB2('i|' + x.r.id + '>' + x.u.loginId, x.r.name + ' ID change') + `<b>${acEsc(x.r.name)}</b>: ID ${acEsc(x.r.id)} is now ${acEsc(x.u.loginId)}${x.same ? '. The row will use the new ID.' : (x.why ? ', and he ' + x.why + '. He is taken out of the salary.' : (x.to ? ', and he is now in the ' + acEsc(L(x.to)) + ' sheet. He leaves this sheet.' : ', marked as no salary. He leaves this sheet.'))}`));
+  c.gone.forEach(x => li.push(a2HB2('g|' + x.r.id, x.r.name + ' not in the people list') + `<b>${acEsc(x.r.name)}</b> (ID ${acEsc(x.r.id)}) is not in the people list any more. Nothing is changed for him. Check, then delete the row if it is not needed.`));
+  c.fresh.forEach(u => li.push(a2HB2('f|' + u.loginId, u.name + ' is new for this sheet') + `<b>${acEsc(u.name)}</b> is new for this sheet. Added with salary and joining date.`));
+  if(false) li.push(`${c.fresh.length} new ${c.fresh.length === 1 ? 'person' : 'people'} for this sheet: ${c.fresh.slice(0, 6).map(u => acEsc(u.name)).join(', ')}${c.fresh.length > 6 ? ' and ' + (c.fresh.length - 6) + ' more' : ''}. They are added with their salary and joining date.`);
   const act = c.moved.length + c.idch.length + c.fresh.length;
   return `<div class="a2Chg"><div class="a2ChgH"><b>${n} ${n === 1 ? 'change' : 'changes'} since this sheet was made</b><span style="flex:1"></span>${act && acCanEdit() ? '<button type="button" class="pillBtn ok" data-a2x="chgapply">Apply changes</button>' : ''}</div><ul>${li.map(x => '<li>' + x + '</li>').join('')}</ul><div class="hrNote" style="margin:6px 0 0;">Nothing moves until you press Apply changes. Amounts you typed stay.</div></div>`;
 }
@@ -28137,6 +28142,39 @@ function chkTop(){
   el.innerHTML = `<div class="chkBar${bad ? ' bad' : ''}"><b>${act.length} problem${act.length === 1 ? '' : 's'} to check</b>${show.map(x => `<span class="chkBi">${CHK_ES(x.title.length > 60 ? x.title.slice(0, 58) + '...' : x.title)} <button type="button" data-chk="ok" data-k="${encodeURIComponent(chkKey(x))}" title="It is fine. Hide it.">OK</button></span>`).join('')}${act.length > show.length ? `<span>+ ${act.length - show.length} more</span>` : ''}<span class="chkSp"></span><button type="button" data-chk="open">Open Problems check</button>${sp.okd.length ? `<button type="button" data-chk="open" title="See what you marked OK and unmark it">Marked OK (${sp.okd.length})</button>` : ''}</div>`;
 }
 (function(){ const tick = () => { try{ if(state.user && (state.user.role === 'admin' || (state.user.pages || []).indexOf('accounts') >= 0) && window.__db) chkLoadOk().then(() => { chkTop(); chkBadge(); }); }catch(e){} }; setTimeout(tick, 5000); setInterval(tick, 25000); document.addEventListener('click', e => { if(e.target.closest && e.target.closest('#navbar .nav-btn')) setTimeout(tick, 250); }); })();
+
+// ===== Notices above the salary sheet: each line can be marked OK (hidden), and the hidden ones can be brought back =====
+function a2HKey(kind, id){ const d = a2Doc(); return 'h|' + kind + '|' + id; }
+function a2Hid(kind, id){ const d = a2Doc(); return !!(d && d.keep && d.keep[a2HKey(kind, id)]); }
+function a2HBtn(kind, id, label){ return acCanEdit() ? ` <button type="button" class="pillBtn" data-a2h="hide" data-kind="${kind}" data-id="${acEsc(id)}" data-t="${encodeURIComponent(label)}" title="It is fine. Hide this notice.">OK</button>` : ''; }
+function a2HItems(){
+  const d = a2Doc(); if(!d || !A2.ym) return { vac: [], oth: [], dec: [] };
+  const sec = A2.sec, us = (state.users || []).filter(u => u.role !== 'pending' && !u.spare && !a2Skip(u) && a2Group(u) === sec);
+  const vac = OVV.loaded ? us.filter(u => !isExitedEmployee(u) && a2VacWhole(u)).map(u => { const f = a2VacAbs(u, A2.ym).list[0], b = f && (a2D8(f.v.workStart) ? f.v.workStart : f.v.to); return { id: u.loginId, t: u.name + (a2D8(b) ? ' (back ' + fmtDate(b) + ')' : '') }; }) : [];
+  const oth = us.filter(u => a2OtherWhy(u)).map(u => ({ id: u.loginId, t: u.name }));
+  const dec = a2DecideList().map(u => ({ id: u.loginId, t: u.name + ' (ID ' + u.loginId + ') ' + (a2JoinWhy(u) || a2ExitWhy(u)) }));
+  return { vac, oth, dec };
+}
+function a2VacNote(){ const l = a2HItems().vac.filter(x => !a2Hid('vac', x.id)); return l.length ? `<div class="hrNote a2VacN" style="margin:8px 0;"><b>Not in this sheet, on vacation the whole salary month:</b><br>${l.map(x => acEsc(x.t) + a2HBtn('vac', x.id, 'On vacation: ' + x.t)).join('<br>')}</div>` : ''; }
+function a2OtherNote(){ const l = a2HItems().oth.filter(x => !a2Hid('oth', x.id)); return l.length ? `<div class="hrNote a2VacN" style="margin:8px 0;"><b>Not in this sheet, paid another way (Pay desk):</b><br>${l.map(x => acEsc(x.t) + a2HBtn('oth', x.id, 'Paid another way: ' + x.t)).join('<br>')}<br>To put one back, mark him not paid in the Pay desk.</div>` : ''; }
+function a2DecideNote(){
+  const l = a2HItems().dec.filter(x => !a2Hid('dec', x.id)); if(!l.length) return '';
+  return `<div class="hrNote a2VacN" style="margin:8px 0;"><b>Not in this sheet, after the salary month. Keep them?</b><br>${l.map(x => `${acEsc(x.t)}${acCanEdit() ? ` <button type="button" class="pillBtn" data-a2x="keep" data-id="${acEsc(x.id)}">Add to this sheet</button>` : ''}${a2HBtn('dec', x.id, 'After the salary month: ' + x.t)}`).join('<br>')}</div>`;
+}
+function a2HidList(){ const d = a2Doc(); if(!d || !d.keep) return []; return Object.keys(d.keep).filter(k => k.indexOf('h|') === 0 && d.keep[k] && typeof d.keep[k] === 'object').map(k => ({ k, v: d.keep[k] })); }
+function a2HidBox(){
+  const l = a2HidList(); if(!l.length) return '';
+  return `<details class="hrNote a2HidBox" style="margin:8px 0;"${A2.hidOpen ? ' open' : ''}><summary style="cursor:pointer;"><b>Marked OK (${l.length})</b> - hidden notices</summary>${l.map(x => `<div style="margin-top:4px;">${acEsc(x.v.t || x.k)}${acCanEdit() ? ` <button type="button" class="pillBtn" data-a2h="show" data-k="${encodeURIComponent(x.k)}">Show again</button>` : ''}</div>`).join('')}</details>`;
+}
+function a2ChgHtml(){ return `<div id="a2VioBox">${a2VioInner()}</div>` + a2VacNote() + a2OtherNote() + a2DecideNote() + a2ChgHtml0() + a2HidBox(); }
+document.addEventListener('click', (e) => {
+  const t = e.target.closest && e.target.closest('[data-a2h]'); if(!t || !acCanEdit()) return; const d = a2Doc(); if(!d) return; d.keep = d.keep || {};
+  const sm = t.closest('details'); A2.hidOpen = !!(sm && sm.open);
+  if(t.dataset.a2h === 'hide'){ d.keep['h|' + t.dataset.kind + '|' + t.dataset.id] = { t: decodeURIComponent(t.dataset.t || ''), at: Date.now(), by: (state.user && state.user.loginId) || '' }; }
+  else delete d.keep[decodeURIComponent(t.dataset.k || '')];
+  a2Touch(); a2Draw();
+});
+function a2HB2(k, label){ return acCanEdit() ? `<button type="button" class="pillBtn" data-a2h="hide" data-kind="chg" data-id="${acEsc(k)}" data-t="${encodeURIComponent('Change: ' + label)}" title="It is fine. Hide this notice.">OK</button> ` : ''; }
 
 </script>
 <style>
