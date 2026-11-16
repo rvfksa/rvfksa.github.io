@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261116-113457">
+<meta name="rvf-build" content="20261116-123919">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -28135,7 +28135,7 @@ function chkTop(){
   const nb = document.getElementById('navbar'); if(!nb) return; let el = document.getElementById('chkTop');
   const rm = () => { if(el) el.remove(); };
   const onAcc = (() => { const b = document.querySelector('#navbar .nav-btn.active'); return !!b && /^\s*accounts\s*$/i.test(b.textContent); })();
-  if(!(state.user && (state.user.role === 'admin' || (state.user.pages || []).indexOf('accounts') >= 0)) || !onAcc || !CHK.ok){ rm(); return; }
+  rm(); return;
   const sp = chkSplit(), act = sp.act; if(!act.length){ rm(); return; }
   if(!el){ el = document.createElement('div'); el.id = 'chkTop'; nb.insertAdjacentElement('afterend', el); }
   const bad = act.some(x => x.sev === 'bad'), show = act.slice(0, 2);
@@ -28146,7 +28146,7 @@ function chkTop(){
 // ===== Notices above the salary sheet: each line can be marked OK (hidden), and the hidden ones can be brought back =====
 function a2HKey(kind, id){ const d = a2Doc(); return 'h|' + kind + '|' + id; }
 function a2Hid(kind, id){ const d = a2Doc(); return !!(d && d.keep && d.keep[a2HKey(kind, id)]); }
-function a2HBtn(kind, id, label){ return acCanEdit() ? ` <button type="button" class="pillBtn" data-a2h="hide" data-kind="${kind}" data-id="${acEsc(id)}" data-t="${encodeURIComponent(label)}" title="It is fine. Hide this notice.">OK</button>` : ''; }
+function a2HBtn(kind, id, label){ return acCanEdit() ? `<button type="button" class="ntHide" data-a2h="hide" data-kind="${kind}" data-id="${acEsc(id)}" data-t="${encodeURIComponent(label)}" title="Hide this notice. Nothing is added or changed.">Hide</button>` : ''; }
 function a2HItems(){
   const d = a2Doc(); if(!d || !A2.ym) return { vac: [], oth: [], dec: [] };
   const sec = A2.sec, us = (state.users || []).filter(u => u.role !== 'pending' && !u.spare && !a2Skip(u) && a2Group(u) === sec);
@@ -28155,18 +28155,21 @@ function a2HItems(){
   const dec = a2DecideList().map(u => ({ id: u.loginId, t: u.name + ' (ID ' + u.loginId + ') ' + (a2JoinWhy(u) || a2ExitWhy(u)) }));
   return { vac, oth, dec };
 }
-function a2VacNote(){ const l = a2HItems().vac.filter(x => !a2Hid('vac', x.id)); return l.length ? `<div class="hrNote a2VacN" style="margin:8px 0;"><b>Not in this sheet, on vacation the whole salary month:</b><br>${l.map(x => acEsc(x.t) + a2HBtn('vac', x.id, 'On vacation: ' + x.t)).join('<br>')}</div>` : ''; }
-function a2OtherNote(){ const l = a2HItems().oth.filter(x => !a2Hid('oth', x.id)); return l.length ? `<div class="hrNote a2VacN" style="margin:8px 0;"><b>Not in this sheet, paid another way (Pay desk):</b><br>${l.map(x => acEsc(x.t) + a2HBtn('oth', x.id, 'Paid another way: ' + x.t)).join('<br>')}<br>To put one back, mark him not paid in the Pay desk.</div>` : ''; }
-function a2DecideNote(){
-  const l = a2HItems().dec.filter(x => !a2Hid('dec', x.id)); if(!l.length) return '';
-  return `<div class="hrNote a2VacN" style="margin:8px 0;"><b>Not in this sheet, after the salary month. Keep them?</b><br>${l.map(x => `${acEsc(x.t)}${acCanEdit() ? ` <button type="button" class="pillBtn" data-a2x="keep" data-id="${acEsc(x.id)}">Add to this sheet</button>` : ''}${a2HBtn('dec', x.id, 'After the salary month: ' + x.t)}`).join('<br>')}</div>`;
+function a2VacNote(){ const l = a2VacList(); return l.length ? `<div class="hrNote a2VacN" style="margin:8px 0;"><b>Not in this sheet, on vacation the whole salary month:</b> ${l.map(acEsc).join(', ')}</div>` : ''; }
+function a2OtherNote(){ const o = a2OtherList(); return o.length ? `<div class="hrNote a2VacN" style="margin:8px 0;"><b>Not in this sheet, paid another way (Pay desk):</b> ${o.map(acEsc).join(', ')}.</div>` : ''; }
+function a2NtRows(){
+  const it = a2HItems(), rows = [];
+  it.vac.forEach(x => { if(!a2Hid('vac', x.id)) rows.push(`<div class="ntRow"><span class="ntTag v">On vacation</span><span class="ntTx">${acEsc(x.t)}</span><span class="ntAct">${a2HBtn('vac', x.id, 'On vacation: ' + x.t)}</span></div>`); });
+  it.oth.forEach(x => { if(!a2Hid('oth', x.id)) rows.push(`<div class="ntRow"><span class="ntTag o">Paid another way</span><span class="ntTx">${acEsc(x.t)} <i>(Pay desk)</i></span><span class="ntAct">${a2HBtn('oth', x.id, 'Paid another way: ' + x.t)}</span></div>`); });
+  it.dec.forEach(x => { if(!a2Hid('dec', x.id)) rows.push(`<div class="ntRow"><span class="ntTag d">Decide</span><span class="ntTx">${acEsc(x.t)}</span><span class="ntAct">${acCanEdit() ? `<button type="button" class="ntAdd" data-a2x="keep" data-id="${acEsc(x.id)}">Add to sheet</button>` : ''}${a2HBtn('dec', x.id, 'After the salary month: ' + x.t)}</span></div>`); });
+  return rows;
 }
-function a2HidList(){ const d = a2Doc(); if(!d || !d.keep) return []; return Object.keys(d.keep).filter(k => k.indexOf('h|') === 0 && d.keep[k] && typeof d.keep[k] === 'object').map(k => ({ k, v: d.keep[k] })); }
 function a2HidBox(){
   const l = a2HidList(); if(!l.length) return '';
-  return `<details class="hrNote a2HidBox" style="margin:8px 0;"${A2.hidOpen ? ' open' : ''}><summary style="cursor:pointer;"><b>Marked OK (${l.length})</b> - hidden notices</summary>${l.map(x => `<div style="margin-top:4px;">${acEsc(x.v.t || x.k)}${acCanEdit() ? ` <button type="button" class="pillBtn" data-a2h="show" data-k="${encodeURIComponent(x.k)}">Show again</button>` : ''}</div>`).join('')}</details>`;
+  return `<details class="ntHid"${A2.hidOpen ? ' open' : ''}><summary>Hidden notices (${l.length})</summary>${l.map(x => `<div class="ntRow"><span class="ntTx">${acEsc(x.v.t || x.k)}</span><span class="ntAct">${acCanEdit() ? `<button type="button" class="ntHide" data-a2h="show" data-k="${encodeURIComponent(x.k)}">Show again</button>` : ''}</span></div>`).join('')}</details>`;
 }
-function a2ChgHtml(){ return `<div id="a2VioBox">${a2VioInner()}</div>` + a2VacNote() + a2OtherNote() + a2DecideNote() + a2ChgHtml0() + a2HidBox(); }
+(function(){ const st = document.createElement('style'); st.textContent = '.ntBox{margin:10px 0;} .ntGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(440px,1fr));gap:6px;} .ntRow{display:flex;align-items:center;gap:8px;background:#f8fafc;border:1px solid #e5e9f2;border-radius:10px;padding:5px 8px;font-size:12px;color:#334155;min-height:34px;} .ntTx{flex:1;min-width:0;line-height:1.3;} .ntTx i{color:#94a3b8;font-style:normal;} .ntTag{flex:none;font-size:10px;font-weight:700;letter-spacing:.2px;border-radius:999px;padding:2px 8px;white-space:nowrap;} .ntTag.v{background:#e0f2fe;color:#075985;} .ntTag.o{background:#ede9fe;color:#5b21b6;} .ntTag.d{background:#fef3c7;color:#92400e;} .ntAct{flex:none;display:flex;gap:6px;align-items:center;} .ntAdd,.ntHide{font:inherit;font-size:11px;border-radius:999px;padding:3px 10px;cursor:pointer;white-space:nowrap;} .ntAdd{background:#4f46e5;color:#fff;border:1px solid #4f46e5;} .ntHide{background:transparent;color:#64748b;border:1px solid #d5dbe8;} .ntHide:hover{background:#fff;color:#0f172a;} .ntHid{margin-top:6px;font-size:12px;color:#64748b;} .ntHid summary{cursor:pointer;display:inline-block;padding:2px 4px;} .ntHid .ntRow{margin-top:5px;} .a2Chg li{position:relative;padding-right:72px;} .a2Chg li > button[data-a2h]{position:absolute;right:0;top:0;order:2;} @media(max-width:560px){.ntGrid{grid-template-columns:1fr;} .ntRow{flex-wrap:wrap;} .ntAct{margin-left:auto;}}'; document.head.appendChild(st); })();
+function a2ChgHtml(){ const r = a2NtRows(); return `<div id="a2VioBox">${a2VioInner()}</div>` + (r.length ? `<div class="ntBox"><div class="ntGrid">${r.join('')}</div></div>` : '') + a2ChgHtml0() + a2HidBox(); }
 document.addEventListener('click', (e) => {
   const t = e.target.closest && e.target.closest('[data-a2h]'); if(!t || !acCanEdit()) return; const d = a2Doc(); if(!d) return; d.keep = d.keep || {};
   const sm = t.closest('details'); A2.hidOpen = !!(sm && sm.open);
@@ -28174,7 +28177,7 @@ document.addEventListener('click', (e) => {
   else delete d.keep[decodeURIComponent(t.dataset.k || '')];
   a2Touch(); a2Draw();
 });
-function a2HB2(k, label){ return acCanEdit() ? `<button type="button" class="pillBtn" data-a2h="hide" data-kind="chg" data-id="${acEsc(k)}" data-t="${encodeURIComponent('Change: ' + label)}" title="It is fine. Hide this notice.">OK</button> ` : ''; }
+function a2HB2(k, label){ return acCanEdit() ? `<button type="button" class="ntHide" data-a2h="hide" data-kind="chg" data-id="${acEsc(k)}" data-t="${encodeURIComponent('Change: ' + label)}" title="Hide this notice. Nothing is changed.">Hide</button> ` : ''; }
 
 </script>
 <style>
