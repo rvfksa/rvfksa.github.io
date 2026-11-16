@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head><meta name="robots" content="noindex">
-<meta name="rvf-build" content="20261116-093807">
+<meta name="rvf-build" content="20261116-102819">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -23534,7 +23534,7 @@ async function a2LoadDoc0(sec, ym, force){
   A2.docs[key] = d; return d;
 }
 function a2Touch(){
-  const d = a2Doc(); if(!d) return; d.dirty = true; clearTimeout(A2.t);
+  const d = a2Doc(); if(!d) return; d.dirty = true; A2.ver = (A2.ver || 0) + 1; clearTimeout(A2.t); clearTimeout(A2.as); A2.as = setTimeout(a2AutoSave, 2500);
   A2.t = setTimeout(() => { try{ localStorage.setItem('rvfSal_' + a2Key(d.sec, d.ym), JSON.stringify({ base: d.savedAt || '', from: d.from, to: d.to, calcAt: d.calcAt, keep: d.keep || {}, ty: d.ty || {}, rows: d.rows })); }catch(e){} }, 400);
 }
 async function a2Boot(){
@@ -23642,6 +23642,22 @@ async function a2Save(){
     toast('Saved');
   }catch(err){ console.error(err); toast('Could not save - nothing is lost, press Save again'); }
   A2.busy = false; a2Draw();
+}
+// every change in a salary sheet is saved by itself a moment after it is made (nothing to press)
+async function a2AutoSave(){
+  const d = a2Doc(); if(!d || !d.dirty || A2.busy || A2.saving || !acCanEdit() || !window.__db) return;
+  A2.saving = true; const ver = A2.ver || 0;
+  try{
+    const idx = await a2LoadIndex(), key = a2Key(d.sec, d.ym), now = new Date().toISOString(), by = (state.user && (state.user.name || state.user.loginId)) || '';
+    const out = JSON.parse(JSON.stringify({ ym: d.ym, sec: d.sec, from: d.from || '', to: d.to || '', calcAt: d.calcAt || '', keep: d.keep || {}, ty: d.ty || {}, savedAt: now, savedBy: by, rows: d.rows }));
+    await window.__db.saveConfigObject('salary_' + key, out);
+    idx.items[key] = { ym: d.ym, sec: d.sec, savedAt: now, by, count: d.rows.length, total: acR2(d.rows.reduce((a, r) => a + (sec2net(d.sec, r)), 0)) };
+    await window.__db.saveConfigObject('salaryIndex', idx);
+    d.savedAt = now; d.savedBy = by; d.draft = false; d.dirty = ((A2.ver || 0) !== ver); try{ localStorage.removeItem('rvfSal_' + key); }catch(e){}
+    const st = document.querySelector('.a2Stat'); if(st && a2Doc() === d) st.innerHTML = d.dirty ? '<span class="a2Warn">Saving...</span>' : 'Saved ' + new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+  }catch(err){ console.error(err); toast('Could not save by itself - check your connection. It will try again.'); clearTimeout(A2.as); A2.as = setTimeout(a2AutoSave, 15000); }
+  A2.saving = false; try{ a2DirtyUi(); }catch(e){}
+  if(d.dirty){ clearTimeout(A2.as); A2.as = setTimeout(a2AutoSave, 1500); }
 }
 function sec2net(sec, r){ return Number(sec === 'sponsor' ? (r.v || {}).net : r.net) || 0; }
 
@@ -25202,7 +25218,7 @@ function viSal(v){
   if(viKind(v) !== 'deduction') return '';
   if(!v.sd) return 'Not linked to salary';
   const m = v.sd.ym ? ' (' + acYmLabel(v.sd.ym) + ')' : '';
-  return v.sd.st === 'applied' ? 'Added to salary' + m : (v.sd.st === 'skipped' ? 'Not deducted from salary' : (v.sd.target ? 'Will be cut from the ' + acYmLabel(v.sd.target) + ' salary' : 'Waiting for your approval in the salary sheet'));
+  return v.sd.st === 'applied' ? 'Added to salary' + m : (v.sd.st === 'skipped' ? (v.sd.why ? 'Removed from salary by the administrator: ' + v.sd.why : 'Not deducted from salary') : (v.sd.target ? 'Will be cut from the ' + acYmLabel(v.sd.target) + ' salary' : 'Waiting for your approval in the salary sheet'));
 }
 function viMetaHtml(v){
   return fieldRow('Signed', viSigned(v)) + (viSal(v) ? fieldRow('Salary', viSal(v)) : '');
@@ -25314,7 +25330,7 @@ function a2VioInner(){
     ${it.p.length ? `<div class="a2ChgH"><b>${it.p.length} violation deduction${it.p.length === 1 ? '' : 's'} waiting for your decision</b></div>${it.p.map(x => row(x, `<span class="a2VioB"><button type="button" class="pillBtn ok" data-a2v="add" data-id="${acEsc(x.v._id)}">Add to salary</button><button type="button" class="pillBtn" data-a2v="skip" data-id="${acEsc(x.v._id)}">Don't add</button></span>`)).join('')}` : ''}
     ${it.a.length ? `<details class="a2VioD"><summary>${it.a.length} violation deduction${it.a.length === 1 ? '' : 's'} added in this sheet</summary>${it.a.map(x => row(x, `<span class="a2VioB"><button type="button" class="pillBtn" data-a2v="rem" data-id="${acEsc(x.v._id)}">Remove</button></span>`)).join('')}</details>` : ''}</div>`;
 }
-function a2VioFill(){ const b = document.getElementById('a2VioBox'); if(b) b.innerHTML = a2VioInner(); }
+function a2VioFill(){ const b = document.getElementById('a2VioBox'); if(b){ b.innerHTML = a2VioInner(); if(!(state.user && state.user.role === 'admin')) b.querySelectorAll('[data-a2v="rem"],[data-a2v="skip"]').forEach(x => x.remove()); } }
 function a2VacList(){
   if(!OVV.loaded || !A2.ym) return []; const sec = A2.sec;
   return (state.users || []).filter(u => u.role !== 'pending' && !u.spare && !a2Skip(u) && !isExitedEmployee(u) && a2Group(u) === sec && a2VacWhole(u)).map(u => { const f = a2VacAbs(u, A2.ym).list[0], b = f && (a2D8(f.v.workStart) ? f.v.workStart : f.v.to); return u.name + (a2D8(b) ? ' (back ' + fmtDate(b) + ')' : ''); });
@@ -25348,15 +25364,21 @@ function a2DrawSheet(){
   if(acCanEdit() && !VI.list && !VI.busy && window.__db && window.__db.listViolations){ VI.busy = true; window.__db.listViolations().then(l => { VI.list = l; VI.busy = false; a2VioFill(); a2VioAuto(); }).catch(err => { console.error(err); VI.busy = false; }); }
 }
 const a2VioSum = (r) => acR2((r.dl || []).reduce((a, l) => a + acNum(l.a), 0)) || '';
-async function a2VioSet(id, st, ym){
+async function a2VioSet(id, st, ym, why){
   const v = (VI.list || []).find(x => x._id === id); if(!v) return;
-  v.sd = { st, ym: ym || '', at: Date.now(), by: state.user.loginId };
-  try{ await window.__db.updateViolation(id, { sd: v.sd }); }catch(err){ console.error(err); toast('Done in the sheet, but the letter could not be marked. Check your connection.'); }
+  const old = v.sd || {}; v.sd = { st, ym: ym || '', at: Date.now(), by: state.user.loginId }; if(old.target) v.sd.target = old.target; if(why){ v.sd.why = why; v.log = (v.log || []).concat([{ at: Date.now(), by: (state.user && (state.user.name || state.user.loginId)) || '', act: 'Removed from salary', why }]); }
+  try{ await window.__db.updateViolation(id, why ? { sd: v.sd, log: v.log } : { sd: v.sd }); }catch(err){ console.error(err); toast('Done in the sheet, but the letter could not be marked. Check your connection.'); }
 }
 async function a2VioAct(a, id){
   const d = a2Doc(), v = (VI.list || []).find(x => x._id === id); if(!d || !v || !acCanEdit()) return;
+  let why = '';
+  if(a === 'rem' || a === 'skip'){
+    if(!(state.user && state.user.role === 'admin')){ toast('Only the administrator can remove a warning deduction'); return; }
+    why = (prompt('Why is this deduction removed?\n\nThe reason is written in the employee\'s violation record.') || '').trim();
+    if(!why){ toast('Nothing changed. A reason is needed to remove it.'); return; }
+  }
   const r = d.rows.find(x => x.id === v.employeeId);
-  if(a === 'skip'){ await a2VioSet(id, 'skipped', ''); a2VioFill(); toast('Not added to the salary'); return; }
+  if(a === 'skip'){ await a2VioSet(id, 'skipped', '', why); a2VioFill(); toast('Not added to the salary'); return; }
   if(!r) return;
   if(a === 'add'){
     if(!(r.dl && r.dl.length) && acNum(r.ded) > 0) r.dl = [{ a: acR2(acNum(r.ded)), r: 0, n: '' }];
@@ -25364,7 +25386,7 @@ async function a2VioAct(a, id){
     a2Touch(); a2RefreshRow(r); a2DirtyUi(); a2VioSet(id, 'applied', A2.ym); a2VioFill(); a2VioCell(r); toast('Added to ' + acEsc(r.name) + "'s deduction. Press Save sheet to keep it.");
   } else if(a === 'rem'){
     r.dl = (r.dl || []).filter(l => l.vid !== id); r.ded = a2VioSum(r);
-    a2Touch(); a2RefreshRow(r); a2DirtyUi(); a2VioSet(id, 'skipped', ''); a2VioFill(); a2VioCell(r); toast('Removed from the salary');
+    a2Touch(); a2RefreshRow(r); a2DirtyUi(); a2VioSet(id, 'skipped', '', why); a2VioFill(); a2VioCell(r); toast('Removed from the salary');
   }
 }
 function a2VioAuto(){
@@ -26421,7 +26443,7 @@ document.addEventListener('click', async (e) => {
    The people, photos and attached documents are the ones already loaded for the app, so the list costs no database reads;
    the month document is read once per month and every action is one small write.
    ============================================================ */
-const PD = { amt: {}, amtOn: false, rev: new Set(), amtLoading: false, ym: '', docs: {}, q: '', dept: '', cat: '', pos: '', st: 'all', exited: false, edit: false, sel: new Set(), shown: 40, fopen: false, busy: false, loading: false };
+const PD = { amt: {}, amtOn: false, rev: new Set(), amtLoading: false, ym: '', docs: {}, q: '', dept: '', cat: '', pos: '', st: 'all', pay: '', bank: false, exited: false, edit: false, sel: new Set(), shown: 40, fopen: false, busy: false, loading: false };
 const PD_IC = { cam: '<path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/>', edit: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/>', eye: '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"/><circle cx="12" cy="12" r="3"/>', eyeoff: '<path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>', hold: '<circle cx="12" cy="12" r="9"/><line x1="10" y1="9" x2="10" y2="15"/><line x1="14" y1="9" x2="14" y2="15"/>', dl: '<path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>' };
 const pdSvg = (n, s) => `<svg width="${s || 14}" height="${s || 14}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${PD_IC[n] || ''}</svg>`;
 const pdKey = () => 'payDesk_' + PD.ym;
@@ -26448,6 +26470,7 @@ const pdPaid = () => (pdDoc() && pdDoc().paid) || {};
 const pdIsNon = (u) => ((u.profile || {}).employmentType) === 'Non-Sponsor';
 const pdMethodOf = (u) => pdIsNon(u) ? 'cash' : 'bank';   // sponsor staff are paid into the bank, the others in cash (changeable per person)
 const pdCatOf = (u) => (u.profile || {}).employmentType || '';
+const pdPayOf = (u) => { const x = pdPaid()[u.loginId]; if(x && (x.h === 'bank' || x.h === 'cash')) return x.h; const s = (u.profile || {}).salary || {}; if(s.payBy === 'cash' || s.payBy === 'bank') return s.payBy; return s.bankAcc ? 'bank' : pdMethodOf(u); };   // how this person is paid: what was marked, else his profile
 const pdToday = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
 const pdDayTxt = (ds) => ds ? ds.split('-')[2] + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][Number(ds.split('-')[1]) - 1] : '';
 // everyone who can be paid for this salary month: not joined after the month ended, not left before it began, not marked "no salary"
@@ -26464,7 +26487,7 @@ function pdPeople(){
 function pdFiltered(all){
   const q = PD.q.trim().toLowerCase(), paid = pdPaid();
   return all.filter(u => (!PD.dept || u.department === PD.dept) && (!PD.cat || pdCatOf(u) === PD.cat) && (!PD.pos || ((u.profile || {}).position || '') === PD.pos)
-    && (PD.st === 'all' || (PD.st === 'paid' ? pdIsPaid(paid[u.loginId]) : PD.st === 'hold' ? (paid[u.loginId] && paid[u.loginId].h === 'hold') : !pdIsPaid(paid[u.loginId]))) && (!q || (u.loginId + ' ' + u.name + ' ' + (u.department || '') + ' ' + ((u.profile || {}).position || '')).toLowerCase().includes(q)));
+    && (!PD.pay || pdPayOf(u) === PD.pay) && (PD.st === 'all' || (PD.st === 'paid' ? pdIsPaid(paid[u.loginId]) : PD.st === 'hold' ? (paid[u.loginId] && paid[u.loginId].h === 'hold') : !pdIsPaid(paid[u.loginId]))) && (!q || (u.loginId + ' ' + u.name + ' ' + (u.department || '') + ' ' + ((u.profile || {}).position || '')).toLowerCase().includes(q)));
 }
 async function pdLoad(force){
   if(!PD.ym) PD.ym = A2.ym || acYmNow();
@@ -26483,7 +26506,7 @@ function pdDraw(){
   }
   const ed = acCanEdit(), all = pdPeople(), list = pdFiltered(all), paid = pdPaid(), r = acDefaultRange(PD.ym);
   const uniq = (fn) => Array.from(new Set(all.map(fn).filter(Boolean))).sort();
-  const fN = [PD.dept, PD.cat, PD.pos, PD.exited].filter(Boolean).length;
+  const fN = [PD.dept, PD.cat, PD.pos, PD.pay, PD.exited].filter(Boolean).length;
   const opt = (arr, cur, any) => `<option value="">${any}</option>` + arr.map(v => `<option value="${acEsc(v)}"${v === cur ? ' selected' : ''}>${acEsc(v)}</option>`).join('');
   host.innerHTML = `
     <div class="pdBar">
@@ -26494,9 +26517,9 @@ function pdDraw(){
       <span style="flex:1;"></span>
       <button type="button" class="iconBtn${PD.amtOn ? ' on' : ''}" data-pd="eyeall" title="${PD.amtOn ? 'Hide all salary amounts' : 'Show all salary amounts'}">${pdSvg(PD.amtOn ? 'eye' : 'eyeoff', 15)}</button>
       ${ed ? `<button type="button" class="iconBtn${PD.edit ? ' on' : ''}" data-pd="edit" title="${PD.edit ? 'Stop adding photos' : 'Add or change photos'}">${pdSvg('cam', 15)}</button>` : ''}
-      <button type="button" class="pillBtn" data-pd="pdf" title="Download as PDF">${MP_DL}PDF</button><button type="button" class="pillBtn" data-pd="xlsx" title="Download as Excel">${MP_DL}Excel</button>
+      <button type="button" class="pillBtn${PD.bank ? ' ok' : ''}" data-pd="bankon" title="${PD.bank ? 'The download has the bank account (IBAN) and net pay. Tap to turn off.' : 'Add the bank account (IBAN) and net pay to the download'}">Bank a/c${PD.bank ? ' &#10003;' : ''}</button><button type="button" class="pillBtn" data-pd="pdf" title="Download as PDF">${MP_DL}PDF</button><button type="button" class="pillBtn" data-pd="xlsx" title="Download as Excel">${MP_DL}Excel</button>
     </div>
-    ${PD.fopen ? `<div class="pdFilt"><select id="pdDept">${opt(uniq(u => u.department), PD.dept, 'All departments')}</select><select id="pdPos">${opt(uniq(u => (u.profile || {}).position), PD.pos, 'All positions')}</select><select id="pdCat">${opt(uniq(pdCatOf), PD.cat, 'All categories')}</select>
+    ${PD.fopen ? `<div class="pdFilt"><select id="pdDept">${opt(uniq(u => u.department), PD.dept, 'All departments')}</select><select id="pdPos">${opt(uniq(u => (u.profile || {}).position), PD.pos, 'All positions')}</select><select id="pdCat">${opt(uniq(pdCatOf), PD.cat, 'All categories')}</select><select id="pdPay"><option value="">All payment types</option><option value="bank"${PD.pay === 'bank' ? ' selected' : ''}>Bank</option><option value="cash"${PD.pay === 'cash' ? ' selected' : ''}>Cash</option></select>
       <label class="acChk"><input type="checkbox" id="pdEx" ${PD.exited ? 'checked' : ''}> Include people who left</label><button type="button" class="pillBtn" data-pd="fclear">Clear</button></div>` : ''}
     <div id="pdBody"></div>`;
   pdDrawBody();
@@ -26570,19 +26593,24 @@ function pdExportRows(){
   const paid = pdPaid();
   return pdFiltered(pdPeople()).map(u => { const p = u.profile || {}, x = paid[u.loginId]; return [u.loginId, u.name, u.department || '', p.position || '', pdCatOf(u), x ? (x.h === 'hold' ? 'On hold' : 'Paid') : 'Not paid', x ? pdHow(x.h) : '', x ? x.d : '', x ? (x.b || '') : '']; });
 }
-function pdDownload(kind){
-  const rows = pdExportRows(), head = ['ID', 'Name', 'Department', 'Position', 'Category', 'Salary', 'How', 'Date', 'Marked by'], n = rows.filter(r => r[5] === 'Paid').length;
-  const f = [PD.dept && 'Department: ' + PD.dept, PD.pos && 'Position: ' + PD.pos, PD.cat && 'Category: ' + PD.cat, PD.st !== 'all' && (PD.st === 'paid' ? 'Paid only' : 'Not paid only'), PD.q && 'Search: ' + PD.q].filter(Boolean).join(' · ');
-  dsGo(kind, 'salary-payment-' + PD.ym, 'Salary payment · ' + acYmLabel(PD.ym), ['Salary month ' + pdDayTxt(acDefaultRange(PD.ym).from) + ' to ' + pdDayTxt(acDefaultRange(PD.ym).to), n + ' paid, ' + (rows.length - n) + ' not paid' + (f ? ' · ' + f : '')],
-    () => rows.length ? rvfTableBlocks('<tr>' + ['#'].concat(head).map(h => `<th>${h}</th>`).join('') + '</tr>', rows.map((r, i) => '<tr><td>' + (i + 1) + '</td>' + r.map(c => `<td>${acEsc(c)}</td>`).join('') + '</tr>'), 28, 'ovPdfT ovW2') : [],
-    (wb) => { if(rows.length) dsSheet(wb, 'Salary payment', rvfNumRows([head].concat(rows)), [5, 10, 26, 18, 18, 14, 11, 8, 12, 16]); });
+async function pdDownload(kind){
+  if(PD.bank && !PD.amt[PD.ym]){ toast('Reading the salary sheet...'); await pdAmtLoad(); }
+  const list = pdFiltered(pdPeople()), paid = pdPaid();
+  const rows = PD.bank ? list.map(u => { const s = (u.profile || {}).salary || {}, x = paid[u.loginId], pay = pdPayOf(u), a = pdAmtOf(u.loginId);
+      return [u.loginId, u.name, pay === 'bank' ? 'Bank' : 'Cash', pay === 'bank' ? (s.iban || (s.bankAcc && typeof rvfIban === 'function' ? rvfIban(s.bankAcc) : '') || '') : '', a ? acR2(a.net) : '', x ? (x.h === 'hold' ? 'On hold' : 'Paid') : 'Not paid']; }) : pdExportRows();
+  const head = PD.bank ? ['ID', 'Name', 'Pay by', 'IBAN', 'Net pay', 'Salary'] : ['ID', 'Name', 'Department', 'Position', 'Category', 'Salary', 'How', 'Date', 'Marked by'], n = rows.filter(r => r[5] === 'Paid').length;
+  const f = [PD.dept && 'Department: ' + PD.dept, PD.pos && 'Position: ' + PD.pos, PD.cat && 'Category: ' + PD.cat, PD.pay && 'Payment: ' + (PD.pay === 'bank' ? 'Bank' : 'Cash'), PD.st !== 'all' && (PD.st === 'paid' ? 'Paid only' : 'Not paid only'), PD.q && 'Search: ' + PD.q].filter(Boolean).join(' · ');
+  const tot = PD.bank ? acR2(rows.reduce((a, r) => a + (Number(r[4]) || 0), 0)) : 0;
+  dsGo(kind, (PD.bank ? 'salary-bank-' : 'salary-payment-') + PD.ym, (PD.bank ? 'Salary with bank account · ' : 'Salary payment · ') + acYmLabel(PD.ym), ['Salary month ' + pdDayTxt(acDefaultRange(PD.ym).from) + ' to ' + pdDayTxt(acDefaultRange(PD.ym).to), n + ' paid, ' + (rows.length - n) + ' not paid' + (PD.bank ? ' · total net pay ' + acMoney(tot) + ' SAR' : '') + (f ? ' · ' + f : '')],
+    () => rows.length ? rvfTableBlocks('<tr>' + ['#'].concat(head).map(x => `<th>${x}</th>`).join('') + '</tr>', rows.map((r, i) => '<tr><td>' + (i + 1) + '</td>' + r.map((c, j) => `<td${PD.bank && j === 3 ? ' style="white-space:nowrap"' : ''}>${acEsc(PD.bank && j === 4 && c !== '' ? acMoney(c) : c)}</td>`).join('') + '</tr>'), 28, 'ovPdfT ovW2') : [],
+    (wb) => { if(rows.length) dsSheet(wb, PD.bank ? 'Salary with bank' : 'Salary payment', rvfNumRows([head].concat(rows)), PD.bank ? [5, 10, 28, 9, 30, 12, 11] : [5, 10, 26, 18, 18, 14, 11, 8, 12, 16]); });
 }
 document.addEventListener('click', (e) => {
   const t = e.target.closest('[data-pd]'); if(!t || !document.getElementById('accountsBody') || !document.getElementById('accountsBody').contains(t)) return;
   const a = t.dataset.pd, id = t.dataset.id;
   if(a === 'prev' || a === 'next'){ PD.ym = acYmShift(PD.ym, a === 'next' ? 1 : -1); PD.sel.clear(); PD.rev.clear(); PD.shown = 40; if(PD.amtOn) pdAmtLoad(); pdDraw(); }
   else if(a === 'ftog'){ PD.fopen = !PD.fopen; pdDraw(); }
-  else if(a === 'fclear'){ PD.dept = PD.cat = PD.pos = ''; PD.exited = false; PD.shown = 40; pdDraw(); }
+  else if(a === 'fclear'){ PD.dept = PD.cat = PD.pos = PD.pay = ''; PD.exited = false; PD.shown = 40; pdDraw(); }
   else if(a === 'st'){ PD.st = t.dataset.v; PD.shown = 40; PD.sel.clear(); pdDraw(); }
   else if(a === 'edit'){ PD.edit = !PD.edit; pdDraw(); }
   else if(a === 'more'){ PD.shown += 40; pdDrawBody(); }
@@ -26600,6 +26628,7 @@ document.addEventListener('click', (e) => {
     if(ids.length > 10 && !confirm((v === 'undo' ? 'Mark ' + ids.length + ' people as NOT paid?' : 'Mark ' + ids.length + ' people as paid (' + v + ')?'))) return; pdMark(ids, v); }
   else if(a === 'markall'){ const paid = pdPaid(), ids = pdFiltered(pdPeople()).filter(u => !paid[u.loginId]).map(u => u.loginId); const nb = ids.filter(i => { const u = (state.users || []).find(x => x.loginId === i); return u && pdMethodOf(u) === 'bank'; }).length;
     if(confirm('Mark ' + ids.length + ' people as paid?\n\n' + nb + ' by Bank (sponsor staff) and ' + (ids.length - nb) + ' in Cash.')) pdMark(ids, 'auto'); }
+  else if(a === 'bankon'){ PD.bank = !PD.bank; if(PD.bank && !PD.amt[PD.ym]) pdAmtLoad(); pdDraw(); }
   else if(a === 'pdf' || a === 'xlsx'){ pdDownload(a); }
 });
 document.addEventListener('input', (e) => { if(e.target.id === 'pdQ'){ PD.q = e.target.value; PD.shown = 40; clearTimeout(PD.t); PD.t = setTimeout(pdDrawBody, 160); } });
@@ -26608,6 +26637,7 @@ document.addEventListener('change', (e) => {
   if(t.id === 'pdDept'){ PD.dept = t.value; PD.shown = 40; pdDrawBody(); }
   else if(t.id === 'pdPos'){ PD.pos = t.value; PD.shown = 40; pdDrawBody(); }
   else if(t.id === 'pdCat'){ PD.cat = t.value; PD.shown = 40; pdDrawBody(); }
+  else if(t.id === 'pdPay'){ PD.pay = t.value; PD.shown = 40; PD.sel.clear(); pdDraw(); }
   else if(t.id === 'pdEx'){ PD.exited = t.checked; PD.shown = 40; pdDraw(); }
   else if(t.dataset && t.dataset.pd === 'photo'){ const f = t.files && t.files[0]; t.value = ''; pdPhoto(t.dataset.id, f); }
 });
@@ -27874,8 +27904,8 @@ function smPages(title, sub, th, rows, o){
       ${SM_CSS}${smTbl(th, ch, 'ovPdfT', o.cols)}
       <div style="flex:1"></div>${last && o.sign ? '<div style="margin-top:18px;">' + o.sign + '</div>' : ''}
       ${lh && lh.footer ? `<div style="margin-top:16px;padding-top:10px;border-top:1px solid #e2e8f0;font-size:10.5px;color:#64748b;text-align:center;">${acEsc(lh.footer)}</div>` : ''}</div>`;
-  const box = document.createElement('div'); box.style.cssText = 'position:fixed;left:-10000px;top:0;width:760px;visibility:hidden;'; document.body.appendChild(box);
-  const fits = (ch, last) => { box.innerHTML = page(ch, last, ' - page 9/9', 0); return box.firstElementChild.offsetHeight <= pg.pxH - 4; };
+  const box = document.createElement('div'); box.className = 'pdfSheet'; box.style.cssText = 'position:fixed;left:-10000px;top:0;width:760px;background:#fff;color:#0f172a;padding:0;z-index:-1;'; document.body.appendChild(box);
+  const fits = (ch, last) => { box.innerHTML = '<div class="pdfBlock">' + page(ch, last, ' - page 9/9', 0) + '</div>'; return box.firstElementChild.offsetHeight <= pg.pxH - 8; };
   const chunks = []; let rem = rows.slice();
   try{
     while(rem.length){
@@ -28054,6 +28084,11 @@ function chkIssues(){
   { const ids = new Set((state.machines || []).map(m => String(m.id))); const l = us.filter(u => (u.assignedMachines || []).some(x => !ids.has(String(x)))); if(l.length && (state.machines || []).length) out.push({ sev: 'warn', title: 'Operators assigned to a machine that no longer exists', why: 'Open Operators & machines and re-assign.', items: l.map(who) }); }
   return out;
 }
+const CHK = { ok: null };
+const chkKey = (x) => x.title;
+async function chkLoadOk(){ if(CHK.ok) return; try{ const o = await window.__db.getConfigObject('checksOk', { ok: {} }); CHK.ok = (o && o.ok) || {}; }catch(e){ console.error(e); CHK.ok = {}; } }
+async function chkSaveOk(){ try{ await window.__db.saveConfigObject('checksOk', { ok: CHK.ok }); return true; }catch(e){ console.error(e); toast('Could not save - check your connection'); return false; } }
+const chkSplit = () => { const all = chkIssues(), ok = CHK.ok || {}; return { act: all.filter(x => !ok[chkKey(x)]), okd: all.filter(x => ok[chkKey(x)]) }; };
 async function chkFix(id, arg, pick){
   const db = window.__db; if(!requireDb()) return;
   try{
@@ -28071,21 +28106,36 @@ async function chkFix(id, arg, pick){
   }catch(err){ console.error(err); toast('Could not fix - check your connection'); }
 }
 function chkRender(){
-  const p = document.getElementById('admin-checks'); if(!p) return; const list = chkIssues(), bad = list.filter(x => x.sev === 'bad').length;
+  const p = document.getElementById('admin-checks'); if(!p) return; if(!CHK.ok){ p.innerHTML = '<div class="hrNote">Loading...</div>'; chkLoadOk().then(chkRender); return; } const sp = chkSplit(), list = sp.act, bad = list.filter(x => x.sev === 'bad').length;
   window.__chkI = list;
   p.innerHTML = `<div class="sub" style="margin-bottom:10px;">Looks for common mistakes in the lists and people (a department deleted by mistake, wrong bank account, missing IDs...). Each problem says what is wrong and gives the fix. It uses the data already loaded, so it costs nothing to run.</div>
     <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;"><button type="button" class="btn btn-ghost btn-sm" data-chk="run">Check again</button><span class="hrNote" style="margin:0;">${list.length ? '<b>' + list.length + '</b> to look at' + (bad ? ' (<b>' + bad + '</b> important)' : '') : ''}</span></div>
     ${list.length ? list.map((x, i) => `<div class="chkCard ${x.sev}"><div class="chkT"><span class="chkDot"></span><b>${CHK_ES(x.title)}</b><span class="chkN">${x.items.length}</span></div><div class="hrNote" style="margin:3px 0 6px;">${CHK_ES(x.why)}</div>
       <details><summary>Show who</summary><div class="chkL">${x.items.slice(0, 60).map(t => `<div>${CHK_ES(t.l)}</div>`).join('')}${x.items.length > 60 ? '<div>+ ' + (x.items.length - 60) + ' more</div>' : ''}</div></details>
-      ${(x.fixes || []).length ? `<div class="chkF">${x.fixes.map((f, j) => (f.pick ? `<select data-chk="pick" data-i="${i}" data-j="${j}"><option value="">${CHK_ES(f.label)}...</option>${f.pick.map(d => `<option>${CHK_ES(d)}</option>`).join('')}</select>` : '') + `<button type="button" class="pillBtn ok" data-chk="fix" data-i="${i}" data-j="${j}">${f.pick ? 'Move' : CHK_ES(f.label)}</button>`).join('')}</div>` : ''}</div>`).join('') : '<div class="chkOk">No problems found.</div>'}`;
+      ${true ? `<div class="chkF"><button type="button" class="pillBtn" data-chk="ok" data-k="${encodeURIComponent(chkKey(x))}" title="It is fine as it is. Hide it from the warning at the top.">Mark OK</button>${(x.fixes || []).map((f, j) => (f.pick ? `<select data-chk="pick" data-i="${i}" data-j="${j}"><option value="">${CHK_ES(f.label)}...</option>${f.pick.map(d => `<option>${CHK_ES(d)}</option>`).join('')}</select>` : '') + `<button type="button" class="pillBtn ok" data-chk="fix" data-i="${i}" data-j="${j}">${f.pick ? 'Move' : CHK_ES(f.label)}</button>`).join('')}</div>` : ''}</div>`).join('') : '<div class="chkOk">No problems found.</div>'}
+    ${sp.okd.length ? `<details class="chkOkL" style="margin-top:14px;"><summary><b>Marked OK (${sp.okd.length})</b> - hidden from the warning at the top</summary>${sp.okd.map(x => `<div class="chkCard" style="margin-top:8px;"><div class="chkT"><b>${CHK_ES(x.title)}</b><span class="chkN">${x.items.length}</span><button type="button" class="pillBtn" style="margin-left:auto;" data-chk="unok" data-k="${encodeURIComponent(chkKey(x))}">Unmark OK</button></div></div>`).join('')}</details>` : ''}`;
   chkBadge();
 }
-function chkBadge(){ try{ const n = chkIssues().filter(x => x.sev === 'bad').length; document.querySelectorAll('[data-adm="checks"]').forEach(b => { b.querySelectorAll('.admBad').forEach(x => x.remove()); if(n) b.insertAdjacentHTML('beforeend', `<span class="admBad">${n}</span>`); }); }catch(e){} }
+function chkBadge(){ try{ if(!CHK.ok) return; const n = chkSplit().act.filter(x => x.sev === 'bad').length; document.querySelectorAll('[data-adm="checks"]').forEach(b => { b.querySelectorAll('.admBad').forEach(x => x.remove()); if(n) b.insertAdjacentHTML('beforeend', `<span class="admBad">${n}</span>`); }); }catch(e){} }
 document.addEventListener('click', (e) => { const t = e.target.closest && e.target.closest('[data-chk]'); if(!t || t.tagName === 'SELECT') return; const a = t.dataset.chk;
   if(a === 'run') chkRender();
+  else if(a === 'ok' || a === 'unok'){ const k = decodeURIComponent(t.dataset.k || ''); CHK.ok = CHK.ok || {}; if(a === 'ok') CHK.ok[k] = { at: Date.now(), by: (state.user && state.user.loginId) || '' }; else delete CHK.ok[k]; chkSaveOk().then(() => { chkRender(); chkTop(); }); chkRender(); chkTop(); }
+  else if(a === 'open'){ const b = Array.from(document.querySelectorAll('#navbar .nav-btn')).find(x => /^Admin$/.test(x.textContent.trim())); if(b) b.click(); setTimeout(() => { const tb = document.querySelector('.auth-tab[data-admintab="checks"]'); if(tb) tb.click(); }, 450); }
   else if(a === 'fix'){ const x = (window.__chkI || [])[Number(t.dataset.i)]; if(!x) return; const f = x.fixes[Number(t.dataset.j)], sel = f.pick ? document.querySelector(`select[data-chk="pick"][data-i="${t.dataset.i}"][data-j="${t.dataset.j}"]`) : null; chkFix(f.id, f.arg, sel ? sel.value : null); } });
 (function(){ const t = document.querySelector('.auth-tab[data-admintab="checks"]'); if(t) t.addEventListener('click', () => chkRender()); })();
-setTimeout(() => { try{ chkBadge(); }catch(e){} }, 4000);
+
+/* the warning line at the top of every page (administrator only) */
+(function(){ const st = document.createElement('style'); st.textContent = '#chkTop{max-width:1180px;margin:0 auto;padding:8px 16px 0;} .chkBar{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;background:#fffbeb;border:1px solid #fde68a;color:#92400e;border-radius:12px;padding:8px 12px;font-size:12.5px;} .chkBar.bad{background:#fef2f2;border-color:#fecaca;color:#991b1b;} .chkBar .chkBi{display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:999px;padding:2px 4px 2px 10px;} .chkBar button{font:inherit;font-size:11.5px;border:1px solid rgba(0,0,0,.14);background:#fff;border-radius:999px;padding:2px 10px;cursor:pointer;color:inherit;} .chkBar .chkSp{flex:1;}'; document.head.appendChild(st); })();
+function chkTop(){
+  const nb = document.getElementById('navbar'); if(!nb) return; let el = document.getElementById('chkTop');
+  const rm = () => { if(el) el.remove(); };
+  if(!(state.user && state.user.role === 'admin') || !CHK.ok){ rm(); return; }
+  const sp = chkSplit(), act = sp.act; if(!act.length){ rm(); return; }
+  if(!el){ el = document.createElement('div'); el.id = 'chkTop'; nb.insertAdjacentElement('afterend', el); }
+  const bad = act.some(x => x.sev === 'bad'), show = act.slice(0, 2);
+  el.innerHTML = `<div class="chkBar${bad ? ' bad' : ''}"><b>${act.length} problem${act.length === 1 ? '' : 's'} to check</b>${show.map(x => `<span class="chkBi">${CHK_ES(x.title.length > 60 ? x.title.slice(0, 58) + '...' : x.title)} <button type="button" data-chk="ok" data-k="${encodeURIComponent(chkKey(x))}" title="It is fine. Hide it.">OK</button></span>`).join('')}${act.length > show.length ? `<span>+ ${act.length - show.length} more</span>` : ''}<span class="chkSp"></span><button type="button" data-chk="open">Open Problems check</button>${sp.okd.length ? `<button type="button" data-chk="open" title="See what you marked OK and unmark it">Marked OK (${sp.okd.length})</button>` : ''}</div>`;
+}
+(function(){ const tick = () => { try{ if(state.user && state.user.role === 'admin' && window.__db) chkLoadOk().then(() => { chkTop(); chkBadge(); }); }catch(e){} }; setTimeout(tick, 5000); setInterval(tick, 25000); })();
 
 </script>
 <style>
