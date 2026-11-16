@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261116-150010">
+<meta name="rvf-build" content="20261116-150141">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -28680,7 +28680,7 @@ function skPlanHtml(){
 
 /* ===== Stock > Machines: same floor drawing as the Dashboard machine layout (RVF / SSTM), showing the design on each machine ===== */
 function skFloorSvg(dept){
-  const sp = flrSpec(dept), W = dept === 'SSTM' ? 150 : 160, G = 10, AW = 40, WG = dept === 'SSTM' ? 34 : 24, BG = 10, CW = W - G, K = dept === 'SSTM' ? 1.5 : 1, H = dept === 'SSTM' ? 132 : 86, PAD = 12;
+  const sp = flrSpec(dept), W = dept === 'SSTM' ? 130 : 160, G = 10, AW = 40, WG = dept === 'SSTM' ? 34 : 24, BG = 10, CW = W - G, K = dept === 'SSTM' ? 1.7 : 1, H = dept === 'SSTM' ? 140 : 86, PAD = 12;
   const lw = sp.lc * W, rw = sp.rc * W, totalW = lw + AW + rw, rx = lw + AW, topPad = 0;
   const ys = []; let y = 0; sp.rows.forEach((r, t) => { ys.push(y); y += H; if(t < sp.rows.length - 1) y += sp.back(t) ? BG : WG; });
   const totalH = y, E = skEsc;
@@ -28703,7 +28703,7 @@ function skFloorSvg(dept){
     return g + '</g>';
   };
   sp.rows.forEach((r, t) => { r.L.forEach((id, i) => { b += cell(id, i * W, ys[t]); }); r.R.forEach((id, i) => { b += cell(id, rx + i * W, ys[t]); }); });
-  return `<div style="overflow-x:auto;"><svg viewBox="0 0 ${totalW + 2 * PAD} ${totalH + 2 * PAD}" style="width:100%;min-width:${Math.round((totalW + 2 * PAD) * (K > 1 ? 0.72 : 0.62))}px;height:auto;display:block;" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${E(dept)} machine layout">${b}</svg></div>`;
+  return `<div style="overflow-x:auto;"><svg viewBox="0 0 ${totalW + 2 * PAD} ${totalH + 2 * PAD}" style="width:100%;min-width:${K > 1 ? 0 : Math.round((totalW + 2 * PAD) * 0.62)}px;height:auto;display:block;" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${E(dept)} machine layout">${b}</svg></div>`;
 }
 function skFloorHtml(list, depts){
   const ids = {}; list.forEach(m => { ids[String(m.id)] = 1; });
