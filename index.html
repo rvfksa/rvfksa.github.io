@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261116-102819">
+<meta name="rvf-build" content="20261116-112758">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -28129,13 +28129,14 @@ document.addEventListener('click', (e) => { const t = e.target.closest && e.targ
 function chkTop(){
   const nb = document.getElementById('navbar'); if(!nb) return; let el = document.getElementById('chkTop');
   const rm = () => { if(el) el.remove(); };
-  if(!(state.user && state.user.role === 'admin') || !CHK.ok){ rm(); return; }
+  const onAcc = (() => { const b = document.querySelector('#navbar .nav-btn.active'); return !!b && /^\s*accounts\s*$/i.test(b.textContent); })();
+  if(!(state.user && (state.user.role === 'admin' || (state.user.pages || []).indexOf('accounts') >= 0)) || !onAcc || !CHK.ok){ rm(); return; }
   const sp = chkSplit(), act = sp.act; if(!act.length){ rm(); return; }
   if(!el){ el = document.createElement('div'); el.id = 'chkTop'; nb.insertAdjacentElement('afterend', el); }
   const bad = act.some(x => x.sev === 'bad'), show = act.slice(0, 2);
   el.innerHTML = `<div class="chkBar${bad ? ' bad' : ''}"><b>${act.length} problem${act.length === 1 ? '' : 's'} to check</b>${show.map(x => `<span class="chkBi">${CHK_ES(x.title.length > 60 ? x.title.slice(0, 58) + '...' : x.title)} <button type="button" data-chk="ok" data-k="${encodeURIComponent(chkKey(x))}" title="It is fine. Hide it.">OK</button></span>`).join('')}${act.length > show.length ? `<span>+ ${act.length - show.length} more</span>` : ''}<span class="chkSp"></span><button type="button" data-chk="open">Open Problems check</button>${sp.okd.length ? `<button type="button" data-chk="open" title="See what you marked OK and unmark it">Marked OK (${sp.okd.length})</button>` : ''}</div>`;
 }
-(function(){ const tick = () => { try{ if(state.user && state.user.role === 'admin' && window.__db) chkLoadOk().then(() => { chkTop(); chkBadge(); }); }catch(e){} }; setTimeout(tick, 5000); setInterval(tick, 25000); })();
+(function(){ const tick = () => { try{ if(state.user && (state.user.role === 'admin' || (state.user.pages || []).indexOf('accounts') >= 0) && window.__db) chkLoadOk().then(() => { chkTop(); chkBadge(); }); }catch(e){} }; setTimeout(tick, 5000); setInterval(tick, 25000); document.addEventListener('click', e => { if(e.target.closest && e.target.closest('#navbar .nav-btn')) setTimeout(tick, 250); }); })();
 
 </script>
 <style>
