@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261116-130242">
+<meta name="rvf-build" content="20261116-133524">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -4678,12 +4678,10 @@ table.a2T td .a2In{ width:100%; min-width:36px; }
           <div class="field admBtnCell"><label>&nbsp;</label><button class="btn btn-primary" id="addMachineBtn">Add machine</button></div>
 </div></details>
         <details class="acSec admD" id="admFormulaD" ontoggle="sqmFill()"><summary>Carpet production formula</summary><div class="acSecB admForm">
-          <div class="field" style="grid-column:1/-1;"><div class="hint" style="line-height:1.7;"><b>Production (m&sup2;) = Running picks &times; Width (cm) &divide; (Picks per cm &times; 10) &times; Carpets at once</b><br>
-          Running picks = the difference between two counter readings (approved entries only). Stop time is never counted, because a stopped machine produces nothing.<br>This formula gives the right area only if the machine counter shows <b>thousands of picks</b> (1 on the counter = 1,000 picks). Please confirm that with your expert using one machine.<br>
-          Width and Picks per cm come from each machine (edit them in the list below). "Carpets at once" is 1 now, so nothing is changed.</div></div>
+          <div class="field" style="grid-column:1/-1;"><div id="sqmGuide"></div></div>
           <div class="field"><label for="sqmFactorInput">Carpets woven at once (cut in the middle)</label><input type="number" id="sqmFactorInput" min="1" step="1" oninput="sqmFill(1)"></div>
           <div class="field admBtnCell"><label>&nbsp;</label><button class="btn btn-primary" id="sqmSaveBtn" type="button">Save</button></div>
-          <div class="field" style="grid-column:1/-1;"><div class="hint" id="sqmExample"></div></div>
+          <div class="field" style="display:none;"><div id="sqmExample"></div></div>
 </div></details>
         <div id="machinesBody"></div>
       </div>
@@ -7031,7 +7029,7 @@ document.addEventListener('click', (e) => {
   if(e.target.closest('#mxFClear')){ mxF.q = ''; mxF.dept = []; mxF.status = []; mxF.cat = []; mxF.shift = []; mxF.open = ''; const q = $('mxFq'); if(q) q.value = ''; renderMachinesList(); return; }
   if(mxF.open && !e.target.closest('.mxFList')){ mxF.open = ''; renderMachinesList(); }
 });
-function renderMachinesList(){
+function renderMachinesList(){ try{ setTimeout(() => { if(document.getElementById('sqmGuide')) sqmFill(1); }, 0); }catch(e){}
   const body = $('machinesBody');
   try{ mxFilterSync(); }catch(err){ console.error(err); }
   if(state.machines.length === 0){ body.innerHTML = '<div class="empty-state">No machines yet — add one above.</div>'; return; }
@@ -15392,13 +15390,31 @@ function machineRunsShift(m, shift){
 
 
 function sqmFill(live){
-  const inp = document.getElementById('sqmFactorInput'), ex = document.getElementById('sqmExample'); if(!inp || !ex) return;
+  const inp = document.getElementById('sqmFactorInput'), g = document.getElementById('sqmGuide'); if(!inp || !g) return;
   if(!live) inp.value = state.sqmFactor || 1;
-  const f = Number(inp.value) > 0 ? Number(inp.value) : 1;
-  const m = (state.machines || []).find(x => Number(x.widthCm) > 0 && Number(x.picksPerCm) > 0);
-  if(!m){ ex.textContent = 'Example: set Width and Picks per cm on a machine to see a worked example here.'; return; }
-  const w = Number(m.widthCm), pc = Number(m.picksPerCm), picks = 100, r = picks * w / (pc * 10) * f;
-  ex.textContent = 'Example: ' + m.name + ' (width ' + w + ' cm, ' + pc + ' picks per cm), counter difference 100 (= 100,000 picks): 100 \u00D7 ' + w + ' \u00F7 (' + pc + ' \u00D7 10) \u00D7 ' + f + ' = ' + r.toLocaleString(undefined, { maximumFractionDigits: 1 }) + ' m\u00B2';
+  const f = Number(inp.value) > 0 ? Math.round(Number(inp.value)) : 1;
+  const draw = (m, diff, when) => {
+    const E = (x) => String(x).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    const N = (x) => Number(x).toLocaleString(undefined, { maximumFractionDigits: 2 });
+    const box = 'border:1px solid #c7d2fe;border-radius:12px;padding:10px 12px;';
+    let ex = '';
+    if(m){
+      const w = Number(m.widthCm), pc = Number(m.picksPerCm), top = diff * w, bot = pc * 10, base = top / bot, res = base * f;
+      ex = `<div style="font-weight:700;margin:12px 0 6px;color:#3730a3;">Real example: ${E(m.name)}${when ? ', ' + E(when) : ''}</div>
+      <div style="${box}background:#f8fafc;display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;justify-content:center;text-align:center;">
+        <div><b>${N(diff)}</b><br><small>Counter difference</small></div><div>&times;</div><div><b>${N(w)} cm</b><br><small>Width</small></div><div>&divide;</div><div><b>${N(pc)} &times; 10</b><br><small>Picks per cm &times; 10</small></div>${f > 1 ? `<div>&times;</div><div><b>${f}</b><br><small>Carpets at once</small></div>` : ''}</div>
+      <div style="${box}background:#ecfdf5;border-color:#a7f3d0;margin-top:8px;text-align:center;line-height:1.7;">${N(diff)} &times; ${N(w)} = ${N(top)}<br>${N(pc)} &times; 10 = ${N(bot)}<br>${N(top)} &divide; ${N(bot)} = ${N(base)}${f > 1 ? '<br>' + N(base) + ' &times; ' + f + ' = ' : ' '}<b style="font-size:1.15em;">${f > 1 ? '' : '= '}${N(res)} m&sup2;</b></div>`;
+    }else ex = '<div class="hint" style="margin-top:10px;">Set Width and Picks per cm on a machine to see a real example here.</div>';
+    g.innerHTML = `<div style="${box}background:#eef2ff;text-align:center;line-height:1.6;"><b>Square meters = (Counter difference &times; Width) &divide; (Picks per cm &times; 10) &times; Carpets at once</b></div>${ex}
+      <div style="margin-top:12px;line-height:1.8;"><b>Where the numbers come from</b><br>- <b>Counter difference:</b> the difference between two approved counter readings. Stop time is not counted.<br>- <b>Width</b> and <b>Picks per cm:</b> saved on each machine (edit them in the list below).<br>- <b>Carpets at once:</b> 1 if one carpet is woven. 2 if two are woven together and cut in the middle.<br><small style="color:#64748b;">The counter must show thousands of picks (1 on the counter = 1,000 picks). Please confirm this with your expert using one machine.</small></div>`;
+  };
+  const ms = (state.machines || []).filter(x => Number(x.widthCm) > 0 && Number(x.picksPerCm) > 0), m0 = ms[0];
+  draw(m0, 50, '');
+  try{
+    if(window.__db && window.__db.loadRecentReadings && !sqmFill.busy){ sqmFill.busy = true;
+      window.__db.loadRecentReadings().then(r => { sqmFill.busy = false; const a = Object.values(r || {}).filter(e => e && e.diff > 0 && e.status !== 'rejected'); for(const e of a){ const m = ms.find(x => x.id === e.machine || x.name === e.machineName || x.name === e.machine); if(m){ draw(m, Number(e.diff), (e.date ? fmtDate(e.date) : '') + (e.shift ? ', ' + e.shift + ' shift' : '')); return; } } }).catch(() => { sqmFill.busy = false; });
+    }
+  }catch(err){ sqmFill.busy = false; }
 }
 document.addEventListener('click', async (e) => {
   if(!e.target.closest('#sqmSaveBtn')) return;
