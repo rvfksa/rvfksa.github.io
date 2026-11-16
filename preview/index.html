@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head><meta name="robots" content="noindex">
-<meta name="rvf-build" content="20261116-093448">
+<meta name="rvf-build" content="20261116-093807">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -25202,7 +25202,7 @@ function viSal(v){
   if(viKind(v) !== 'deduction') return '';
   if(!v.sd) return 'Not linked to salary';
   const m = v.sd.ym ? ' (' + acYmLabel(v.sd.ym) + ')' : '';
-  return v.sd.st === 'applied' ? 'Added to salary' + m : (v.sd.st === 'skipped' ? 'Not deducted from salary' : 'Waiting for your approval in the salary sheet');
+  return v.sd.st === 'applied' ? 'Added to salary' + m : (v.sd.st === 'skipped' ? 'Not deducted from salary' : (v.sd.target ? 'Will be cut from the ' + acYmLabel(v.sd.target) + ' salary' : 'Waiting for your approval in the salary sheet'));
 }
 function viMetaHtml(v){
   return fieldRow('Signed', viSigned(v)) + (viSal(v) ? fieldRow('Salary', viSal(v)) : '');
@@ -25222,6 +25222,7 @@ function viEditRead(id, up){
 document.addEventListener('change', (e) => { if(e.target && e.target.id === 'violEdit-deduction'){ const f = $('violEdit-sdField'); if(f) f.style.display = e.target.value === 'yes' ? 'block' : 'none'; } });
 
 /* ---- save a letter in the employee file ---- */
+const viYmOf = (dt) => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dt || ''); if(!m) return ''; let y = +m[1], mo = +m[2]; if(+m[3] >= 26){ mo++; if(mo > 12){ mo = 1; y++; } } return y + '-' + String(mo).padStart(2, '0'); };   // salary month a date falls in (26th to 25th)
 function aiSaveViolation(){
   const T = aiType(), u = hrFind(aiU.emp); if(!T || !u) return;
   if(!aiDocText(aiU.doc).trim()){ toast('The letter has no text yet'); return; }
@@ -25234,6 +25235,7 @@ function aiSaveViolation(){
       <div class="field"><label>Date</label><input type="date" id="vi-date" value="${aiEsc(aiU.date || aiToday())}"></div>
       <div class="field"><label>Type</label><select id="vi-type"><option value="w" ${amt > 0 ? '' : 'selected'}>Warning only</option><option value="d" ${amt > 0 ? 'selected' : ''}>Warning with a salary deduction (cut automatically)</option></select></div>
       <div class="field" id="vi-amtF" style="display:${amt > 0 ? 'block' : 'none'};"><label>Deduction amount (SAR)</label><input type="text" inputmode="decimal" id="vi-amt" value="${amt > 0 ? amt : ''}"><div class="hrNote" style="margin-top:4px;">This is cut from his salary automatically. It goes into the salary sheet of the month this date falls in, with the remark below. You do not need to deduct it by hand.</div></div>
+      <div class="field" id="vi-ymF" style="display:${amt > 0 ? 'block' : 'none'};"><label>Cut from the salary of (month)</label><input type="month" id="vi-ym" value="${viYmOf(aiU.date || aiToday())}"><div class="hrNote" style="margin-top:4px;">Chosen from the date. Change it if the salary of that month is already paid, for example pick the earlier month.</div></div>
       <div class="field" id="vi-remF" style="display:${amt > 0 ? 'block' : 'none'};"><label>Remark in the salary sheet (short)</label><input type="text" id="vi-rem" maxlength="40" placeholder="e.g. Absent without permission" value="${aiEsc(subj.length <= 40 ? subj : '')}"></div>
       <label class="viChk"><input type="checkbox" id="vi-sg"> Signed and kept in the employee file</label>
       <div class="field" id="vi-sgF" style="display:none;"><label>How was it signed?</label><select id="vi-how"><option value="physical">Physically signed (paper copy)</option><option value="esign">E-signed</option></select></div>
@@ -25243,7 +25245,9 @@ function aiSaveViolation(){
 }
 document.addEventListener('change', (e) => {
   const t = e.target; if(!t) return;
-  if(t.id === 'vi-type'){ document.getElementById('vi-amtF').style.display = t.value === 'd' ? 'block' : 'none'; const rf = document.getElementById('vi-remF'); if(rf) rf.style.display = t.value === 'd' ? 'block' : 'none'; }
+  if(t.id === 'vi-type'){ document.getElementById('vi-amtF').style.display = t.value === 'd' ? 'block' : 'none'; const rf = document.getElementById('vi-remF'); if(rf) rf.style.display = t.value === 'd' ? 'block' : 'none'; const yf = document.getElementById('vi-ymF'); if(yf) yf.style.display = t.value === 'd' ? 'block' : 'none'; }
+  if(t.id === 'vi-date'){ const y = document.getElementById('vi-ym'); if(y && !y.dataset.touched) y.value = viYmOf(t.value); }
+  if(t.id === 'vi-ym') t.dataset.touched = '1';
   if(t.id === 'vi-sg'){ document.getElementById('vi-sgF').style.display = t.checked ? 'block' : 'none'; }
 });
 async function viSaveGo(){
@@ -25254,7 +25258,7 @@ async function viSaveGo(){
   const rec = { employeeId: u.loginId, date, reason, deduction: { yes: amt > 0, amount: amt > 0 ? acR2(amt) + ' SAR' : '' }, attachments: [], kind: amt > 0 ? 'deduction' : 'warning',
     signed: sg ? { yes: true, how: document.getElementById('vi-how').value, at: Date.now(), by: state.user.loginId } : { yes: false },
     letter: { type: T.id, name: T.name, subject: aiSubject(), body: aiDocText(aiU.doc), date: aiLong(date) }, createdAt: Date.now(), createdBy: state.user.loginId };
-  if(amt > 0){ rec.sd = { st: 'pending', ym: '' }; const rm = (document.getElementById('vi-rem') || {}).value; rec.remark = String(rm || '').trim().slice(0, 40); }
+  if(amt > 0){ const tg = (document.getElementById('vi-ym') || {}).value; rec.sd = { st: 'pending', ym: '', target: /^\d{4}-\d{2}$/.test(tg || '') ? tg : viYmOf(date) }; const rm = (document.getElementById('vi-rem') || {}).value; rec.remark = String(rm || '').trim().slice(0, 40); }
   aiU.busy = true;
   try{ await window.__db.saveViolation(rec); VI.list = null; const ov = document.getElementById('viOv'); if(ov) ov.remove(); toast('Saved in the file of ' + u.name + (amt > 0 ? '. The deduction waits for your approval in the salary sheet.' : '')); }
   catch(err){ console.error(err); toast('Could not save — check your connection'); }
@@ -25297,7 +25301,7 @@ function a2VioItems(){
   VI.list.forEach(v => {
     if(!v.sd || !(viAmt(v) > 0)) return; const r = rows[v.employeeId]; if(!r) return;
     if((r.dl || []).some(l => l.vid === v._id)){ out.a.push({ v, r }); return; }
-    if((v.sd.st === 'pending' || (v.sd.st === 'applied' && v.sd.ym === A2.ym)) && (v.date || '') <= to) out.p.push({ v, r });
+    if(v.sd.st === 'applied' ? v.sd.ym === A2.ym : (v.sd.st === 'pending' && (v.sd.target ? v.sd.target === A2.ym : true))){ if(v.sd.target || (v.date || '') <= to) out.p.push({ v, r }); }
   });
   out.p.sort((a, b) => (a.v.date || '').localeCompare(b.v.date || ''));
   return out;
