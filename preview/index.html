@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head><meta name="robots" content="noindex">
-<meta name="rvf-build" content="20261116-133703">
+<meta name="rvf-build" content="20261116-133755">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -15405,8 +15405,14 @@ function sqmFill(live){
         <div><b>${N(diff)}</b><br><small>Counter difference</small></div><div>&times;</div><div><b>${N(w)} cm</b><br><small>Width</small></div><div>&divide;</div><div><b>${N(pc)} &times; 10</b><br><small>Picks per cm &times; 10</small></div>${f > 1 ? `<div>&times;</div><div><b>${f}</b><br><small>Carpets at once</small></div>` : ''}</div>
       <div style="${box}background:#ecfdf5;border-color:#a7f3d0;margin-top:8px;text-align:center;line-height:1.7;">${N(diff)} &times; ${N(w)} = ${N(top)}<br>${N(pc)} &times; 10 = ${N(bot)}<br>${N(top)} &divide; ${N(bot)} = ${f > 1 ? N(base) + '<br>' + N(base) + ' &times; ' + f + ' = ' : ''}<b style="font-size:1.15em;">${N(res)} m&sup2;</b></div>`;
     }else ex = '<div class="hint" style="margin-top:10px;">Set Width and Picks per cm on a machine to see a real example here.</div>';
-    g.innerHTML = `<div style="${box}background:#eef2ff;text-align:center;line-height:1.6;"><b>Square meters = (Counter difference &times; Width) &divide; (Picks per cm &times; 10) &times; Carpets at once</b></div>${ex}
-      <div style="margin-top:12px;line-height:1.8;"><b>Where the numbers come from</b><br>- <b>Counter difference:</b> the difference between two approved counter readings. Stop time is not counted.<br>- <b>Width</b> and <b>Picks per cm:</b> saved on each machine (edit them in the list below).<br>- <b>Carpets at once:</b> 1 if one carpet is woven. 2 if two are woven together and cut in the middle.<br><small style="color:#64748b;">The counter must show thousands of picks (1 on the counter = 1,000 picks). Please confirm this with your expert using one machine.</small></div>`;
+    const hd = (t) => `<div style="font-size:15px;font-weight:700;color:#3730a3;margin:16px 0 6px;">${t}</div>`;
+    g.innerHTML = `<div style="font-size:14px;line-height:1.7;">
+      ${hd('The idea')}A carpet is a rectangle. <b>Area = length x width.</b><br>The machine counter helps us find the length. The width is known.
+      ${hd('The formula')}<div style="${box}background:#eef2ff;text-align:center;font-size:15px;line-height:1.6;"><b>Square meters = (Counter difference &times; Width) &divide; (Picks per cm &times; 10)</b></div>
+      ${ex.replace('font-weight:700;margin:12px 0 6px;color:#3730a3;', 'font-size:15px;font-weight:700;margin:16px 0 6px;color:#3730a3;')}
+      ${hd('Where the numbers come from')}- <b>Counter difference:</b> the difference between two approved counter readings. Stop time is not counted.<br>- <b>Width:</b> saved on each machine (edit it in the list below).<br>- <b>Picks per cm:</b> saved on each machine (edit it in the list below).
+      ${hd('Two carpets woven together?')}Set "Carpets woven at once" below to 2. The result is then multiplied by 2. Now it is <b>${f}</b>.
+      ${hd('Good to know')}Square meters (m&sup2;) is the standard way to measure carpet production. Customers usually pay for the finished size, which is a little smaller than what is woven.<br><small style="color:#64748b;">The counter must show thousands of picks (1 on the counter = 1,000 picks). Please confirm this with your expert using one machine.</small></div>`;
   };
   const ms = (state.machines || []).filter(x => Number(x.widthCm) > 0 && Number(x.picksPerCm) > 0), m0 = ms[0];
   draw(m0, 50, '');
