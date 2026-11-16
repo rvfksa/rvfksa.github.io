@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head><meta name="robots" content="noindex">
-<meta name="rvf-build" content="20261116-145425">
+<meta name="rvf-build" content="20261116-150010">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -28680,30 +28680,30 @@ function skPlanHtml(){
 
 /* ===== Stock > Machines: same floor drawing as the Dashboard machine layout (RVF / SSTM), showing the design on each machine ===== */
 function skFloorSvg(dept){
-  const sp = flrSpec(dept), W = dept === 'SSTM' ? 150 : 160, G = 10, AW = 40, WG = 24, BG = 10, CW = W - G, H = 86, PAD = 12;
+  const sp = flrSpec(dept), W = dept === 'SSTM' ? 150 : 160, G = 10, AW = 40, WG = dept === 'SSTM' ? 34 : 24, BG = 10, CW = W - G, K = dept === 'SSTM' ? 1.5 : 1, H = dept === 'SSTM' ? 132 : 86, PAD = 12;
   const lw = sp.lc * W, rw = sp.rc * W, totalW = lw + AW + rw, rx = lw + AW, topPad = 0;
   const ys = []; let y = 0; sp.rows.forEach((r, t) => { ys.push(y); y += H; if(t < sp.rows.length - 1) y += sp.back(t) ? BG : WG; });
   const totalH = y, E = skEsc;
   const wrap = (s, size, w, max) => { const words = String(s || '').split(/\s+/).filter(Boolean), out = []; let cur = ''; words.forEach(wd => { const t = cur ? cur + ' ' + wd : wd; if(cur && flrEst(t, size, true) > w){ out.push(cur); cur = wd; } else cur = t; }); if(cur) out.push(cur); if(out.length > max){ const k = out.slice(0, max); k[max - 1] = flrFit(out.slice(max - 1).join(' '), size, true, w); return k; } return out.map(l => flrFit(l, size, true, w)); };
-  let b = `<rect x="0" y="0" width="${totalW + 2 * PAD}" height="${totalH + 2 * PAD}" rx="14" fill="#f1f3f8"/><rect x="${PAD + lw + 2}" y="${PAD}" width="${AW - 4}" height="${totalH}" rx="6" fill="#e6e9f2"/><text x="${PAD + lw + AW / 2}" y="${PAD + totalH / 2}" font-size="8" fill="#6b7694" text-anchor="middle" letter-spacing="3" transform="rotate(-90 ${PAD + lw + AW / 2} ${PAD + totalH / 2})">MIDDLE AISLE</text>`;
-  sp.rows.forEach((r, t) => { if(t < sp.rows.length - 1 && !sp.back(t)){ const gy = PAD + ys[t] + H; [[0, lw], [rx, rw]].forEach(bk => { b += `<rect x="${PAD + bk[0]}" y="${gy + 4}" width="${bk[1] - G}" height="${WG - 8}" rx="4" fill="#e6e9f2"/><text x="${PAD + bk[0] + (bk[1] - G) / 2}" y="${gy + WG / 2 + 2.6}" font-size="7.5" fill="#6b7694" text-anchor="middle" letter-spacing="2.4">WALKWAY</text>`; }); } });
+  let b = `<rect x="0" y="0" width="${totalW + 2 * PAD}" height="${totalH + 2 * PAD}" rx="14" fill="#f1f3f8"/><rect x="${PAD + lw + 2}" y="${PAD}" width="${AW - 4}" height="${totalH}" rx="6" fill="#e6e9f2"/><text x="${PAD + lw + AW / 2}" y="${PAD + totalH / 2}" font-size="${8 * K}" fill="#6b7694" text-anchor="middle" letter-spacing="3" transform="rotate(-90 ${PAD + lw + AW / 2} ${PAD + totalH / 2})">MIDDLE AISLE</text>`;
+  sp.rows.forEach((r, t) => { if(t < sp.rows.length - 1 && !sp.back(t)){ const gy = PAD + ys[t] + H; [[0, lw], [rx, rw]].forEach(bk => { b += `<rect x="${PAD + bk[0]}" y="${gy + 4}" width="${bk[1] - G}" height="${WG - 8}" rx="4" fill="#e6e9f2"/><text x="${PAD + bk[0] + (bk[1] - G) / 2}" y="${gy + WG / 2 + 2.6}" font-size="${7.5 * K}" fill="#6b7694" text-anchor="middle" letter-spacing="2.4">WALKWAY</text>`; }); } });
   const cell = (id, x, y0) => {
     const m = (state.machines || []).find(q => String(q.id) === String(id)), p = m ? ((SK.plan.m || {})[m.id] || {}) : {}, d = p.des ? skDesign(p.des) : null, stop = !m || p.st === 'stop' || (m && m.status === 'stopped' && false);
     const cx = PAD + x, cy = PAD + y0, mid = m ? m.id : id, label = m ? (m.name || ('M/C ' + id)) : 'M/C ' + id;
     let g = `<g data-sk="mc" data-v="${E(mid)}" style="cursor:pointer"><rect x="${cx}" y="${cy}" width="${CW}" height="${H}" rx="7" fill="${stop ? '#f1f3f8' : '#fff'}" stroke="${stop ? '#aab3c2' : (d ? '#cdd4e0' : '#e0b84a')}" stroke-width="1" ${stop || !d ? 'stroke-dasharray="3.5 3"' : ''}/>`;
-    g += `<text x="${cx + 9}" y="${cy + 17}" font-size="9.5" fill="${stop ? '#7b8696' : '#1f2937'}">${E(label)}</text>`;
-    if(m && (m.vip || (typeof machineCat === 'function' && machineCat(m) === 'VIP')) && !stop) g += `<polygon points="${flrStarPts(cx + CW - 13, cy + 14, 5.2).map(q => q[0].toFixed(1) + ',' + q[1].toFixed(1)).join(' ')}" fill="#e0a000"/>`;
-    if(stop) g += `<text x="${cx + CW / 2}" y="${cy + 52}" font-size="10" fill="#7b8696" text-anchor="middle">Stopped</text>`;
-    else if(!d) g += `<text x="${cx + CW / 2}" y="${cy + 52}" font-size="10" fill="#a16207" text-anchor="middle">No design</text>`;
+    g += `<text x="${cx + 9 * K}" y="${cy + 17 * K}" font-size="${9.5 * K}" fill="${stop ? '#7b8696' : '#1f2937'}">${E(label)}</text>`;
+    if(m && (m.vip || (typeof machineCat === 'function' && machineCat(m) === 'VIP')) && !stop) g += `<polygon points="${flrStarPts(cx + CW - 13 * K, cy + 14 * K, 5.2 * K).map(q => q[0].toFixed(1) + ',' + q[1].toFixed(1)).join(' ')}" fill="#e0a000"/>`;
+    if(stop) g += `<text x="${cx + CW / 2}" y="${cy + H / 2 + 8}" font-size="${10 * K}" fill="#7b8696" text-anchor="middle">Stopped</text>`;
+    else if(!d) g += `<text x="${cx + CW / 2}" y="${cy + H / 2 + 8}" font-size="${10 * K}" fill="#a16207" text-anchor="middle">No design</text>`;
     else {
-      let ty = cy + 32; wrap(d.name, 10.5, CW - 14, 2).forEach(l => { g += `<text x="${cx + CW / 2}" y="${ty}" font-size="10.5" font-weight="700" fill="#0b1220" text-anchor="middle">${E(l)}</text>`; ty += 13; });
-      if(p.col){ g += `<text x="${cx + CW / 2}" y="${ty + 1}" font-size="10" fill="#4338ca" text-anchor="middle">${E(flrFit(p.col, 10, false, CW - 14))}</text>`; ty += 13; }
-      const cl = [p.c1, p.c2, p.c3].filter(Boolean).join(' / '); if(cl) g += `<text x="${cx + CW / 2}" y="${ty + 1}" font-size="8.5" fill="#6b7280" text-anchor="middle">${E(flrFit(cl, 8.5, false, CW - 14))}</text>`;
+      let ty = cy + 32 * K; wrap(d.name, 10.5 * K, CW - 14, K > 1 ? 2 : 2).forEach(l => { g += `<text x="${cx + CW / 2}" y="${ty}" font-size="${10.5 * K}" font-weight="700" fill="#0b1220" text-anchor="middle">${E(l)}</text>`; ty += 13 * K; });
+      if(p.col){ g += `<text x="${cx + CW / 2}" y="${ty + 1}" font-size="${10 * K}" fill="#4338ca" text-anchor="middle">${E(flrFit(p.col, 10 * K, false, CW - 14))}</text>`; ty += 13 * K; }
+      const cl = [p.c1, p.c2, p.c3].filter(Boolean).join(' / '); if(cl) g += `<text x="${cx + CW / 2}" y="${ty + 1}" font-size="${8.5 * K}" fill="#6b7280" text-anchor="middle">${E(flrFit(cl, 8.5 * K, false, CW - 14))}</text>`;
     }
     return g + '</g>';
   };
   sp.rows.forEach((r, t) => { r.L.forEach((id, i) => { b += cell(id, i * W, ys[t]); }); r.R.forEach((id, i) => { b += cell(id, rx + i * W, ys[t]); }); });
-  return `<div style="overflow-x:auto;"><svg viewBox="0 0 ${totalW + 2 * PAD} ${totalH + 2 * PAD}" style="width:100%;min-width:${Math.round((totalW + 2 * PAD) * 0.62)}px;height:auto;display:block;" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${E(dept)} machine layout">${b}</svg></div>`;
+  return `<div style="overflow-x:auto;"><svg viewBox="0 0 ${totalW + 2 * PAD} ${totalH + 2 * PAD}" style="width:100%;min-width:${Math.round((totalW + 2 * PAD) * (K > 1 ? 0.72 : 0.62))}px;height:auto;display:block;" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${E(dept)} machine layout">${b}</svg></div>`;
 }
 function skFloorHtml(list, depts){
   const ids = {}; list.forEach(m => { ids[String(m.id)] = 1; });
