@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261116-133755">
+<meta name="rvf-build" content="20261116-145425">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -28661,12 +28661,14 @@ function skThumb(dataUrl){ return new Promise(res => { const im = new Image(); i
 function skPlanHtml(){
   const ms = (state.machines || []).slice().sort((a, b) => (a.department === b.department ? 0 : a.department === 'RVF' ? -1 : 1) || Number(a.id) - Number(b.id));
   const depts = Array.from(new Set(ms.map(m => m.department).filter(Boolean)));
-  const list = ms.filter(m => SK.dept === 'ALL' || m.department === SK.dept);
+  let list = ms.filter(m => SK.dept === 'ALL' || m.department === SK.dept);
   const on = {}, none = [];
   list.forEach(m => { const p = (SK.plan.m || {})[m.id]; if(p && p.des && p.st !== 'stop'){ on[p.des] = (on[p.des] || 0) + 1; } else if(!p || p.st !== 'stop') none.push(m.id); });
   let h = `<div class="skBar"><div class="skGrp">${['ALL'].concat(depts).map(d => `<button class="skChip ${SK.dept === d ? 'on' : ''}" data-sk="dept" data-v="${skEsc(d)}">${d === 'ALL' ? 'All machines' : skEsc(d)}</button>`).join('')}</div></div>`;
   const sum = Object.keys(on).map(id => [skDesign(id), on[id]]).filter(x => x[0]).sort((a, b) => b[1] - a[1]);
   h += `<div class="skBar" style="margin-top:0;">${sum.map(r => `<span class="skCol" style="font-size:12px;padding:5px 12px;">${skEsc(r[0].name)} · ${r[1]}</span>`).join('')}<span style="font-size:12px;color:var(--muted);">${none.length} machines without a design</span><span class="grow"></span><button class="pcBtnSoft sm" data-sk="dl" data-v="plan">Download</button></div>`;
+  const fl = skFloorHtml(list, depts); h += fl.h; list = list.filter(m => !fl.placed[String(m.id)]);
+  if(list.length) h += '<h3 style="margin:16px 0 8px;font-size:15px;">Other machines</h3>';
   h += '<div class="skMc">' + list.map(m => {
     const p = (SK.plan.m || {})[m.id] || {}, d = p.des ? skDesign(p.des) : null, it = p.it ? skItem(p.it) : null;
     const cl = [p.c1, p.c2, p.c3].filter(Boolean).join(' / ');
@@ -28675,6 +28677,42 @@ function skPlanHtml(){
   if(log.length) h += '<h3 style="margin:18px 0 8px;font-size:15px;">Recent changes</h3><div class="skList">' + log.map(l => `<div class="skRow"><div class="nm"><b>${skEsc(l.mc)}: ${skEsc(l.to || 'cleared')}</b><small>${skEsc(l.d)} · ${skEsc(l.by || '')}${l.from ? ' · was ' + skEsc(l.from) : ''}</small></div></div>`).join('') + '</div>';
   return h;
 }
+
+/* ===== Stock > Machines: same floor drawing as the Dashboard machine layout (RVF / SSTM), showing the design on each machine ===== */
+function skFloorSvg(dept){
+  const sp = flrSpec(dept), W = dept === 'SSTM' ? 150 : 160, G = 10, AW = 40, WG = 24, BG = 10, CW = W - G, H = 86, PAD = 12;
+  const lw = sp.lc * W, rw = sp.rc * W, totalW = lw + AW + rw, rx = lw + AW, topPad = 0;
+  const ys = []; let y = 0; sp.rows.forEach((r, t) => { ys.push(y); y += H; if(t < sp.rows.length - 1) y += sp.back(t) ? BG : WG; });
+  const totalH = y, E = skEsc;
+  const wrap = (s, size, w, max) => { const words = String(s || '').split(/\s+/).filter(Boolean), out = []; let cur = ''; words.forEach(wd => { const t = cur ? cur + ' ' + wd : wd; if(cur && flrEst(t, size, true) > w){ out.push(cur); cur = wd; } else cur = t; }); if(cur) out.push(cur); if(out.length > max){ const k = out.slice(0, max); k[max - 1] = flrFit(out.slice(max - 1).join(' '), size, true, w); return k; } return out.map(l => flrFit(l, size, true, w)); };
+  let b = `<rect x="0" y="0" width="${totalW + 2 * PAD}" height="${totalH + 2 * PAD}" rx="14" fill="#f1f3f8"/><rect x="${PAD + lw + 2}" y="${PAD}" width="${AW - 4}" height="${totalH}" rx="6" fill="#e6e9f2"/><text x="${PAD + lw + AW / 2}" y="${PAD + totalH / 2}" font-size="8" fill="#6b7694" text-anchor="middle" letter-spacing="3" transform="rotate(-90 ${PAD + lw + AW / 2} ${PAD + totalH / 2})">MIDDLE AISLE</text>`;
+  sp.rows.forEach((r, t) => { if(t < sp.rows.length - 1 && !sp.back(t)){ const gy = PAD + ys[t] + H; [[0, lw], [rx, rw]].forEach(bk => { b += `<rect x="${PAD + bk[0]}" y="${gy + 4}" width="${bk[1] - G}" height="${WG - 8}" rx="4" fill="#e6e9f2"/><text x="${PAD + bk[0] + (bk[1] - G) / 2}" y="${gy + WG / 2 + 2.6}" font-size="7.5" fill="#6b7694" text-anchor="middle" letter-spacing="2.4">WALKWAY</text>`; }); } });
+  const cell = (id, x, y0) => {
+    const m = (state.machines || []).find(q => String(q.id) === String(id)), p = m ? ((SK.plan.m || {})[m.id] || {}) : {}, d = p.des ? skDesign(p.des) : null, stop = !m || p.st === 'stop' || (m && m.status === 'stopped' && false);
+    const cx = PAD + x, cy = PAD + y0, mid = m ? m.id : id, label = m ? (m.name || ('M/C ' + id)) : 'M/C ' + id;
+    let g = `<g data-sk="mc" data-v="${E(mid)}" style="cursor:pointer"><rect x="${cx}" y="${cy}" width="${CW}" height="${H}" rx="7" fill="${stop ? '#f1f3f8' : '#fff'}" stroke="${stop ? '#aab3c2' : (d ? '#cdd4e0' : '#e0b84a')}" stroke-width="1" ${stop || !d ? 'stroke-dasharray="3.5 3"' : ''}/>`;
+    g += `<text x="${cx + 9}" y="${cy + 17}" font-size="9.5" fill="${stop ? '#7b8696' : '#1f2937'}">${E(label)}</text>`;
+    if(m && (m.vip || (typeof machineCat === 'function' && machineCat(m) === 'VIP')) && !stop) g += `<polygon points="${flrStarPts(cx + CW - 13, cy + 14, 5.2).map(q => q[0].toFixed(1) + ',' + q[1].toFixed(1)).join(' ')}" fill="#e0a000"/>`;
+    if(stop) g += `<text x="${cx + CW / 2}" y="${cy + 52}" font-size="10" fill="#7b8696" text-anchor="middle">Stopped</text>`;
+    else if(!d) g += `<text x="${cx + CW / 2}" y="${cy + 52}" font-size="10" fill="#a16207" text-anchor="middle">No design</text>`;
+    else {
+      let ty = cy + 32; wrap(d.name, 10.5, CW - 14, 2).forEach(l => { g += `<text x="${cx + CW / 2}" y="${ty}" font-size="10.5" font-weight="700" fill="#0b1220" text-anchor="middle">${E(l)}</text>`; ty += 13; });
+      if(p.col){ g += `<text x="${cx + CW / 2}" y="${ty + 1}" font-size="10" fill="#4338ca" text-anchor="middle">${E(flrFit(p.col, 10, false, CW - 14))}</text>`; ty += 13; }
+      const cl = [p.c1, p.c2, p.c3].filter(Boolean).join(' / '); if(cl) g += `<text x="${cx + CW / 2}" y="${ty + 1}" font-size="8.5" fill="#6b7280" text-anchor="middle">${E(flrFit(cl, 8.5, false, CW - 14))}</text>`;
+    }
+    return g + '</g>';
+  };
+  sp.rows.forEach((r, t) => { r.L.forEach((id, i) => { b += cell(id, i * W, ys[t]); }); r.R.forEach((id, i) => { b += cell(id, rx + i * W, ys[t]); }); });
+  return `<div style="overflow-x:auto;"><svg viewBox="0 0 ${totalW + 2 * PAD} ${totalH + 2 * PAD}" style="width:100%;min-width:${Math.round((totalW + 2 * PAD) * 0.62)}px;height:auto;display:block;" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${E(dept)} machine layout">${b}</svg></div>`;
+}
+function skFloorHtml(list, depts){
+  const ids = {}; list.forEach(m => { ids[String(m.id)] = 1; });
+  const want = SK.dept === 'ALL' ? ['RVF', 'SSTM'] : [SK.dept].filter(d => d === 'RVF' || d === 'SSTM');
+  let h = '', placed = {};
+  want.forEach(d => { const sp = flrSpec(d); sp.rows.forEach(r => r.L.concat(r.R).forEach(id => { placed[String(id)] = 1; })); h += `<h3 style="margin:16px 0 8px;font-size:15px;">${d} floor layout</h3>` + skFloorSvg(d); });
+  return { h, placed };
+}
+
 function skMachineForm(id){
   const m = (state.machines || []).find(x => String(x.id) === String(id)); if(!m) return;
   const p = (SK.plan.m || {})[id] || {}, admin = skIsAdmin();
