@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head><meta name="robots" content="noindex">
-<meta name="rvf-build" content="20261116-133524">
+<meta name="rvf-build" content="20261116-133703">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -15403,7 +15403,7 @@ function sqmFill(live){
       ex = `<div style="font-weight:700;margin:12px 0 6px;color:#3730a3;">Real example: ${E(m.name)}${when ? ', ' + E(when) : ''}</div>
       <div style="${box}background:#f8fafc;display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;justify-content:center;text-align:center;">
         <div><b>${N(diff)}</b><br><small>Counter difference</small></div><div>&times;</div><div><b>${N(w)} cm</b><br><small>Width</small></div><div>&divide;</div><div><b>${N(pc)} &times; 10</b><br><small>Picks per cm &times; 10</small></div>${f > 1 ? `<div>&times;</div><div><b>${f}</b><br><small>Carpets at once</small></div>` : ''}</div>
-      <div style="${box}background:#ecfdf5;border-color:#a7f3d0;margin-top:8px;text-align:center;line-height:1.7;">${N(diff)} &times; ${N(w)} = ${N(top)}<br>${N(pc)} &times; 10 = ${N(bot)}<br>${N(top)} &divide; ${N(bot)} = ${N(base)}${f > 1 ? '<br>' + N(base) + ' &times; ' + f + ' = ' : ' '}<b style="font-size:1.15em;">${f > 1 ? '' : '= '}${N(res)} m&sup2;</b></div>`;
+      <div style="${box}background:#ecfdf5;border-color:#a7f3d0;margin-top:8px;text-align:center;line-height:1.7;">${N(diff)} &times; ${N(w)} = ${N(top)}<br>${N(pc)} &times; 10 = ${N(bot)}<br>${N(top)} &divide; ${N(bot)} = ${f > 1 ? N(base) + '<br>' + N(base) + ' &times; ' + f + ' = ' : ''}<b style="font-size:1.15em;">${N(res)} m&sup2;</b></div>`;
     }else ex = '<div class="hint" style="margin-top:10px;">Set Width and Picks per cm on a machine to see a real example here.</div>';
     g.innerHTML = `<div style="${box}background:#eef2ff;text-align:center;line-height:1.6;"><b>Square meters = (Counter difference &times; Width) &divide; (Picks per cm &times; 10) &times; Carpets at once</b></div>${ex}
       <div style="margin-top:12px;line-height:1.8;"><b>Where the numbers come from</b><br>- <b>Counter difference:</b> the difference between two approved counter readings. Stop time is not counted.<br>- <b>Width</b> and <b>Picks per cm:</b> saved on each machine (edit them in the list below).<br>- <b>Carpets at once:</b> 1 if one carpet is woven. 2 if two are woven together and cut in the middle.<br><small style="color:#64748b;">The counter must show thousands of picks (1 on the counter = 1,000 picks). Please confirm this with your expert using one machine.</small></div>`;
