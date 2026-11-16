@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261116-081038">
+<meta name="rvf-build" content="20261116-093448">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -25232,8 +25232,9 @@ function aiSaveViolation(){
     <div class="viBody">
       <div class="field"><label>Reason</label><input type="text" id="vi-reason" value="${aiEsc(subj)}"></div>
       <div class="field"><label>Date</label><input type="date" id="vi-date" value="${aiEsc(aiU.date || aiToday())}"></div>
-      <div class="field"><label>Type</label><select id="vi-type"><option value="w" ${amt > 0 ? '' : 'selected'}>Warning only</option><option value="d" ${amt > 0 ? 'selected' : ''}>Warning with a salary deduction</option></select></div>
-      <div class="field" id="vi-amtF" style="display:${amt > 0 ? 'block' : 'none'};"><label>Deduction amount (SAR)</label><input type="text" inputmode="decimal" id="vi-amt" value="${amt > 0 ? amt : ''}"><div class="hrNote" style="margin-top:4px;">Nothing is cut yet. It waits in the salary sheet until you press Add there, so you can still decide not to.</div></div>
+      <div class="field"><label>Type</label><select id="vi-type"><option value="w" ${amt > 0 ? '' : 'selected'}>Warning only</option><option value="d" ${amt > 0 ? 'selected' : ''}>Warning with a salary deduction (cut automatically)</option></select></div>
+      <div class="field" id="vi-amtF" style="display:${amt > 0 ? 'block' : 'none'};"><label>Deduction amount (SAR)</label><input type="text" inputmode="decimal" id="vi-amt" value="${amt > 0 ? amt : ''}"><div class="hrNote" style="margin-top:4px;">This is cut from his salary automatically. It goes into the salary sheet of the month this date falls in, with the remark below. You do not need to deduct it by hand.</div></div>
+      <div class="field" id="vi-remF" style="display:${amt > 0 ? 'block' : 'none'};"><label>Remark in the salary sheet (short)</label><input type="text" id="vi-rem" maxlength="40" placeholder="e.g. Absent without permission" value="${aiEsc(subj.length <= 40 ? subj : '')}"></div>
       <label class="viChk"><input type="checkbox" id="vi-sg"> Signed and kept in the employee file</label>
       <div class="field" id="vi-sgF" style="display:none;"><label>How was it signed?</label><select id="vi-how"><option value="physical">Physically signed (paper copy)</option><option value="esign">E-signed</option></select></div>
     </div>
@@ -25242,7 +25243,7 @@ function aiSaveViolation(){
 }
 document.addEventListener('change', (e) => {
   const t = e.target; if(!t) return;
-  if(t.id === 'vi-type'){ document.getElementById('vi-amtF').style.display = t.value === 'd' ? 'block' : 'none'; }
+  if(t.id === 'vi-type'){ document.getElementById('vi-amtF').style.display = t.value === 'd' ? 'block' : 'none'; const rf = document.getElementById('vi-remF'); if(rf) rf.style.display = t.value === 'd' ? 'block' : 'none'; }
   if(t.id === 'vi-sg'){ document.getElementById('vi-sgF').style.display = t.checked ? 'block' : 'none'; }
 });
 async function viSaveGo(){
@@ -25253,7 +25254,7 @@ async function viSaveGo(){
   const rec = { employeeId: u.loginId, date, reason, deduction: { yes: amt > 0, amount: amt > 0 ? acR2(amt) + ' SAR' : '' }, attachments: [], kind: amt > 0 ? 'deduction' : 'warning',
     signed: sg ? { yes: true, how: document.getElementById('vi-how').value, at: Date.now(), by: state.user.loginId } : { yes: false },
     letter: { type: T.id, name: T.name, subject: aiSubject(), body: aiDocText(aiU.doc), date: aiLong(date) }, createdAt: Date.now(), createdBy: state.user.loginId };
-  if(amt > 0) rec.sd = { st: 'pending', ym: '' };
+  if(amt > 0){ rec.sd = { st: 'pending', ym: '' }; const rm = (document.getElementById('vi-rem') || {}).value; rec.remark = String(rm || '').trim().slice(0, 40); }
   aiU.busy = true;
   try{ await window.__db.saveViolation(rec); VI.list = null; const ov = document.getElementById('viOv'); if(ov) ov.remove(); toast('Saved in the file of ' + u.name + (amt > 0 ? '. The deduction waits for your approval in the salary sheet.' : '')); }
   catch(err){ console.error(err); toast('Could not save — check your connection'); }
@@ -25339,7 +25340,8 @@ document.addEventListener('click', (e) => {
 function a2ChgHtml(){ return `<div id="a2VioBox">${a2VioInner()}</div>` + a2VacNote() + a2OtherNote() + a2DecideNote() + a2ChgHtml0(); }
 function a2DrawSheet(){
   a2DrawSheet0();
-  if(acCanEdit() && !VI.list && !VI.busy && window.__db && window.__db.listViolations){ VI.busy = true; window.__db.listViolations().then(l => { VI.list = l; VI.busy = false; a2VioFill(); }).catch(err => { console.error(err); VI.busy = false; }); }
+  if(VI.list) setTimeout(a2VioAuto, 0);
+  if(acCanEdit() && !VI.list && !VI.busy && window.__db && window.__db.listViolations){ VI.busy = true; window.__db.listViolations().then(l => { VI.list = l; VI.busy = false; a2VioFill(); a2VioAuto(); }).catch(err => { console.error(err); VI.busy = false; }); }
 }
 const a2VioSum = (r) => acR2((r.dl || []).reduce((a, l) => a + acNum(l.a), 0)) || '';
 async function a2VioSet(id, st, ym){
@@ -25354,12 +25356,24 @@ async function a2VioAct(a, id){
   if(!r) return;
   if(a === 'add'){
     if(!(r.dl && r.dl.length) && acNum(r.ded) > 0) r.dl = [{ a: acR2(acNum(r.ded)), r: 0, n: '' }];
-    r.dl = (r.dl || []).concat([{ a: acR2(viAmt(v)), r: 0, n: 'Violation: ' + (v.reason || 'Violation'), vid: id, vd: v.date || '' }]); r.ded = a2VioSum(r);
+    r.dl = (r.dl || []).concat([{ a: acR2(viAmt(v)), r: 0, n: (v.remark || v.reason || 'Violation'), vid: id, vd: v.date || '' }]); r.ded = a2VioSum(r);
     a2Touch(); a2RefreshRow(r); a2DirtyUi(); a2VioSet(id, 'applied', A2.ym); a2VioFill(); a2VioCell(r); toast('Added to ' + acEsc(r.name) + "'s deduction. Press Save sheet to keep it.");
   } else if(a === 'rem'){
     r.dl = (r.dl || []).filter(l => l.vid !== id); r.ded = a2VioSum(r);
     a2Touch(); a2RefreshRow(r); a2DirtyUi(); a2VioSet(id, 'skipped', ''); a2VioFill(); a2VioCell(r); toast('Removed from the salary');
   }
+}
+function a2VioAuto(){
+  const d = a2Doc(); if(!d || d.savedAt || !VI.list || !acCanEdit() || A2._vioAuto) return;
+  const it = a2VioItems().p; if(!it.length) return; A2._vioAuto = 1;
+  try{
+    it.forEach(x => { const v = x.v, r = x.r;
+      if(!(r.dl && r.dl.length) && acNum(r.ded) > 0) r.dl = [{ a: acR2(acNum(r.ded)), r: 0, n: '' }];
+      r.dl = (r.dl || []).concat([{ a: acR2(viAmt(v)), r: 0, n: (v.remark || v.reason || 'Violation'), vid: v._id, vd: v.date || '' }]); r.ded = a2VioSum(r);
+      a2VioSet(v._id, 'applied', A2.ym); });
+    a2Touch(); a2Draw();
+    toast(it.length + ' warning deduction' + (it.length === 1 ? '' : 's') + ' added to the salary automatically. Press Save sheet to keep ' + (it.length === 1 ? 'it' : 'them') + '.');
+  } finally { A2._vioAuto = 0; }
 }
 function a2VioCell(r){   // the remarks cell of this row
   const cols = a2Screen(A2.sec), c = cols.find(x => x.k === 'rm'); if(!c) return;
