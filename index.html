@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261117-102549">
+<meta name="rvf-build" content="20261117-102630">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -29185,7 +29185,9 @@ function sxColHex(name){
 function sxDots(name, big){ const h = sxColHex(name).slice(0, 4); return `<span class="sxDots${big ? ' big' : ''}">${h.length ? h.map(c => `<i style="background:${c}"></i>`).join('') : '<i class="unk"></i>'}</span>`; }
 const sxCol = (n) => n ? `${sxDots(n)}${skEsc(n)}` : '';
 const sxLum = (h) => { const n = parseInt(h.slice(1), 16); return .299 * ((n >> 16) & 255) + .587 * ((n >> 8) & 255) + .114 * (n & 255); };
-const sxColT = (name) => { if(!name) return ''; const toks = String(name).split(/[,\/+&]|-/).map(s => s.trim()).filter(Boolean).slice(0, 8); return `<span class="sxCw" title="${skEsc(name)}">${toks.map(t => { const hx = sxColHex(t).slice(0, 2), bg = hx.length > 1 ? `linear-gradient(90deg, ${hx[0]} 50%, ${hx[1]} 50%)` : (hx[0] || 'repeating-linear-gradient(45deg,#e5e7eb 0 2px,#f9fafb 2px 4px)'); return `<i class="sxCc"><b style="background:${bg}"></b>${skEsc(t)}</i>`; }).join('')}</span>`; };
+const SX_AB = { black: 'BLK', white: 'WHT', grey: 'GRY', gray: 'GRY', ash: 'ASH', silver: 'SLV', blue: 'BLU', navy: 'NVY', sky: 'SKY', green: 'GRN', olive: 'OLV', maroon: 'MRN', red: 'RED', wine: 'WIN', burgundy: 'BRG', brown: 'BRN', brwn: 'BRN', brwon: 'BRN', brn: 'BRN', coffee: 'COF', beige: 'BGE', cream: 'CRM', ivory: 'IVR', sand: 'SND', camel: 'CML', tan: 'TAN', gold: 'GLD', golden: 'GLD', yellow: 'YLW', orange: 'ORG', pink: 'PNK', purple: 'PRP', pur: 'PRP', violet: 'VLT', lilac: 'LLC', rose: 'ROS', multi: 'MLT', multicolour: 'MLT', multicolor: 'MLT' };
+const sxAbb = (t) => String(t).trim().split(/\s+/).map(w => { const k = w.toLowerCase(); if(SX_MOD[k]) return k[0] === 'l' ? 'L' : 'D'; return SX_AB[k] || (/\d/.test(w) ? w.toUpperCase() : w.slice(0, 3).toUpperCase()); }).join(' ').replace(/^([LD]) /, '$1');
+const sxColT = (name) => { if(!name) return ''; const toks = String(name).split(/[,\/+&]|-/).map(s => s.trim()).filter(Boolean).slice(0, 8); return `<span class="sxCw" title="${skEsc(name)}">${toks.map(t => { const hx = sxColHex(t).slice(0, 2), bg = hx.length > 1 ? `linear-gradient(90deg, ${hx[0]} 50%, ${hx[1]} 50%)` : (hx[0] || 'repeating-linear-gradient(45deg,#e5e7eb 0 2px,#f9fafb 2px 4px)'); return `<i class="sxCc" title="${skEsc(t)}"><b style="background:${bg}"></b>${skEsc(sxAbb(t))}</i>`; }).join('')}</span>`; };
 function sxColField(id, val, ph){
   const cs = sxColours();
   return `<div class="sxColW"><span class="sxColDot" id="${id}Dot">${val ? sxDots(val, 1) : ''}</span><input id="${id}" type="text" autocomplete="off" data-colfield="1" placeholder="${skEsc(ph || 'Type a colour')}" value="${skEsc(val || '')}"></div>` + (cs.length ? `<div class="sxStrip" id="${id}Strip">${cs.map(c => `<button type="button" class="sxCh" data-sx="pickcol" data-t="${id}" data-v="${skEsc(c)}" data-n="${skEsc(c.toLowerCase())}">${sxDots(c)}${skEsc(c)}</button>`).join('')}</div>` : '');
