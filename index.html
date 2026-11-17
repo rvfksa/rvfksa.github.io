@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261117-102630">
+<meta name="rvf-build" content="20261117-103158">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -29484,12 +29484,9 @@ function sxPeopleRow(stage, label){
   return `<div class="acCR"><span class="sxAsg">${label}</span><span class="sxPp">${a.map(id => { const u = (state.users || []).find(x => String(x.loginId) === String(id)); return `<span class="sxP">${skEsc(u ? u.name : id)}<button type="button" data-sx="unas" data-s="${stage}" data-v="${skEsc(id)}" title="Remove">×</button></span>`; }).join('') || '<span style="font-size:11.5px;color:var(--muted);">Nobody chosen: ' + sxWho(stage).toLowerCase() + '</span>'}</span><select data-sx="addas" data-s="${stage}"><option value="">+ Add person</option>${us.map(u => `<option value="${skEsc(u.loginId)}">${skEsc(u.name || u.loginId)}</option>`).join('')}</select></div>`;
 }
 function sxItemsSec(){
-  const g = SX.isub || 'cr', two = (g === 'cr' || g === 'vip'), q = (SX.iq || '').toLowerCase();
-  const l = SK.items.filter(i => i.g === g && (!q || (i.name + ' ' + (i.code || '') + ' ' + (i.col || '')).toLowerCase().includes(q))).slice().sort((a, b) => String(a.name).localeCompare(String(b.name)));
-  const adm = skIsAdmin();
-  const cols = [['Code', '', ''], ['Item', '', 'k']].concat(g === 'cr' ? [['Designs', '', 'r'], ['Colours', '', 'r']] : []).concat([['Colour', '', 'k'], [g === 'up' ? 'Metres per roll' : g === 'q2' ? 'Pcs per pack' : 'Pcs per bundle', '', 'r']]).concat(two ? [['Truck holds (bundles)', '', 'r']] : []).concat([['Minimum', '', 'r'], ['', '', 'a']]);
-  const rows = l.map(i => { const P = sxPk(i), x = i.x || {}; return [i.code ? `<span class="sxCode">${skEsc(i.code)}</span>` : sxDash, skEsc(P.name)].concat(g === 'cr' ? [P.nd || sxDash, P.nc || sxDash] : []).concat([i.col ? sxColT(i.col) : sxDash, g === 'up' ? (x.mpr ? sxN(x.mpr) : sxDash) : (Number(i.per) ? sxN(i.per) : sxDash)]).concat(two ? [Number(i.truck) ? sxN(i.truck) : '<span class="sxSm2">default ' + (Number(SX.cfg.truckBundle) || '—') + '</span>'] : []).concat([Number(i.safe) ? sxN(i.safe) : sxDash, adm ? `<button type="button" class="mini-icon-btn" data-sk="edititem" data-v="${skEsc(i.id)}" title="Edit item" aria-label="Edit item">${sxIc('cog', 13)}</button>` : '']); });
-  return `<details class="acSec admD" ${sxSecAttr('items')}><summary>Items · code, design, size, colour, truck capacity</summary><div class="acSecB"><p class="sub">Add every item here once. It shows in Finished store only after stock is added. Truck capacity is set here per item (or one default under "Truck loading").</p>${sxTop(sxSub('isub', g, SX_FS) + sxSearch('sxIq', SX.iq, 'Search…') + '<span class="grow"></span>' + (skCanAdd() ? `<button type="button" class="pcBtnMain sm" data-sk="newitem" title="New item">${sxIc('plus', 14)}<span class="sxAddL">New item</span></button>` : ''))}${sxTbl(cols, rows, null, 'No items here yet. Press New item.')}</div></details>`;
+  const all = SK.items.slice().sort((a, c) => String(a.name).localeCompare(String(c.name))), adm = skIsAdmin();
+  const opts = all.map(i => [i.id, [i.code, sxPk(i).name, i.col].filter(Boolean).join(' · ')]);
+  return `<details class="acSec admD" ${sxSecAttr('items')}><summary>Items</summary><div class="acSecB"><p class="sub">Add a new item, or pick one to change its code, size, colour, designs or truck capacity.</p><div class="sxTop">${adm ? `<select id="sxEdSel" class="sxPs" style="flex:1 1 220px;max-width:380px;">${sxOpt(opts, '', 'Choose an item to change')}</select><button type="button" class="pcBtnSoft sm" data-sx="editsel">Change</button>` : ''}${skCanAdd() ? `<button type="button" class="pcBtnMain sm" data-sk="newitem">${sxIc('plus', 14)}<span>New item</span></button>` : ''}</div><p class="sub" style="margin-top:8px;">${all.length} items saved. An item shows in Finished store only after stock is added.</p></div></details>`;
 }
 const SX_SM = { raw: ['stores', 'cats', 'dests', 'mins'], rew: [], wp: [], fin: ['sizes', 'types', 'depts'], fst: ['items', 'truck', 'up'], req: [], dm: [] };
 const SX_SW = { raw: ['raw'], rew: ['rew'], wp: ['wp'], fin: ['fin'], fst: ['fst'], req: ['req'], dm: ['mach'] };
@@ -29549,7 +29546,7 @@ document.addEventListener('click', async (ev) => {
   else if(a === 'pickcol'){ const i = $(el.dataset.t); if(i){ i.value = v; sxDotUpd(i); i.focus(); } }
   else if(a === 'gofs'){ SX.sfor = ''; SX.tab = 'fst'; SX.fsub = v; SK.tab = 'fst'; SK.grp = v; SX.fq = ''; window.scrollTo(0, 0); skRender(); } else if(a === 'upall'){ SX.upAll = !SX.upAll; skRender(); }
   else if(a === 'rawk'){ const s = sxSnap(); SX.rawk = v; sxOpenForm('raw'); sxRestore(s); } else if(a === 'rwk'){ const s = sxSnap(); SX.rwk = v; sxOpenForm('rw'); sxRestore(s); }
-  else if(a === 'rwsub'){ SX.rwsub = v; skRender(); } else if(a === 'isub'){ SX.isub = v; SX.open = SX.open || {}; SX.open.items = 1; skRender(); } else if(a === 'fsub'){ SX.fsub = v; SK.grp = v; SX.fq = ''; SX.ff.fst = {}; skRender(); } else if(a === 'dmsub'){ SX.dmsub = v; skRender(); }
+  else if(a === 'rwsub'){ SX.rwsub = v; skRender(); } else if(a === 'editsel'){ const id = $('sxEdSel') ? $('sxEdSel').value : ''; if(!id){ toast('Choose an item first'); return; } skItemForm(id); } else if(a === 'isub'){ SX.isub = v; SX.open = SX.open || {}; SX.open.items = 1; skRender(); } else if(a === 'fsub'){ SX.fsub = v; SK.grp = v; SX.fq = ''; SX.ff.fst = {}; skRender(); } else if(a === 'dmsub'){ SX.dmsub = v; skRender(); }
   else if(a === 'saveraw') sxSaveRaw(); else if(a === 'saverw') sxSaveRw(); else if(a === 'savereq') sxSaveReq(); else if(a === 'reqdone') sxReqDone(v); else if(a === 'savefin') sxSaveFin();
   else if(a === 'undo') sxUndo(el.dataset.p, el.dataset.ym, v);
   else if(a === 'fsm') sxFsModal(v, el.dataset.k); else if(a === 'fssave') sxFsSave($('fsI') ? $('fsI').value : v, SX.fsk || 'in');

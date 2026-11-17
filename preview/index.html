@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta name="robots" content="noindex">
-<meta name="rvf-build" content="20261117-103034">
+<meta name="rvf-build" content="20261117-103158">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -29487,7 +29487,7 @@ function sxPeopleRow(stage, label){
 function sxItemsSec(){
   const all = SK.items.slice().sort((a, c) => String(a.name).localeCompare(String(c.name))), adm = skIsAdmin();
   const opts = all.map(i => [i.id, [i.code, sxPk(i).name, i.col].filter(Boolean).join(' · ')]);
-  return `<details class="acSec admD" ${sxSecAttr('items')}><summary>Items</summary><div class="acSecB"><p class="sub">Add a new item, or pick one to change its code, size, colour, designs or truck capacity.</p><div class="row-2">${adm ? `<select id="sxEdSel" class="sxPs" style="flex:1;min-width:0;">${sxOpt(opts, '', 'Choose an item to change')}</select><button type="button" class="pcBtnSoft sm" data-sx="editsel">Change</button>` : ''}${skCanAdd() ? `<button type="button" class="pcBtnMain sm" data-sk="newitem">${sxIc('plus', 14)}<span>New item</span></button>` : ''}</div><p class="sub" style="margin-top:8px;">${all.length} items saved. An item shows in Finished store only after stock is added.</p></div></details>`;
+  return `<details class="acSec admD" ${sxSecAttr('items')}><summary>Items</summary><div class="acSecB"><p class="sub">Add a new item, or pick one to change its code, size, colour, designs or truck capacity.</p><div class="sxTop">${adm ? `<select id="sxEdSel" class="sxPs" style="flex:1 1 220px;max-width:380px;">${sxOpt(opts, '', 'Choose an item to change')}</select><button type="button" class="pcBtnSoft sm" data-sx="editsel">Change</button>` : ''}${skCanAdd() ? `<button type="button" class="pcBtnMain sm" data-sk="newitem">${sxIc('plus', 14)}<span>New item</span></button>` : ''}</div><p class="sub" style="margin-top:8px;">${all.length} items saved. An item shows in Finished store only after stock is added.</p></div></details>`;
 }
 const SX_SM = { raw: ['stores', 'cats', 'dests', 'mins'], rew: [], wp: [], fin: ['sizes', 'types', 'depts'], fst: ['items', 'truck', 'up'], req: [], dm: [] };
 const SX_SW = { raw: ['raw'], rew: ['rew'], wp: ['wp'], fin: ['fin'], fst: ['fst'], req: ['req'], dm: ['mach'] };
