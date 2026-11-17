@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261117-081951">
+<meta name="rvf-build" content="20261117-082722">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -6227,6 +6227,12 @@ const PAGE_DEFS = {
   accounts:   { label: 'Accounts' },
   purchase:   { label: 'Purchase' },
   stock:      { label: 'Stock' },
+  stk_raw:    { label: 'Raw Store' },
+  stk_rew:    { label: 'Rewinding' },
+  stk_wp:     { label: 'Warping' },
+  stk_fin:    { label: 'Finishing' },
+  stk_fst:    { label: 'Finished Store' },
+  stk_req:    { label: 'Stock Requests' },
   aichat:     { label: 'AI' }
 };
 function defaultPagesForRole(role){
@@ -6270,7 +6276,7 @@ function route(){
   if(pages.length === 0){ showScreen('screen-pending'); return; }
   if(maybeResumeCapture()) return;   // the phone closed the page during the camera step: go back to it
   // land on the most relevant page for the role, falling back to the first assigned page
-  const priority = ['ceo','admin','approvals','select','profile'];
+  const priority = ['ceo','admin','approvals','select','stk_raw','stk_rew','stk_wp','stk_fin','stk_fst','stk_req','profile'];
   const first = priority.find(p => pages.includes(p)) || pages[0];
   goTo(first);
 }
@@ -6290,7 +6296,8 @@ function goTo(key){
   else if(key === 'employees'){ showScreen('screen-employees'); loadEmployeesPage(); }
   else if(key==='accounts'){ showScreen('screen-accounts'); loadAccountsPage(); }
   else if(key === 'purchase'){ showScreen('screen-purchase'); loadPurchasePage(); }
-  else if(key === 'stock'){ showScreen('screen-stock'); skOpen(); }
+  else if(key === 'stock'){ showScreen('screen-stock'); sxForce(''); skOpen(); }
+  else if(key.indexOf('stk_') === 0){ showScreen('screen-stock'); sxForce(key.slice(4)); skOpen(); }
   else if(key === 'aichat'){ showScreen('screen-aichat'); chRender(); }
 }
 
@@ -29070,7 +29077,9 @@ const sxYm = (d) => String(d || sxToday()).slice(0, 7);
 const sxN = (n) => (Math.round((Number(n) || 0) * 100) / 100).toLocaleString('en-US');
 const sxMe = () => (state.user && (state.user.name || state.user.loginId)) || '';
 const sxAdmin = () => !!(state.user && state.user.role === 'admin');
-function sxCan(stage){ if(sxAdmin()) return true; const as = SX.cfg.assign || {}; let a = as[stage]; if((stage === 'rew' || stage === 'wp') && a === undefined) a = as.rw; a = a || []; const me = String(state.user && state.user.loginId); if(stage === 'set' || stage === 'mach') return a.indexOf(me) >= 0; if(stage === 'req') return a.length ? a.indexOf(me) >= 0 : true; return a.length ? a.indexOf(me) >= 0 : !!(state.user && state.user.role === 'supervisor'); }
+const SX_PK = { raw: 'stk_raw', rew: 'stk_rew', wp: 'stk_wp', fin: 'stk_fin', fst: 'stk_fst', req: 'stk_req' };
+function sxForce(p){ SX.force = p || ''; SX.tab = p || 'dash'; SK.tab = SX.tab; }
+function sxCan(stage){ if(sxAdmin()) return true; try{ if(SX_PK[stage] && userPages(state.user).includes(SX_PK[stage])) return true; }catch(e){} const as = SX.cfg.assign || {}; let a = as[stage]; if((stage === 'rew' || stage === 'wp') && a === undefined) a = as.rw; a = a || []; const me = String(state.user && state.user.loginId); if(stage === 'set' || stage === 'mach') return a.indexOf(me) >= 0; if(stage === 'req') return a.length ? a.indexOf(me) >= 0 : true; return a.length ? a.indexOf(me) >= 0 : !!(state.user && state.user.role === 'supervisor'); }
 const SX_PG = [['raw', 'Raw weft store', 'Raw weft coming in and going out of the store', 'raw'], ['rew', 'Rewinding', 'Bobbins made from the raw weft', 'rew'], ['wp', 'Warping', 'Warping piles made from the weft', 'wp'], ['fin', 'Finishing report', 'Daily unrolling report from the machines', 'fin'], ['fst', 'Finished store', 'Carpets and Rugs, VIP, Upholstery and 2nd quality', 'fst'], ['req', 'Requests', 'Requests from the weaving manager', 'req'], ['dm', 'Machines and designs', 'Which design runs on which machine', 'mach'], ['set', 'Settings', 'Lists, truck size, minimums and who enters what', 'set']];
 const sxPriv = () => sxAdmin() || !!(state.user && state.user.role === 'supervisor');
 function sxSee(pg){ if(pg === 'set') return sxAdmin() || sxCan('set'); if(sxPriv()) return true; const p = SX_PG.find(x => x[0] === pg); return !!p && sxCan(p[3]); }
@@ -29218,6 +29227,7 @@ function sxDashHtml(){
 function sxPageHead(pg){
   const P = SX_PG.find(x => x[0] === pg); if(!P) return '';
   const can = sxCan(P[3]);
+  if(SX.force) return can ? '' : '<div class="sxNote">You can only look at this page.</div>';
   return `<div class="sxPh">${SX.solo ? '' : `<button type="button" class="sxBack" data-sx="tab" data-v="dash" title="Back to Stock">${sxIc('chev', 14).replace('style="', 'style="transform:rotate(180deg);')}<span>Stock</span></button>`}<div class="sxPhT"><h2>${P[1]}</h2><p>${P[2]}</p></div><div class="sxWho"><span>Who enters data</span><b>${skEsc(sxWho(P[3]))}</b>${can ? '' : '<em>You can only look</em>'}</div></div>`;
 }
 /* ---------- lists ---------- */
@@ -29360,9 +29370,18 @@ function sxSetHtml(){
   h += SX_LISTS.map(x => sxListSec(x[0], x[1], x[2], x[3])).join('');
   h += `<details class="acSec admD" ${sxSecAttr('truck')}><summary>Truck loading</summary><div class="acSecB"><p class="sub">How much goes on one truck. Used to show "= trucks" on the Dashboard.</p><div class="sxF">${sxField('Bundles per truck', `<input id="sxTB" type="number" inputmode="decimal" value="${SX.cfg.truckBundle || ''}" placeholder="0">`)}${sxField('Rolls per truck', `<input id="sxTR" type="number" inputmode="decimal" value="${SX.cfg.truckRoll || ''}" placeholder="0">`)}</div><button type="button" class="btn btn-primary btn-sm" data-sx="savenum" style="margin-top:10px;">Save</button></div></details>`;
   h += `<details class="acSec admD" ${sxSecAttr('mins')}><summary>Raw weft minimum (kg)</summary><div class="acSecB"><p class="sub">The Dashboard warns you when a category goes below its minimum. Leave empty for no warning.</p><div class="sxF">${cats.map(c => sxField(skEsc(c), `<input class="sxMin" data-c="${skEsc(c)}" type="number" inputmode="decimal" value="${(SX.cfg.mins || {})[c] || ''}" placeholder="No minimum">`)).join('') || '<span style="font-size:12px;color:var(--muted);">Add a weft category first.</span>'}</div>${cats.length ? '<button type="button" class="btn btn-primary btn-sm" data-sx="savenum" style="margin-top:10px;">Save</button>' : ''}</div></details>`;
-  h += `<details class="acSec admD" ${sxSecAttr('who')}><summary>Who enters what</summary><div class="acSecB"><p class="sub">Choose who enters data on each page. A person sees only the pages chosen for them (administrator and supervisors see all). The person also needs Stock access in Admin &gt; Users.</p>${SX_ASG.map(x => sxPeopleRow(x[0], x[1])).join('')}</div></details>`;
+  h += `<details class="acSec admD" ${sxSecAttr('who')}><summary>Who enters what</summary><div class="acSecB"><p class="sub">Choose who enters data on each page. The person gets that page as a button in their top menu, so they go straight to their own page. Administrator and supervisors see all pages from Stock.</p>${SX_ASG.map(x => sxPeopleRow(x[0], x[1])).join('')}</div></details>`;
   h += `<details class="acSec admD" ${sxSecAttr('up')}><summary>Upholstery minimum stock</summary><div class="acSecB"><p class="sub">Set how many rolls of each upholstery design must always be in stock.</p><button type="button" class="pcBtnSoft" data-sk="bench" data-v="">Open minimum stock</button></div></details>`;
   return h;
+}
+/* give or take the person's own page in the top menu (one small write, only when it changes) */
+async function sxSyncPage(loginId, stage){
+  const key = SX_PK[stage]; if(!key) return; const u = (state.users || []).find(x => String(x.loginId) === String(loginId)); if(!u) return;
+  const as = SX.cfg.assign || {}, want = (as[stage] || []).map(String).indexOf(String(loginId)) >= 0, has = userPages(u).includes(key);
+  try{
+    if(want && !has){ const pages = userPages(u).concat(key); await window.__db.updateUserQuiet(loginId, { pages }); u.pages = pages; if(state.user && String(state.user.loginId) === String(loginId)){ state.user.pages = pages; renderNav(); } toast('Page added to the person\'s menu'); }
+    else if(!want && has && u.pages && u.pages.length){ const pages = u.pages.filter(p => p !== key); await window.__db.updateUserQuiet(loginId, { pages }); u.pages = pages; toast('Page removed from the person\'s menu'); }
+  }catch(err){ console.error(err); toast('Saved, but could not change the person\'s menu'); }
 }
 async function sxPutCfg(){ try{ await window.__db.invSet('sxcfg', { cfg: SX.cfg }); return true; }catch(err){ console.error(err); toast('Could not save. Check your connection'); return false; } }
 
@@ -29374,9 +29393,13 @@ function skRender(){
   const map = { over: 'dash', stock: 'fst', move: 'fst', des: 'dm', plan: 'dm', rw: 'rew' }; if(map[SK.tab]){ if(SK.tab === 'des') SX.dmsub = 'des'; if(SK.tab === 'plan') SX.dmsub = 'plan'; if(SK.tab === 'stock' && SK.grp) SX.fsub = SK.grp; SX.tab = map[SK.tab]; SK.tab = SX.tab; }
   else if(SX_TABS.some(t => t[0] === SK.tab)) SX.tab = SK.tab;
   const pages = SX_PG.filter(p => sxSee(p[0]));
-  if(!pages.length){ m.innerHTML = sxEmpty('You do not have a page in Stock yet. Ask the administrator to choose you in Stock > Settings > Who enters what.'); return; }
-  SX.solo = !sxPriv() && pages.length === 1;
-  let t = SX.tab; if(SX.solo) t = pages[0][0]; else if(t !== 'dash' && !sxSee(t)) t = 'dash'; SX.tab = t;
+  if(!pages.length && !SX.force){ m.innerHTML = sxEmpty('You do not have a page in Stock yet. Ask the administrator to choose you in Stock > Settings > Who enters what.'); return; }
+  const sc = $('screen-stock'), h1 = sc && sc.querySelector('h1'), sb = sc && sc.querySelector('p.sub');
+  if(SX.force && !sxSee(SX.force)){ m.innerHTML = sxEmpty('You do not have this page yet. Ask the administrator.'); return; }
+  const FP = SX.force ? SX_PG.find(x => x[0] === SX.force) : null;
+  if(h1 && sb){ h1.textContent = FP ? FP[1] : 'Stock & Production Plan'; sb.textContent = FP ? FP[2] : 'What we have, what came in, what went out, and which design runs on which machine.'; }
+  SX.solo = !!SX.force || (!sxPriv() && pages.length === 1);
+  let t = SX.force || SX.tab; if(!SX.force && SX.solo) t = pages[0][0]; else if(t !== 'dash' && !sxSee(t)) t = 'dash'; SX.tab = t;
   let h = t === 'dash' ? sxDashHtml() : sxPageHead(t) + (t === 'raw' ? sxRawHtml() : (t === 'rew' || t === 'wp') ? sxRwHtml() : t === 'req' ? sxReqHtml() : t === 'fin' ? sxFinHtml() : t === 'fst' ? sxFstHtml() : t === 'dm' ? sxDmHtml() : sxSetHtml());
   m.innerHTML = h;
   if(t === 'fin'){ const before = Object.keys(SX.mc).length; sxFinLoad().then(() => { if(SX.tab === 'fin' && Object.keys(SX.mc).length !== before) skRender(); }); }
@@ -29395,7 +29418,7 @@ document.addEventListener('click', async (ev) => {
   else if(a === 'saveraw') sxSaveRaw(); else if(a === 'saverw') sxSaveRw(); else if(a === 'savereq') sxSaveReq(); else if(a === 'reqdone') sxReqDone(v); else if(a === 'savefin') sxSaveFin();
   else if(a === 'undo') sxUndo(el.dataset.p, el.dataset.ym, v);
   else if(a === 'fsm') sxFsModal(v, el.dataset.k); else if(a === 'fssave') sxFsSave(v, el.dataset.k);
-  else if(a === 'unas'){ const s = el.dataset.s; SX.cfg.assign[s] = (SX.cfg.assign[s] || []).filter(x => x !== v); if(await sxPutCfg()) skRender(); }
+  else if(a === 'unas'){ const s = el.dataset.s; SX.cfg.assign[s] = (SX.cfg.assign[s] || []).filter(x => x !== v); if(await sxPutCfg()){ await sxSyncPage(v, s); skRender(); } }
   else if(a === 'ladd'){ const i = $('sxAdd_' + v), t = i ? i.value.trim() : ''; if(!t){ toast('Type a name first'); return; } SX.cfg[v] = SX.cfg[v] || []; if(SX.cfg[v].some(x => x.toLowerCase() === t.toLowerCase())){ toast('Already in the list'); return; } SX.cfg[v].push(t); SX.open = SX.open || {}; SX.open[v] = 1; if(await sxPutCfg()) skRender(); }
   else if(a === 'ldel'){ const l = SX.cfg[v] || [], i = Number(el.dataset.i); if(!confirm('Delete "' + l[i] + '" from the list? Entries already saved are not changed.')) return; l.splice(i, 1); SX.open = SX.open || {}; SX.open[v] = 1; if(await sxPutCfg()) skRender(); }
   else if(a === 'lmv'){ const l = SX.cfg[v] || [], i = Number(el.dataset.i), j = i + Number(el.dataset.d); if(j < 0 || j >= l.length) return; const t = l[i]; l[i] = l[j]; l[j] = t; SX.open = SX.open || {}; SX.open[v] = 1; if(await sxPutCfg()) skRender(); }
@@ -29405,7 +29428,7 @@ document.addEventListener('click', async (ev) => {
 document.addEventListener('toggle', (ev) => { const d = ev.target; if(d && d.dataset && d.dataset.sec){ SX.open = SX.open || {}; SX.open[d.dataset.sec] = d.open ? 1 : 0; } }, true);
 document.addEventListener('change', async (ev) => {
   const t = ev.target; if(!t) return;
-  if(t.dataset && t.dataset.sx === 'addas' && t.value){ const s = t.dataset.s; SX.cfg.assign = SX.cfg.assign || {}; SX.cfg.assign[s] = (SX.cfg.assign[s] || []).concat([t.value]); SX.open = SX.open || {}; SX.open.who = 1; if(await sxPutCfg()) skRender(); return; }
+  if(t.dataset && t.dataset.sx === 'addas' && t.value){ const s = t.dataset.s; SX.cfg.assign = SX.cfg.assign || {}; SX.cfg.assign[s] = (SX.cfg.assign[s] || []).concat([t.value]); SX.open = SX.open || {}; SX.open.who = 1; if(await sxPutCfg()){ await sxSyncPage(t.value, s); skRender(); } return; }
   const f = { sxFf: 'from', sxFt: 'to', sxFm: 'mc', sxFz: 'size', sxFy: 'type', sxFd: 'dept' }[t.id]; if(f){ SX.fil[f] = t.value; skRender(); return; }
   if(t.id === 'sxM' && t.closest('#sxModal')) sxMachFill(t.value);
 });
