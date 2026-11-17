@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head><meta name="robots" content="noindex">
-<meta name="rvf-build" content="20261117-112241">
+<meta name="rvf-build" content="20261117-112449">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -29793,7 +29793,7 @@ function yOpenOpening(){
 }
 async function ySaveOpen(){
   if(!sxCan('raw')) return; const rows = [], dl = {}; let tot = 0;
-  document.querySelectorAll('#sxModal .yOp').forEach(e => { const v = Number(e.value); if(v > 0){ rows.push([e.dataset.y, e.dataset.s, v]); dl['yr|' + e.dataset.y + '|' + e.dataset.s] = (dl['yr|' + e.dataset.y + '|' + e.dataset.s] || 0) + v; tot += v; } });
+  document.querySelectorAll('#sxModal .yOp').forEach(e => { const v = Number(e.value); if(v > 0){ rows.push({ y: e.dataset.y, s: e.dataset.s, kg: v }); dl['yr|' + e.dataset.y + '|' + e.dataset.s] = (dl['yr|' + e.dataset.y + '|' + e.dataset.s] || 0) + v; tot += v; } });
   if(!rows.length){ toast('Type at least one quantity'); return; }
   if(!confirm('Add ' + sxN(tot) + ' kg of opening stock for ' + rows.length + ' lines?')) return;
   const e = { id: sxId(), t: Date.now(), s: 'yr', k: 'in', open: 1, d: sxToday(), rows, kg: tot, n: 'Opening stock', by: sxMe(), u: String(state.user.loginId), dl };
