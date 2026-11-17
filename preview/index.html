@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head><meta name="robots" content="noindex">
-<meta name="rvf-build" content="20261117-110522">
+<meta name="rvf-build" content="20261117-112241">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -29842,7 +29842,7 @@ async function ySaveRew(){
 /* ---------- Warping: beams ---------- */
 function yWpRows(){
   const c = yCfg(), cols = c.beamCols.slice(); Object.keys(SX.bal).forEach(k => { const p = k.split('|'); if(p[0] === 'wp' && (Number(SX.bal[k]) || 0) > 0.0004 && !cols.some(x => x.toLowerCase() === p[1].toLowerCase())) cols.push(p[1]); });
-  const made = {}, used = {}; sxEnt('w', sxYm()).forEach(e => { if(e.s !== 'wp') return; const m = e.k === 'out' ? used : made; m[e.col] = (m[e.col] || 0) + (Number(e.bob) || 0); });
+  const made = {}, used = {}; sxEnt('w', sxYm()).forEach(e => { if(e.s !== 'wp' || e.open) return; const m = e.k === 'out' ? used : made; m[e.col] = (m[e.col] || 0) + (Number(e.bob) || 0); });
   return cols.map(col => { const n = Math.max(0, Number(SX.bal['wpN|' + col]) || 0), kg = Math.max(0, Number(SX.bal['wp|' + col]) || 0), mo = made[col] || 0, us = used[col] || 0; return { col, w: Number(c.beamW[col]) || 0, n, kg, mo, us, op: Math.max(0, n - mo + us) }; });
 }
 function yWpHtml(){
