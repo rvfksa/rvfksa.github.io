@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261117-130139">
+<meta name="rvf-build" content="20261117-133930">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -28542,6 +28542,15 @@ table.sxRT th.a, table.sxRT td.a{ width:1%; }
 
 @media (min-width:821px){ .sxFin.many{ order:5; flex:1 1 100%; } }
 .sxFi select{ max-width:104px; }
+
+.sxFin,.sxFbN{ display:none !important; }
+.sxFm{ min-width:min(340px,86vw); padding:12px; gap:10px; }
+.sxFmG{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.sxFm .field{ margin:0; }
+.sxFm .field label{ font-size:11px; color:var(--muted,#6b7280); display:block; margin-bottom:3px; }
+.sxFm select,.sxFm input{ width:100%; }
+.sxFm .sxFpF{ display:flex; justify-content:space-between; gap:8px; }
+@media (max-width:420px){ .sxFmG{ grid-template-columns:1fr; } }
 </style>
 <div id="rvfBusy"><i></i><span id="rvfBusyTxt">Loading data…</span></div>
 <script>
@@ -29343,14 +29352,11 @@ function sxTbl(cols, rows, foot, empty){
 /* ---------- filter: the same round funnel button and panel as Dashboard ---------- */
 const sxFget = (key) => key === 'fin' ? SX.fil : (SX.ff[key] = SX.ff[key] || {});
 function sxFilt(key, fields){
-  const f = sxFget(key), n = fields.filter(x => f[x[0]]).length;
-  const inl = fields.map(x => x[2] === 'date' ? `<label class="sxFi${f[x[0]] ? ' on' : ''}"><span>${x[1]}</span><input type="date" data-ff="${key}" data-fn="${x[0]}" value="${skEsc(f[x[0]] || x[3] || '')}"></label>` : `<label class="sxFi${f[x[0]] ? ' on' : ''}"><span>${x[1]}</span><select data-ff="${key}" data-fn="${x[0]}">${sxOpt(x[2], f[x[0]], x[3] || 'All')}</select></label>`).join('');
-  return `<span class="sxFin${fields.length > 3 ? ' many' : ''}">${inl}${n ? `<button type="button" class="sxFcl" data-sx="fclear" data-v="${key}">Clear</button>` : ''}</span><button type="button" class="filter-icon-btn sxFb sxFbN${n ? ' active' : ''}" data-sx="fo" data-v="${key}" title="Filter" aria-label="Filter">${SX_FUN}${n ? `<b>${n}</b>` : ''}</button>`;
+  const f = sxFget(key), n = fields.filter(x => f[x[0]]).length, open = SX.fo === key;
+  const body = fields.map(x => x[2] === 'date' ? `<div class="field"><label>${x[1]}</label><input type="date" data-ff="${key}" data-fn="${x[0]}" value="${skEsc(f[x[0]] || x[3] || '')}"></div>` : `<div class="field"><label>${x[1]}</label><select data-ff="${key}" data-fn="${x[0]}">${sxOpt(x[2], f[x[0]], x[3] || 'All')}</select></div>`).join('');
+  return `<span class="sxMw"><button type="button" class="filter-icon-btn sxFb${n ? ' active' : ''}" data-sx="fo" data-v="${key}" title="Filter" aria-label="Filter">${SX_FUN}${n ? `<b>${n}</b>` : ''}</button>${open ? `<div class="sxMenu sxFm"><div class="sxFmG">${body}</div><div class="sxFpF"><button type="button" class="pcBtnSoft sm" data-sx="fclear" data-v="${key}">Clear filters</button><button type="button" class="pcBtnMain sm" data-sx="fo" data-v="">Done</button></div></div>` : ''}</span>`;
 }
-function sxFpop(key, fields){
-  if(SX.fo !== key) return ''; const f = sxFget(key);
-  return `<div class="filter-popover open sxFp"><div class="sxF sxFg">${fields.map(x => x[2] === 'date' ? `<div class="field"><label>${x[1]}</label><input type="date" data-ff="${key}" data-fn="${x[0]}" value="${skEsc(f[x[0]] || x[3] || '')}"></div>` : `<div class="field"><label>${x[1]}</label><select data-ff="${key}" data-fn="${x[0]}">${sxOpt(x[2], f[x[0]], x[3] || 'All')}</select></div>`).join('')}</div><div class="sxFpF"><button type="button" class="pcBtnSoft sm" data-sx="fclear" data-v="${key}">Clear filters</button><button type="button" class="pcBtnMain sm" data-sx="fo" data-v="">Done</button></div></div>`;
-}
+const sxFpop = () => '';
 const sxIsF = (key) => { const f = sxFget(key); return Object.keys(f).some(k => f[k]); };
 /* ---------- lists ---------- */
 function sxRecent(secs, title){
@@ -29950,7 +29956,7 @@ const _yOpenForm = sxOpenForm; sxOpenForm = function(kind){ if(kind === 'yraw') 
 const _yDl = sxDl; sxDl = function(kind){ if(kind === 'raw' || kind === 'rew' || kind === 'wp') return yDl(kind); return _yDl(kind); };
 Object.assign(SX_SM, { raw: ['yitems', 'ydaily', 'ydest', 'yrules', 'yopen'], rew: [], wp: ['beamCols', 'beamW'] });
 document.addEventListener('click', async (ev) => {
-  if(SX.yso && !(ev.target.closest && ev.target.closest('.sxMw'))){ SX.yso = ''; skRender(); }
+  if((SX.yso || SX.fo) && !(ev.target.closest && ev.target.closest('.sxMw'))){ SX.yso = ''; SX.fo = ''; skRender(); }
   const el = ev.target.closest && ev.target.closest('[data-sx]'); if(!el || el.tagName === 'SELECT') return; const a = el.dataset.sx, v = el.dataset.v;
   if(a === 'yk'){ const s = sxSnap(); SX.yk = v; yOpenRaw(); sxRestore(s); yInfoUpd(); } else if(a === 'yk2'){ const s = sxSnap(); SX.yk2 = v; yOpenRew(); sxRestore(s); yInfoUpd(); } else if(a === 'yk3'){ const s = sxSnap(); SX.yk3 = v; yOpenWp(); sxRestore(s); }
   else if(a === 'ysm'){ SX.yso = SX.yso === v ? '' : v; SX.fo = ''; skRender(); } else if(a === 'ysort'){ const p = v.split(':'); SX.last['ys_' + p[0]] = p[1]; sxKeep({}); SX.yso = ''; skRender(); }
