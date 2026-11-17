@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261117-145116">
+<meta name="rvf-build" content="20261117-145606">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -28581,6 +28581,8 @@ table.sxRT th.a, table.sxRT td.a{ width:1%; }
 .sxGrid > :last-child:nth-child(odd){ }
 @media (max-width:560px){ .sxGrid > :last-child:nth-child(odd){ grid-column:1 / -1; } }
 .yPh{ min-width:54px; justify-content:center; }
+.hrTabs.sxIO{display:flex;width:100%}
+.hrTabs.sxIO button{flex:1 1 0;min-width:0;white-space:normal;line-height:1.2;padding:8px 4px;font-size:12px}
 </style>
 <div id="rvfBusy"><i></i><span id="rvfBusyTxt">Loading data…</span></div>
 <script>
@@ -29527,7 +29529,7 @@ function sxOpenForm(kind){
       ${sxField('Quantity', '<input id="sxRQty" type="text" placeholder="e.g. 200 kg">')}${sxField('Note (optional)', '<input id="sxRN" type="text">')}</div>`, sxSave('savereq', 'Save request'));
   } else if(kind === 'fin'){
     const o = sxFinOpts();
-    sxModal('Finishing entry', `<div class="sxF">${sxField('Date', `<input id="sxD" type="date" value="${skEsc(sxToday())}">`)}${sxField('Machine', `<select id="sxM">${sxOpt(o.ms.map(m => [m.id, m.name || m.id]), F.mc, 'Choose')}</select>`)}
+    sxModal('Unrolling entry', `<div class="sxF">${sxField('Date', `<input id="sxD" type="date" value="${skEsc(sxToday())}">`)}${sxField('Machine', `<select id="sxM">${sxOpt(o.ms.map(m => [m.id, m.name || m.id]), F.mc, 'Choose')}</select>`)}
       ${sxField('Item description', '<input id="sxItem" list="sxDesList" type="text" autocomplete="off" placeholder="Fills from the machine design">', 1)}
       ${sxField('Size', sxAllSizes().length ? `<select id="sxSize">${sxOpt(sxAllSizes(), F.size, 'Choose')}</select>` : '<input id="sxSize" type="text" placeholder="e.g. 200 x 300">')}${sxField('Type', `<select id="sxType">${sxOpt(o.types, F.type, 'Choose')}</select>`)}
       ${sxField('From department', `<select id="sxDept">${sxOpt(o.depts, F.dept, 'Choose')}</select>`)}${sxField('Quantity', '<input id="sxQty" type="number" inputmode="decimal" min="0" step="any" placeholder="0">')}
@@ -29831,7 +29833,7 @@ const yDL = () => `<datalist id="yIL">${yItems().filter(i => i.on !== false).map
 function yOpenRaw(){
   yCfg(); const c = SX.cfg, F = SX.last, k = SX.yk === 'out' ? 'out' : 'in';
   const tabs = `<div class="hrTabs sxIO">${[['in', 'IN · received'], ['out', 'OUT · issued']].map(x => `<button class="${k === x[0] ? 'active' : ''}" data-sx="yk" data-v="${x[0]}">${x[1]}</button>`).join('')}</div>`;
-  sxModal('Raw material', tabs + `<div class="sxF">
+  sxModal('Raw yarn', tabs + `<div class="sxF">
     ${sxField('Item (type code or colour, then choose)', '<input id="yI" list="yIL" type="text" autocomplete="off" placeholder="e.g. RM625 or SOFT SKY GREY">', 1)}
     <div class="field wide"><div id="yInfo" class="sxNote" style="margin:0;">Choose the item to see what is in the store.</div></div>
     <div class="field" id="yBxW"><label>Boxes</label><input id="yBx" type="number" inputmode="decimal" min="0" step="any" placeholder="0"></div>
@@ -29903,8 +29905,8 @@ function yRewHtml(){
 }
 function yOpenRew(){
   yCfg(); const k = SX.yk2 || 'in', F = SX.last;
-  const tabs = `<div class="hrTabs sxIO">${[['in', 'Rewound IN'], ['rc', 'Recovered from weaving IN'], ['out', 'OUT · to weaving']].map(x => `<button class="${k === x[0] ? 'active' : ''}" data-sx="yk2" data-v="${x[0]}">${x[1]}</button>`).join('')}</div>`;
-  sxModal('Rewinding', tabs + `<div class="sxF">
+  const tabs = `<div class="hrTabs sxIO">${[['in', 'Rewound IN'], ['rc', 'From weaving IN'], ['out', 'OUT · to weaving']].map(x => `<button class="${k === x[0] ? 'active' : ''}" data-sx="yk2" data-v="${x[0]}">${x[1]}</button>`).join('')}</div>`;
+  sxModal('Rewound yarn', tabs + `<div class="sxF">
     ${sxField('Item (type code or colour, then choose)', '<input id="yI" list="yIL" type="text" autocomplete="off" placeholder="e.g. RM625 or SOFT SKY GREY">', 1)}
     <div class="field wide"><div id="yInfo" class="sxNote" style="margin:0;">Choose the item.</div></div>
     ${sxField('Kg', '<input id="yKg" type="number" inputmode="decimal" min="0" step="any" placeholder="0">')}${k === 'rc' ? '' : sxField('Number of bobbins (optional)', '<input id="yBob" type="number" inputmode="decimal" min="0" step="any" placeholder="0">')}
@@ -29938,7 +29940,7 @@ function yWpHtml(){
 }
 function yOpenWp(){
   const c = yCfg(), k = SX.yk3 || 'in', F = SX.last;
-  sxModal('Warping beams', sxInOut('yk3', k, 'IN · beams made', 'OUT · beams used') + `<div class="sxF">${sxField('Colour', `<input id="yWc" list="yWl" type="text" autocomplete="off" value="${skEsc(F.ywc || '')}" placeholder="Choose or type">`, 1)}
+  sxModal('Warp beams', sxInOut('yk3', k, 'IN · beams made', 'OUT · beams used') + `<div class="sxF">${sxField('Colour', `<input id="yWc" list="yWl" type="text" autocomplete="off" value="${skEsc(F.ywc || '')}" placeholder="Choose or type">`, 1)}
     ${sxField('Number of beams', '<input id="yWn" type="number" inputmode="decimal" min="0" step="any" placeholder="0">')}${sxField('Total kg (auto from kg per beam)', '<input id="yWk" type="number" inputmode="decimal" min="0" step="any" placeholder="auto">')}
     ${sxField('Date', `<input id="sxD" type="date" value="${skEsc(sxToday())}">`)}${sxField('Note (optional)', '<input id="sxN" type="text">')}</div><datalist id="yWl">${yWpRows().map(r => `<option value="${skEsc(r.col)}">`).join('')}</datalist>`, sxSave('ysavewp', k === 'out' ? 'Save OUT' : 'Save IN'));
 }
