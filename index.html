@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261117-140713">
+<meta name="rvf-build" content="20261117-141330">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -29795,11 +29795,11 @@ function sxRawHtml(){
   let rows = all.filter(r => { if(F.sec && r.i.sec !== F.sec) return false; if(F.sup && r.i.sup !== F.sup) return false; if(F.fam && r.fam !== F.fam) return false; if(F.s && r.s !== F.s) return false; if(!F.show && !(r.kg > 0.0004 || r.s === 'out')) return false; if(q && (yLbl(r.i) + ' ' + r.i.sz).toLowerCase().indexOf(q) < 0) return false; return true; });
   ySortRows(rows, mode);
   const xs = F.cols === 'sup' || F.cols === 'both', xz = F.cols === 'sz' || F.cols === 'both';
-  const cols = [['Code', ''], ['Colour', '', 'k']].concat(xs ? [['Supplier', '']] : [], xz ? [['Yarn size', '']] : [], [['Boxes', '', 'r'], ['Used per day kg', '', 'r'], ['Available kg', '', 'r'], ['Days left', '', 'r']]);
+  const cols = [['Code', ''], ['Colour', '', 'k']].concat(xs ? [['Supplier', '']] : [], xz ? [['Yarn size', '']] : [], [['Used per day kg', '', 'r'], ['Boxes', '', 'r'], ['Available kg', '', 'r'], ['Days left', '', 'r']]);
   const tip = (r) => [r.i.code, r.i.col, r.i.sup, r.i.sz, r.i.kgb > 0 ? sxN(r.i.kgb) + ' kg in 1 box' : 'kg only'].filter(Boolean).join(' · ');
-  const mk = (r) => [`<span class="sxCode">${skEsc(r.i.code)}</span>`, `<span class="sxYc" title="${skEsc(tip(r))}">${yDot(yHex(r.i.col, r.fam))}${skEsc(r.i.col)}</span>`].concat(xs ? [`<span class="sxSm2">${skEsc(r.i.sup)}</span>`] : [], xz ? [`<span class="sxSm2">${skEsc(r.i.sz)}</span>`] : [], [r.bx != null && r.kg > 0 ? sxN(Math.round(r.bx * 10) / 10) : '<span class="sxSm2">-</span>', r.per > 0 ? `<span title="${r.set ? 'Set in Settings' : 'Worked out from the last 30 days'}">${sxN(r.per)}</span>` : '<span class="sxSm2">-</span>', `<b>${sxN(r.kg)}</b>`, yDays(r, ord)]);
+  const mk = (r) => [`<span class="sxCode">${skEsc(r.i.code)}</span>`, `<span class="sxYc" title="${skEsc(tip(r))}">${yDot(yHex(r.i.col, r.fam))}${skEsc(r.i.col)}</span>`].concat(xs ? [`<span class="sxSm2">${skEsc(r.i.sup)}</span>`] : [], xz ? [`<span class="sxSm2">${skEsc(r.i.sz)}</span>`] : [], [r.per > 0 ? `<span title="${r.set ? 'Set in Settings' : 'Worked out from the last 30 days'}">${sxN(r.per)}</span>` : '<span class="sxSm2">-</span>', r.bx != null && r.kg > 0 ? sxN(Math.round(r.bx * 10) / 10) : '<span class="sxSm2">-</span>', `<b>${sxN(r.kg)}</b>`, yDays(r, ord)]);
   const tbx = rows.reduce((a, r) => a + (r.bx != null ? r.bx : 0), 0), tkg = rows.reduce((a, r) => a + r.kg, 0), tpd = rows.reduce((a, r) => a + (r.kg > 0 ? r.per : 0), 0);
-  const foot = ['', '<b>Total</b>'].concat(xs ? [''] : [], xz ? [''] : [], [`<b>${sxN(Math.round(tbx))}</b>`, `<b>${sxN(tpd)}</b>`, `<b>${sxN(tkg)}</b>`, '']);
+  const foot = ['', '<b>Total</b>'].concat(xs ? [''] : [], xz ? [''] : [], [`<b>${sxN(tpd)}</b>`, `<b>${sxN(Math.round(tbx))}</b>`, `<b>${sxN(tkg)}</b>`, '']);
   h += sxHead('Raw material in store', mode === 'col' ? 'Grouped by colour' : Y_SORT[mode]) + '<div class="card sxCard">' + sxTbl(cols, yGroups(rows, mode, cols, mk), foot, all.length ? 'Nothing found. Change the filter, or press Update to add stock.' : 'No items yet.') + '</div>';
   const old = sxRaw(), oc = Object.keys(old);
   if(oc.length){ const lr = []; oc.sort().forEach(c => Object.keys(old[c]).sort().forEach(k => Object.keys(old[c][k].st).forEach(s => lr.push([`<span class="sxSm2">${skEsc(c)}</span>`, sxColT(k), skEsc(s), `<b>${sxN(old[c][k].st[s])}</b>`])))); h += sxHead('Earlier raw weft entries', 'Kept as they were') + '<div class="card sxCard">' + sxTbl([['Category', ''], ['Colour', '', 'k'], ['Store', ''], ['Kg', '', 'r']], lr, null, '') + '</div>'; }
