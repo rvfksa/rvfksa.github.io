@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261117-090903">
+<meta name="rvf-build" content="20261117-094313">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -28471,58 +28471,29 @@ body.rvfBusy #screen-dashboard .card{ opacity:.5; transition:opacity .2s; }
 .sxDots.wide{ display:flex; width:100%; max-width:92px; height:10px; margin:0 0 5px; border-radius:6px; }
 .sxColT{ display:block; min-width:0; }
 .sxColT .t{ display:block; font-size:11.5px; font-weight:600; color:var(--text); line-height:1.25; }
-.sxTw{ overflow-x:auto; margin:0 -2px; padding:0 2px; }
-.sxT{ min-width:0; }
-.sxTr{ display:grid; align-items:center; gap:0 12px; padding:10px 8px; border-bottom:1px solid var(--line); font-size:13px; color:var(--text); }
-.sxTr .c{ min-width:0; }
-.sxTr .c.r{ text-align:right; }
-.sxTr .c.a{ display:flex; gap:6px; justify-content:flex-end; align-items:center; }
-.sxTr .c b{ font-weight:700; color:var(--text-strong); font-variant-numeric:tabular-nums; }
-.sxTr .c small{ font-size:11px; color:var(--muted); font-weight:500; }
-.sxTr .sxSm{ display:block; margin-top:2px; }
+.sxCard .table-scroll{ border:0; box-shadow:none; border-radius:0; }
+table.sxRT{ font-size:12px; }
+table.sxRT th{ position:static; font-weight:600; white-space:nowrap; }
+table.sxRT td{ padding:9px 7px; font-weight:400; }
+table.sxRT th.r, table.sxRT td.r{ text-align:right; }
+table.sxRT th.a, table.sxRT td.a{ text-align:right; width:1%; }
+table.sxRT td b{ font-weight:600; }
+table.sxRT .sxColT{ max-width:230px; }
+table.sxRT tr.sxTot td{ border-top:1px solid var(--line); background:var(--panel-2); font-weight:600; color:var(--text-strong); }
+table.sxRT td.sxTe{ text-align:center; color:var(--muted); padding:22px 12px; white-space:normal; }
 .sxSm2{ font-size:12px; color:var(--muted); }
-.sxTh{ background:var(--panel-2); border-radius:10px; border-bottom:0; padding:8px; font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); }
-.sxTr:not(.sxTh):not(.sxTf):hover{ background:color-mix(in srgb, var(--amber) 4%, #ffffff); }
-.sxTf{ border-bottom:0; border-top:2px solid var(--line); background:var(--panel-2); border-radius:10px; margin-top:6px; }
-.sxTe{ padding:22px 12px; text-align:center; color:var(--muted); font-size:13px; }
-.sxBig{ font-size:16px; display:block; }
-.sxTr .c .skTag{ display:inline-block; margin-top:3px; font-size:9.5px; padding:2px 8px; }
-.sxPk{ display:inline-block; font-size:10.5px; font-weight:700; color:var(--acc-purple); background:var(--acc-purple-soft); border-radius:999px; padding:1px 8px; }
+.sxBad{ color:var(--danger); }
 .sxFl{ color:var(--warn); }
-.sxMt{ display:block; height:5px; border-radius:999px; background:#e8ebf3; overflow:hidden; margin:5px 0 0 auto; max-width:64px; }
-.sxMt i{ display:block; height:100%; background:var(--ok); border-radius:999px; }
-.sxSet{ border:1px dashed var(--amber); background:var(--amber-soft); color:var(--amber); border-radius:999px; font:inherit; font-size:11px; font-weight:700; padding:2px 10px; cursor:pointer; }
 .sxFb{ width:34px; height:34px; position:relative; }
 .sxFb b{ position:absolute; top:-5px; right:-5px; min-width:16px; height:16px; border-radius:999px; background:var(--danger); color:#fff; font-size:10px; font-weight:700; display:flex; align-items:center; justify-content:center; }
 .sxFp{ margin:0 0 12px; }
 .sxFg{ display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; }
 .sxFpF{ display:flex; gap:8px; justify-content:flex-end; margin-top:12px; }
-@media (max-width:700px){
-  .sxTr:not(.sxTh){ grid-template-columns:repeat(auto-fit,minmax(78px,1fr)) !important; gap:8px 10px; padding:12px 6px; }
-  .sxTh{ display:none; }
-  .sxTr .c.k, .sxTr .c.a{ grid-column:1 / -1; }
-  .sxTr .c.a{ justify-content:flex-start; }
-  .sxTr .c.r{ text-align:left; }
-  .sxTr .c[data-l]::before{ content:attr(data-l); display:block; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); margin-bottom:2px; }
-  .sxTr .c:empty{ display:none; }
-  .sxTf{ margin-top:8px; }
-  .sxMt{ margin-left:0; }
-}
 
-/* calmer rows: one line each, lighter text */
-.sxTr{ padding:8px 8px; font-size:13px; }
-.sxTr .c b{ font-weight:600; color:var(--text); }
-.sxTr .c .sxNm{ font-weight:500; color:var(--text-strong); }
-.sxTr .c .sxSm{ display:inline; margin:0 0 0 6px; }
-.sxColT{ display:flex; align-items:center; gap:8px; }
-.sxColT .t{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-weight:500; font-size:12.5px; }
+
+.sxColT{ display:flex; align-items:center; gap:8px; min-width:0; }
+.sxColT .t{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-weight:400; font-size:12px; }
 .sxDots.wide{ width:34px; max-width:34px; height:12px; margin:0; flex:none; }
-.sxBig{ display:inline; font-size:13.5px; }
-.sxTr .c .skTag{ display:inline-block; margin:0 8px 0 0; vertical-align:1px; }
-.sxMt{ display:inline-block; width:38px; margin:0 8px 0 0; vertical-align:middle; }
-.sxTh{ font-weight:600; }
-.sxTf .c b{ font-weight:700; }
-@media (max-width:700px){ .sxTr .c .sxSm{ display:block; margin:2px 0 0; } .sxColT .t{ white-space:normal; } }
 </style>
 <div id="rvfBusy"><i></i><span id="rvfBusyTxt">Loading data…</span></div>
 <script>
@@ -29301,9 +29272,11 @@ function sxPageHead(pg){
 const SX_FUN = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z"/></svg>';
 /* cols: [label, width, flags]  flags: k = main cell, r = right aligned, a = buttons */
 function sxTbl(cols, rows, foot, empty){
-  const tpl = cols.map(c => c[1]).join(' ');
-  const row = (cells, cls) => `<div class="sxTr ${cls || ''}" style="grid-template-columns:${tpl}">${cells.map((x, i) => `<div class="c ${cols[i][2] || ''}"${cols[i][0] && (cols[i][2] || '').indexOf('k') < 0 ? ` data-l="${skEsc(cols[i][0])}"` : ''}>${x == null ? '' : x}</div>`).join('')}</div>`;
-  return `<div class="sxTw"><div class="sxT"><div class="sxTr sxTh" style="grid-template-columns:${tpl}">${cols.map(c => `<div class="c ${c[2] || ''}">${c[0]}</div>`).join('')}</div>${rows.length ? rows.map(r => row(r)).join('') : `<div class="sxTe">${empty || 'Nothing here yet.'}</div>`}${foot && rows.length ? row(foot, 'sxTf') : ''}</div></div>`;
+  const n = cols.length + 1, cl = (c) => (c[2] || '').replace('k', '').trim();
+  let k = 0;
+  const body = rows.map(r => { if(r && r.g != null) return `<tr class="date-group-row"><td colspan="${n}">${r.g}</td></tr>`; k++; return `<tr><td class="serial">${k}</td>${r.map((x, i) => `<td class="${cl(cols[i])}">${x == null ? '' : x}</td>`).join('')}</tr>`; }).join('');
+  const ft = foot && k ? `<tr class="sxTot"><td class="serial"></td>${foot.map((x, i) => `<td class="${cl(cols[i])}">${x == null ? '' : x}</td>`).join('')}</tr>` : '';
+  return `<div class="table-scroll"><table class="report-table sxRT"><thead><tr><th class="serial">#</th>${cols.map(c => `<th class="${cl(c)}">${c[0]}</th>`).join('')}</tr></thead><tbody>${body || `<tr><td colspan="${n}" class="sxTe">${empty || 'Nothing here yet.'}</td></tr>`}${ft}</tbody></table></div>`;
 }
 /* ---------- filter: the same round funnel button and panel as Dashboard ---------- */
 const sxFget = (key) => key === 'fin' ? SX.fil : (SX.ff[key] = SX.ff[key] || {});
@@ -29373,49 +29346,48 @@ function sxFinHtml(){
   return h;
 }
 const SX_FS = [['cr', 'Carpets & Rugs'], ['vip', 'VIP'], ['up', 'Upholstery'], ['q2', '2nd quality']];
-/* what each group shows: same simple table, only the columns that group needs */
+/* what each group shows: only the columns that group needs (same plain table as the Report) */
+const sxPk = (i) => { const x = i.x || {}; let nd = x.nd, nc = x.nc, nm = String(i.name || ''); const m = nm.match(/\(\s*(\d+)\s*D\s*-\s*(\d+)\s*C\s*\)/i); if(m){ if(!nd) nd = m[1]; if(!nc) nc = m[2]; nm = nm.replace(m[0], ''); } return { nd: nd || '', nc: nc || '', name: nm.replace(/\s+/g, ' ').trim() }; };
 function sxFsCols(g){
-  const U = { cr: 'Bundles', vip: 'Bundles', q2: 'Packs', up: 'Rolls' }[g] || 'Qty', act = ['', '116px', 'a'];
-  if(g === 'cr') return [['Code', '82px'], ['Item', 'minmax(150px,1.7fr)', 'k'], ['Colours', 'minmax(200px,2.2fr)'], ['Ready ' + U.toLowerCase(), '104px', 'r'], ['Pieces', '92px', 'r'], ['Truck holds', '86px', 'r'], ['Trucks', '96px', 'r'], ['On floor', '82px', 'r'], act];
-  if(g === 'vip') return [['Code', '82px'], ['Item', 'minmax(150px,1.7fr)', 'k'], ['Colour', 'minmax(200px,2.2fr)'], ['Ready bundles', '104px', 'r'], ['Pieces', '92px', 'r'], ['Truck holds', '86px', 'r'], ['Trucks', '96px', 'r'], ['On floor', '82px', 'r'], act];
-  if(g === 'up') return [['Code', '110px'], ['Item', 'minmax(150px,1.7fr)', 'k'], ['Colour', 'minmax(110px,1.2fr)'], ['Roll', '120px'], ['In stock', '104px', 'r'], ['Metres', '86px', 'r'], act];
-  return [['Code', '82px'], ['Item', 'minmax(150px,1.7fr)', 'k'], ['Colour', 'minmax(110px,1.2fr)'], ['In stock', '104px', 'r'], ['Pieces', '92px', 'r'], act];
+  if(g === 'cr') return [['Code', ''], ['Item', ''], ['Designs in 1 bundle', 'r'], ['Colours in 1 bundle', 'r'], ['Colour mix', ''], ['Available bundles', 'r'], ['Pieces', 'r'], ['Unpacked on floor', 'r'], ['', 'a']];
+  if(g === 'vip') return [['Code', ''], ['Item', ''], ['Size', ''], ['Model', ''], ['Category', ''], ['Thick', ''], ['Colour', ''], ['Pcs per bundle', 'r'], ['Available bundles', 'r'], ['Pieces', 'r'], ['Unpacked on floor', 'r'], ['', 'a']];
+  if(g === 'up') return [['Code', ''], ['Item', ''], ['Size', ''], ['Quality', ''], ['Colour', ''], ['Metres per roll', 'r'], ['Rolls in stock', 'r'], ['Total metres', 'r'], ['', 'a']];
+  return [['Code', ''], ['Item', ''], ['Colour', ''], ['Pcs per pack', 'r'], ['Packs in stock', 'r'], ['Pieces', 'r'], ['', 'a']];
 }
 const sxLvl = (i) => { const b = skBal(i), sf = skSafe(i); return b <= 0 ? 'out' : sf > 0 && b < sf ? 'low' : 'ok'; };
-const sxStTag = (i) => { const L = sxLvl(i); return L === 'out' ? '<span class="skTag out">Out</span>' : L === 'low' ? '<span class="skTag need">Low</span>' : (skSafe(i) > 0 ? '<span class="skTag ok">OK</span>' : ''); };
+const sxDash = '<span class="sxSm2">—</span>';
 function sxFsRow(i){
-  const b = skBal(i), fl = sxFl(i), g = i.g, x = i.x || {}, tb = sxTruck(i), two = (g === 'cr' || g === 'vip'), per = Number(i.per) || 0;
-  const code = i.code ? `<span class="sxCode">${skEsc(i.code)}</span>` : '<span class="sxSm2">—</span>';
-  const sub = g === 'cr' ? (x.nd ? `<span class="sxPk" title="${skEsc(x.nd + ' designs · ' + x.nc + ' colours in one bundle')}">${skEsc(x.nd)}D · ${skEsc(x.nc)}C</span>` : '') : g === 'vip' ? [x.model, x.cat, x.size, x.thk ? x.thk + ' thick' : ''].filter(Boolean).map(skEsc).join(' · ') : g === 'up' ? [x.size, x.q].filter(Boolean).map(skEsc).join(' · ') : '';
-  const name = `<span class="sxNm">${skEsc(i.name)}</span>${sub ? ` <small class="sxSm">${sub}</small>` : ''}`;
-  const ready = `${sxStTag(i)}<b class="sxBig">${skNum(b)}</b>`;
-  const pcs = per > 0 ? `<b title="${sxN(per)} per ${g === 'q2' ? 'pack' : 'bundle'}">${sxN(b * per)}</b>` : '<span class="sxSm2">—</span>';
-  const cap = tb ? `<b>${sxN(tb)}</b>` : (skIsAdmin() ? `<button type="button" class="sxSet" data-sk="edititem" data-v="${skEsc(i.id)}">Set</button>` : '<span class="sxSm2">—</span>');
-  const tr = tb ? (b / tb) : 0, trc = tb ? `<span class="sxMt"><i style="width:${Math.min(100, Math.round((tr % 1 === 0 && tr > 0 ? 1 : tr % 1) * 100))}%"></i></span><b>${tr >= 10 ? Math.round(tr) : (Math.round(tr * 100) / 100)}</b>` : '<span class="sxSm2">—</span>';
-  const flc = fl > 0 ? `<b class="sxFl">${skNum(fl)}</b>` : '<span class="sxSm2">0</span>';
-  const btn = (sxCan('fst') ? `<button class="pcBtnSoft sm" data-sx="fsm" data-v="${skEsc(i.id)}" data-k="${g === 'up' || g === 'q2' ? 'in' : 'in'}">Update</button>` : '') + (skIsAdmin() ? `<button type="button" class="mini-icon-btn" data-sk="edititem" data-v="${skEsc(i.id)}" title="Edit item" aria-label="Edit item">${sxIc('cog', 13)}</button>` : '');
-  const col = i.col ? sxColT(i.col) : '<span class="sxSm2">—</span>';
-  if(g === 'cr' || g === 'vip') return [code, name, col, ready, pcs, cap, trc, flc, btn];
-  if(g === 'up') return [code, name, col, [x.mpr ? sxN(x.mpr) + ' m per roll' : '', ''].join('') || '<span class="sxSm2">—</span>', ready, x.mpr ? `<b>${sxN(b * Number(x.mpr))}</b>` : '<span class="sxSm2">—</span>', btn];
-  return [code, name, col, ready, pcs, btn];
+  const b = skBal(i), fl = sxFl(i), g = i.g, x = i.x || {}, per = Number(i.per) || 0, P = sxPk(i), L = sxLvl(i);
+  const code = i.code ? `<span class="sxCode">${skEsc(i.code)}</span>` : sxDash;
+  const name = skEsc(P.name);
+  const av = `<span class="${L === 'ok' ? '' : 'sxBad'}" title="${L === 'out' ? 'Out of stock' : L === 'low' ? 'Below the minimum' : ''}">${skNum(b)}</span>`;
+  const pcs = per > 0 ? sxN(b * per) : sxDash;
+  const flc = fl > 0 ? `<span class="sxFl">${skNum(fl)}</span>` : '<span class="sxSm2">0</span>';
+  const col = i.col ? sxColT(i.col) : sxDash;
+  const ed = skIsAdmin() ? `<button type="button" class="mini-icon-btn" data-sk="edititem" data-v="${skEsc(i.id)}" title="Edit item" aria-label="Edit item">${sxIc('cog', 13)}</button>` : '';
+  const t = (v) => v ? skEsc(v) : sxDash;
+  if(g === 'cr') return [code, name, t(P.nd), t(P.nc), col, av, pcs, flc, ed];
+  if(g === 'vip') return [code, name, t(x.size), t(x.model), t(x.cat), x.thk ? skEsc(x.thk) : sxDash, col, per > 0 ? sxN(per) : sxDash, av, pcs, flc, ed];
+  if(g === 'up') return [code, name, t(x.size), t(x.q), col, x.mpr ? sxN(x.mpr) : sxDash, av, x.mpr ? sxN(b * Number(x.mpr)) : sxDash, ed];
+  return [code, name, col, per > 0 ? sxN(per) : sxDash, av, pcs, ed];
 }
 const sxColTokens = (l) => { const s = {}; l.forEach(i => String(i.col || '').split(/[,\/\-+&]|\band\b/i).forEach(t => { t = t.trim().toUpperCase(); if(t.length > 1) s[t] = 1; })); return Object.keys(s).sort(); };
 function sxFstHtml(){
   const g = SX.fsub, q = (SX.fq || '').toLowerCase(), F = sxFget('fst'), two = (g === 'cr' || g === 'vip');
   const base = SK.items.filter(i => i.g === g && i.on !== false);
-  const flds = [['col', 'Colour', sxColTokens(base)], ['st', 'Stock', [['ok', 'In stock'], ['low', 'Low (below minimum)'], ['out', 'Out of stock']]]].concat(two ? [['fl', 'On the floor', [['yes', 'Has floor stock']]], ['tc', 'Truck holds', [['no', 'Not set yet']]]] : []);
-  let l = base.filter(i => (!q || (i.name + ' ' + (i.code || '') + ' ' + (i.col || '')).toLowerCase().includes(q)) && (!F.col || String(i.col || '').toUpperCase().indexOf(F.col) >= 0) && (!F.st || sxLvl(i) === F.st) && (!F.fl || sxFl(i) > 0) && (!F.tc || !sxTruck(i)));
+  const flds = [['col', 'Colour', sxColTokens(base)], ['st', 'Stock', [['ok', 'In stock'], ['low', 'Low (below minimum)'], ['out', 'Out of stock']]]].concat(two ? [['fl', 'Unpacked on floor', [['yes', 'Has unpacked stock']]]] : []);
+  let l = base.filter(i => (!q || (i.name + ' ' + (i.code || '') + ' ' + (i.col || '')).toLowerCase().includes(q)) && (!F.col || String(i.col || '').toUpperCase().indexOf(F.col) >= 0) && (!F.st || sxLvl(i) === F.st) && (!F.fl || sxFl(i) > 0));
   l = l.slice().sort((a, b) => String(a.name).localeCompare(b.name) || String(a.col || '').localeCompare(String(b.col || '')));
   SK.cur = l; SK.grp = g;
   const tot = l.reduce((a, i) => a + skBal(i), 0), fl = l.reduce((a, i) => a + sxFl(i), 0), pcs = l.reduce((a, i) => a + skBal(i) * (Number(i.per) || 0), 0), trk = l.reduce((a, i) => { const t = sxTruck(i); return a + (t ? skBal(i) / t : 0); }, 0), mtr = l.reduce((a, i) => a + skBal(i) * (Number((i.x || {}).mpr) || 0), 0);
   let h = sxTop(sxSub('fsub', g, SX_FS) + sxSearch('sxFq2', SX.fq, 'Search name, code or colour…') + sxFilt('fst', flds) + '<span class="grow"></span>' + sxDlBtn('stock') + (skCanAdd() ? `<button type="button" class="pcBtnMain sm" data-sk="newitem" title="New item">${sxIc('plus', 14)}<span class="sxAddL">New item</span></button>` : '')) + sxFpop('fst', flds);
-  h += `<div class="card sxCard"><div class="sxGrid">${sxTile('Ready', sxN(tot) + '<small> ' + skUnit(g) + '</small>', two && trk ? '= ' + sxN(Math.round(trk * 100) / 100) + ' trucks' : '', '', 'pack', 'blue')}${two ? sxTile('On the floor', sxN(fl) + '<small> bundles</small>', 'Finished, not packed', '', 'floor', 'amber') : ''}${sxTile('Items', l.length, base.length !== l.length ? 'of ' + base.length : '', '', 'raw', 'purple')}</div></div>`;
-  const cols = sxFsCols(g), n = cols.length;
-  let foot = null; const E = (k) => Array(k).fill('');
-  if(two) foot = ['', '<b>Total</b>', '', `<b class="sxBig">${skNum(tot)}</b>`, `<b>${sxN(pcs)}</b>`, '', `<b>${sxN(Math.round(trk * 100) / 100)}</b>`, `<b>${skNum(fl)}</b>`, ''];
-  else if(g === 'up') foot = ['', '<b>Total</b>', '', '', `<b class="sxBig">${skNum(tot)}</b>`, `<b>${sxN(mtr)}</b>`, ''];
-  else foot = ['', '<b>Total</b>', '', `<b class="sxBig">${skNum(tot)}</b>`, `<b>${sxN(pcs)}</b>`, ''];
-  h += '<div class="card sxCard">' + sxTbl(cols, l.map(i => sxFsRow(i)), foot, sxIsF('fst') || q ? 'No items match this filter.' : 'No items yet. Press New item to add one' + (skIsAdmin() ? ', or load them from the Excel in Stock Settings.' : '.')) + '</div>';
+  h += `<div class="card sxCard"><div class="sxGrid">${sxTile('Available stock', sxN(tot) + '<small> ' + skUnit(g) + '</small>', two && trk ? 'About ' + sxN(Math.round(trk * 10) / 10) + ' trucks' : '', '', 'pack', 'blue')}${two ? sxTile('Unpacked on floor', sxN(fl) + '<small> bundles</small>', 'Finished, not packed yet', '', 'floor', 'amber') : ''}${sxTile('Items', l.length, base.length !== l.length ? 'of ' + base.length : '', '', 'raw', 'purple')}</div></div>`;
+  const cols = sxFsCols(g).map(c => [c[0], '', c[1]]); let foot;
+  if(g === 'cr') foot = ['', 'Total', '', '', '', skNum(tot), sxN(pcs), skNum(fl), ''];
+  else if(g === 'vip') foot = ['', 'Total', '', '', '', '', '', '', skNum(tot), sxN(pcs), skNum(fl), ''];
+  else if(g === 'up') foot = ['', 'Total', '', '', '', '', skNum(tot), sxN(mtr), ''];
+  else foot = ['', 'Total', '', '', skNum(tot), sxN(pcs), ''];
+  h += '<div class="card sxCard">' + sxTbl(cols, l.map(i => sxFsRow(i)), foot, sxIsF('fst') || q ? 'No items match this filter.' : 'No items yet. Press New item to add one.') + '</div>';
   return h;
 }
 function sxDmHtml(){
