@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta name="robots" content="noindex">
-<meta name="rvf-build" content="20261117-090424">
+<meta name="rvf-build" content="20261117-090629">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -29173,7 +29173,7 @@ function sxFl(i){ return Math.max(0, Number(SX.bal['fl|' + i.id]) || 0); }
 function sxTruck(i){ const t = Number(i.truck) > 0 ? Number(i.truck) : Number(SX.cfg.truckBundle) || 0; return t; }
 function sxFin(ym){ return sxEnt('f', ym); }
 /* ---------- colour samples: a small dot (or dots) next to every colour name ---------- */
-const SX_CW = { black: '#1f2937', white: '#ffffff', grey: '#9ca3af', gray: '#9ca3af', ash: '#b6bcc6', silver: '#c0c6d0', blue: '#3b82f6', navy: '#1e3a8a', sky: '#7dd3fc', green: '#16a34a', olive: '#6b7a2a', maroon: '#8b1d2c', red: '#dc2626', wine: '#7f1d3a', burgundy: '#7f1d3a', brown: '#7b4a2a', brwn: '#7b4a2a', brn: '#7b4a2a', coffee: '#6f4e37', beige: '#d8c3a0', cream: '#f3e9cf', ivory: '#f6f0dc', sand: '#d9c29a', camel: '#c19a6b', tan: '#d2b48c', gold: '#d4a017', golden: '#d4a017', yellow: '#facc15', orange: '#f97316', pink: '#ec4899', purple: '#8b5cf6', violet: '#7c3aed', lilac: '#c4b5fd', turquoise: '#14b8a6', teal: '#0d9488', cyan: '#06b6d4', rose: '#fb7185', peach: '#fdba74', khaki: '#bdb76b', mustard: '#d4a72c', charcoal: '#374151' };
+const SX_CW = { black: '#1f2937', white: '#ffffff', grey: '#9ca3af', gray: '#9ca3af', ash: '#b6bcc6', silver: '#c0c6d0', blue: '#3b82f6', navy: '#1e3a8a', sky: '#7dd3fc', green: '#16a34a', olive: '#6b7a2a', maroon: '#8b1d2c', red: '#dc2626', wine: '#7f1d3a', burgundy: '#7f1d3a', brown: '#7b4a2a', brwn: '#7b4a2a', brwon: '#7b4a2a', pur: '#8b5cf6', rose: '#e11d74', lblue: '#7dd3fc', brn: '#7b4a2a', coffee: '#6f4e37', beige: '#d8c3a0', cream: '#f3e9cf', ivory: '#f6f0dc', sand: '#d9c29a', camel: '#c19a6b', tan: '#d2b48c', gold: '#d4a017', golden: '#d4a017', yellow: '#facc15', orange: '#f97316', pink: '#ec4899', purple: '#8b5cf6', violet: '#7c3aed', lilac: '#c4b5fd', turquoise: '#14b8a6', teal: '#0d9488', cyan: '#06b6d4', rose: '#fb7185', peach: '#fdba74', khaki: '#bdb76b', mustard: '#d4a72c', charcoal: '#374151' };
 const SX_MOD = { l: 1, lt: 1, light: 1, soft: 1, pale: 1, d: -1, dk: -1, dark: -1, deep: -1 };
 function sxMix(h, t, a){ const n = parseInt(h.slice(1), 16), f = (v) => Math.round(v + (t - v) * a); return '#' + [f((n >> 16) & 255), f((n >> 8) & 255), f(n & 255)].map(v => v.toString(16).padStart(2, '0')).join(''); }
 function sxColHex(name){
