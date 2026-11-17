@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261117-162500">
+<meta name="rvf-build" content="20261117-162846">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -30096,7 +30096,7 @@ skFloorSvg = function(dept){
     else if(!d) g += `<text x="${cx + CW / 2}" y="${cy + H / 2 + 8}" font-size="${10 * K * FS}" fill="#a16207" text-anchor="middle">No design</text>`;
     else {
       let ty = cy + 34 * K; wrap(d.name, 10.5 * K * FS, CW - 14, K > 1 ? 2 : 2).forEach(l => { g += `<text x="${cx + CW / 2}" y="${ty}" font-size="${10.5 * K * FS}" font-weight="700" fill="#0b1220" text-anchor="middle">${E(l)}</text>`; ty += 13 * K; });
-      if(p.col){ const hx = sxColHex(p.col).slice(0, 3), dr = 4.4 * K, dw = hx.length ? hx.length * dr * 1.5 + 3 : 0, ft = flrFit(p.col, 10 * K * FS, false, CW - 18 - dw), x0 = cx + CW / 2 - (flrEst(ft, 10 * K * FS, false) + dw) / 2; hx.forEach((c, q) => { g += `<circle cx="${(x0 + dr + q * dr * 1.5).toFixed(1)}" cy="${(ty - 3 * K).toFixed(1)}" r="${dr}" fill="${c}" stroke="rgba(15,23,42,.35)" stroke-width=".7"/>`; }); g += `<text x="${(x0 + dw).toFixed(1)}" y="${ty + 1}" font-size="${10 * K * FS}" fill="#4338ca">${E(ft)}</text>`; ty += 13 * K; }
+      if(p.col){ const hx = sxColHex(p.col).slice(0, 3), dr = 3.7 * K, dw = hx.length ? (hx.length - 1) * dr * 1.5 + 2 * dr + 6 * K : 0, ft = flrFit(p.col, 10 * K * FS, false, CW - 18 - dw), x0 = cx + CW / 2 - (flrEst(ft, 10 * K * FS, false) + dw) / 2; hx.forEach((c, q) => { g += `<circle cx="${(x0 + dr + q * dr * 1.5).toFixed(1)}" cy="${(ty - 3 * K).toFixed(1)}" r="${dr}" fill="${c}" stroke="rgba(15,23,42,.35)" stroke-width=".7"/>`; }); g += `<text x="${(x0 + dw).toFixed(1)}" y="${ty + 1}" font-size="${10 * K * FS}" fill="#4338ca">${E(ft)}</text>`; ty += 13 * K; }
       const cl = [p.c1, p.c2, p.c3].filter(Boolean).join(' / '); if(cl) g += `<text x="${cx + CW / 2}" y="${ty + 1}" font-size="${8.5 * K * FS}" fill="#6b7280" text-anchor="middle">${E(flrFit(cl, 8.5 * K * FS, false, CW - 14))}</text>`;
     }
     const xc = (typeof MP_XL !== 'undefined' && MP_XL[String(mid)]) || [], cat = p.cat || (stop ? '' : xc[1]) || '';
