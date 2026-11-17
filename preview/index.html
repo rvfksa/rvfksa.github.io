@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head><meta name="robots" content="noindex">
-<meta name="rvf-build" content="20261117-075944">
+<meta name="rvf-build" content="20261117-080130">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -28823,7 +28823,7 @@ function skPlanHtml(nb){
 
 /* ===== Stock > Machines: same floor drawing as the Dashboard machine layout (RVF / SSTM), showing the design on each machine ===== */
 function skFloorSvg(dept){
-  const sp = flrSpec(dept), W = dept === 'SSTM' ? 130 : 160, G = 10, AW = 40, WG = dept === 'SSTM' ? 34 : 24, BG = 10, CW = W - G, K = dept === 'SSTM' ? 1.5 : 1.3, H = dept === 'SSTM' ? 132 : 118, PAD = 12;
+  const sp = flrSpec(dept), W = dept === 'SSTM' ? 130 : 160, G = 10, AW = 40, WG = dept === 'SSTM' ? 34 : 24, BG = 10, CW = W - G, K = dept === 'SSTM' ? 1.85 : 1.6, H = dept === 'SSTM' ? 164 : 146, PAD = 12;
   const lw = sp.lc * W, rw = sp.rc * W, totalW = lw + AW + rw, rx = lw + AW, topPad = 0;
   const ys = []; let y = 0; sp.rows.forEach((r, t) => { ys.push(y); y += H; if(t < sp.rows.length - 1) y += sp.back(t) ? BG : WG; });
   const totalH = y, E = skEsc;
