@@ -1,8 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-<meta name="robots" content="noindex">
-<meta name="rvf-build" content="20261117-105123">
+<head><meta name="robots" content="noindex">
+<meta name="rvf-build" content="20261117-110522">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -28509,6 +28508,16 @@ table.sxRT th.a, table.sxRT td.a{ width:1%; }
 .sxCw{ display:flex; flex-wrap:nowrap; gap:3px 12px; justify-content:flex-start; max-width:430px; vertical-align:middle; }
 .sxCc{ display:inline-flex; align-items:center; gap:5px; font-style:normal; font-size:11px; font-weight:400; line-height:1.3; color:var(--text); white-space:nowrap; }
 .sxCc b{ width:9px; height:9px; border-radius:50%; flex:none; box-shadow:inset 0 0 0 1px rgba(15,23,42,.22); }
+.sxYc{ display:inline-flex; align-items:center; gap:7px; font-size:12.5px; }
+.sxYd{ width:10px; height:10px; border-radius:50%; border:1px solid rgba(0,0,0,.18); flex:none; display:inline-block; vertical-align:middle; margin-right:6px; }
+.sxYc .sxYd{ margin-right:0; }
+.sxFpL{ display:grid; gap:2px; padding:2px; }
+.sxFpL button{ text-align:left; background:none; border:0; padding:9px 12px; border-radius:8px; font:inherit; font-size:13px; color:var(--text); cursor:pointer; }
+.sxFpL button:hover{ background:var(--panel-2); }
+.sxFpL button.active{ background:var(--panel-2); font-weight:700; color:var(--text-strong); }
+.yOpT input{ width:92px; padding:5px 7px; font-size:12.5px; }
+.yOpT td, .yOpT th{ white-space:nowrap; }
+.yOpT td .sxSm2{ white-space:normal; }
 </style>
 <div id="rvfBusy"><i></i><span id="rvfBusyTxt">Loading data…</span></div>
 <script>
@@ -29113,12 +29122,13 @@ function skDownload(kind){
     skDlXlsx('machine-plan', 'Machines', [['Machine', 'Department', 'Design', 'Colour', 'Weft / colour 1', 'Weft / colour 2', 'Weft / colour 3', 'Status', 'Responsible', 'On this design since', 'Last changed by', 'Last changed']].concat((state.machines || []).filter(m => SK.dept === 'ALL' || m.department === SK.dept).map(m => { const p = pm[m.id] || {}; return [m.name || m.id, m.department || '', p.des ? (skDesign(p.des) || {}).name || '' : '', p.col || '', p.c1 || '', p.c2 || '', p.c3 || '', m.status === 'stopped' || p.st === 'stop' ? 'Stopped' : (p.des ? 'Running' : 'Free'), p.respN || '', p.since || '', p.ub || '', skWhen(p.ut)]; })));
   }
 }
+const SX_YSEED = [["Weft","RM1108","WEFT - 3/1","VISHAL, INDIA","NE 3/1-PC",25.0,0.0],["Weft","RM1108","WEFT - 3/1","LUCKY, CHINA","NE 3/1-PC",24.5,0.0],["Weft","RM1108","WEFT - 3/1","COLOSSUSTEX","NE 3/1-PC",25.04,0.0],["Weft","RM1108","WEFT - 3/1","GAMA, TURKEY","NE 3/1-PC",25.0,43725.0],["Weft","RM1108","WEFT - 3/1","GSM INDIA","NE 3/1-PC",25.0,0.0],["Pile","RM625","SOFT SKY GREY-SF87","HUAYUAN,CHINA","450D/192F",38,0.0],["Pile","RM624","SOFT N. BLUE-SF19","HUAYUAN,CHINA","450D/192F",38,0.0],["Pile","RM708","SOFT L BROWN-SF14","HUAYUAN,CHINA","450D/192F",39,0.0],["Pile","RM1023","BEIGE SF056","HUAYUVAN, CHINA","450D/192F",37.29,0.0],["Pile","RM627","SOFT MAROON-SF03","HUAYUAN,CHINA","450D/192F",38,0.0],["Pile","RM448","CHINA BLACK-HIM","HUAYUAN, CHINA","450D/144F",37.0,0.0],["Pile","RM445","RAW WHITE-HIM","HUAYUAN,CHINA","450D/144F",37.72,85654.85],["Warp","RM448","CHINA BLACK-HIM","HUAYUAN, CHINA","450D/144F",38.0,6536.0],["Warp","RM692","DODIHA BLACK","DODHIA, INDIA","450D/144F",32.21,73084.49],["Warp","RM1109","YELLOW- TB 17","HUAYUAN, CHINA","450D/144F",38.0,48336.0],["Warp","RM1109","MUSTARD YELLOW","DODHIA, INDIA","450D/144F",31.84,101042.0],["Warp","RM1109","YELLOW-TSM INDIA","TSM , INDIA","450D/144F",31.38,93763.44],["Fringing","RM574","MAROON-20555","DEEPAK,INDIA","NE 10/2",50.0,12700.0],["Fringing","RM700","CHOCOLATE 9/2","DEEPAK,INDIA","NE 9/2",46.0,1978.0],["Fringing","RM703","SKY GREY 9/2","DEEPAK,INDIA","NE 9/2",46.0,2576.0],["Fringing","RM1024","WHITE 8/2","LUCKY CHINA","2024-08-02 00:00:00",24.5,0.0],["Fringing","RM712","WHITE 8/2","GSM, INDIA","2024-08-02 00:00:00",22.64,0.0],["Fringing","RM1036","WHITE 8/1","VISHAL INDIA","NE 8/1",22.5,24682.5],["Fringing","RM710","BLACK 8/2","GSM, INDIA","NE 8/2",20.0,0.0],["Fringing","RM1018","Z BLUE 9/2","DEEPAK,INDIA","NE 9/2",46.0,0.0],["VIP pile - China","RM1104","D.BLUE SF127","HUAYUAN,CHINA","450D/192F",36.71,0.0],["VIP pile - China","RM1105","BLACK SF128","HUAYUAN,CHINA","450D/192F",36.71,0.0],["VIP pile - China","RM1097","L.BLUE SF129","HUAYUAN,CHINA","450D/192F",36.71,0.0],["VIP pile - China","RM1099","YELLOW SF131","HUAYUAN,CHINA","450D/192F",36.58,0.0],["VIP pile - China","RM1100","GOLDEN SF132","HUAYUAN,CHINA","450D/192F",37.91,0.0],["VIP pile - China","RM1096","OLIVE GREEN SF124","HUAYUAN,CHINA","450D/192F",38.21,4661.62],["VIP pile - China","RM1098","GREY SF130","HUAYUAN,CHINA","450D/192F",38.21,0.0],["VIP pile - China","RM1095","BEIGE SF125","HUAYUAN,CHINA","450D/192F",38.57,0.0],["VIP pile - China","RM1106","L.BLUE SF129","HUAYUAN,CHINA","900D/384F",35.55,0.0],["VIP pile - China","RM1107","GOLDEN SF132","HUAYUAN,CHINA","900D/384F",36.78,0.0],["VIP pile - India","RM 1111","K-12300(DL-16459)MAROON","COLOSSUSTEX INDIA","480D/216F",27.78,0.0],["VIP pile - India","RM 1112","K-12306(DL-16470) BLUE","COLOSSUSTEX INDIA","480D/216F",28.04,0.0],["VIP pile - India","RM 1113","K-12307(DL-16471) OLIVE GREEN","COLOSSUSTEX INDIA","480D/216F",27.97,0.0],["VIP pile - India","RM 1114","K-12310(DL-16464) L.BLUE","COLOSSUSTEX INDIA","480D/216F",28.17,0.0],["VIP pile - India","RM 1115","K-12312(DL-16452) D.BLUE","COLOSSUSTEX INDIA","480D/216F",28.04,0.0],["VIP pile - India","RM 1116","K-12314(DL-16467) OFF WHITE","COLOSSUSTEX INDIA","480D/216F",27.97,0.0],["VIP pile - India","RM 1117","K-12315(DL-16466) GOLDEN","COLOSSUSTEX INDIA","480D/216F",27.78,0.0],["VIP pile - India","RM 1110","ACR-61 (DL-16471) OLIVE GREEN","COLOSSUSTEX INDIA","480D/216F",28.3,0.0],["Al-Madinah","RM 1082","COFFEE","AL_MADINA","",30.0,0.0],["VIP laces","RM1102","GOLDEN","PHB-29253","",1.65,0.0],["VIP laces","RM1103","OFF WHITE","PHB-29252","",1.7,0.0],["VIP laces","RM1044","SEMI FABRIC ROLL","75-GSM-3CM WIDTH","",27.0,81.0],["VIP laces","RM1043","FRINGE LACE YARN","","",31.65,1424.25],["VIP laces","RM1083","AL WAQIL LACE YARN","","",31.65,2969.0],["Latex","RM998","LATEX-saudi","INNOVATION FACTORY","",200.0,8800.0],["Polyspin PP","PP854-249-25","BEIGE DD-249","POLYSPIN","950DTEX/288F",500.0,3550.0],["Polyspin PP","P0852-256-20","GOLDEN DD-256","POLYSPIN","950DTEX/288F",500.0,3517.0],["Polyspin PP","PP854-108-42","D.BLUE DD-108","POLYSPIN","950DTEX/288F",500.0,0.0],["Polyspin PP","PP854-271-10","L.BLUE DD-271","POLYSPIN","950DTEX/288F",500.0,485.0],["Polyspin PP","PP854-155-17","L.GREY DD-155","POLYSPIN","950DTEX/288F",500.0,0.0],["Polyspin PP","PP854-250-15","L.GREEN DD-250","POLYSPIN","950DTEX/288F",500.0,7630.0],["Polyspin PP","PP854-116-62","RED DD-116","POLYSPIN","950DTEX/288F",500.0,560.0],["Polyspin PP","PP854-140-15","D.GREY DD-140","POLYSPIN","950DTEX/288F",500.0,0.0],["Polyspin PP","PP0852-252-34","BLACK","POLYSPIN","950DTEX/288F",500.0,378.0],["Polyspin PP","PO852-383-26","S.BLUE DD-297","POLYSPIN","950DTEX/288F",500.0,0.0],["Jeddah acrylic","RM-1086","RED ACRYLIC","MADINA","450D",24.5,0.0],["Jeddah acrylic","RM-1090","BLACK ACRYLIC","MADINA","450D",25.0,1100.0],["Jeddah acrylic","RM-1063","GREEN ACRYLIC","MADINA","450D",25.0,0.0],["Jeddah acrylic","RM-1061","N BLUE ACRYLIC","MADINA","450D",25.0,0.0],["Label yarns","RM524","FOAM ROLL","HOT MELT ADHESIVE","HS CODE 56039210",0,436.0],["Label yarns","RM525","FOAM ROLL","NON WOVEN INTERLINING 40\"X20Y -","HS CODE 39209990",0,270.0],["Label yarns","RM550","WHITE","CQ-TEXTECH - CHINA","WARP - 100D/600 TPM",0,983.6],["Label yarns","RM614","BLACK","CQ-TEXTECH - CHINA","WARP - 100D/600 TPM",0,200.0],["Label yarns","RM755","GREEN","CQ-TEXTECH - CHINA","GN53 -",0,34.3],["Label yarns","RM756","GREEN","CQ-TEXTECH - CHINA","GN46 -",0,46.2],["Label yarns","RM757","GREEN","CQ-TEXTECH - CHINA","GN948 -",0,118.1],["Label yarns","RM758","GREEN","CQ-TEXTECH - CHINA","GN210 -",0,89.9],["Label yarns","RM759","GREEN","CQ-TEXTECH - CHINA","GN52 -",0,64.2],["Label yarns","RM760","GREEN","CQ-TEXTECH - CHINA","GN992 -",0,90.4],["Label yarns","RM761","GREEN","CQ-TEXTECH - CHINA","GN47 -",0,93.8],["Label yarns","RM762","GREEN","CQ-TEXTECH - CHINA","GN213 -",0,101.5],["Label yarns","RM764","GREEN","CQ-TEXTECH - CHINA","GN50 -",0,95.9],["Label yarns","RM765","GREEN","CQ-TEXTECH - CHINA","GN997 -",0,85.6],["Label yarns","RM766","GREEN","CQ-TEXTECH - CHINA","GN225 -",0,26.9],["Label yarns","RM767","GREEN","CQ-TEXTECH - CHINA","GN991 -",0,26.0],["Label yarns","RM768","GREEN","CQ-TEXTECH - CHINA","GN212 -",0,23.0],["Label yarns","RM769","GREEN","CQ-TEXTECH - CHINA","GN767 -",0,11.1],["Label yarns","RM770","GREEN","CQ-TEXTECH - CHINA","GN195 -",0,12.0],["Label yarns","RM771","GREEN","CQ-TEXTECH - CHINA","GN906 -",0,25.0],["Label yarns","RM772","GREEN","CQ-TEXTECH - CHINA","GN915 -",0,11.0],["Label yarns","RM774","GREEN","CQ-TEXTECH - CHINA","GN286 -",0,110.6],["Label yarns","RM775","GREEN","CQ-TEXTECH - CHINA","GN57 -",0,8.0],["Label yarns","RM776","GREEN","CQ-TEXTECH - CHINA","GN186 -",0,9.0],["Label yarns","RM779","PURPLE","CQ-TEXTECH - CHINA","PU30 -",0,2.0],["Label yarns","RM781","PURPLE","CQ-TEXTECH - CHINA","PU170 -",0,12.0],["Label yarns","RM782","PURPLE","CQ-TEXTECH - CHINA","PU31 -",0,94.7],["Label yarns","RM783","PURPLE","CQ-TEXTECH - CHINA","PU150 -",0,97.1],["Label yarns","RM784","PURPLE","CQ-TEXTECH - CHINA","PU163 -",0,98.0],["Label yarns","RM785","PURPLE","CQ-TEXTECH - CHINA","PU36 -",0,104.3],["Label yarns","RM786","PURPLE","CQ-TEXTECH - CHINA","PU169 -",0,16.8],["Label yarns","RM899","PURPLE","CQ-TEXTECH - CHINA","PU32 -",0,26.4],["Label yarns","RM787","BROWN","CQ-TEXTECH - CHINA","BR135 -",0,42.9],["Label yarns","RM788","BROWN","CQ-TEXTECH - CHINA","BR3 -",0,78.0],["Label yarns","RM789","BROWN","CQ-TEXTECH - CHINA","BR231 -",0,89.5],["Label yarns","RM790","BROWN","CQ-TEXTECH - CHINA","BR133 -",0,62.5],["Label yarns","RM791","BROWN","CQ-TEXTECH - CHINA","BR20 -",0,85.9],["Label yarns","RM792","BROWN","CQ-TEXTECH - CHINA","BR137 -",0,70.7],["Label yarns","RM793","BROWN","CQ-TEXTECH - CHINA","BR234 -",0,92.4],["Label yarns","RM794","BROWN","CQ-TEXTECH - CHINA","BR134 -",0,4.0],["Label yarns","RM795","BROWN","CQ-TEXTECH - CHINA","BR15 -",0,14.0],["Label yarns","RM796","BROWN","CQ-TEXTECH - CHINA","BR236 -",0,12.0],["Label yarns","RM797","BROWN","CQ-TEXTECH - CHINA","BR916 -",0,17.5],["Label yarns","RM798","YELLOW","CQ-TEXTECH - CHINA","YE311 -",0,74.6],["Label yarns","RM799","YELLOW","CQ-TEXTECH - CHINA","YE319 -",0,72.0],["Label yarns","RM800","YELLOW","CQ-TEXTECH - CHINA","YE314 -",0,46.4],["Label yarns","RM801","YELLOW","CQ-TEXTECH - CHINA","YE315 -",0,17.9],["Label yarns","RM803","YELLOW","CQ-TEXTECH - CHINA","YE44 -",0,13.0],["Label yarns","RM804","YELLOW","CQ-TEXTECH - CHINA","YE323 -",0,66.6],["Label yarns","RM805","YELLOW","CQ-TEXTECH - CHINA","YE118 -",0,63.7],["Label yarns","RM806","YELLOW","CQ-TEXTECH - CHINA","YE280 -",0,51.9],["Label yarns","RM807","YELLOW","IBRAHIM","YE993 -",0,20.6],["Label yarns","RM809","PINK","CQ-TEXTECH - CHINA","PI184 -",0,93.6],["Label yarns","RM811","PINK","CQ-TEXTECH - CHINA","PI294 -",0,17.0],["Label yarns","RM812","PINK","CQ-TEXTECH - CHINA","PI181 -",0,6.0],["Label yarns","RM813","PINK","CQ-TEXTECH - CHINA","PI165 -",0,5.0],["Label yarns","RM814","PINK","IBRAHIM","PI292 -",0,5.0],["Label yarns","RM898","PINK","CQ-TEXTECH - CHINA","PI84",0,16.8],["Label yarns","RM817","RED","CQ-TEXTECH - CHINA","RE141 -",0,77.9],["Label yarns","RM818","RED","CQ-TEXTECH - CHINA","RE9 -",0,44.7],["Label yarns","RM819","RED","CQ-TEXTECH - CHINA","RE142 -",0,22.0],["Label yarns","RM820","GREY","CQ-TEXTECH - CHINA","GY251 -",0,201.9],["Label yarns","RM821","GREY","CQ-TEXTECH - CHINA","GY164 -",0,116.7],["Label yarns","RM822","GREY","CQ-TEXTECH - CHINA","GY162 -",0,88.5],["Label yarns","RM823","GREY","CQ-TEXTECH - CHINA","GY7 -",0,52.6],["Label yarns","RM824","GREY","CQ-TEXTECH - CHINA","GY8 -",0,86.9],["Label yarns","RM825","GREY","CQ-TEXTECH - CHINA","GY253 -",0,66.4],["Label yarns","RM826","GREY","CQ-TEXTECH - CHINA","GY994 -",0,6.0],["Label yarns","RM831","GREY","CQ-TEXTECH - CHINA","GY259 -",0,61.5],["Label yarns","RM832","GREY","CQ-TEXTECH - CHINA","GY252 -",0,20.0],["Label yarns","RM834","GREY","IBRAHIM","GY943 -",0,2.0],["Label yarns","RM835","D. GREY","CQ-TEXTECH - CHINA","D-GY259 -",0,59.7],["Label yarns","RM836","D. BLUE","CQ-TEXTECH - CHINA","DB346 -",0,92.3],["Label yarns","RM838","D. BLUE","CQ-TEXTECH - CHINA","DB94 -",0,74.0],["Label yarns","RM839","D. BLUE","CQ-TEXTECH - CHINA","DB98 -",0,71.1],["Label yarns","RM840","D. BLUE","IBRAHIM","DB96 -",0,5.0],["Label yarns","RM842","BEIGE","CQ-TEXTECH - CHINA","BE999 -",0,31.2],["Label yarns","RM843","BEIGE","CQ-TEXTECH - CHINA","BE302 -",0,59.6],["Label yarns","RM844","BEIGE","CQ-TEXTECH - CHINA","BE903 -",0,78.2],["Label yarns","RM845","BEIGE","CQ-TEXTECH - CHINA","BE152 -",0,94.1],["Label yarns","RM846","BEIGE","CQ-TEXTECH - CHINA","BE147 -",0,53.1],["Label yarns","RM847","BEIGE","CQ-TEXTECH - CHINA","BE902 -",0,50.2],["Label yarns","RM849","BLUE","CQ-TEXTECH - CHINA","BL78 -",0,87.0],["Label yarns","RM850","BLUE","CQ-TEXTECH - CHINA","BL104 -",0,101.2],["Label yarns","RM851","BLUE","CQ-TEXTECH - CHINA","BL275 -",0,98.7],["Label yarns","RM852","BLUE","CQ-TEXTECH - CHINA","BL271 -",0,15.2],["Label yarns","RM853","BLUE","CQ-TEXTECH - CHINA","BL270 -",0,97.8],["Label yarns","RM854","BLUE","CQ-TEXTECH - CHINA","BL71 -",0,13.0],["Label yarns","RM855","BLUE","CQ-TEXTECH - CHINA","BL110 -",0,51.6],["Label yarns","RM856","BLUE","CQ-TEXTECH - CHINA","BL268 -",0,23.3],["Label yarns","RM857","BLUE","CQ-TEXTECH - CHINA","BL269 -",0,27.5],["Label yarns","RM858","BLUE","CQ-TEXTECH - CHINA","BL276 -",0,12.0],["Label yarns","RM859","BLUE","CQ-TEXTECH - CHINA","BL274 -",0,27.9],["Label yarns","RM860","BLUE","IBRAHIM","BL919 -",0,7.0],["Label yarns","RM861","BLUE","IBRAHIM","BL76 -",0,10.0],["Label yarns","RM862","GREY","CQ-TEXTECH - CHINA","YHG427 -",0,91.1],["Label yarns","RM863","BLACK","CQ-TEXTECH - CHINA","CQ003-SD",0,201.4],["Label yarns","RM864","WHITE","CQ-TEXTECH - CHINA","CQ004-SD",0,173.1],["Label yarns","RM865","MAROON","CQ-TEXTECH - CHINA","RU177 -",0,42.8],["Label yarns","RM866","MAROON","CQ-TEXTECH - CHINA","RU174 -",0,30.5],["Label yarns","RM867","MAROON","CQ-TEXTECH - CHINA","RU88 -",0,14.0],["Label yarns","RM869","MAROON","CQ-TEXTECH - CHINA","RU173 -",0,30.7],["Label yarns","RM870","ORANGE","CQ-TEXTECH - CHINA","OR918 -",0,26.0],["Label yarns","RM871","ORANGE","CQ-TEXTECH - CHINA","OR39 -",0,15.3],["Label yarns","RM872","ORANGE","CQ-TEXTECH - CHINA","OR131 -",0,18.0],["Label yarns","RM873","ORANGE","CQ-TEXTECH - CHINA","OR127 -",0,3.0],["Label yarns","RM874","ORANGE","CQ-TEXTECH - CHINA","OR129 -",0,11.0],["Label yarns","RM875","ORANGE","CQ-TEXTECH - CHINA","OR128 -",0,16.0],["Label yarns","RM876","ORANGE","CQ-TEXTECH - CHINA","OR38 -",0,38.5],["Label yarns","RM877","ORANGE","CQ-TEXTECH - CHINA","OR126 -",0,24.0],["Label yarns","RM878","MAROON","IBRAHIM","Y22 -",0,40.0],["Label yarns","RM880","GREEN","IBRAHIM","G191 -",0,8.0],["Label yarns","RM881","GREEN","IBRAHIM","Y55 -",0,5.0],["Label yarns","RM882","L. BLUE","IBRAHIM","DD18 -",0,11.0],["Label yarns","RM883","GREEN","IBRAHIM","Y58 -",0,32.0],["Label yarns","RM884","GREY","IBRAHIM","FS17 -",0,15.0],["Label yarns","RM885","VIOLET","IBRAHIM","LIGHT VIOLET",0,6.0],["Label yarns","RM886","D. PINK","BAISHENG - CHINA","BS006",0,60.0],["Label yarns","RM887","L. BLUE","BAISHENG - CHINA","BS002",0,71.0],["Label yarns","RM888","D. GREEN","BAISHENG - CHINA","BS004",0,48.0],["Label yarns","RM889","D. BLUE","BAISHENG - CHINA","BS008",0,36.0],["Label yarns","RM890","Z. BLUE","BAISHENG - CHINA","BS001",0,24.0],["Label yarns","RM892","L. GREEN","BAISHENG - CHINA","BS003",0,18.0],["Label yarns","RM894","P. GREEN","DOLPHIN","Y05",0,61.0],["Label yarns","RM895","M. SILVER","GRANDFATHER YARN","METALIC SILVER",0,28.2],["Label yarns","RM896","M. GREEN","GRANDFATHER YARN","METALIC GREEN",0,22.0],["Madina acrylic","RM-1051","L-BLUE ACRYLIC","MADINA","",0,800.0],["Madina acrylic","RM-1048","BLACK ACRYLIC","MADINA","",0,1029.0],["Madina acrylic","RM-1056","WHITE ACRYLIC","MADINA","",0,40.0],["Madina acrylic","RM-1052","Z-BLUE ACRYLIC","MADINA","",0,490.5],["Madina acrylic","RM-1050","N-BLUE ACRYLIC","MADINA","",0,415.98],["Madina acrylic","RM-1049","D. GREEN ACRYLIC","MADINA","",0,570.4],["Madina acrylic","RM-1054","CREAM ACRYLIC","MADINA","",0,216.32],["Madina acrylic","RM-1053","RED ACRYLIC","MADINA","",0,388.24],["Madina acrylic","","ARMY GREEN ACRYLIC","MADINA","",0,46.98],["Madina acrylic","RM-1060","OLIVE GREEN ACRYLIC","MADINA","",0,42.0],["Madina acrylic","RM-1055","VIOLET ACRYLIC","MADINA","",0,624.78]];
 
 /* ============================================================
    STOCK v2: Dashboard, Raw weft, Rewind & Warping, Requisitions, Finishing, Finished store, Designs & Machines, Settings
    Linked with what the app already has (machines, designs, colours, people, items). Small saves only.
    ============================================================ */
-const SX_TABS = [['dash', 'Stock'], ['raw', 'Raw weft store'], ['rew', 'Rewinding'], ['wp', 'Warping'], ['fin', 'Finishing report'], ['fst', 'Finished store'], ['req', 'Requests'], ['dm', 'Machines and designs'], ['set', 'Settings']];
+const SX_TABS = [['dash', 'Stock'], ['raw', 'Raw material store'], ['rew', 'Rewinding'], ['wp', 'Warping'], ['fin', 'Finishing report'], ['fst', 'Finished store'], ['req', 'Requests'], ['dm', 'Machines and designs'], ['set', 'Settings']];
 const SX_CFG0 = () => ({ stores: ['Store 1', 'Store 2', 'Store 3'], cats: ['Gama', 'Polyspin thread', 'China', 'India'], dests: ['Rewinding', 'Warping', 'Weaving', 'Other'], sizes: [], sizesC: ['140x200', '160x250', '200x300', '90x190', '100x200', '80x150', '90x150'], sizesM: ['70x115', '70x110', '67x114', '65x115', '65x110', '30x60', '40x80', '80x120'], types: ['VL', 'MR', 'VIP'], depts: ['RVF', 'SSTM'], truckBundle: 0, truckVip: 0, truckRoll: 0, rollM: 30, mins: {}, assign: {} });
 const SX = { loaded: false, loading: false, cfg: SX_CFG0(), bal: {}, q: [], mc: {}, tab: 'dash', fsub: 'cr', rwsub: 'rew', dmsub: 'plan', rawk: 'in', rwk: 'in', ff: {}, fo: '', fil: { from: '', to: '', mc: '', size: '', type: '', dept: '', q: '' }, last: {}, busy: false };
 try{ SX.last = JSON.parse(localStorage.getItem('rvfSxLast') || '{}') || {}; }catch(e){}
@@ -29131,7 +29141,7 @@ const sxAdmin = () => !!(state.user && state.user.role === 'admin');
 const SX_PK = { raw: 'stk_raw', rew: 'stk_rew', wp: 'stk_wp', fin: 'stk_fin', fst: 'stk_fst', req: 'stk_req' };
 function sxForce(p){ SX.sfor = ''; SX.force = p || ''; SX.tab = p || 'dash'; SK.tab = SX.tab; }
 function sxCan(stage){ if(sxAdmin()) return true; try{ if(SX_PK[stage] && userPages(state.user).includes(SX_PK[stage])) return true; }catch(e){} const as = SX.cfg.assign || {}; let a = as[stage]; if((stage === 'rew' || stage === 'wp') && a === undefined) a = as.rw; a = a || []; const me = String(state.user && state.user.loginId); if(stage === 'set' || stage === 'mach') return a.indexOf(me) >= 0; if(stage === 'req') return a.length ? a.indexOf(me) >= 0 : true; return a.length ? a.indexOf(me) >= 0 : !!(state.user && state.user.role === 'supervisor'); }
-const SX_PG = [['raw', 'Raw weft store', 'Raw weft coming in and going out of the store', 'raw'], ['rew', 'Rewinding', 'Bobbins made from the raw weft', 'rew'], ['wp', 'Warping', 'Warping piles made from the weft', 'wp'], ['fin', 'Finishing report', 'Daily unrolling report from the machines', 'fin'], ['fst', 'Finished store', 'Carpets and Rugs, VIP, Upholstery and 2nd quality', 'fst'], ['req', 'Requests', 'Requests from the weaving manager', 'req'], ['dm', 'Machines and designs', 'Which design runs on which machine', 'mach'], ['set', 'Settings', 'Lists, truck size, minimums and who enters what', 'set']];
+const SX_PG = [['raw', 'Raw material store', 'Yarn and other raw material: what came in, what went out, what is left', 'raw'], ['rew', 'Rewinding', 'Rewound yarn (bobbins) and yarn recovered from weaving', 'rew'], ['wp', 'Warping', 'Warping beams made and used', 'wp'], ['fin', 'Finishing report', 'Daily unrolling report from the machines', 'fin'], ['fst', 'Finished store', 'Carpets and Rugs, VIP, Upholstery and 2nd quality', 'fst'], ['req', 'Requests', 'Requests from the weaving manager', 'req'], ['dm', 'Machines and designs', 'Which design runs on which machine', 'mach'], ['set', 'Settings', 'Lists, truck size, minimums and who enters what', 'set']];
 const sxPriv = () => sxAdmin() || !!(state.user && state.user.role === 'supervisor');
 function sxSee(pg){ if(pg === 'set') return sxAdmin() || sxCan('set'); if(sxPriv()) return true; const p = SX_PG.find(x => x[0] === pg); return !!p && sxCan(p[3]); }
 function sxWho(stage){ const as = SX.cfg.assign || {}; let a = as[stage]; if((stage === 'rew' || stage === 'wp') && a === undefined) a = as.rw; a = a || []; if(!a.length) return stage === 'req' ? 'Everybody' : (stage === 'set' || stage === 'mach') ? 'Administrator' : 'Administrator and supervisors'; return a.map(id => { const u = (state.users || []).find(x => String(x.loginId) === String(id)); return u ? u.name : id; }).join(', '); }
@@ -29168,7 +29178,7 @@ async function sxUndo(p, ym, id){
 const sxId = () => 'x' + Date.now().toString(36) + Math.random().toString(36).slice(2, 4);
 /* ---------- numbers used by the Dashboard ---------- */
 function sxRaw(){ const o = {}; Object.keys(SX.bal).forEach(k => { const p = k.split('|'); if(p[0] !== 'raw' || !(SX.bal[k] > 0.0004)) return; const c = (o[p[1]] = o[p[1]] || {}), r = (c[p[2]] = c[p[2]] || { tot: 0, st: {} }); r.st[p[3]] = (r.st[p[3]] || 0) + SX.bal[k]; r.tot += SX.bal[k]; }); return o; }
-function sxSum(pre, kg){ let t = 0, n = 0; Object.keys(SX.bal).forEach(k => { if(k.indexOf(pre + '|') === 0 && SX.bal[k] > 0) t += SX.bal[k]; if(kg !== false && k.indexOf(pre + 'N|') === 0 && SX.bal[k] > 0) n += SX.bal[k]; }); return { kg: t, n }; }
+function sxSum(pre, kg){ let t = 0, n = 0; Object.keys(SX.bal).forEach(k => { if((k.indexOf(pre + '|') === 0 || k.indexOf(pre + 'R|') === 0) && SX.bal[k] > 0) t += SX.bal[k]; if(kg !== false && k.indexOf(pre + 'N|') === 0 && SX.bal[k] > 0) n += SX.bal[k]; }); return { kg: t, n }; }
 function sxFl(i){ return Math.max(0, Number(SX.bal['fl|' + i.id]) || 0); }
 function sxTruck(i){ if(Number(i.truck) > 0) return Number(i.truck); const c = SX.cfg; return i.g === 'vip' ? (Number(c.truckVip) || 1000) : (Number(c.truckBundle) || 665); }
 const sxSzKey = (s) => String(s || '').toLowerCase().replace(/\s+/g, '').replace(/[×*]/g, 'x');
@@ -29263,7 +29273,7 @@ const sxSave = (a, label, v) => `<button type="button" class="pcBtnSoft" data-sx
 /* ---------- Dashboard ---------- */
 function sxPageTop(t, sub, right){ return `<div class="sxPh"><div class="sxPhT">${t ? `<h2>${t}</h2>` : ''}<p>${sub}</p></div>${right || ''}</div>`; }
 function sxDashHtml(){
-  const raw = sxRaw(), rawKg = Object.keys(raw).reduce((a, c) => a + Object.keys(raw[c]).reduce((b, k) => b + raw[c][k].tot, 0), 0), rew = sxSum('rew'), wp = sxSum('wp');
+  const raw = sxRaw(), rawKg = Object.keys(raw).reduce((a, c) => a + Object.keys(raw[c]).reduce((b, k) => b + raw[c][k].tot, 0), 0) + yTot().kg, rew = sxSum('rew'), wp = sxSum('wp');
   const ym = sxYm(), fe = sxFin(ym), today = sxToday(), ft = fe.filter(e => e.d === today), mSum = (l, u) => l.filter(e => e.u === u).reduce((a, e) => a + (Number(e.qty) || 0), 0);
   const fs = SK.items.filter(i => i.on !== false); const grp = (g) => fs.filter(i => i.g === g);
   const ready = grp('cr').reduce((a, i) => a + skBal(i), 0), floor = grp('cr').concat(grp('vip')).reduce((a, i) => a + sxFl(i), 0), vip = grp('vip').reduce((a, i) => a + skBal(i), 0), q2 = grp('q2').reduce((a, i) => a + skBal(i), 0), up = grp('up').reduce((a, i) => a + skBal(i), 0);
@@ -29274,9 +29284,9 @@ function sxDashHtml(){
   const set = sxSee('set') ? `<button type="button" class="pcBtnSoft" data-sx="tab" data-v="set">${sxIc('cog', 15)}<span class="sxAddL">Settings</span></button>` : '';
   let h = sxPageTop('', sxPriv() ? 'Summary of every stage. Tap a box to open its page.' : 'Your pages. Tap a box to open it.', set);
   h += box('1 · Raw material', [
-    T('raw', sxTile('Raw weft store', sxN(rawKg) + '<small> kg</small>', Object.keys(raw).length + ' categories', 'raw', 'raw', 'blue')),
+    T('raw', sxTile('Raw material store', sxN(rawKg) + '<small> kg</small>', yTot().n + ' yarns in stock', 'raw', 'raw', 'blue')),
     T('rew', sxTile('Rewinding bobbins', sxN(rew.kg) + '<small> kg</small>', sxN(rew.n) + ' bobbins', 'rew', 'rew', 'purple')),
-    T('wp', sxTile('Warping piles', sxN(wp.kg) + '<small> kg</small>', sxN(wp.n) + ' piles', 'wp', 'wp', 'cyan'))]);
+    T('wp', sxTile('Warping beams', sxN(wp.kg) + '<small> kg</small>', sxN(wp.n) + ' beams', 'wp', 'wp', 'cyan'))]);
   h += box('2 · Production', [
     T('fin', sxTile('Finishing today', sxN(mSum(ft, 'm')) + '<small> m</small>', sxN(mSum(ft, 'roll')) + ' rolls today · month ' + sxN(mSum(fe, 'm')) + ' m / ' + sxN(mSum(fe, 'roll')) + ' rolls', 'fin', 'fin', 'green')),
     T('dm', sxTile('Machines running', runN + '<small> of ' + ms.length + '</small>', Object.keys(on).length + ' designs', 'dm', 'mach', 'blue'))]);
@@ -29378,7 +29388,7 @@ const SX_FS = [['cr', 'Carpets & Rugs'], ['vip', 'VIP Prayer Mats'], ['up', 'Uph
 const sxPk = (i) => { const x = i.x || {}; let nd = x.nd, nc = x.nc, nm = String(i.name || ''); const m = nm.match(/\(\s*(\d+)\s*D\s*-\s*(\d+)\s*C\s*\)/i); if(m){ if(!nd) nd = m[1]; if(!nc) nc = m[2]; nm = nm.replace(m[0], ''); } return { nd: nd || '', nc: nc || '', name: nm.replace(/\s+/g, ' ').trim() }; };
 function sxFsCols(g){
   const A = ['', 'a'];
-  if(g === 'cr') return [['Code', ''], ['Item', 'k'], ['Type', ''], ['Size (cm)', ''], ['Designs in 1 bundle', 'r'], ['Colours in 1 bundle', 'r'], ['Colour mix', 'k'], ['Available bundles', 'r'], ['Pieces', 'r'], ['Unpacked on floor', 'r'], A];
+  if(g === 'cr') return [['Code', ''], ['Item', 'k'], ['Type', ''], ['Size (cm)', ''], ['Designs per bundle', 'r'], ['Colours per bundle', 'r'], ['Colour mix', 'k'], ['Available bundles', 'r'], ['Pieces', 'r'], ['Unpacked on floor', 'r'], A];
   if(g === 'vip') return [['Code', ''], ['Item', 'k'], ['Size (cm)', ''], ['Model', ''], ['Category', ''], ['Thick', ''], ['Colour', 'k'], ['Pcs per bundle', 'r'], ['Available bundles', 'r'], ['Pieces', 'r'], ['Unpacked on floor', 'r'], A];
   if(g === 'up') return [['Code', ''], ['Item', 'k'], ['Size', ''], ['Quality', ''], ['Colour', 'k'], ['Metres per roll', 'r'], ['Rolls in stock', 'r'], ['Total metres', 'r'], A];
   return [['Code', ''], ['Item', 'k'], ['Type', ''], ['Size (cm)', ''], ['Colour', 'k'], ['Available', 'r'], ['Pcs per pack', 'r'], ['Pieces', 'r'], ['Metres', 'r'], A];
@@ -29486,7 +29496,7 @@ async function sxFsSave(id, k){
 
 /* ---------- Settings: same look as Admin (collapsible sections, Add row, small list rows) ---------- */
 const SX_LISTS = [['stores', 'Stores', 'Where raw weft is kept.', 'e.g. Store 4'], ['cats', 'Weft categories', 'Shown when you enter raw weft.', 'e.g. Gama'], ['dests', 'Raw weft goes to', 'Shown when raw weft goes OUT.', 'e.g. Rewinding'], ['sizesC', 'Carpet sizes (cm)', 'Sizes for carpets. Used when you add a carpet and in the filter.', 'e.g. 140x200'], ['sizesM', 'Prayer mat sizes (cm)', 'Sizes for prayer mats (also VIP). Used when you add one and in the filter.', 'e.g. 70x115'], ['sizes', 'Other sizes (Finishing)', 'Extra sizes shown in Finishing. Carpet and prayer mat sizes are added automatically.', 'e.g. 200 x 300'], ['types', 'Types', 'VL, MR, VIP and so on.', 'e.g. VL'], ['depts', 'Departments for finishing', 'Which department finished the carpet.', 'e.g. RVF']];
-const SX_ASG = [['raw', 'Raw weft store'], ['rew', 'Rewinding'], ['wp', 'Warping'], ['fin', 'Finishing report (unrolling)'], ['fst', 'Finished store'], ['req', 'Requests (weaving manager)'], ['mach', 'Change the design on a machine'], ['set', 'Change these settings']];
+const SX_ASG = [['raw', 'Raw material store'], ['rew', 'Rewinding'], ['wp', 'Warping'], ['fin', 'Finishing report (unrolling)'], ['fst', 'Finished store'], ['req', 'Requests (weaving manager)'], ['mach', 'Change the design on a machine'], ['set', 'Change these settings']];
 const sxIcB = (a, ic, t, extra) => `<button type="button" class="mini-icon-btn${extra || ''}" data-sx="${a}" title="${t}">${sxIc(ic, 13)}</button>`;
 function sxSecAttr(k){ const o = SX.open || {}; return `data-sec="${k}" ${o[k] || (SX.sfor && !(k in o)) ? 'open' : ''}`; }
 function sxListSec(key, title, hint, ph){
@@ -29511,6 +29521,7 @@ function sxSetHtml(){
   const pg = SX.sfor, cats = SX.cfg.cats, W = pg ? (SX_SM[pg] || []) : null, show = (k) => !W || W.indexOf(k) >= 0, P = pg ? SX_PG.find(x => x[0] === pg) : null;
   let h = P ? `<div class="sxPh"><button type="button" class="sxBack" data-sx="sback" title="Back">${sxIc('chev', 14).replace('style="', 'style="transform:rotate(180deg);')}<span>${P[1]}</span></button><div class="sxPhT"><h2>${P[1]} settings</h2><p>Saved on every change</p></div></div>` : sxHead('Stock settings', 'Saved on every change');
   if(show('items')) h += sxItemsSec();
+  h += sxYSet(show);
   h += SX_LISTS.filter(x => show(x[0])).map(x => sxListSec(x[0], x[1], x[2], x[3])).join('');
   if(show('roll')) h += `<details class="acSec admD" ${sxSecAttr('roll')}><summary>Upholstery roll</summary><div class="acSecB"><p class="sub">Upholstery is counted in rolls. Set how many metres are in 1 roll. Each item can still have its own number.</p><div class="sxF">${sxField('Metres in 1 roll', `<input id="sxRM" type="number" inputmode="decimal" value="${SX.cfg.rollM || 30}" placeholder="30">`)}</div><button type="button" class="btn btn-primary btn-sm" data-sx="savenum" style="margin-top:10px;">Save</button></div></details>`;
   if(show('truck')) h += `<details class="acSec admD" ${sxSecAttr('truck')}><summary>Truck loading (default)</summary><div class="acSecB"><p class="sub">How many bundles go on one truck when an item has no capacity of its own. Used for the "trucks" numbers.</p><div class="sxF">${sxField('Carpets and prayer mats (bundles)', `<input id="sxTB" type="number" inputmode="decimal" value="${SX.cfg.truckBundle || ''}" placeholder="665">`)}${sxField('VIP prayer mats (bundles)', `<input id="sxTV" type="number" inputmode="decimal" value="${SX.cfg.truckVip || ''}" placeholder="1000">`)}${sxField('Rolls per truck', `<input id="sxTR" type="number" inputmode="decimal" value="${SX.cfg.truckRoll || ''}" placeholder="0">`)}</div><button type="button" class="btn btn-primary btn-sm" data-sx="savenum" style="margin-top:10px;">Save</button></div></details>`;
@@ -29630,6 +29641,294 @@ function skCanMach(){ return skIsAdmin() || sxCan('mach'); }
 function sxXToggle(){ const g = $('sfG') ? $('sfG').value : '', kd = $('sfXkind') ? $('sfXkind').value : '', tok = ' ' + g + ' ' + (g === 'q2' ? (kd === 'up' ? 'q2up' : 'q2mat') : '') + ' '; document.querySelectorAll('#skModal .sxXg').forEach(e => { e.style.display = e.dataset.for.split(' ').some(t => tok.indexOf(' ' + t + ' ') >= 0) ? '' : 'none'; }); const dl = $('sxSzL'); if(dl){ const l = g === 'vip' || kd === 'mat' ? (SX.cfg.sizesM || []) : g === 'up' || kd === 'up' ? [] : (SX.cfg.sizesC || []); dl.innerHTML = l.map(s => `<option value="${skEsc(sxFmtSize(s))}">`).join(''); } }
 (function(){ const o = skItemForm; skItemForm = function(){ const r = o.apply(this, arguments); sxXToggle(); return r; }; })();
 document.addEventListener('change', (ev) => { if(ev.target && (ev.target.id === 'sfG' || ev.target.id === 'sfXkind')) sxXToggle(); });
+/* ============================================================
+   YARN STOCK: Raw store (item list, RVF + SSTM), Rewinding (per item), Warping (beams)
+   Stock is kept in kg. Boxes are worked out from kg per box. Every IN / OUT / MOVE is also kept as a small note
+   in the month log (hidden from the pages, ready for reports). Balances carry forward by themselves.
+   ============================================================ */
+const SX_FAM = [['White', '#f1f5f9'], ['Beige', '#e4cfa3'], ['Yellow', '#f5c518'], ['Orange', '#f97316'], ['Red', '#dc2626'], ['Maroon', '#7f1d1d'], ['Pink', '#f472b6'], ['Purple', '#8b5cf6'], ['Blue', '#2563eb'], ['Green', '#16a34a'], ['Brown', '#78350f'], ['Grey', '#9ca3af'], ['Black', '#111827'], ['Other', '#cbd5e1']];
+SX_IC.sort = '<path d="M3 6h18M6 12h12M10 18h4"/>';
+function yFam(t){
+  t = ' ' + String(t || '').toLowerCase() + ' ';
+  if(/maroon|wine|burgund/.test(t)) return 'Maroon'; if(/black/.test(t)) return 'Black';
+  if(/white|ivory/.test(t)) return 'White'; if(/beige|cream|sand|camel|chiku|khaki/.test(t)) return 'Beige';
+  if(/coffee|brown|chocolate|choco/.test(t)) return 'Brown'; if(/grey|gray|silver|ash/.test(t)) return 'Grey';
+  if(/blue|navy/.test(t)) return 'Blue'; if(/violet|purple|lilac/.test(t)) return 'Purple'; if(/pink|rose/.test(t)) return 'Pink';
+  if(/\bred\b/.test(t)) return 'Red'; if(/orange/.test(t)) return 'Orange'; if(/yellow|gold|mustard/.test(t)) return 'Yellow';
+  if(/green|olive|army/.test(t)) return 'Green'; return 'Other';
+}
+const yFamHex = (f) => (SX_FAM.find(x => x[0] === f) || SX_FAM[SX_FAM.length - 1])[1];
+const yFamI = (f) => Math.max(0, SX_FAM.findIndex(x => x[0] === f));
+const yDot = (hex) => `<i class="sxYd" style="background:${hex}"></i>`;
+function yHex(col, fam){ const h = sxColHex(col); return h && h.length ? h[0] : yFamHex(fam); }
+function yCfg(){
+  const c = SX.cfg; if(!c.ystores) c.ystores = ['RVF', 'SSTM']; if(!c.ydest) c.ydest = ['Weaving', 'Rewinding', 'Warping', 'Fringing', 'Other'];
+  if(!c.beamCols) c.beamCols = ['White', 'Yellow', 'Black']; if(!c.beamW) c.beamW = {}; if(!c.yOrder) c.yOrder = 30; return c;
+}
+function yItems(){ const c = SX.cfg; if(!c.yarn) c.yarn = SX_YSEED.map((r, i) => ({ id: 'y' + (i + 1), sec: r[0], code: r[1], col: r[2], sup: r[3], sz: r[4], kgb: r[5] || 0 })); return c.yarn; }
+const yItem = (id) => yItems().find(i => i.id === id);
+const yLbl = (i) => [i.code, i.col, i.sup].filter(Boolean).join(' · ');
+function yFind(t){
+  t = String(t || '').trim().toLowerCase(); if(!t) return null; const L = yItems().filter(i => i.on !== false);
+  let m = L.filter(i => yLbl(i).toLowerCase() === t); if(m.length === 1) return m[0];
+  m = L.filter(i => yLbl(i).toLowerCase().indexOf(t) >= 0); return m.length === 1 ? m[0] : null;
+}
+const ySecs = () => Array.from(new Set(yItems().map(i => i.sec).filter(Boolean)));
+/* kg in each store, per item */
+function yIdx(){
+  const o = {}; Object.keys(SX.bal).forEach(k => { if(k.indexOf('yr|') !== 0) return; const p = k.split('|'), v = Number(SX.bal[k]) || 0; if(!(v > 0.0004)) return; const r = (o[p[1]] = o[p[1]] || { tot: 0, st: {} }); r.st[p[2]] = (r.st[p[2]] || 0) + v; r.tot += v; });
+  return o;
+}
+function yTot(){ const x = yIdx(); let kg = 0, bx = 0, n = 0; Object.keys(x).forEach(id => { kg += x[id].tot; n++; const i = yItem(id); if(i && i.kgb > 0) bx += x[id].tot / i.kgb; }); return { kg, bx, n }; }
+const yPrevYm = () => { const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - 1); return dateToStr(d).slice(0, 7); };
+/* kg that went to production in the last 30 days */
+function yUse(){
+  const from = dateToStr(new Date(Date.now() - 30 * 864e5)), o = {};
+  [sxYm(), yPrevYm()].forEach(m => sxEnt('w', m).forEach(e => { if(e.s === 'yr' && e.k === 'out' && e.d >= from && e.y) o[e.y] = (o[e.y] || 0) + (Number(e.kg) || 0); }));
+  return o;
+}
+function yRows(){
+  const idx = yIdx(), use = yUse(), ord = Number(SX.cfg.yOrder) || 30, rows = [];
+  yItems().forEach(i => {
+    const b = idx[i.id] || { tot: 0, st: {} }, u = use[i.id] || 0; if(i.on === false && !(b.tot > 0.0004)) return;
+    const per = u / 30, days = per > 0 ? b.tot / per : null; let st;
+    if(!(b.tot > 0.0004)) st = u > 0 ? 'out' : 'none'; else if(u > 0) st = days < ord ? 'order' : 'ok'; else st = 'idle';
+    rows.push({ i, fam: yFam(i.col), kg: b.tot, st: b.st, bx: i.kgb > 0 ? b.tot / i.kgb : null, use: u, per, days, s: st });
+  });
+  return rows;
+}
+const Y_ST = { order: ['Order now', 'open'], out: ['Out of stock', 'out'], idle: ['Not moving', ''], ok: ['OK', 'in'], none: ['', ''] };
+const yTag = (s) => Y_ST[s][0] ? `<span class="sxTag ${Y_ST[s][1]}">${Y_ST[s][0]}</span>` : '';
+const Y_SORT = { col: 'Colour (grouped)', sec: 'Section (grouped)', sup: 'Supplier (grouped)', name: 'A to Z', low: 'Least days left', big: 'Most stock' };
+const ySortOf = (pg) => (SX.last['ys_' + pg]) || 'col';
+const ySortBtn = (pg) => `<button type="button" class="filter-icon-btn sxFb${ySortOf(pg) !== 'col' ? ' active' : ''}" data-sx="ysm" data-v="${pg}" title="Sort and group" aria-label="Sort and group">${sxIc('sort', 15)}</button>`;
+function ySortPop(pg, keys){
+  if(SX.yso !== pg) return '';
+  return `<div class="filter-popover open sxFp"><div class="sxFpL">${keys.map(k => `<button type="button" class="${ySortOf(pg) === k ? 'active' : ''}" data-sx="ysort" data-v="${pg}:${k}">${Y_SORT[k]}</button>`).join('')}</div></div>`;
+}
+function ySortRows(rows, mode, nm){
+  const f = (r) => r.i ? [r.i.col, r.i.code] : [r.label || '', ''], c = (a, b) => { const x = f(a), y = f(b); return String(x[0]).localeCompare(String(y[0])) || String(x[1]).localeCompare(String(y[1])); };
+  const key = { col: (r) => yFamI(r.fam), sec: (r) => r.i ? r.i.sec || '' : 'Earlier entries', sup: (r) => r.i ? r.i.sup || '' : '' }[mode];
+  rows.sort((a, b) => { if(mode === 'low'){ const x = a.days == null ? 1e9 : a.days, y = b.days == null ? 1e9 : b.days; return (x - y) || c(a, b); } if(mode === 'big') return (b.kg - a.kg) || c(a, b); if(mode === 'name') return c(a, b); const ka = key(a), kb = key(b); return (typeof ka === 'number' ? ka - kb : String(ka).localeCompare(String(kb))) || c(a, b); });
+  return rows;
+}
+function yGroups(rows, mode, cols, mk){
+  const out = []; let cur = null, g = null;
+  const title = (r) => mode === 'col' ? r.fam : mode === 'sec' ? (r.i ? r.i.sec || 'Other' : 'Earlier entries') : (r.i ? r.i.sup || 'No supplier' : 'No supplier');
+  rows.forEach(r => { if(mode === 'col' || mode === 'sec' || mode === 'sup'){ const t = title(r); if(t !== cur){ cur = t; g = { t, n: 0, kg: 0, rows: [] }; out.push({ gh: g }); } g.n++; g.kg += r.kg; } out.push({ r }); });
+  return out.map(x => x.gh ? { g: `${mode === 'col' ? yDot(yFamHex(x.gh.t)) : ''}<b>${skEsc(x.gh.t)}</b> <span class="sxSm2">· ${x.gh.n} item${x.gh.n === 1 ? '' : 's'} · ${sxN(x.gh.kg)} kg</span>` } : mk(x.r));
+}
+/* ---------- Raw store page ---------- */
+function sxRawHtml(){
+  yCfg(); if(!SX.yPrev){ SX.yPrev = 1; sxMonth('w', yPrevYm()).then(() => { if(SX.tab === 'raw' && !SX.sfor) skRender(); }); }
+  const cfg = SX.cfg, q = (SX.rq || '').toLowerCase(), F = sxFget('raw'), mode = ySortOf('raw'), all = yRows(), stores = cfg.ystores;
+  const flds = [['sec', 'Section', ySecs()], ['sup', 'Supplier', Array.from(new Set(yItems().map(i => i.sup).filter(Boolean))).sort()], ['fam', 'Colour', SX_FAM.map(x => x[0])], ['store', 'Store', stores], ['s', 'Status', [['order', 'Order now'], ['out', 'Out of stock'], ['idle', 'Not moving'], ['ok', 'OK']]], ['show', 'Show', [['all', 'All items, also with no stock']], 'Only items with stock']];
+  let h = sxTop(sxSearch('sxRq', SX.rq, 'Search code, colour, supplier…') + sxFilt('raw', flds) + ySortBtn('raw') + '<span class="grow"></span>' + sxDlBtn('raw') + sxGear('raw') + (sxCan('raw') ? sxAddBtn('yraw', 'Update') : '')) + sxFpop('raw', flds) + ySortPop('raw', ['col', 'sec', 'sup', 'name', 'low', 'big']);
+  if(!sxCan('raw')) h += sxNoRight('raw material');
+  const t = yTot(), orderN = all.filter(r => r.s === 'order' || r.s === 'out').length, idleN = all.filter(r => r.s === 'idle').length;
+  h += `<div class="card sxCard"><div class="sxGrid">${sxTile('Yarn in store', sxN(t.kg) + '<small> kg</small>', sxN(Math.round(t.bx)) + ' boxes', '', 'raw', 'blue')}${sxTile('Items in stock', t.n, 'of ' + yItems().filter(i => i.on !== false).length + ' in the list', '', 'pack', 'green')}${sxTile('Order now', orderN, orderN ? 'Low or finished, still used' : 'Nothing to order', '', 'warn', orderN ? 'amber' : 'green')}${sxTile('Not moving', idleN, 'In stock, not used for 30 days', '', 'roll', 'purple')}</div></div>`;
+  let rows = all.filter(r => { if(F.sec && r.i.sec !== F.sec) return false; if(F.sup && r.i.sup !== F.sup) return false; if(F.fam && r.fam !== F.fam) return false; if(F.s && r.s !== F.s) return false; if(F.store && !(r.st[F.store] > 0)) return false; if(!F.show && !(r.kg > 0.0004 || r.s === 'out')) return false; if(q && (yLbl(r.i) + ' ' + r.i.sz).toLowerCase().indexOf(q) < 0) return false; return true; });
+  ySortRows(rows, mode);
+  const cols = [['Code', ''], ['Colour', '', 'k'], ['Supplier', ''], ['Yarn size', '']].concat(stores.map(s => [skEsc(s) + ' kg', '', 'r']), [['Boxes', '', 'r'], ['Total kg', '', 'r'], ['Used per day kg', '', 'r'], ['Days left', '', 'r'], ['Status', '', 'a']]);
+  const mk = (r) => [`<span class="sxCode">${skEsc(r.i.code)}</span>`, `<span class="sxYc" title="${skEsc(r.i.col)}">${yDot(yHex(r.i.col, r.fam))}${skEsc(r.i.col)}</span>`, `<span class="sxSm2">${skEsc(r.i.sup)}</span>`, `<span class="sxSm2">${skEsc(r.i.sz)}</span>`].concat(stores.map(s => r.st[s] > 0 ? sxN(r.st[s]) : '<span class="sxSm2">-</span>'), [r.bx != null && r.kg > 0 ? sxN(Math.round(r.bx * 10) / 10) : '', `<b>${sxN(r.kg)}</b>`, r.per > 0 ? sxN(r.per) : '<span class="sxSm2">-</span>', r.days != null ? sxN(Math.round(r.days)) : '<span class="sxSm2">-</span>', yTag(r.s)]);
+  const sk = F.store ? 0 : 1, tkg = rows.reduce((a, r) => a + (F.store ? (r.st[F.store] || 0) : r.kg), 0), tbx = rows.reduce((a, r) => a + (r.bx != null ? r.bx : 0), 0);
+  const foot = ['', '<b>Total</b>', '', ''].concat(stores.map(s => `<b>${sxN(rows.reduce((a, r) => a + (r.st[s] || 0), 0))}</b>`), [`<b>${sxN(Math.round(tbx))}</b>`, `<b>${sxN(tkg)}</b>`, '', '', '']);
+  h += sxHead('Raw material in store', mode === 'col' ? 'Grouped by colour' : Y_SORT[mode]) + '<div class="card sxCard">' + sxTbl(cols, yGroups(rows, mode, cols, mk), foot, all.length ? 'Nothing found. Change the filter, or press Update to add stock.' : 'No items yet.') + '</div>';
+  const old = sxRaw(), oc = Object.keys(old);
+  if(oc.length){ const lr = []; oc.sort().forEach(c => Object.keys(old[c]).sort().forEach(k => Object.keys(old[c][k].st).forEach(s => lr.push([`<span class="sxSm2">${skEsc(c)}</span>`, sxColT(k), skEsc(s), `<b>${sxN(old[c][k].st[s])}</b>`])))); h += sxHead('Earlier raw weft entries', 'Kept as they were') + '<div class="card sxCard">' + sxTbl([['Category', ''], ['Colour', '', 'k'], ['Store', ''], ['Kg', '', 'r']], lr, null, '') + '</div>'; }
+  return h + yRecent(['yr', 'raw'], 'Recent entries');
+}
+/* small list of what was entered this month (admin can remove one) */
+function yRecent(secs, title){
+  const adm = sxAdmin(), l = sxEnt('w', sxYm()).filter(e => secs.indexOf(e.s) >= 0).slice().reverse().slice(0, 25);
+  const cols = [['Date', ''], ['Item', '', 'k'], ['Details', ''], ['Type', '', 'a'], ['Kg', '', 'r'], ['Boxes', '', 'r']].concat(adm ? [['', '', 'a']] : []);
+  const rows = l.map(e => {
+    const i = e.y ? yItem(e.y) : null, name = e.open ? `<b>Opening stock</b> <span class="sxSm2">${(e.rows || []).length} items</span>` : i ? `<span class="sxYc">${yDot(yHex(i.col, yFam(i.col)))}${skEsc(i.col)}</span> <span class="sxSm2">${skEsc(i.code)}</span>` : sxColT(e.col || '');
+    const det = [e.k === 'mv' ? skEsc(e.store) + ' to ' + skEsc(e.store2) : e.store ? skEsc(e.store) : '', e.to ? 'to ' + skEsc(e.to) : '', e.src === 'rc' ? 'recovered from weaving' : '', e.bob ? sxN(e.bob) + (e.s === 'wp' ? ' beams' : ' bobbins') : '', e.n ? skEsc(e.n) : '', skEsc(e.by || '')].filter(Boolean).join(' · ');
+    return [skEsc(e.d.slice(5)), name, `<span class="sxSm2">${det}</span>`, `<span class="sxTag ${e.k === 'out' ? 'out' : e.k === 'mv' ? 'open' : 'in'}">${e.k === 'out' ? 'OUT' : e.k === 'mv' ? 'MOVE' : 'IN'}</span>`, `<b>${sxN(e.kg)}</b>`, e.bx ? sxN(e.bx) : ''].concat(adm ? [`<button type="button" class="mini-icon-btn" data-sx="undo" data-p="w" data-v="${skEsc(e.id)}" data-ym="${sxYm(e.d)}" title="Remove this entry" aria-label="Remove this entry">${sxIc('del', 13)}</button>`] : []);
+  });
+  return sxHead(title || 'Recent entries', 'This month') + '<div class="card sxCard">' + sxTbl(cols, rows, null, 'No entries yet this month.') + '</div>';
+}
+/* ---------- Update form (IN / OUT / MOVE) ---------- */
+const yDL = () => `<datalist id="yIL">${yItems().filter(i => i.on !== false).map(i => `<option value="${skEsc(yLbl(i))}">`).join('')}</datalist>`;
+function yOpenRaw(){
+  yCfg(); const c = SX.cfg, F = SX.last, k = SX.yk || 'in', st = c.ystores;
+  const tabs = `<div class="hrTabs sxIO">${[['in', 'IN · received'], ['out', 'OUT · issued'], ['mv', 'MOVE · store to store']].map(x => `<button class="${k === x[0] ? 'active' : ''}" data-sx="yk" data-v="${x[0]}">${x[1]}</button>`).join('')}</div>`;
+  sxModal('Raw material', tabs + `<div class="sxF">
+    ${sxField('Item (type code or colour, then choose)', '<input id="yI" list="yIL" type="text" autocomplete="off" placeholder="e.g. RM625 or SOFT SKY GREY">', 1)}
+    <div class="field wide"><div id="yInfo" class="sxNote" style="margin:0;">Choose the item to see what is in the store.</div></div>
+    ${sxField(k === 'in' ? 'Stored in' : k === 'out' ? 'Taken from' : 'From store', `<select id="yS">${sxOpt(st, F.ystore)}</select>`)}
+    ${k === 'mv' ? sxField('To store', `<select id="yS2">${sxOpt(st, st.find(x => x !== F.ystore) || '')}</select>`) : ''}
+    <div class="field" id="yBxW"><label>Boxes</label><input id="yBx" type="number" inputmode="decimal" min="0" step="any" placeholder="0"></div>
+    ${sxField('Kg', '<input id="yKg" type="number" inputmode="decimal" min="0" step="any" placeholder="0">')}
+    ${sxField('Date', `<input id="sxD" type="date" value="${skEsc(sxToday())}">`)}
+    ${k === 'out' ? sxField('Goes to', `<select id="yTo">${sxOpt(c.ydest, F.yto, 'Choose')}</select>`) : ''}
+    ${sxField('Note (optional)', '<input id="sxN" type="text" placeholder="e.g. supplier, invoice, machine">', k === 'in' ? 1 : 0)}</div>` + yDL(), sxSave('ysaveraw', k === 'out' ? 'Save OUT' : k === 'mv' ? 'Save MOVE' : 'Save IN'));
+  setTimeout(() => { const e = $('yI'); if(e) e.focus(); }, 60);
+}
+function yInfoUpd(){
+  const e = $('yI'), box = $('yInfo'); if(!e || !box) return; const i = yFind(e.value), bw = $('yBxW');
+  if(!i){ box.innerHTML = 'Choose the item to see what is in the store.'; if(bw) bw.style.display = ''; return; }
+  const b = (yIdx()[i.id] || { tot: 0, st: {} }), sp = Object.keys(b.st).map(s => skEsc(s) + ' <b>' + sxN(b.st[s]) + '</b>').join(' · ');
+  box.innerHTML = `<b>${skEsc(i.col)}</b> · ${skEsc(i.sup)}${i.sz ? ' · ' + skEsc(i.sz) : ''}<br>${i.kgb > 0 ? sxN(i.kgb) + ' kg in 1 box' : 'Counted in kg only'} · In store now: <b>${sxN(b.tot)} kg</b>${i.kgb > 0 ? ' (' + sxN(Math.round(b.tot / i.kgb * 10) / 10) + ' boxes)' : ''}${sp ? '<br>' + sp : ''}`;
+  if(bw) bw.style.display = i.kgb > 0 ? '' : 'none';
+}
+async function ySaveRaw(){
+  if(!sxCan('raw')) return; const k = SX.yk || 'in', i = yFind(sxVal('yI')), store = sxVal('yS'), s2 = sxVal('yS2'), d = sxVal('sxD') || sxToday(), to = sxVal('yTo');
+  let kg = Number(sxVal('yKg')), bx = Number(sxVal('yBx')) || 0;
+  if(!i){ toast('Choose the item from the list'); return; } if(!store){ toast('Choose the store'); return; }
+  if(!(kg > 0) && bx > 0 && i.kgb > 0) kg = Math.round(bx * i.kgb * 100) / 100; if(!(kg > 0)){ toast('Type the boxes or the kg'); return; }
+  if(!(bx > 0) && i.kgb > 0) bx = Math.round(kg / i.kgb * 10) / 10;
+  if(k === 'out' && !to){ toast('Choose where it goes'); return; } if(k === 'mv' && (!s2 || s2 === store)){ toast('Choose a different store to move to'); return; }
+  const dl = k === 'mv' ? { ['yr|' + i.id + '|' + store]: -kg, ['yr|' + i.id + '|' + s2]: kg } : { ['yr|' + i.id + '|' + store]: k === 'out' ? -kg : kg };
+  const e = { id: sxId(), t: Date.now(), s: 'yr', k, d, y: i.id, col: i.col, store, store2: k === 'mv' ? s2 : '', to: k === 'out' ? to : '', kg, bx: i.kgb > 0 ? bx : 0, n: sxVal('sxN'), by: sxMe(), u: String(state.user.loginId), dl };
+  if(await sxSaveMove('w', e, k !== 'in')){ sxKeep({ ystore: store, yto: to }); toast('Saved'); sxClose(); skRender(); }
+}
+/* ---------- Opening stock (one time, one small save) ---------- */
+function yOpenOpening(){
+  yCfg(); const st = SX.cfg.ystores, items = yItems().filter(i => i.on !== false);
+  const ref = (i) => { const n = Number(i.id.slice(1)); const r = SX_YSEED[n - 1]; return r && r[2] === i.col && r[1] === i.code ? r[6] : 0; };
+  const rows = items.map(i => `<tr data-q="${skEsc((yLbl(i) + ' ' + i.sz).toLowerCase())}"><td><span class="sxCode">${skEsc(i.code)}</span></td><td><span class="sxYc">${yDot(yHex(i.col, yFam(i.col)))}${skEsc(i.col)}</span><div class="sxSm2">${skEsc(i.sup)}</div></td><td class="r">${ref(i) > 0 ? sxN(ref(i)) : '<span class="sxSm2">-</span>'}</td>${st.map(s => `<td><input class="yOp" data-y="${i.id}" data-s="${skEsc(s)}" type="number" inputmode="decimal" min="0" step="any" placeholder="0"></td>`).join('')}</tr>`).join('');
+  sxModal('Opening stock', `<div class="sxNote" style="margin-bottom:10px;">Type the kg you have now in each store. It is added to the stock. Leave empty what you do not have. The sheet column is only a hint from your Excel.</div><input id="yOq" class="sxQ" type="text" placeholder="Search code or colour…" style="margin-bottom:10px;max-width:none;"><div class="table-scroll" style="max-height:52vh;overflow:auto;"><table class="report-table sxRT yOpT"><thead><tr><th>Code</th><th class="k">Colour</th><th>Sheet kg</th>${st.map(s => `<th>${skEsc(s)} kg</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table></div>`, sxSave('ysaveopen', 'Save opening stock'));
+}
+async function ySaveOpen(){
+  if(!sxCan('raw')) return; const rows = [], dl = {}; let tot = 0;
+  document.querySelectorAll('#sxModal .yOp').forEach(e => { const v = Number(e.value); if(v > 0){ rows.push([e.dataset.y, e.dataset.s, v]); dl['yr|' + e.dataset.y + '|' + e.dataset.s] = (dl['yr|' + e.dataset.y + '|' + e.dataset.s] || 0) + v; tot += v; } });
+  if(!rows.length){ toast('Type at least one quantity'); return; }
+  if(!confirm('Add ' + sxN(tot) + ' kg of opening stock for ' + rows.length + ' lines?')) return;
+  const e = { id: sxId(), t: Date.now(), s: 'yr', k: 'in', open: 1, d: sxToday(), rows, kg: tot, n: 'Opening stock', by: sxMe(), u: String(state.user.loginId), dl };
+  if(await sxSaveMove('w', e, false)){ toast('Saved'); sxClose(); skRender(); }
+}
+/* ---------- Rewinding (per yarn item): rewound + recovered from weaving ---------- */
+function yRewRows(){
+  const o = {}; Object.keys(SX.bal).forEach(k => { const p = k.split('|'); if(p[0] !== 'rew' && p[0] !== 'rewR' && p[0] !== 'rewN') return; const v = Number(SX.bal[k]) || 0; const r = (o[p[1]] = o[p[1]] || { id: p[1], kg: 0, n: 0, rc: 0 }); if(p[0] === 'rew') r.kg = v; else if(p[0] === 'rewN') r.n = v; else r.rc = v; });
+  const idx = yIdx();
+  return Object.keys(o).map(k => { const r = o[k], i = /^y\d+$/.test(k) ? yItem(k) : null; r.i = i; r.label = i ? i.col : k; r.fam = yFam(r.label); r.raw = i && idx[i.id] ? idx[i.id].tot : 0; r.tot = Math.max(0, r.kg) + Math.max(0, r.rc); return r; }).filter(r => r.kg > 0.0004 || r.rc > 0.0004 || r.n > 0);
+}
+function yRewHtml(){
+  SX.rwsub = 'rew'; yCfg(); const q = (SX.wq || '').toLowerCase(), F = sxFget('rew'), mode = ySortOf('rew'), all = yRewRows();
+  const flds = [['fam', 'Colour', SX_FAM.map(x => x[0])], ['sec', 'Section', ySecs()]];
+  let h = sxTop(sxSearch('sxWq', SX.wq, 'Search colour…') + sxFilt('rew', flds) + ySortBtn('rew') + '<span class="grow"></span>' + sxDlBtn('rew') + sxGear('rew') + (sxCan('rew') ? sxAddBtn('yrew', 'Update') : '')) + sxFpop('rew', flds) + ySortPop('rew', ['col', 'name', 'big']);
+  if(!sxCan('rew')) h += sxNoRight('rewinding');
+  const T = { kg: all.reduce((a, r) => a + Math.max(0, r.kg), 0), rc: all.reduce((a, r) => a + Math.max(0, r.rc), 0), n: all.reduce((a, r) => a + Math.max(0, r.n), 0) };
+  h += `<div class="card sxCard"><div class="sxGrid">${sxTile('Rewound in hand', sxN(T.kg + T.rc) + '<small> kg</small>', sxN(T.n) + ' bobbins', '', 'rew', 'purple')}${sxTile('Recovered from weaving', sxN(T.rc) + '<small> kg</small>', 'Included in the total', '', 'roll', 'cyan')}${sxTile('Items', all.length, 'with rewound yarn', '', 'raw', 'blue')}</div></div>`;
+  let rows = all.filter(r => (!F.fam || r.fam === F.fam) && (!F.sec || (r.i && r.i.sec === F.sec)) && (!q || (r.label + ' ' + (r.i ? r.i.code : '')).toLowerCase().indexOf(q) >= 0));
+  rows.forEach(r => { r.kg0 = r.kg; }); const sk = { col: 1, name: 1, big: 1 }; if(!sk[mode]) SX.last.ys_rew = 'col';
+  rows.sort((a, b) => mode === 'big' ? (b.tot - a.tot) : mode === 'name' ? String(a.label).localeCompare(String(b.label)) : (yFamI(a.fam) - yFamI(b.fam)) || String(a.label).localeCompare(String(b.label)));
+  const cols = [['Code', ''], ['Colour', '', 'k'], ['In raw store kg', '', 'r'], ['Rewound kg', '', 'r'], ['Bobbins', '', 'r'], ['Recovered from weaving kg', '', 'r'], ['Total in hand kg', '', 'r']];
+  const mk = (r) => [r.i ? `<span class="sxCode">${skEsc(r.i.code)}</span>` : '', `<span class="sxYc" title="${skEsc(r.label)}">${yDot(yHex(r.label, r.fam))}${skEsc(r.label)}</span>`, r.raw > 0 ? sxN(r.raw) : '<span class="sxSm2">-</span>', sxN(Math.max(0, r.kg)), sxN(Math.max(0, r.n)), r.rc > 0 ? sxN(r.rc) : '<span class="sxSm2">-</span>', `<b>${sxN(r.tot)}</b>`];
+  const foot = ['', '<b>Total</b>', '', `<b>${sxN(rows.reduce((a, r) => a + Math.max(0, r.kg), 0))}</b>`, `<b>${sxN(rows.reduce((a, r) => a + Math.max(0, r.n), 0))}</b>`, `<b>${sxN(rows.reduce((a, r) => a + Math.max(0, r.rc), 0))}</b>`, `<b>${sxN(rows.reduce((a, r) => a + r.tot, 0))}</b>`];
+  h += sxHead('Rewound yarn in hand', mode === 'col' ? 'Grouped by colour' : Y_SORT[mode]) + '<div class="card sxCard">' + sxTbl(cols, yGroups(rows, mode === 'col' ? 'col' : 'none', cols, mk), foot, 'Nothing in stock. Press Update to add rewound yarn.') + '</div>';
+  return h + yRecent(['rew'], 'Recent entries');
+}
+function yOpenRew(){
+  yCfg(); const k = SX.yk2 || 'in', F = SX.last;
+  const tabs = `<div class="hrTabs sxIO">${[['in', 'Rewound IN'], ['rc', 'Recovered from weaving IN'], ['out', 'OUT · to weaving']].map(x => `<button class="${k === x[0] ? 'active' : ''}" data-sx="yk2" data-v="${x[0]}">${x[1]}</button>`).join('')}</div>`;
+  sxModal('Rewinding', tabs + `<div class="sxF">
+    ${sxField('Item (type code or colour, then choose)', '<input id="yI" list="yIL" type="text" autocomplete="off" placeholder="e.g. RM625 or SOFT SKY GREY">', 1)}
+    <div class="field wide"><div id="yInfo" class="sxNote" style="margin:0;">Choose the item.</div></div>
+    ${sxField('Kg', '<input id="yKg" type="number" inputmode="decimal" min="0" step="any" placeholder="0">')}${k === 'rc' ? '' : sxField('Number of bobbins (optional)', '<input id="yBob" type="number" inputmode="decimal" min="0" step="any" placeholder="0">')}
+    ${k === 'out' ? sxField('Take from', `<select id="yFrom">${sxOpt([['rew', 'Rewound yarn'], ['rc', 'Recovered from weaving']], F.yfrom || 'rew')}</select>`) : ''}${sxField('Date', `<input id="sxD" type="date" value="${skEsc(sxToday())}">`)}
+    ${sxField('Note (optional)', '<input id="sxN" type="text">', 1)}</div>` + yDL(), sxSave('ysaverew', k === 'out' ? 'Save OUT' : 'Save IN'));
+  setTimeout(() => { const e = $('yI'); if(e) e.focus(); }, 60);
+}
+async function ySaveRew(){
+  if(!sxCan('rew')) return; const k = SX.yk2 || 'in', i = yFind(sxVal('yI')), kg = Number(sxVal('yKg')), bob = Number(sxVal('yBob')) || 0, d = sxVal('sxD') || sxToday(), from = sxVal('yFrom') || 'rew';
+  if(!i){ toast('Choose the item from the list'); return; } if(!(kg > 0)){ toast('Type the kg'); return; }
+  const dl = {}; if(k === 'in'){ dl['rew|' + i.id] = kg; if(bob) dl['rewN|' + i.id] = bob; } else if(k === 'rc'){ dl['rewR|' + i.id] = kg; } else if(from === 'rc'){ dl['rewR|' + i.id] = -kg; } else { dl['rew|' + i.id] = -kg; if(bob) dl['rewN|' + i.id] = -bob; }
+  const e = { id: sxId(), t: Date.now(), s: 'rew', k: k === 'out' ? 'out' : 'in', src: k === 'rc' || (k === 'out' && from === 'rc') ? 'rc' : '', d, y: i.id, col: i.col, kg, bob, n: sxVal('sxN'), by: sxMe(), u: String(state.user.loginId), dl };
+  if(await sxSaveMove('w', e, k === 'out')){ sxKeep({ yfrom: from }); toast('Saved'); sxClose(); skRender(); }
+}
+/* ---------- Warping: beams ---------- */
+function yWpRows(){
+  const c = yCfg(), cols = c.beamCols.slice(); Object.keys(SX.bal).forEach(k => { const p = k.split('|'); if(p[0] === 'wp' && (Number(SX.bal[k]) || 0) > 0.0004 && !cols.some(x => x.toLowerCase() === p[1].toLowerCase())) cols.push(p[1]); });
+  const made = {}, used = {}; sxEnt('w', sxYm()).forEach(e => { if(e.s !== 'wp') return; const m = e.k === 'out' ? used : made; m[e.col] = (m[e.col] || 0) + (Number(e.bob) || 0); });
+  return cols.map(col => { const n = Math.max(0, Number(SX.bal['wpN|' + col]) || 0), kg = Math.max(0, Number(SX.bal['wp|' + col]) || 0), mo = made[col] || 0, us = used[col] || 0; return { col, w: Number(c.beamW[col]) || 0, n, kg, mo, us, op: Math.max(0, n - mo + us) }; });
+}
+function yWpHtml(){
+  SX.rwsub = 'wp'; const rows = yWpRows(), T = { n: rows.reduce((a, r) => a + r.n, 0), kg: rows.reduce((a, r) => a + r.kg, 0) };
+  let h = sxTop('<span class="grow"></span>' + sxDlBtn('wp') + sxGear('wp') + (sxCan('wp') ? sxAddBtn('ywp', 'Update') : ''));
+  if(!sxCan('wp')) h += sxNoRight('warping');
+  h += `<div class="card sxCard"><div class="sxGrid">${sxTile('Beams in stock', sxN(T.n) + '<small> beams</small>', sxN(T.kg) + ' kg', '', 'wp', 'cyan')}${sxTile('Made this month', sxN(rows.reduce((a, r) => a + r.mo, 0)) + '<small> beams</small>', '', '', 'pack', 'green')}${sxTile('Used this month', sxN(rows.reduce((a, r) => a + r.us, 0)) + '<small> beams</small>', '', '', 'roll', 'purple')}</div></div>`;
+  const cols = [['Colour', '', 'k'], ['Kg per beam', '', 'r'], ['Start of month', '', 'r'], ['Made', '', 'r'], ['Used', '', 'r'], ['Closing beams', '', 'r'], ['Total kg', '', 'r']];
+  const body = rows.map(r => [sxColT(r.col), r.w > 0 ? sxN(r.w) : '<span class="sxSm2">-</span>', sxN(r.op), r.mo ? sxN(r.mo) : '<span class="sxSm2">-</span>', r.us ? sxN(r.us) : '<span class="sxSm2">-</span>', `<b>${sxN(r.n)}</b>`, `<b>${sxN(r.kg)}</b>`]);
+  h += sxHead('Warping beams', 'This month') + '<div class="card sxCard">' + sxTbl(cols, body, ['<b>Total</b>', '', `<b>${sxN(rows.reduce((a, r) => a + r.op, 0))}</b>`, `<b>${sxN(rows.reduce((a, r) => a + r.mo, 0))}</b>`, `<b>${sxN(rows.reduce((a, r) => a + r.us, 0))}</b>`, `<b>${sxN(T.n)}</b>`, `<b>${sxN(T.kg)}</b>`], 'No beam colours yet. Add them in Settings.') + '</div>';
+  return h + yRecent(['wp'], 'Recent entries');
+}
+function yOpenWp(){
+  const c = yCfg(), k = SX.yk3 || 'in', F = SX.last;
+  sxModal('Warping beams', sxInOut('yk3', k, 'IN · beams made', 'OUT · beams used') + `<div class="sxF">${sxField('Colour', `<input id="yWc" list="yWl" type="text" autocomplete="off" value="${skEsc(F.ywc || '')}" placeholder="Choose or type">`, 1)}
+    ${sxField('Number of beams', '<input id="yWn" type="number" inputmode="decimal" min="0" step="any" placeholder="0">')}${sxField('Total kg (auto from kg per beam)', '<input id="yWk" type="number" inputmode="decimal" min="0" step="any" placeholder="auto">')}
+    ${sxField('Date', `<input id="sxD" type="date" value="${skEsc(sxToday())}">`)}${sxField('Note (optional)', '<input id="sxN" type="text">')}</div><datalist id="yWl">${yWpRows().map(r => `<option value="${skEsc(r.col)}">`).join('')}</datalist>`, sxSave('ysavewp', k === 'out' ? 'Save OUT' : 'Save IN'));
+}
+async function ySaveWp(){
+  if(!sxCan('wp')) return; const k = SX.yk3 || 'in', c = yCfg(), r0 = yWpRows(), raw = sxVal('yWc'), col = (r0.find(r => r.col.toLowerCase() === raw.toLowerCase()) || { col: sxColFix(raw) }).col, n = Number(sxVal('yWn')), d = sxVal('sxD') || sxToday();
+  if(!col){ toast('Choose the colour'); return; } if(!(n > 0)){ toast('Type the number of beams'); return; }
+  const w = Number(c.beamW[col]) || 0; let kg = Number(sxVal('yWk')); if(!(kg > 0)) kg = Math.round(n * w * 100) / 100; if(!(kg > 0)){ toast('Type the total kg (no kg per beam is set for this colour)'); return; }
+  const dl = { ['wp|' + col]: k === 'out' ? -kg : kg, ['wpN|' + col]: k === 'out' ? -n : n };
+  const e = { id: sxId(), t: Date.now(), s: 'wp', k, d, col, kg, bob: n, n: sxVal('sxN'), by: sxMe(), u: String(state.user.loginId), dl };
+  if(await sxSaveMove('w', e, k === 'out')){ sxKeep({ ywc: col }); toast('Saved'); sxClose(); skRender(); }
+}
+/* ---------- Yarn item list (Settings) ---------- */
+function yItemForm(id){
+  const i = id ? yItem(id) : { id: '', sec: '', code: '', col: '', sup: '', sz: '', kgb: 0, on: true };
+  sxModal(id ? 'Change yarn item' : 'New yarn item', `<div class="sxF">${sxField('Code', `<input id="yfCode" type="text" value="${skEsc(i.code)}" placeholder="e.g. RM625">`)}${sxField('Colour description', `<input id="yfCol" type="text" value="${skEsc(i.col)}" placeholder="e.g. SOFT SKY GREY-SF87">`)}
+    ${sxField('Supplier', `<input id="yfSup" type="text" value="${skEsc(i.sup)}" placeholder="e.g. HUAYUAN, CHINA">`)}${sxField('Yarn size', `<input id="yfSz" type="text" value="${skEsc(i.sz)}" placeholder="e.g. 450D/192F">`)}
+    ${sxField('Section', `<input id="yfSec" list="yfSecs" type="text" value="${skEsc(i.sec)}" placeholder="e.g. Pile">`)}${sxField('Kg in 1 box (0 = kg only)', `<input id="yfKgb" type="number" inputmode="decimal" min="0" step="any" value="${i.kgb || ''}" placeholder="25">`)}
+    ${sxField('Show in lists', `<select id="yfOn">${sxOpt([['1', 'Yes'], ['0', 'No (hide it, stock is kept)']], i.on === false ? '0' : '1')}</select>`)}</div><datalist id="yfSecs">${ySecs().map(s => `<option value="${skEsc(s)}">`).join('')}</datalist>`, sxSave('ysaveitem', 'Save', id || ''));
+}
+async function ySaveItem(id){
+  const o = { code: sxVal('yfCode'), col: sxVal('yfCol'), sup: sxVal('yfSup'), sz: sxVal('yfSz'), sec: sxVal('yfSec') || 'Other', kgb: Number(sxVal('yfKgb')) || 0, on: sxVal('yfOn') !== '0' };
+  if(!o.col){ toast('Type the colour description'); return; }
+  const L = yItems(); if(L.some(x => x.id !== id && x.code === o.code && x.col.toLowerCase() === o.col.toLowerCase() && x.sup.toLowerCase() === o.sup.toLowerCase())){ toast('This item is already in the list'); return; }
+  if(id){ Object.assign(yItem(id), o); } else { const n = L.reduce((a, x) => Math.max(a, Number(String(x.id).slice(1)) || 0), 0) + 1; L.push(Object.assign({ id: 'y' + n }, o)); }
+  SX.open = SX.open || {}; SX.open.yitems = 1; if(await sxPutCfg()){ toast('Saved'); sxClose(); skRender(); }
+}
+function yItemsSec(){
+  const all = yItems().slice().sort((a, b) => (a.sec || '').localeCompare(b.sec || '') || a.col.localeCompare(b.col)), n = all.filter(i => i.on !== false).length;
+  return `<details class="acSec admD" ${sxSecAttr('yitems')}><summary>Yarn items<span class="sxCnt">${n}</span></summary><div class="acSecB"><p class="sub">Add a new yarn, or pick one to change its code, colour, supplier, size or kg in 1 box.</p><div class="sxTop"><select id="yEdSel" class="sxPs" style="flex:1 1 220px;max-width:380px;">${sxOpt(all.map(i => [i.id, [i.sec, yLbl(i)].filter(Boolean).join(' · ') + (i.on === false ? ' (hidden)' : '')]), '', 'Choose a yarn to change')}</select><button type="button" class="pcBtnSoft sm" data-sx="yedit">Change</button><button type="button" class="pcBtnMain sm" data-sx="ynew">${sxIc('plus', 14)}<span>New yarn</span></button></div></div></details>`;
+}
+function sxYSet(show){
+  yCfg(); let h = '';
+  if(show('yitems')) h += yItemsSec();
+  if(show('ystores')) h += sxListSec('ystores', 'Stores', 'Where yarn is kept (for example RVF and SSTM).', 'e.g. RVF');
+  if(show('ydest')) h += sxListSec('ydest', 'Yarn goes to', 'Shown when yarn goes OUT of the store.', 'e.g. Weaving');
+  if(show('yrules')) h += `<details class="acSec admD" ${sxSecAttr('yrules')}><summary>Order warning</summary><div class="acSecB"><p class="sub">An item shows "Order now" when the stock will last fewer days than this, going by what was issued in the last 30 days.</p><div class="sxF">${sxField('Order when days left is below', `<input id="yOrd" type="number" inputmode="decimal" value="${SX.cfg.yOrder || 30}" placeholder="30">`)}</div><button type="button" class="btn btn-primary btn-sm" data-sx="ysaverules" style="margin-top:10px;">Save</button></div></details>`;
+  if(show('yopen')) h += `<details class="acSec admD" ${sxSecAttr('yopen')}><summary>Opening stock</summary><div class="acSecB"><p class="sub">Enter what you have in each store today, for all yarns at once. Do this one time when you start.</p><button type="button" class="pcBtnSoft" data-sx="yopen">Enter opening stock</button></div></details>`;
+  if(show('beamCols')) h += sxListSec('beamCols', 'Beam colours', 'The colours of warping beams.', 'e.g. White');
+  if(show('beamW')) h += `<details class="acSec admD" ${sxSecAttr('beamW')}><summary>Kg in 1 beam</summary><div class="acSecB"><p class="sub">The standard weight of one beam for each colour. The kg is worked out from this when you enter beams.</p><div class="sxF">${SX.cfg.beamCols.map(c => sxField(skEsc(c), `<input class="yBw" data-c="${skEsc(c)}" type="number" inputmode="decimal" value="${SX.cfg.beamW[c] || ''}" placeholder="kg">`)).join('') || '<span style="font-size:12px;color:var(--muted);">Add a beam colour first.</span>'}</div>${SX.cfg.beamCols.length ? '<button type="button" class="btn btn-primary btn-sm" data-sx="ysavebw" style="margin-top:10px;">Save</button>' : ''}</div></details>`;
+  return h;
+}
+/* ---------- Download ---------- */
+function yDl(kind){
+  if(kind === 'raw'){ const st = SX.cfg.ystores, rows = [['Section', 'Code', 'Colour', 'Supplier', 'Yarn size'].concat(st.map(s => s + ' kg'), ['Boxes', 'Total kg', 'Used per day kg', 'Days left', 'Status'])]; ySortRows(yRows().filter(r => r.kg > 0.0004 || r.s === 'out'), 'col').forEach(r => rows.push([r.i.sec, r.i.code, r.i.col, r.i.sup, r.i.sz].concat(st.map(s => Math.round((r.st[s] || 0) * 100) / 100), [r.bx != null ? Math.round(r.bx * 10) / 10 : '', Math.round(r.kg * 100) / 100, Math.round(r.per * 100) / 100, r.days != null ? Math.round(r.days) : '', Y_ST[r.s][0]]))); skDlXlsx('raw-material-stock', 'Raw material', rows); }
+  else if(kind === 'rew'){ const rows = [['Code', 'Colour', 'In raw store kg', 'Rewound kg', 'Bobbins', 'Recovered from weaving kg', 'Total in hand kg']]; yRewRows().forEach(r => rows.push([r.i ? r.i.code : '', r.label, Math.round(r.raw * 100) / 100, Math.round(r.kg * 100) / 100, r.n, Math.round(r.rc * 100) / 100, Math.round(r.tot * 100) / 100])); skDlXlsx('rewinding-stock', 'Rewinding', rows); }
+  else if(kind === 'wp'){ const rows = [['Colour', 'Kg per beam', 'Start of month', 'Made', 'Used', 'Closing beams', 'Total kg']]; yWpRows().forEach(r => rows.push([r.col, r.w, r.op, r.mo, r.us, r.n, Math.round(r.kg * 100) / 100])); skDlXlsx('warping-beams', 'Warping', rows); }
+}
+/* ---------- wiring (adds to the existing handlers, changes none of them) ---------- */
+function sxRwHtml(){ return SX.tab === 'wp' ? yWpHtml() : yRewHtml(); }
+const _yOpenForm = sxOpenForm; sxOpenForm = function(kind){ if(kind === 'yraw') return yOpenRaw(); if(kind === 'yrew') return yOpenRew(); if(kind === 'ywp') return yOpenWp(); return _yOpenForm(kind); };
+const _yDl = sxDl; sxDl = function(kind){ if(kind === 'raw' || kind === 'rew' || kind === 'wp') return yDl(kind); return _yDl(kind); };
+Object.assign(SX_SM, { raw: ['yitems', 'ystores', 'ydest', 'yrules', 'yopen'], rew: [], wp: ['beamCols', 'beamW'] });
+document.addEventListener('click', async (ev) => {
+  const el = ev.target.closest && ev.target.closest('[data-sx]'); if(!el || el.tagName === 'SELECT') return; const a = el.dataset.sx, v = el.dataset.v;
+  if(a === 'yk'){ const s = sxSnap(); SX.yk = v; yOpenRaw(); sxRestore(s); yInfoUpd(); } else if(a === 'yk2'){ const s = sxSnap(); SX.yk2 = v; yOpenRew(); sxRestore(s); yInfoUpd(); } else if(a === 'yk3'){ const s = sxSnap(); SX.yk3 = v; yOpenWp(); sxRestore(s); }
+  else if(a === 'ysm'){ SX.yso = SX.yso === v ? '' : v; SX.fo = ''; skRender(); } else if(a === 'ysort'){ const p = v.split(':'); SX.last['ys_' + p[0]] = p[1]; sxKeep({}); SX.yso = ''; skRender(); }
+  else if(a === 'ysaveraw') ySaveRaw(); else if(a === 'ysaverew') ySaveRew(); else if(a === 'ysavewp') ySaveWp(); else if(a === 'ysaveopen') ySaveOpen(); else if(a === 'ysaveitem') ySaveItem(v);
+  else if(a === 'yopen'){ SX.sfor = ''; SX.tab = 'raw'; SK.tab = 'raw'; skRender(); yOpenOpening(); } else if(a === 'ynew') yItemForm('');
+  else if(a === 'yedit'){ const id = $('yEdSel') ? $('yEdSel').value : ''; if(!id){ toast('Choose a yarn first'); return; } yItemForm(id); }
+  else if(a === 'ysaverules'){ SX.cfg.yOrder = Number(sxVal('yOrd')) || 30; if(await sxPutCfg()) toast('Saved'); }
+  else if(a === 'ysavebw'){ SX.cfg.beamW = {}; document.querySelectorAll('.yBw').forEach(i => { const n = Number(i.value); if(n > 0) SX.cfg.beamW[i.dataset.c] = n; }); if(await sxPutCfg()) toast('Saved'); }
+  else if(a === 'fo' && SX.yso){ SX.yso = ''; }
+});
+document.addEventListener('input', (ev) => {
+  const t = ev.target; if(!t) return;
+  if(t.id === 'yI') yInfoUpd();
+  else if(t.id === 'yBx'){ const i = yFind(sxVal('yI')), k = $('yKg'); if(i && i.kgb > 0 && k && k.dataset.m !== '1'){ const b = Number(t.value); k.value = b > 0 ? Math.round(b * i.kgb * 100) / 100 : ''; } }
+  else if(t.id === 'yKg'){ t.dataset.m = t.value === '' ? '' : '1'; }
+  else if(t.id === 'yOq'){ const q = t.value.trim().toLowerCase(); document.querySelectorAll('#sxModal tbody tr').forEach(r => { r.style.display = !q || (r.dataset.q || '').indexOf(q) >= 0 ? '' : 'none'; }); }
+});
+document.addEventListener('change', (ev) => { const t = ev.target; if(t && t.id === 'yI') yInfoUpd(); });
 
 /* ---- clicks ---- */
 document.addEventListener('click', (ev) => {
