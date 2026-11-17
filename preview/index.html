@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta name="robots" content="noindex">
-<meta name="rvf-build" content="20261117-090801">
+<meta name="rvf-build" content="20261117-090903">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -29377,8 +29377,8 @@ const SX_FS = [['cr', 'Carpets & Rugs'], ['vip', 'VIP'], ['up', 'Upholstery'], [
 /* what each group shows: same simple table, only the columns that group needs */
 function sxFsCols(g){
   const U = { cr: 'Bundles', vip: 'Bundles', q2: 'Packs', up: 'Rolls' }[g] || 'Qty', act = ['', '116px', 'a'];
-  if(g === 'cr') return [['Code', '82px'], ['Item', 'minmax(150px,1.7fr)', 'k'], ['Colours', 'minmax(120px,1.3fr)'], ['Ready ' + U.toLowerCase(), '104px', 'r'], ['Pieces', '92px', 'r'], ['Truck holds', '86px', 'r'], ['Trucks', '96px', 'r'], ['On floor', '82px', 'r'], act];
-  if(g === 'vip') return [['Code', '82px'], ['Item', 'minmax(150px,1.7fr)', 'k'], ['Colour', 'minmax(110px,1.2fr)'], ['Ready bundles', '104px', 'r'], ['Pieces', '92px', 'r'], ['Truck holds', '86px', 'r'], ['Trucks', '96px', 'r'], ['On floor', '82px', 'r'], act];
+  if(g === 'cr') return [['Code', '82px'], ['Item', 'minmax(150px,1.7fr)', 'k'], ['Colours', 'minmax(200px,2.2fr)'], ['Ready ' + U.toLowerCase(), '104px', 'r'], ['Pieces', '92px', 'r'], ['Truck holds', '86px', 'r'], ['Trucks', '96px', 'r'], ['On floor', '82px', 'r'], act];
+  if(g === 'vip') return [['Code', '82px'], ['Item', 'minmax(150px,1.7fr)', 'k'], ['Colour', 'minmax(200px,2.2fr)'], ['Ready bundles', '104px', 'r'], ['Pieces', '92px', 'r'], ['Truck holds', '86px', 'r'], ['Trucks', '96px', 'r'], ['On floor', '82px', 'r'], act];
   if(g === 'up') return [['Code', '110px'], ['Item', 'minmax(150px,1.7fr)', 'k'], ['Colour', 'minmax(110px,1.2fr)'], ['Roll', '120px'], ['In stock', '104px', 'r'], ['Metres', '86px', 'r'], act];
   return [['Code', '82px'], ['Item', 'minmax(150px,1.7fr)', 'k'], ['Colour', 'minmax(110px,1.2fr)'], ['In stock', '104px', 'r'], ['Pieces', '92px', 'r'], act];
 }
