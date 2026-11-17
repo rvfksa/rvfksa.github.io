@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head><meta name="robots" content="noindex">
-<meta name="rvf-build" content="20261117-074946">
+<meta name="rvf-build" content="20261117-075123">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -28413,6 +28413,8 @@ body.rvfBusy #screen-dashboard .card{ opacity:.5; transition:opacity .2s; }
 .sxTile:hover{ transform:translateY(-2px); box-shadow:0 6px 16px rgba(15,23,42,.10); }
 .sxV{ font-size:27px; }
 .sxH{ font-size:16px; margin-top:20px; }
+#stockMount .sxTop input.sxPs[type=date]{ width:122px; padding:0 8px; font-size:11.5px; }
+#stockMount .sxTop .sxQ{ width:150px; }
 </style>
 <div id="rvfBusy"><i></i><span id="rvfBusyTxt">Loading data…</span></div>
 <script>
@@ -29192,7 +29194,7 @@ function sxFinRows(){ const f = SX.fil, a = f.from || sxToday().slice(0, 7) + '-
 function sxFinOpts(){ const cfg = SX.cfg, ms = (state.machines || []).slice().sort((a, b) => Number(a.id) - Number(b.id)); return { ms, depts: Array.from(new Set(cfg.depts.concat(ms.map(m => m.department).filter(Boolean)))), types: Array.from(new Set(cfg.types.concat(ms.map(m => machineCat(m)).filter(Boolean)))) }; }
 function sxFinHtml(){
   const cfg = SX.cfg, f = SX.fil, o = sxFinOpts();
-  let h = sxTop(sxSearch('sxFq', f.q, 'Search item…') + `<input id="sxFf" class="sxPs" type="date" value="${skEsc(f.from || sxToday().slice(0, 7) + '-01')}" title="From"><input id="sxFt" class="sxPs" type="date" value="${skEsc(f.to || sxToday())}" title="To">${sxPSel('sxFm', o.ms.map(m => [m.id, m.name || m.id]), f.mc, 'All machines')}${sxPSel('sxFz', cfg.sizes, f.size, 'All sizes')}${sxPSel('sxFy', o.types, f.type, 'All types')}${sxPSel('sxFd', o.depts, f.dept, 'All departments')}<span class="grow"></span>` + sxDlBtn('fin') + (sxCan('fin') ? sxAddBtn('fin', 'Add entry') : ''));
+  let h = sxTop(sxSearch('sxFq', f.q, 'Search item…') + `<input id="sxFf" class="sxPs" type="date" value="${skEsc(f.from || sxToday().slice(0, 7) + '-01')}" title="From"><input id="sxFt" class="sxPs" type="date" value="${skEsc(f.to || sxToday())}" title="To">${sxPSel('sxFm', o.ms.map(m => [m.id, m.name || m.id]), f.mc, 'Machine')}${sxPSel('sxFz', cfg.sizes, f.size, 'Size')}${sxPSel('sxFy', o.types, f.type, 'Type')}${sxPSel('sxFd', o.depts, f.dept, 'Department')}<span class="grow"></span>` + sxDlBtn('fin') + (sxCan('fin') ? sxAddBtn('fin', 'Add') : ''));
   if(!sxCan('fin')) h += sxNoRight('finishing');
   const rows = sxFinRows(), tm = rows.filter(e => e.u === 'm').reduce((a, e) => a + e.qty, 0), tr = rows.filter(e => e.u === 'roll').reduce((a, e) => a + e.qty, 0);
   h += `<div class="card sxCard"><div class="sxGrid">${sxTile('Entries', rows.length, 'in this list', '', 'fin', 'blue')}${sxTile('Meters', sxN(tm) + '<small> m</small>', '', '', 'roll', 'green')}${sxTile('Rolls', sxN(tr) + '<small> rolls</small>', '', '', 'pack', 'purple')}</div></div>`;
