@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head><meta name="robots" content="noindex">
-<meta name="rvf-build" content="20261117-082722">
+<meta name="rvf-build" content="20261117-083026">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -28458,6 +28458,7 @@ body.rvfBusy #screen-dashboard .card{ opacity:.5; transition:opacity .2s; }
 .sxTile[data-sx]::after{ content:'\203A'; position:absolute; right:14px; top:12px; font-size:22px; line-height:1; color:var(--muted); }
 .pillBtn.on{ background:var(--amber-soft); color:var(--amber); border-color:var(--amber-dim); }
 @media (max-width:560px){ .sxPhT h2{ font-size:19px; } .sxWho{ width:100%; } }
+.skEmpty{ border:1px solid var(--line); background:#ffffff; box-shadow:var(--shadow); border-radius:16px; font-size:13px; padding:28px 16px; }
 </style>
 <div id="rvfBusy"><i></i><span id="rvfBusyTxt">Loading data…</span></div>
 <script>
@@ -29388,8 +29389,8 @@ async function sxPutCfg(){ try{ await window.__db.invSet('sxcfg', { cfg: SX.cfg 
 /* ---------- page ---------- */
 function skRender(){
   const m = $('stockMount'); if(!m) return;
-  if(!SK.loaded){ m.innerHTML = '<div class="skEmpty">Loading stock…</div>'; return; }
-  if(!SX.loaded){ m.innerHTML = '<div class="skEmpty">Loading stock…</div>'; sxLoad(); return; }
+  if(!SK.loaded){ m.innerHTML = '<div class="card"><div class="hrEmpty">Loading…</div></div>'; return; }
+  if(!SX.loaded){ m.innerHTML = '<div class="card"><div class="hrEmpty">Loading…</div></div>'; sxLoad(); return; }
   const map = { over: 'dash', stock: 'fst', move: 'fst', des: 'dm', plan: 'dm', rw: 'rew' }; if(map[SK.tab]){ if(SK.tab === 'des') SX.dmsub = 'des'; if(SK.tab === 'plan') SX.dmsub = 'plan'; if(SK.tab === 'stock' && SK.grp) SX.fsub = SK.grp; SX.tab = map[SK.tab]; SK.tab = SX.tab; }
   else if(SX_TABS.some(t => t[0] === SK.tab)) SX.tab = SK.tab;
   const pages = SX_PG.filter(p => sxSee(p[0]));
