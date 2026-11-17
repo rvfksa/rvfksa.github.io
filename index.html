@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261117-142151">
+<meta name="rvf-build" content="20261117-143009">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -6227,12 +6227,12 @@ const PAGE_DEFS = {
   accounts:   { label: 'Accounts' },
   purchase:   { label: 'Purchase' },
   stock:      { label: 'Stock' },
-  stk_raw:    { label: 'Raw Store' },
-  stk_rew:    { label: 'Rewinding' },
-  stk_wp:     { label: 'Warping' },
-  stk_fin:    { label: 'Finishing' },
-  stk_fst:    { label: 'Finished Store' },
-  stk_req:    { label: 'Stock Requests' },
+  stk_raw:    { label: 'Raw Yarn' },
+  stk_rew:    { label: 'Rewound Yarn' },
+  stk_wp:     { label: 'Warp Beams' },
+  stk_fin:    { label: 'Unrolling' },
+  stk_fst:    { label: 'Finished Goods' },
+  stk_req:    { label: 'Material Requests' },
   aichat:     { label: 'AI' }
 };
 function defaultPagesForRole(role){
@@ -29185,7 +29185,7 @@ const SX_YSEED = [["Weft","RM1108","WEFT - 3/1","VISHAL, INDIA","NE 3/1-PC",25.0
    STOCK v2: Dashboard, Raw weft, Rewind & Warping, Requisitions, Finishing, Finished store, Designs & Machines, Settings
    Linked with what the app already has (machines, designs, colours, people, items). Small saves only.
    ============================================================ */
-const SX_TABS = [['dash', 'Stock'], ['raw', 'Raw material store'], ['rew', 'Rewinding'], ['wp', 'Warping'], ['fin', 'Finishing report'], ['fst', 'Finished store'], ['req', 'Requests'], ['dm', 'Machines and designs'], ['set', 'Settings']];
+const SX_TABS = [['dash', 'Stock'], ['raw', 'Raw yarn'], ['rew', 'Rewound yarn'], ['wp', 'Warp beams'], ['fin', 'Unrolling report'], ['fst', 'Finished goods'], ['req', 'Material requests'], ['dm', 'Machines and designs'], ['set', 'Settings']];
 const SX_CFG0 = () => ({ stores: ['Store 1', 'Store 2', 'Store 3'], cats: ['Gama', 'Polyspin thread', 'China', 'India'], dests: ['Rewinding', 'Warping', 'Weaving', 'Other'], sizes: [], sizesC: ['140x200', '160x250', '200x300', '90x190', '100x200', '80x150', '90x150'], sizesM: ['70x115', '70x110', '67x114', '65x115', '65x110', '30x60', '40x80', '80x120'], types: ['VL', 'MR', 'VIP'], depts: ['RVF', 'SSTM'], truckBundle: 0, truckVip: 0, truckRoll: 0, rollM: 30, mins: {}, assign: {} });
 const SX = { loaded: false, loading: false, cfg: SX_CFG0(), bal: {}, q: [], mc: {}, tab: 'dash', fsub: 'cr', rwsub: 'rew', dmsub: 'plan', rawk: 'in', rwk: 'in', ff: {}, fo: '', fil: { from: '', to: '', mc: '', size: '', type: '', dept: '', q: '' }, last: {}, busy: false };
 try{ SX.last = JSON.parse(localStorage.getItem('rvfSxLast') || '{}') || {}; }catch(e){}
@@ -29198,7 +29198,7 @@ const sxAdmin = () => !!(state.user && state.user.role === 'admin');
 const SX_PK = { raw: 'stk_raw', rew: 'stk_rew', wp: 'stk_wp', fin: 'stk_fin', fst: 'stk_fst', req: 'stk_req' };
 function sxForce(p){ SX.sfor = ''; SX.force = p || ''; SX.tab = p || 'dash'; SK.tab = SX.tab; }
 function sxCan(stage){ if(sxAdmin()) return true; try{ if(SX_PK[stage] && userPages(state.user).includes(SX_PK[stage])) return true; }catch(e){} const as = SX.cfg.assign || {}; let a = as[stage]; if((stage === 'rew' || stage === 'wp') && a === undefined) a = as.rw; a = a || []; const me = String(state.user && state.user.loginId); if(stage === 'set' || stage === 'mach') return a.indexOf(me) >= 0; if(stage === 'req') return a.length ? a.indexOf(me) >= 0 : true; return a.length ? a.indexOf(me) >= 0 : !!(state.user && state.user.role === 'supervisor'); }
-const SX_PG = [['raw', 'Raw material store', 'Yarn and other raw material: what came in, what went out, what is left', 'raw'], ['rew', 'Rewinding', 'Rewound yarn (bobbins) and yarn recovered from weaving', 'rew'], ['wp', 'Warping', 'Warping beams made and used', 'wp'], ['fin', 'Finishing report', 'Daily unrolling report from the machines', 'fin'], ['fst', 'Finished store', 'Carpets and Rugs, VIP, Upholstery and 2nd quality', 'fst'], ['req', 'Requests', 'Requests from the weaving manager', 'req'], ['dm', 'Machines and designs', 'Which design runs on which machine', 'mach'], ['set', 'Settings', 'Lists, truck size, minimums and who enters what', 'set']];
+const SX_PG = [['raw', 'Raw yarn', 'Yarn in the store: what came in, what went out, how much is left and for how many days', 'raw'], ['rew', 'Rewound yarn', 'Yarn rewound onto bobbins, and yarn recovered from weaving', 'rew'], ['wp', 'Warp beams', 'Warp beams made and used', 'wp'], ['fin', 'Unrolling report', 'Rolls from weaving are unrolled, repacked and counted by category in pieces and metres', 'fin'], ['fst', 'Finished goods', 'Carpets and Rugs, VIP, Upholstery and 2nd quality ready for sale', 'fst'], ['req', 'Material requests', 'Requests from the weaving manager', 'req'], ['dm', 'Machines and designs', 'Which design runs on which machine', 'mach'], ['set', 'Settings', 'Lists, truck size, minimums and who enters what', 'set']];
 const sxPriv = () => sxAdmin() || !!(state.user && state.user.role === 'supervisor');
 function sxSee(pg){ if(pg === 'set') return sxAdmin() || sxCan('set'); if(sxPriv()) return true; const p = SX_PG.find(x => x[0] === pg); return !!p && sxCan(p[3]); }
 function sxWho(stage){ const as = SX.cfg.assign || {}; let a = as[stage]; if((stage === 'rew' || stage === 'wp') && a === undefined) a = as.rw; a = a || []; if(!a.length) return stage === 'req' ? 'Everybody' : (stage === 'set' || stage === 'mach') ? 'Administrator' : 'Administrator and supervisors'; return a.map(id => { const u = (state.users || []).find(x => String(x.loginId) === String(id)); return u ? u.name : id; }).join(', '); }
@@ -29341,9 +29341,9 @@ function sxDashHtml(){
   const set = sxSee('set') ? `<button type="button" class="pcBtnSoft" data-sx="tab" data-v="set">${sxIc('cog', 15)}<span class="sxAddL">Settings</span></button>` : '';
   let h = sxPageTop('', sxPriv() ? 'Summary of every stage. Tap a box to open its page.' : 'Your pages. Tap a box to open it.', set);
   h += box('1 · Raw material', [
-    T('raw', sxTile('Raw material store', sxN(rawKg) + '<small> kg</small>', yTot().n + ' yarns in stock', 'raw', 'raw', 'blue')),
+    T('raw', sxTile('Raw yarn', sxN(rawKg) + '<small> kg</small>', yTot().n + ' yarns in stock', 'raw', 'raw', 'blue')),
     T('rew', sxTile('Rewound yarn', sxN(rew.kg) + '<small> kg</small>', rew.n > 0 ? sxN(rew.n) + ' bobbins' : 'In hand', 'rew', 'rew', 'purple')),
-    T('wp', sxTile('Warping beams', sxN(wp.kg) + '<small> kg</small>', sxN(wp.n) + ' beams', 'wp', 'wp', 'cyan'))]);
+    T('wp', sxTile('Warp beams', sxN(wp.kg) + '<small> kg</small>', sxN(wp.n) + ' beams', 'wp', 'wp', 'cyan'))]);
   h += box('2 · Production', [
     T('fin', sxTile('Finishing today', sxN(mSum(ft, 'm')) + '<small> m</small>', sxN(mSum(ft, 'roll')) + ' rolls today · month ' + sxN(mSum(fe, 'm')) + ' m / ' + sxN(mSum(fe, 'roll')) + ' rolls', 'fin', 'fin', 'green')),
     T('dm', sxTile('Machines running', runN + '<small> of ' + ms.length + '</small>', Object.keys(on).length + ' designs', 'dm', 'mach', 'blue'))]);
@@ -29428,9 +29428,10 @@ function sxFinOpts(){ const cfg = SX.cfg, ms = (state.machines || []).slice().so
 function sxFinHtml(){
   const cfg = SX.cfg, f = SX.fil, o = sxFinOpts(), td = sxToday();
   const flds = [['from', 'From', 'date', td.slice(0, 7) + '-01'], ['to', 'To', 'date', td], ['mc', 'Machine', o.ms.map(m => [m.id, m.name || m.id])], ['size', 'Size', sxAllSizes()], ['type', 'Type', o.types], ['dept', 'Department', o.depts]];
-  let h = sxTop(sxSearch('sxFq', f.q, 'Search item…') + sxFilt('fin', flds) + '<span class="grow"></span>' + sxDlBtn('fin') + sxGear('fin') + (sxCan('fin') ? sxAddBtn('fin', 'Add') : '')) + sxFpop('fin', flds);
+  let h = sxTop(sxSearch('sxFq', f.q, 'Search item…') + sxFilt('fin', flds) + ySortBtn('fin', ['new', 'old', 'mbig', 'mc']) + '<span class="grow"></span>' + sxDlBtn('fin') + sxGear('fin') + (sxCan('fin') ? sxAddBtn('fin', 'Add') : '')) + sxFpop('fin', flds);
   if(!sxCan('fin')) h += sxNoRight('finishing');
-  const rows = sxFinRows(), tm = rows.filter(e => e.u === 'm').reduce((a, e) => a + e.qty, 0), tr = rows.filter(e => e.u === 'roll').reduce((a, e) => a + e.qty, 0), adm = sxAdmin();
+  const rows = sxFinRows().slice(), fsm = ySortOf('fin'); if(fsm === 'old') rows.reverse(); else if(fsm === 'mbig') rows.sort((a, b) => b.qty - a.qty); else if(fsm === 'mc') rows.sort((a, b) => String(a.mcn).localeCompare(String(b.mcn), undefined, { numeric: true }) || String(b.d).localeCompare(String(a.d)));
+  const tm = rows.filter(e => e.u === 'm').reduce((a, e) => a + e.qty, 0), tr = rows.filter(e => e.u === 'roll').reduce((a, e) => a + e.qty, 0), adm = sxAdmin();
   h += `<div class="card sxCard"><div class="sxGrid">${sxTile('Entries', rows.length, f.from || f.to ? 'in this list' : 'this month', '', 'fin', 'blue')}${sxTile('Meters', sxN(tm) + '<small> m</small>', '', '', 'roll', 'green')}${sxTile('Rolls', sxN(tr) + '<small> rolls</small>', '', '', 'pack', 'purple')}</div></div>`;
   const cols = [['Date', '70px'], ['Machine', 'minmax(120px,1.2fr)', 'k'], ['Item', 'minmax(140px,1.8fr)'], ['Size · type', '110px'], ['Department', '90px'], ['By', '90px'], ['Quantity', '96px', 'r']].concat(adm ? [['', '78px', 'a']] : []);
   const tb = rows.slice(0, 200).map(e => [skEsc(e.d.slice(5)), `<b>${skEsc(e.mcn)}</b>`, skEsc(e.item || ''), `<span class="sxSm2">${skEsc(e.size || '')} ${skEsc(e.type || '')}</span>`, skEsc(e.dept || ''), `<span class="sxSm2">${skEsc(e.by || '')}</span>`, `<b>${sxN(e.qty)}</b> <small>${e.u === 'm' ? 'm' : 'rolls'}</small>`].concat(adm ? [`<button type="button" class="mini-icon-btn" data-sx="undo" data-p="f" data-v="${skEsc(e.id)}" data-ym="${sxYm(e.d)}" title="Remove this entry" aria-label="Remove this entry">${sxIc('del', 13)}</button>`] : []));
@@ -29474,10 +29475,11 @@ function sxFstHtml(){
   const flds = (kinds ? [['kind', 'Type', kinds]] : []).concat(g === 'up' ? [] : [['size', 'Size (cm)', sizes.map(s => [s, sxFmtSize(s)])]]).concat([['col', 'Colour', sxColTokens(base)], ['st', 'Stock', [['ok', 'Enough'], ['low', 'Low (below minimum)']]]]).concat(two ? [['fl', 'Unpacked on floor', [['yes', 'Has unpacked stock']]]] : []);
   let l = base.filter(i => (!q || (i.name + ' ' + (i.code || '') + ' ' + (i.col || '')).toLowerCase().includes(q)) && (!F.kind || sxKind(i) === F.kind) && (!F.size || sxSzKey(sxSizeOf(i)) === sxSzKey(F.size)) && (!F.col || String(i.col || '').toUpperCase().indexOf(F.col) >= 0) && (!F.st || sxLvl(i) === F.st) && (!F.fl || sxFl(i) > 0));
   l = l.slice().sort((a, b) => String(a.name).localeCompare(String(b.name)) || String(a.col || '').localeCompare(String(b.col || '')));
+  const fsm = ySortOf('fst'); if(fsm === 'big') l.sort((a, b) => skBal(b) - skBal(a)); else if(fsm === 'least') l.sort((a, b) => skBal(a) - skBal(b)); else if(fsm === 'size') l.sort((a, b) => String(sxFmtSize(sxSizeOf(a)) || '~').localeCompare(String(sxFmtSize(sxSizeOf(b)) || '~'), undefined, { numeric: true }) || String(a.name).localeCompare(String(b.name)));
   SK.cur = l; SK.grp = g;
   const bl = l.filter(i => sxUnit(i) === 'bundles'), rl = l.filter(i => sxUnit(i) === 'rolls');
   const tot = bl.reduce((a, i) => a + skBal(i), 0), roll = rl.reduce((a, i) => a + skBal(i), 0), mtr = rl.reduce((a, i) => a + skBal(i) * sxRollM(i), 0), fl = l.reduce((a, i) => a + sxFl(i), 0), pcs = bl.reduce((a, i) => a + skBal(i) * (Number(i.per) || 0), 0), trk = bl.reduce((a, i) => a + skBal(i) / (sxTruck(i) || 1), 0);
-  let h = sxTop(sxSub('fsub', g, SX_FS) + sxSearch('sxFq2', SX.fq, 'Search name, code or colour…') + sxFilt('fst', flds) + '<span class="grow"></span>' + sxDlBtn('stock') + sxGear('fst') + (sxCan('fst') ? `<button type="button" class="pcBtnMain sm" data-sx="fsm" data-v="" data-k="in" title="Put stock in or take it out">${sxIc('plus', 14)}<span class="sxAddL">Update</span></button>` : '')) + sxFpop('fst', flds);
+  let h = sxTop(sxSub('fsub', g, SX_FS) + sxSearch('sxFq2', SX.fq, 'Search name, code or colour…') + sxFilt('fst', flds) + ySortBtn('fst', ['name', 'big', 'least', 'size']) + '<span class="grow"></span>' + sxDlBtn('stock') + sxGear('fst') + (sxCan('fst') ? `<button type="button" class="pcBtnMain sm" data-sx="fsm" data-v="" data-k="in" title="Put stock in or take it out">${sxIc('plus', 14)}<span class="sxAddL">Update</span></button>` : '')) + sxFpop('fst', flds);
   const kb = (k) => bl.filter(i => sxKind(i) === k).reduce((a, i) => a + skBal(i), 0);
   const t1 = g === 'up' ? sxTile('Available stock', sxN(roll) + '<small> rolls</small>', sxN(mtr) + ' metres', '', 'pack', 'blue') : sxTile('Available stock', sxN(tot) + '<small> bundles</small>', g === 'cr' ? 'Carpets ' + sxN(kb('carpet')) + ' · Prayer mats ' + sxN(kb('mat')) : (trk ? 'About ' + sxN(Math.round(trk * 10) / 10) + ' trucks' : ''), '', 'pack', 'blue');
   h += `<div class="card sxCard"><div class="sxGrid">${t1}${g === 'q2' && roll ? sxTile('Upholstery', sxN(roll) + '<small> rolls</small>', sxN(mtr) + ' metres', '', 'roll', 'cyan') : ''}${two ? sxTile('Unpacked on floor', sxN(fl) + '<small> bundles</small>', 'Finished, not packed yet', '', 'floor', 'amber') : ''}${g === 'cr' && trk ? sxTile('Trucks', sxN(Math.round(trk * 10) / 10), 'If all ready stock is loaded', '', 'floor', 'green') : ''}${sxTile('Items', l.length, base.length !== l.length ? 'of ' + base.length : '', '', 'raw', 'purple')}</div></div>`;
@@ -29551,7 +29553,7 @@ async function sxFsSave(id, k){
 
 /* ---------- Settings: same look as Admin (collapsible sections, Add row, small list rows) ---------- */
 const SX_LISTS = [['stores', 'Stores', 'Where raw weft is kept.', 'e.g. Store 4'], ['cats', 'Weft categories', 'Shown when you enter raw weft.', 'e.g. Gama'], ['dests', 'Raw weft goes to', 'Shown when raw weft goes OUT.', 'e.g. Rewinding'], ['sizesC', 'Carpet sizes (cm)', 'Sizes for carpets. Used when you add a carpet and in the filter.', 'e.g. 140x200'], ['sizesM', 'Prayer mat sizes (cm)', 'Sizes for prayer mats (also VIP). Used when you add one and in the filter.', 'e.g. 70x115'], ['sizes', 'Other sizes (Finishing)', 'Extra sizes shown in Finishing. Carpet and prayer mat sizes are added automatically.', 'e.g. 200 x 300'], ['types', 'Types', 'VL, MR, VIP and so on.', 'e.g. VL'], ['depts', 'Departments for finishing', 'Which department finished the carpet.', 'e.g. RVF']];
-const SX_ASG = [['raw', 'Raw material store'], ['rew', 'Rewinding'], ['wp', 'Warping'], ['fin', 'Finishing report (unrolling)'], ['fst', 'Finished store'], ['req', 'Requests (weaving manager)'], ['mach', 'Change the design on a machine'], ['set', 'Change these settings']];
+const SX_ASG = [['raw', 'Raw yarn'], ['rew', 'Rewound yarn'], ['wp', 'Warp beams'], ['fin', 'Unrolling report'], ['fst', 'Finished goods'], ['req', 'Material requests (weaving manager)'], ['mach', 'Change the design on a machine'], ['set', 'Change these settings']];
 const sxIcB = (a, ic, t, extra) => `<button type="button" class="mini-icon-btn${extra || ''}" data-sx="${a}" title="${t}">${sxIc(ic, 13)}</button>`;
 function sxSecAttr(k){ const o = SX.open || {}; return `data-sec="${k}" ${o[k] || (SX.sfor && !(k in o)) ? 'open' : ''}`; }
 function sxListSec(key, title, hint, ph){
@@ -29609,7 +29611,7 @@ function skRender(){
   const sc = $('screen-stock'), h1 = sc && sc.querySelector('h1'), sb = sc && sc.querySelector('p.sub');
   if(SX.force && !sxSee(SX.force)){ m.innerHTML = sxEmpty('You do not have this page yet. Ask the administrator.'); return; }
   const FP = SX.force ? SX_PG.find(x => x[0] === SX.force) : null;
-  const eb = sc && sc.querySelector('.eyebrow'); if(eb) eb.textContent = ({ raw: 'Raw Store', rew: 'Rewinding', wp: 'Warping', fin: 'Finishing', fst: 'Finished Store', req: 'Stock Requests' })[SX.force] || 'Stock';
+  const eb = sc && sc.querySelector('.eyebrow'); if(eb) eb.textContent = ({ raw: 'Raw Yarn', rew: 'Rewound Yarn', wp: 'Warp Beams', fin: 'Unrolling Report', fst: 'Finished Goods', req: 'Material Requests' })[SX.force] || 'Stock';
   if(h1 && sb){ h1.textContent = FP ? FP[1] : 'Stock & Production Plan'; sb.textContent = FP ? FP[2] : 'What we have, what came in, what went out, and which design runs on which machine.'; }
   SX.solo = !!SX.force || (!sxPriv() && pages.length === 1);
   let t = SX.force || SX.tab; if(!SX.force && SX.solo) t = pages[0][0]; else if(t !== 'dash' && !sxSee(t)) t = 'dash'; SX.tab = t;
@@ -29755,9 +29757,10 @@ function yRows(){
 }
 const Y_ST = { order: ['Order now', 'open'], out: ['Out of stock', 'out'], idle: ['Not moving', ''], ok: ['OK', 'in'], none: ['', ''] };
 const yTag = (s) => Y_ST[s][0] ? `<span class="sxTag ${Y_ST[s][1]}">${Y_ST[s][0]}</span>` : '';
-const Y_SORT = { col: 'Colour (grouped)', sec: 'Section (grouped)', sup: 'Supplier (grouped)', name: 'A to Z', low: 'Least days left', big: 'Most stock', colbig: 'Colour (most stock first)' };
-const ySortOf = (pg) => { const m = SX.last['ys_' + pg]; return (m === 'sec' || m === 'sup' || !Y_SORT[m]) ? 'col' : m; };
-const ySortBtn = (pg, keys) => `<span class="sxMw"><button type="button" class="filter-icon-btn sxFb${ySortOf(pg) !== 'col' ? ' active' : ''}" data-sx="ysm" data-v="${pg}" title="Sort: ${Y_SORT[ySortOf(pg)]}" aria-label="Sort and group">${sxIc('sort', 15)}</button>${SX.yso === pg ? `<div class="sxMenu">${keys.map(k => `<button type="button" class="${ySortOf(pg) === k ? 'active' : ''}" data-sx="ysort" data-v="${pg}:${k}">${Y_SORT[k]}</button>`).join('')}</div>` : ''}</span>`;
+const Y_DEF = { fst: 'name', fin: 'new', wp: 'name' };
+const Y_SORT = { least: 'Least stock', size: 'Size', new: 'Newest first', old: 'Oldest first', mbig: 'Most metres', mc: 'Machine', beams: 'Most beams', col: 'Colour (grouped)', sec: 'Section (grouped)', sup: 'Supplier (grouped)', name: 'A to Z', low: 'Least days left', big: 'Most stock', colbig: 'Colour (most stock first)' };
+const ySortOf = (pg) => { const m = SX.last['ys_' + pg], d = Y_DEF[pg] || 'col'; return (m === 'sec' || m === 'sup' || !Y_SORT[m] || (Y_DEF[pg] ? false : (m === 'least' || m === 'size' || m === 'new' || m === 'old' || m === 'mbig' || m === 'mc' || m === 'beams'))) ? d : m; };
+const ySortBtn = (pg, keys) => `<span class="sxMw"><button type="button" class="filter-icon-btn sxFb${ySortOf(pg) !== (Y_DEF[pg] || 'col') ? ' active' : ''}" data-sx="ysm" data-v="${pg}" title="Sort: ${Y_SORT[ySortOf(pg)]}" aria-label="Sort and group">${sxIc('sort', 15)}</button>${SX.yso === pg ? `<div class="sxMenu">${keys.map(k => `<button type="button" class="${ySortOf(pg) === k ? 'active' : ''}" data-sx="ysort" data-v="${pg}:${k}">${Y_SORT[k]}</button>`).join('')}</div>` : ''}</span>`;
 const ySortPop = () => '';
 function ySortRows(rows, mode, nm){
   const f = (r) => r.i ? [r.i.col, r.i.code] : [r.label || '', ''], c = (a, b) => { const x = f(a), y = f(b); return String(x[0]).localeCompare(String(y[0])) || String(x[1]).localeCompare(String(y[1])); };
@@ -29918,10 +29921,11 @@ function yWpRows(){
 }
 function yWpHtml(){
   SX.rwsub = 'wp'; const rows = yWpRows(), T = { n: rows.reduce((a, r) => a + r.n, 0), kg: rows.reduce((a, r) => a + r.kg, 0) };
-  let h = sxTop('<span class="grow"></span>' + sxDlBtn('wp') + sxGear('wp') + (sxCan('wp') ? sxAddBtn('ywp', 'Update') : ''));
+  let h = sxTop('<span class="grow"></span>' + ySortBtn('wp', ['name', 'beams']) + sxDlBtn('wp') + sxGear('wp') + (sxCan('wp') ? sxAddBtn('ywp', 'Update') : ''));
   if(!sxCan('wp')) h += sxNoRight('warping');
   h += `<div class="card sxCard"><div class="sxGrid">${sxTile('Beams in stock', sxN(T.n) + '<small> beams</small>', '', '', 'wp', 'cyan')}${sxTile('Total weight', sxN(T.kg) + '<small> kg</small>', '', '', 'pack', 'blue')}</div></div>`;
   const cols = [['Colour', '', 'k'], ['Beams available', '', 'r'], ['Kg per beam', '', 'r'], ['Total kg', '', 'r']];
+  if(ySortOf('wp') === 'beams') rows.sort((a, b) => b.n - a.n); else rows.sort((a, b) => String(a.col).localeCompare(String(b.col)));
   const body = rows.map(r => [sxColT(r.col), `<b>${sxN(r.n)}</b>`, r.n > 0 ? sxN(Math.round(r.kg / r.n * 10) / 10) : '<span class="sxSm2">-</span>', `<b>${sxN(r.kg)}</b>`]);
   h += sxHead('Beams available now') + '<div class="card sxCard">' + sxTbl(cols, body, ['<b>Total</b>', `<b>${sxN(T.n)}</b>`, '', `<b>${sxN(T.kg)}</b>`], 'No beam colours yet. Add them in Settings.') + '</div>';
   return h + yRecent(['wp'], 'Recent entries');
