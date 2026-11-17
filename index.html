@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261117-125911">
+<meta name="rvf-build" content="20261117-130139">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -28539,6 +28539,9 @@ table.sxRT th.a, table.sxRT td.a{ width:1%; }
 .sxMenu button.active{ background:var(--panel-2); font-weight:700; color:var(--text-strong); }
 @media (min-width:821px){ .sxFp{ display:none; } }
 @media (max-width:820px){ .sxFin{ display:none; } .sxFbN{ display:inline-flex; } }
+
+@media (min-width:821px){ .sxFin.many{ order:5; flex:1 1 100%; } }
+.sxFi select{ max-width:104px; }
 </style>
 <div id="rvfBusy"><i></i><span id="rvfBusyTxt">Loading data…</span></div>
 <script>
@@ -29342,7 +29345,7 @@ const sxFget = (key) => key === 'fin' ? SX.fil : (SX.ff[key] = SX.ff[key] || {})
 function sxFilt(key, fields){
   const f = sxFget(key), n = fields.filter(x => f[x[0]]).length;
   const inl = fields.map(x => x[2] === 'date' ? `<label class="sxFi${f[x[0]] ? ' on' : ''}"><span>${x[1]}</span><input type="date" data-ff="${key}" data-fn="${x[0]}" value="${skEsc(f[x[0]] || x[3] || '')}"></label>` : `<label class="sxFi${f[x[0]] ? ' on' : ''}"><span>${x[1]}</span><select data-ff="${key}" data-fn="${x[0]}">${sxOpt(x[2], f[x[0]], x[3] || 'All')}</select></label>`).join('');
-  return `<span class="sxFin">${inl}${n ? `<button type="button" class="sxFcl" data-sx="fclear" data-v="${key}">Clear</button>` : ''}</span><button type="button" class="filter-icon-btn sxFb sxFbN${n ? ' active' : ''}" data-sx="fo" data-v="${key}" title="Filter" aria-label="Filter">${SX_FUN}${n ? `<b>${n}</b>` : ''}</button>`;
+  return `<span class="sxFin${fields.length > 3 ? ' many' : ''}">${inl}${n ? `<button type="button" class="sxFcl" data-sx="fclear" data-v="${key}">Clear</button>` : ''}</span><button type="button" class="filter-icon-btn sxFb sxFbN${n ? ' active' : ''}" data-sx="fo" data-v="${key}" title="Filter" aria-label="Filter">${SX_FUN}${n ? `<b>${n}</b>` : ''}</button>`;
 }
 function sxFpop(key, fields){
   if(SX.fo !== key) return ''; const f = sxFget(key);
