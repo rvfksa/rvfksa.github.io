@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261117-141330">
+<meta name="rvf-build" content="20261117-141420">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -29192,7 +29192,7 @@ try{ SX.last = JSON.parse(localStorage.getItem('rvfSxLast') || '{}') || {}; }cat
 const sxKeep = (o) => { Object.assign(SX.last, o); try{ localStorage.setItem('rvfSxLast', JSON.stringify(SX.last)); }catch(e){} };
 const sxToday = () => dateToStr(new Date());
 const sxYm = (d) => String(d || sxToday()).slice(0, 7);
-const sxN = (n) => (Math.round((Number(n) || 0) * 100) / 100).toLocaleString('en-US');
+const sxN = (n) => (Math.round((Number(n) || 0) * 10) / 10).toLocaleString('en-US');
 const sxMe = () => (state.user && (state.user.name || state.user.loginId)) || '';
 const sxAdmin = () => !!(state.user && state.user.role === 'admin');
 const SX_PK = { raw: 'stk_raw', rew: 'stk_rew', wp: 'stk_wp', fin: 'stk_fin', fst: 'stk_fst', req: 'stk_req' };
@@ -29921,7 +29921,7 @@ function yWpHtml(){
   if(!sxCan('wp')) h += sxNoRight('warping');
   h += `<div class="card sxCard"><div class="sxGrid">${sxTile('Beams in stock', sxN(T.n) + '<small> beams</small>', '', '', 'wp', 'cyan')}${sxTile('Total weight', sxN(T.kg) + '<small> kg</small>', '', '', 'pack', 'blue')}</div></div>`;
   const cols = [['Colour', '', 'k'], ['Beams available', '', 'r'], ['Kg per beam', '', 'r'], ['Total kg', '', 'r']];
-  const body = rows.map(r => [sxColT(r.col), `<b>${sxN(r.n)}</b>`, r.n > 0 ? sxN(Math.round(r.kg / r.n * 100) / 100) : '<span class="sxSm2">-</span>', `<b>${sxN(r.kg)}</b>`]);
+  const body = rows.map(r => [sxColT(r.col), `<b>${sxN(r.n)}</b>`, r.n > 0 ? sxN(Math.round(r.kg / r.n * 10) / 10) : '<span class="sxSm2">-</span>', `<b>${sxN(r.kg)}</b>`]);
   h += sxHead('Beams available now') + '<div class="card sxCard">' + sxTbl(cols, body, ['<b>Total</b>', `<b>${sxN(T.n)}</b>`, '', `<b>${sxN(T.kg)}</b>`], 'No beam colours yet. Add them in Settings.') + '</div>';
   return h + yRecent(['wp'], 'Recent entries');
 }
@@ -29971,9 +29971,9 @@ function sxYSet(show){
 }
 /* ---------- Download ---------- */
 function yDl(kind){
-  if(kind === 'raw'){ const rows = [['Section', 'Code', 'Colour', 'Supplier', 'Yarn size', 'Boxes', 'Available kg', 'Used per day kg', 'Days left', 'Status']]; ySortRows(yRows().filter(r => r.kg > 0.0004 || r.s === 'out'), 'col').forEach(r => rows.push([r.i.sec, r.i.code, r.i.col, r.i.sup, r.i.sz, r.bx != null ? Math.round(r.bx * 10) / 10 : '', Math.round(r.kg * 100) / 100, Math.round(r.per * 100) / 100, r.days != null ? Math.round(r.days) : '', Y_ST[r.s][0]])); skDlXlsx('raw-material-stock', 'Raw material', rows); }
-  else if(kind === 'rew'){ const rows = [['Code', 'Colour', 'In raw store kg', 'Rewound kg', 'Bobbins', 'Recovered from weaving kg', 'Total in hand kg']]; yRewRows().forEach(r => rows.push([r.i ? r.i.code : '', r.label, Math.round(r.raw * 100) / 100, Math.round(r.kg * 100) / 100, r.n, Math.round(r.rc * 100) / 100, Math.round(r.tot * 100) / 100])); skDlXlsx('rewinding-stock', 'Rewinding', rows); }
-  else if(kind === 'wp'){ const rows = [['Colour', 'Kg per beam', 'Start of month', 'Made', 'Used', 'Closing beams', 'Total kg']]; yWpRows().forEach(r => rows.push([r.col, r.w, r.op, r.mo, r.us, r.n, Math.round(r.kg * 100) / 100])); skDlXlsx('warping-beams', 'Warping', rows); }
+  if(kind === 'raw'){ const rows = [['Section', 'Code', 'Colour', 'Supplier', 'Yarn size', 'Boxes', 'Available kg', 'Used per day kg', 'Days left', 'Status']]; ySortRows(yRows().filter(r => r.kg > 0.0004 || r.s === 'out'), 'col').forEach(r => rows.push([r.i.sec, r.i.code, r.i.col, r.i.sup, r.i.sz, r.bx != null ? Math.round(r.bx * 10) / 10 : '', Math.round(r.kg * 10) / 10, Math.round(r.per * 10) / 10, r.days != null ? Math.round(r.days) : '', Y_ST[r.s][0]])); skDlXlsx('raw-material-stock', 'Raw material', rows); }
+  else if(kind === 'rew'){ const rows = [['Code', 'Colour', 'In raw store kg', 'Rewound kg', 'Bobbins', 'Recovered from weaving kg', 'Total in hand kg']]; yRewRows().forEach(r => rows.push([r.i ? r.i.code : '', r.label, Math.round(r.raw * 10) / 10, Math.round(r.kg * 10) / 10, r.n, Math.round(r.rc * 10) / 10, Math.round(r.tot * 10) / 10])); skDlXlsx('rewinding-stock', 'Rewinding', rows); }
+  else if(kind === 'wp'){ const rows = [['Colour', 'Kg per beam', 'Start of month', 'Made', 'Used', 'Closing beams', 'Total kg']]; yWpRows().forEach(r => rows.push([r.col, r.w, r.op, r.mo, r.us, r.n, Math.round(r.kg * 10) / 10])); skDlXlsx('warping-beams', 'Warping', rows); }
 }
 /* ---------- wiring (adds to the existing handlers, changes none of them) ---------- */
 function sxRwHtml(){ return SX.tab === 'wp' ? yWpHtml() : yRewHtml(); }
