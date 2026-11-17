@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261117-143009">
+<meta name="rvf-build" content="20261117-144945">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -6233,6 +6233,8 @@ const PAGE_DEFS = {
   stk_fin:    { label: 'Unrolling' },
   stk_fst:    { label: 'Finished Goods' },
   stk_req:    { label: 'Material Requests' },
+  stk_mp:     { label: 'Machine Plan' },
+  stk_dz:     { label: 'Designs' },
   aichat:     { label: 'AI' }
 };
 function defaultPagesForRole(role){
@@ -6252,7 +6254,7 @@ function renderNav(){
   nav.innerHTML = '';
   const pages = userPages(state.user).slice();
   if(state.user.role === 'admin' && !pages.includes('stock')) pages.push('stock');
-  if(state.user.role === 'admin') ['stk_raw','stk_rew','stk_wp','stk_fin','stk_fst','stk_req'].forEach(k => { if(!pages.includes(k)) pages.push(k); });
+  if(state.user.role === 'admin') ['stk_raw','stk_rew','stk_wp','stk_fin','stk_fst','stk_req','stk_mp','stk_dz'].forEach(k => { if(!pages.includes(k)) pages.push(k); });
   pages.forEach(key => {
     const def = PAGE_DEFS[key];
     if(!def || key === 'aichat') return;   // the AI page is switched off for everyone (nothing deleted)
@@ -6277,7 +6279,7 @@ function route(){
   if(pages.length === 0){ showScreen('screen-pending'); return; }
   if(maybeResumeCapture()) return;   // the phone closed the page during the camera step: go back to it
   // land on the most relevant page for the role, falling back to the first assigned page
-  const priority = ['ceo','admin','approvals','select','stk_raw','stk_rew','stk_wp','stk_fin','stk_fst','stk_req','profile'];
+  const priority = ['ceo','admin','approvals','select','stk_raw','stk_rew','stk_wp','stk_fin','stk_fst','stk_req','stk_mp','stk_dz','profile'];
   const first = priority.find(p => pages.includes(p)) || pages[0];
   goTo(first);
 }
@@ -28575,6 +28577,10 @@ table.sxRT th.a, table.sxRT td.a{ width:1%; }
 }
 
 .sxTop:not(:has(.sxQ,.sxStat)) .grow{ display:block !important; flex:1; }
+
+.sxGrid > :last-child:nth-child(odd){ }
+@media (max-width:560px){ .sxGrid > :last-child:nth-child(odd){ grid-column:1 / -1; } }
+.yPh{ min-width:54px; justify-content:center; }
 </style>
 <div id="rvfBusy"><i></i><span id="rvfBusyTxt">Loading data…</span></div>
 <script>
@@ -29185,7 +29191,7 @@ const SX_YSEED = [["Weft","RM1108","WEFT - 3/1","VISHAL, INDIA","NE 3/1-PC",25.0
    STOCK v2: Dashboard, Raw weft, Rewind & Warping, Requisitions, Finishing, Finished store, Designs & Machines, Settings
    Linked with what the app already has (machines, designs, colours, people, items). Small saves only.
    ============================================================ */
-const SX_TABS = [['dash', 'Stock'], ['raw', 'Raw yarn'], ['rew', 'Rewound yarn'], ['wp', 'Warp beams'], ['fin', 'Unrolling report'], ['fst', 'Finished goods'], ['req', 'Material requests'], ['dm', 'Machines and designs'], ['set', 'Settings']];
+const SX_TABS = [['dash', 'Stock'], ['raw', 'Raw yarn'], ['rew', 'Rewound yarn'], ['wp', 'Warp beams'], ['fin', 'Unrolling report'], ['fst', 'Finished goods'], ['req', 'Material requests'], ['mp', 'Machine plan'], ['dz', 'Designs'], ['dm', 'Machines and designs'], ['set', 'Settings']];
 const SX_CFG0 = () => ({ stores: ['Store 1', 'Store 2', 'Store 3'], cats: ['Gama', 'Polyspin thread', 'China', 'India'], dests: ['Rewinding', 'Warping', 'Weaving', 'Other'], sizes: [], sizesC: ['140x200', '160x250', '200x300', '90x190', '100x200', '80x150', '90x150'], sizesM: ['70x115', '70x110', '67x114', '65x115', '65x110', '30x60', '40x80', '80x120'], types: ['VL', 'MR', 'VIP'], depts: ['RVF', 'SSTM'], truckBundle: 0, truckVip: 0, truckRoll: 0, rollM: 30, mins: {}, assign: {} });
 const SX = { loaded: false, loading: false, cfg: SX_CFG0(), bal: {}, q: [], mc: {}, tab: 'dash', fsub: 'cr', rwsub: 'rew', dmsub: 'plan', rawk: 'in', rwk: 'in', ff: {}, fo: '', fil: { from: '', to: '', mc: '', size: '', type: '', dept: '', q: '' }, last: {}, busy: false };
 try{ SX.last = JSON.parse(localStorage.getItem('rvfSxLast') || '{}') || {}; }catch(e){}
@@ -29195,10 +29201,10 @@ const sxYm = (d) => String(d || sxToday()).slice(0, 7);
 const sxN = (n) => (Math.round((Number(n) || 0) * 10) / 10).toLocaleString('en-US');
 const sxMe = () => (state.user && (state.user.name || state.user.loginId)) || '';
 const sxAdmin = () => !!(state.user && state.user.role === 'admin');
-const SX_PK = { raw: 'stk_raw', rew: 'stk_rew', wp: 'stk_wp', fin: 'stk_fin', fst: 'stk_fst', req: 'stk_req' };
+const SX_PK = { mp: 'stk_mp', dz: 'stk_dz', raw: 'stk_raw', rew: 'stk_rew', wp: 'stk_wp', fin: 'stk_fin', fst: 'stk_fst', req: 'stk_req' };
 function sxForce(p){ SX.sfor = ''; SX.force = p || ''; SX.tab = p || 'dash'; SK.tab = SX.tab; }
 function sxCan(stage){ if(sxAdmin()) return true; try{ if(SX_PK[stage] && userPages(state.user).includes(SX_PK[stage])) return true; }catch(e){} const as = SX.cfg.assign || {}; let a = as[stage]; if((stage === 'rew' || stage === 'wp') && a === undefined) a = as.rw; a = a || []; const me = String(state.user && state.user.loginId); if(stage === 'set' || stage === 'mach') return a.indexOf(me) >= 0; if(stage === 'req') return a.length ? a.indexOf(me) >= 0 : true; return a.length ? a.indexOf(me) >= 0 : !!(state.user && state.user.role === 'supervisor'); }
-const SX_PG = [['raw', 'Raw yarn', 'Yarn in the store: what came in, what went out, how much is left and for how many days', 'raw'], ['rew', 'Rewound yarn', 'Yarn rewound onto bobbins, and yarn recovered from weaving', 'rew'], ['wp', 'Warp beams', 'Warp beams made and used', 'wp'], ['fin', 'Unrolling report', 'Rolls from weaving are unrolled, repacked and counted by category in pieces and metres', 'fin'], ['fst', 'Finished goods', 'Carpets and Rugs, VIP, Upholstery and 2nd quality ready for sale', 'fst'], ['req', 'Material requests', 'Requests from the weaving manager', 'req'], ['dm', 'Machines and designs', 'Which design runs on which machine', 'mach'], ['set', 'Settings', 'Lists, truck size, minimums and who enters what', 'set']];
+const SX_PG = [['raw', 'Raw yarn', 'Yarn in the store: what came in, what went out, how much is left and for how many days', 'raw'], ['rew', 'Rewound yarn', 'Yarn rewound onto bobbins, and yarn recovered from weaving', 'rew'], ['wp', 'Warp beams', 'Warp beams made and used', 'wp'], ['fin', 'Unrolling report', 'Rolls from weaving are unrolled, repacked and counted by category in pieces and metres', 'fin'], ['fst', 'Finished goods', 'Carpets and Rugs, VIP, Upholstery and 2nd quality ready for sale', 'fst'], ['req', 'Material requests', 'Requests from the weaving manager', 'req'], ['mp', 'Machine plan', 'Which design and colour runs on each machine, with its category', 'mach'], ['dz', 'Designs', 'Design codes and samples, stock and where each design is running', 'mach'], ['dm', 'Machines and designs', 'Which design runs on which machine', 'mach'], ['set', 'Settings', 'Lists, truck size, minimums and who enters what', 'set']];
 const sxPriv = () => sxAdmin() || !!(state.user && state.user.role === 'supervisor');
 function sxSee(pg){ if(pg === 'set') return sxAdmin() || sxCan('set'); if(sxPriv()) return true; const p = SX_PG.find(x => x[0] === pg); return !!p && sxCan(p[3]); }
 function sxWho(stage){ const as = SX.cfg.assign || {}; let a = as[stage]; if((stage === 'rew' || stage === 'wp') && a === undefined) a = as.rw; a = a || []; if(!a.length) return stage === 'req' ? 'Everybody' : (stage === 'set' || stage === 'mach') ? 'Administrator' : 'Administrator and supervisors'; return a.map(id => { const u = (state.users || []).find(x => String(x.loginId) === String(id)); return u ? u.name : id; }).join(', '); }
@@ -29346,7 +29352,7 @@ function sxDashHtml(){
     T('wp', sxTile('Warp beams', sxN(wp.kg) + '<small> kg</small>', sxN(wp.n) + ' beams', 'wp', 'wp', 'cyan'))]);
   h += box('2 · Production', [
     T('fin', sxTile('Finishing today', sxN(mSum(ft, 'm')) + '<small> m</small>', sxN(mSum(ft, 'roll')) + ' rolls today · month ' + sxN(mSum(fe, 'm')) + ' m / ' + sxN(mSum(fe, 'roll')) + ' rolls', 'fin', 'fin', 'green')),
-    T('dm', sxTile('Machines running', runN + '<small> of ' + ms.length + '</small>', Object.keys(on).length + ' designs', 'dm', 'mach', 'blue'))]);
+    T('dm', sxTile('Machines running', runN + '<small> of ' + ms.length + '</small>', Object.keys(on).length + ' designs', 'mp', 'mach', 'blue'))]);
   h += box('3 · Finished stores', [
     T('fst', sxTile('Ready to sell', sxN(ready) + '<small> bundles</small>', tb ? '= ' + sxN(trucks) + ' trucks' : 'Carpets and Rugs', 'fst:cr', 'pack', 'blue')),
     T('fst', sxTile('On the floor', sxN(floor) + '<small> bundles</small>', 'Finished, not packed', 'fst:cr', 'floor', 'amber')),
@@ -29611,11 +29617,11 @@ function skRender(){
   const sc = $('screen-stock'), h1 = sc && sc.querySelector('h1'), sb = sc && sc.querySelector('p.sub');
   if(SX.force && !sxSee(SX.force)){ m.innerHTML = sxEmpty('You do not have this page yet. Ask the administrator.'); return; }
   const FP = SX.force ? SX_PG.find(x => x[0] === SX.force) : null;
-  const eb = sc && sc.querySelector('.eyebrow'); if(eb) eb.textContent = ({ raw: 'Raw Yarn', rew: 'Rewound Yarn', wp: 'Warp Beams', fin: 'Unrolling Report', fst: 'Finished Goods', req: 'Material Requests' })[SX.force] || 'Stock';
+  const eb = sc && sc.querySelector('.eyebrow'); if(eb) eb.textContent = ({ raw: 'Raw Yarn', rew: 'Rewound Yarn', wp: 'Warp Beams', fin: 'Unrolling Report', fst: 'Finished Goods', req: 'Material Requests', mp: 'Machine Plan', dz: 'Designs' })[SX.force] || 'Stock';
   if(h1 && sb){ h1.textContent = FP ? FP[1] : 'Stock & Production Plan'; sb.textContent = FP ? FP[2] : 'What we have, what came in, what went out, and which design runs on which machine.'; }
   SX.solo = !!SX.force || (!sxPriv() && pages.length === 1);
   let t = SX.force || SX.tab; if(!SX.force && SX.solo) t = pages[0][0]; else if(t !== 'dash' && !sxSee(t)) t = 'dash'; SX.tab = t;
-  let h = SX.sfor ? sxSetHtml() : t === 'dash' ? sxDashHtml() : sxPageHead(t) + (t === 'raw' ? sxRawHtml() : (t === 'rew' || t === 'wp') ? sxRwHtml() : t === 'req' ? sxReqHtml() : t === 'fin' ? sxFinHtml() : t === 'fst' ? sxFstHtml() : t === 'dm' ? sxDmHtml() : sxSetHtml());
+  let h = SX.sfor ? sxSetHtml() : t === 'dash' ? sxDashHtml() : sxPageHead(t) + (t === 'raw' ? sxRawHtml() : (t === 'rew' || t === 'wp') ? sxRwHtml() : t === 'req' ? sxReqHtml() : t === 'fin' ? sxFinHtml() : t === 'fst' ? sxFstHtml() : t === 'mp' ? sxMpHtml() : t === 'dz' ? sxDzHtml() : t === 'dm' ? sxDmHtml() : sxSetHtml());
   m.innerHTML = h;
   if(t === 'fin' && !SX.sfor){ const before = Object.keys(SX.mc).length; sxFinLoad().then(() => { if(SX.tab === 'fin' && Object.keys(SX.mc).length !== before) skRender(); }); }
 }
@@ -30018,6 +30024,53 @@ async function ySaveDaily(){
   if(!n){ toast('Nothing changed'); return; } if(await sxPutCfg()){ toast('Saved'); sxClose(); skRender(); }
 }
 document.addEventListener('click', (ev) => { const el = ev.target.closest && ev.target.closest('[data-sx]'); if(!el) return; const a = el.dataset.sx; if(a === 'ydaily') yOpenDaily(); else if(a === 'ysavedaily') ySaveDaily(); });
+const MP_XL = {"1":["Green","VIP"],"61":["Maroon","Upholstery"],"2":["",""],"62":["Orange","Andalus"],"3":["Green","VIP"],"63":["",""],"4":["",""],"64":["Pp Mix 2Nd","Andalus"],"5":["Green","VIP"],"65":["Maroon","Upholstery"],"6":["Beige Sf125","Upholstery"],"66":["Gpp Grey 2Nd","200x300"],"7":["Pp Mix","Andalus"],"67":["Maroon","Upholstery"],"8":["Green","VIP"],"68":["Coffe","Andalus"],"9":["",""],"69":["",""],"10":["",""],"70":["Beige Sf125","Upholstery"],"11":["",""],"71":["Beige Sf125","Upholstery"],"12":["Green","VIP"],"72":["Grey","Upholstery"],"13":["Pp Mix","Andalus"],"73":["Beige Sf125","Upholstery"],"14":["Maroon","Upholstery"],"74":["Beige Sf125","Upholstery"],"15":["",""],"75":["Beige Sf125","Upholstery"],"16":["",""],"76":["Acr. Green","200x300"],"17":["",""],"77":["Grey","Upholstery"],"18":["",""],"78":["Beige Sf125","Upholstery"],"19":["Green","VIP"],"79":["Grey Mix","Andalus"],"20":["Green","VIP"],"80":["Gold","200x300"],"21":["Grey","Upholstery"],"22":["",""],"23":["",""],"24":["",""],"25":["",""],"26":["Rose/ Br. Mix","Andalus"],"27":["Gold Madina","200x300"],"28":["Pp Gold 2Nd","Andalus"],"29":["Grey","Upholstery"],"30":["Grey","Upholstery"],"31":["Grey","Upholstery"],"32":["Grey","Upholstery"],"33":["Maroon","Upholstery"],"34":["Beige Sf125","Upholstery"],"35":["Grey","Upholstery"],"36":["Grey","Upholstery"],"37":["Beige Sf125","Upholstery"],"38":["Maroon","Upholstery"],"39":["Red Acr.","200x300"],"40":["Maroon","Upholstery"],"41":["Grey","Upholstery"],"42":["Grey","Upholstery"],"43":["Coffe","Andalus"],"44":["Maroon/ Green","VIP"],"45":["",""],"46":["Coffe","Andalus"],"47":["Maroon","Upholstery"],"48":["Pp Mix","Andalus"],"49":["Maroon","Upholstery"],"50":["Grey","Upholstery"],"51":["Grey","Upholstery"],"52":["",""],"53":["Grey","Upholstery"],"54":["Grey","Upholstery"],"55":["Beige Sf125","Upholstery"],"56":["Pp Mix 2Nd","Andalus"]};
+
+/* ---------- Machine plan and Designs: report-style tables (same system as the other stock pages) ---------- */
+Object.assign(Y_DEF, { mp: 'mc', dz: 'name' });
+Object.assign(Y_SORT, { gdes: 'Design (grouped)', gcat: 'Category (grouped)', gcol: 'Colour (grouped)', gdept: 'Department (grouped)', code: 'Code', run: 'Most machines running' });
+const MP_ST = { run: ['Running', 'in'], none: ['No design', 'open'], stop: ['Stopped', 'out'] };
+function mpRows(){
+  const pm = SK.plan.m || {}, ms = (state.machines || []).slice().sort((a, b) => Number(a.id) - Number(b.id));
+  return ms.map(m => { const p = pm[m.id] || {}, d = p.des ? skDesign(p.des) : null, it = p.it ? skItem(p.it) : null, x = MP_XL[m.id] || [], st = p.st === 'stop' ? 'stop' : d ? 'run' : 'none';
+    return { m, p, d, it, st, dept: /^SSTM/i.test(String(m.name || '')) ? 'SSTM' : 'RVF', cat: p.cat || (st === 'stop' ? '' : x[1]) || '', col: p.col || (st === 'stop' ? '' : x[0]) || '', mix: [p.c1, p.c2, p.c3].filter(Boolean).join(' / '), nm: String(m.name || m.id) }; });
+}
+function sxMpHtml(){
+  const F = sxFget('mp'), q = (SX.mq || '').toLowerCase(), mode = ySortOf('mp'), all = mpRows(), lay = SX.mpv === 'layout';
+  const uniq = (f) => Array.from(new Set(all.map(f).filter(Boolean))).sort();
+  const flds = [['dept', 'Department', ['RVF', 'SSTM']], ['st', 'Status', [['run', 'Running'], ['none', 'No design'], ['stop', 'Stopped']]], ['cat', 'Category', uniq(r => r.cat)], ['des', 'Design', uniq(r => r.d && r.d.name)]];
+  let h = sxTop(sxSearch('sxMq', SX.mq, 'Search machine, design or colour…') + sxFilt('mp', flds) + ySortBtn('mp', ['mc', 'gdes', 'gcat', 'gcol', 'gdept']) + `<button type="button" class="pcBtnSoft sm" data-sx="mpv" title="Switch between the table and the floor drawing">${lay ? 'Table' : 'Layout'}</button>` + sxDlBtn('mp'));
+  if(lay) return h + skPlanHtml(true);
+  const rows = all.filter(r => (!F.dept || r.dept === F.dept) && (!F.st || r.st === F.st) && (!F.cat || r.cat === F.cat) && (!F.des || (r.d && r.d.name === F.des)) && (!q || (r.nm + ' ' + (r.d ? r.d.name : '') + ' ' + r.col + ' ' + r.mix + ' ' + r.cat).toLowerCase().indexOf(q) >= 0));
+  const key = { gdes: (r) => r.d ? r.d.name : '~ No design', gcat: (r) => r.cat || '~ No category', gcol: (r) => r.col || '~ No colour', gdept: (r) => r.dept }[mode];
+  if(key) rows.sort((a, b) => String(key(a)).localeCompare(String(key(b))) || Number(a.m.id) - Number(b.m.id));
+  const run = rows.filter(r => r.st === 'run').length, adm = skCanMach();
+  const cols = [['Machine', '', 'k'], ['Department', ''], ['Design', '', 'k'], ['Colour', '', 'k'], ['Colour mix', ''], ['Category', ''], ['Since', ''], ['Status', '', 'a']].concat(adm ? [['', '', 'a']] : []);
+  const mk = (r) => [`<b>${skEsc(r.nm)}</b>`, `<span class="sxSm2">${r.dept}</span>`, r.d ? skEsc(r.d.name) : '<span class="sxSm2">-</span>', r.col ? sxColT(r.col) : '<span class="sxSm2">-</span>', r.mix ? `<span class="sxSm2">${skEsc(r.mix)}</span>` : '<span class="sxSm2">-</span>', r.cat ? skEsc(r.cat) : '<span class="sxSm2">-</span>', r.p.since ? `<span class="sxSm2">${skEsc(String(r.p.since).slice(5))}</span>` : '<span class="sxSm2">-</span>', `<span class="sxTag ${MP_ST[r.st][1]}">${MP_ST[r.st][0]}</span>`].concat(adm ? [`<button type="button" class="mini-icon-btn" data-sk="mc" data-v="${skEsc(r.m.id)}" title="Change the design on this machine" aria-label="Change the design">${sxIc('pen', 13)}</button>`] : []);
+  let body = [];
+  if(key){ let cur = null, g = null, grp = []; rows.forEach(r => { const t = String(key(r)).replace(/^~ /, ''); if(t !== cur){ cur = t; g = { t, n: 0, run: 0 }; grp.push(g); body.push({ g }); } g.n++; if(r.st === 'run') g.run++; body.push(mk(r)); }); body = body.map(x => x.g ? { g: `<b>${skEsc(x.g.t)}</b> <span class="sxSm2">· ${x.g.n} machine${x.g.n === 1 ? '' : 's'} · ${x.g.run} running</span>` } : x); } else body = rows.map(mk);
+  const foot = ['<b>Total</b>', '', '', '', '', '', '', `<b>${run}</b> running of <b>${rows.length}</b>`].concat(adm ? [''] : []);
+  return h + sxHead('Machines and what runs on them', key ? Y_SORT[mode] : 'In machine order') + '<div class="card sxCard">' + sxTbl(cols, body, foot, 'No machine matches this filter.') + '</div>';
+}
+function sxDzHtml(){
+  const F = sxFget('dz'), q = (SX.dq || '').toLowerCase(), mode = ySortOf('dz'), pm = SK.plan.m || {};
+  const all = (SK.designs || []).map(d => { const its = SK.items.filter(i => i.des === d.id), tot = its.reduce((a, i) => a + skBal(i), 0), mc = Object.keys(pm).filter(k => (pm[k] || {}).des === d.id && pm[k].st !== 'stop'); return { d, n: its.length, tot, mc }; });
+  const flds = [['run', 'Running', [['yes', 'Running now'], ['no', 'Not running']]], ['stk', 'Stock', [['yes', 'Has stock']]]];
+  let rows = all.filter(r => (!F.run || (F.run === 'yes') === (r.mc.length > 0)) && (!F.stk || r.tot > 0) && (!q || (r.d.name + ' ' + (r.d.ar || '') + ' ' + (r.d.code || '')).toLowerCase().indexOf(q) >= 0));
+  const byName = (a, b) => String(a.d.name).localeCompare(String(b.d.name));
+  rows.sort(mode === 'code' ? (a, b) => String(a.d.code || '~').localeCompare(String(b.d.code || '~'), undefined, { numeric: true }) || byName(a, b) : mode === 'big' ? (a, b) => (b.tot - a.tot) || byName(a, b) : mode === 'run' ? (a, b) => (b.mc.length - a.mc.length) || byName(a, b) : byName);
+  let h = sxTop(sxSearch('sxDq', SX.dq, 'Search design name or code…') + sxFilt('dz', flds) + ySortBtn('dz', ['name', 'code', 'big', 'run']) + sxDlBtn('dz') + (skCanAdd() ? `<button type="button" class="pcBtnMain sm" data-sk="newdes" title="New design">${sxIc('plus', 14)}<span class="sxAddL">New design</span></button>` : ''));
+  const cols = [['Code', ''], ['Design', '', 'k'], ['Sample', '', 'a'], ['Colours', '', 'r'], ['In stock', '', 'r'], ['Running on', '', 'r']];
+  const body = rows.map(r => [r.d.code ? `<span class="sxCode">${skEsc(r.d.code)}</span>` : '<span class="sxSm2">-</span>', `<b>${skEsc(r.d.name)}</b>${r.d.ar ? ` <span class="sxSm2">${skEsc(r.d.ar)}</span>` : ''}`, `<button type="button" class="pcBtnSoft sm yPh" data-sk="des" data-v="${skEsc(r.d.id)}" title="View the photos of this design">View</button>`, r.n ? sxN(r.n) : '<span class="sxSm2">-</span>', r.tot ? sxN(r.tot) : '<span class="sxSm2">-</span>', r.mc.length ? `<span title="${skEsc(r.mc.map(k => ((state.machines || []).find(m => String(m.id) === String(k)) || {}).name || k).join(', '))}">${r.mc.length} machine${r.mc.length === 1 ? '' : 's'}</span>` : '<span class="sxSm2">Not running</span>']);
+  return h + sxHead('Designs', { name: 'A to Z', code: 'By code', big: 'Most stock', run: 'Most machines running' }[mode]) + '<div class="card sxCard">' + sxTbl(cols, body, ['', '<b>Total</b>', '', '', `<b>${sxN(rows.reduce((a, r) => a + r.tot, 0))}</b>`, `<b>${rows.filter(r => r.mc.length).length}</b> running`], 'No design matches this filter.') + '</div>';
+}
+const _mpDl = sxDl; sxDl = function(kind){
+  if(kind === 'mp'){ const rows = [['Machine', 'Department', 'Design', 'Colour', 'Colour mix', 'Category', 'Since', 'Status']]; mpRows().forEach(r => rows.push([r.nm, r.dept, r.d ? r.d.name : '', r.col, r.mix, r.cat, r.p.since || '', MP_ST[r.st][0]])); return skDlXlsx('machine-plan', 'Machine plan', rows); }
+  if(kind === 'dz'){ const pm = SK.plan.m || {}, rows = [['Code', 'Design', 'Colours', 'In stock', 'Machines running']]; (SK.designs || []).forEach(d => { const its = SK.items.filter(i => i.des === d.id); rows.push([d.code || '', d.name, its.length, Math.round(its.reduce((a, i) => a + skBal(i), 0) * 10) / 10, Object.keys(pm).filter(k => (pm[k] || {}).des === d.id && pm[k].st !== 'stop').length]); }); return skDlXlsx('designs', 'Designs', rows); }
+  return _mpDl(kind);
+};
+document.addEventListener('click', (ev) => { const el = ev.target.closest && ev.target.closest('[data-sx="mpv"]'); if(!el) return; SX.mpv = SX.mpv === 'layout' ? '' : 'layout'; SX.yso = ''; SX.fo = ''; skRender(); });
+document.addEventListener('input', (ev) => { const t = ev.target; if(!t) return; if(t.id === 'sxMq'){ SX.mq = t.value; sxKeepFocus('sxMq'); } else if(t.id === 'sxDq'){ SX.dq = t.value; sxKeepFocus('sxDq'); } });
 
 /* ---- clicks ---- */
 document.addEventListener('click', (ev) => {
