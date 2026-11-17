@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261117-141420">
+<meta name="rvf-build" content="20261117-142151">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -29755,21 +29755,22 @@ function yRows(){
 }
 const Y_ST = { order: ['Order now', 'open'], out: ['Out of stock', 'out'], idle: ['Not moving', ''], ok: ['OK', 'in'], none: ['', ''] };
 const yTag = (s) => Y_ST[s][0] ? `<span class="sxTag ${Y_ST[s][1]}">${Y_ST[s][0]}</span>` : '';
-const Y_SORT = { col: 'Colour (grouped)', sec: 'Section (grouped)', sup: 'Supplier (grouped)', name: 'A to Z', low: 'Least days left', big: 'Most stock' };
-const ySortOf = (pg) => (SX.last['ys_' + pg]) || 'col';
+const Y_SORT = { col: 'Colour (grouped)', sec: 'Section (grouped)', sup: 'Supplier (grouped)', name: 'A to Z', low: 'Least days left', big: 'Most stock', colbig: 'Colour (most stock first)' };
+const ySortOf = (pg) => { const m = SX.last['ys_' + pg]; return (m === 'sec' || m === 'sup' || !Y_SORT[m]) ? 'col' : m; };
 const ySortBtn = (pg, keys) => `<span class="sxMw"><button type="button" class="filter-icon-btn sxFb${ySortOf(pg) !== 'col' ? ' active' : ''}" data-sx="ysm" data-v="${pg}" title="Sort: ${Y_SORT[ySortOf(pg)]}" aria-label="Sort and group">${sxIc('sort', 15)}</button>${SX.yso === pg ? `<div class="sxMenu">${keys.map(k => `<button type="button" class="${ySortOf(pg) === k ? 'active' : ''}" data-sx="ysort" data-v="${pg}:${k}">${Y_SORT[k]}</button>`).join('')}</div>` : ''}</span>`;
 const ySortPop = () => '';
 function ySortRows(rows, mode, nm){
   const f = (r) => r.i ? [r.i.col, r.i.code] : [r.label || '', ''], c = (a, b) => { const x = f(a), y = f(b); return String(x[0]).localeCompare(String(y[0])) || String(x[1]).localeCompare(String(y[1])); };
   const key = { col: (r) => yFamI(r.fam), sec: (r) => r.i ? r.i.sec || '' : 'Earlier entries', sup: (r) => r.i ? r.i.sup || '' : '' }[mode];
-  rows.sort((a, b) => { if(mode === 'low'){ const x = a.days == null ? 1e9 : a.days, y = b.days == null ? 1e9 : b.days; return (x - y) || c(a, b); } if(mode === 'big') return (b.kg - a.kg) || c(a, b); if(mode === 'name') return c(a, b); const ka = key(a), kb = key(b); return (typeof ka === 'number' ? ka - kb : String(ka).localeCompare(String(kb))) || c(a, b); });
+  const ft = {}; if(mode === 'colbig') rows.forEach(r => { ft[r.fam] = (ft[r.fam] || 0) + r.kg; });
+  rows.sort((a, b) => { if(mode === 'colbig') return ((ft[b.fam] || 0) - (ft[a.fam] || 0)) || (String(a.fam) < String(b.fam) ? -1 : String(a.fam) > String(b.fam) ? 1 : 0) || (b.kg - a.kg) || c(a, b); if(mode === 'low'){ const x = a.days == null ? 1e9 : a.days, y = b.days == null ? 1e9 : b.days; return (x - y) || c(a, b); } if(mode === 'big') return (b.kg - a.kg) || c(a, b); if(mode === 'name') return c(a, b); const ka = key(a), kb = key(b); return (typeof ka === 'number' ? ka - kb : String(ka).localeCompare(String(kb))) || c(a, b); });
   return rows;
 }
 function yGroups(rows, mode, cols, mk){
   const out = []; let cur = null, g = null;
-  const title = (r) => mode === 'col' ? r.fam : mode === 'sec' ? (r.i ? r.i.sec || 'Other' : 'Earlier entries') : (r.i ? r.i.sup || 'No supplier' : 'No supplier');
-  rows.forEach(r => { if(mode === 'col' || mode === 'sec' || mode === 'sup'){ const t = title(r); if(t !== cur){ cur = t; g = { t, n: 0, kg: 0, rows: [] }; out.push({ gh: g }); } g.n++; g.kg += r.kg; } out.push({ r }); });
-  return out.map(x => x.gh ? { g: `${mode === 'col' ? yDot(yFamHex(x.gh.t)) : ''}<b>${skEsc(x.gh.t)}</b> <span class="sxSm2">· ${x.gh.n} item${x.gh.n === 1 ? '' : 's'} · ${sxN(x.gh.kg)} kg</span>` } : mk(x.r));
+  const title = (r) => (mode === 'col' || mode === 'colbig') ? r.fam : mode === 'sec' ? (r.i ? r.i.sec || 'Other' : 'Earlier entries') : (r.i ? r.i.sup || 'No supplier' : 'No supplier');
+  rows.forEach(r => { if(mode === 'col' || mode === 'colbig' || mode === 'sec' || mode === 'sup'){ const t = title(r); if(t !== cur){ cur = t; g = { t, n: 0, kg: 0, rows: [] }; out.push({ gh: g }); } g.n++; g.kg += r.kg; } out.push({ r }); });
+  return out.map(x => x.gh ? { g: `${(mode === 'col' || mode === 'colbig') ? yDot(yFamHex(x.gh.t)) : ''}<b>${skEsc(x.gh.t)}</b> <span class="sxSm2">· ${x.gh.n} item${x.gh.n === 1 ? '' : 's'} · ${sxN(x.gh.kg)} kg</span>` } : mk(x.r));
 }
 /* ---------- Raw store page ---------- */
 function yMain(id){
@@ -29788,7 +29789,7 @@ function sxRawHtml(){
   yCfg(); if(!SX.yPrev){ SX.yPrev = 1; sxMonth('w', yPrevYm()).then(() => { if(SX.tab === 'raw' && !SX.sfor) skRender(); }); }
   const cfg = SX.cfg, q = (SX.rq || '').toLowerCase(), F = sxFget('raw'), mode = ySortOf('raw'), all = yRows(), ord = Number(cfg.yOrder) || 30;
   const flds = [['sec', 'Section', ySecs()], ['sup', 'Supplier', Array.from(new Set(yItems().map(i => i.sup).filter(Boolean))).sort()], ['fam', 'Colour', SX_FAM.map(x => x[0])], ['s', 'Status', [['order', 'Order now'], ['out', 'Out of stock'], ['idle', 'Not moving'], ['ok', 'OK']]], ['cols', 'Show also', [['sup', 'Supplier'], ['sz', 'Yarn size'], ['both', 'Supplier and yarn size']], 'Nothing extra'], ['show', 'Show', [['all', 'All items, also with no stock']], 'Only items with stock']];
-  let h = sxTop(sxSearch('sxRq', SX.rq, 'Search code, colour, supplier…') + sxFilt('raw', flds) + ySortBtn('raw', ['col', 'sec', 'sup', 'name', 'low', 'big']) + '<span class="grow"></span>' + sxDlBtn('raw') + sxGear('raw') + (sxCan('raw') ? sxAddBtn('yraw', 'Update') : '')) + sxFpop('raw', flds) + ySortPop('raw', ['col', 'sec', 'sup', 'name', 'low', 'big']);
+  let h = sxTop(sxSearch('sxRq', SX.rq, 'Search code, colour, supplier…') + sxFilt('raw', flds) + ySortBtn('raw', ['col', 'colbig', 'name', 'low', 'big']) + '<span class="grow"></span>' + sxDlBtn('raw') + sxGear('raw') + (sxCan('raw') ? sxAddBtn('yraw', 'Update') : '')) + sxFpop('raw', flds) + ySortPop('raw', ['col', 'sec', 'sup', 'name', 'low', 'big']);
   if(!sxCan('raw')) h += sxNoRight('raw material');
   const t = yTot(), orderN = all.filter(r => r.s === 'order' || r.s === 'out').length, idleN = all.filter(r => r.s === 'idle').length;
   h += `<div class="card sxCard"><div class="sxGrid">${sxTile('Yarn in store', sxN(t.kg) + '<small> kg</small>', sxN(Math.round(t.bx)) + ' boxes', '', 'raw', 'blue')}${sxTile('Items in stock', t.n, 'of ' + yItems().filter(i => i.on !== false).length + ' in the list', '', 'pack', 'green')}${sxTile('Order now', orderN, orderN ? 'Less than ' + ord + ' days left' : 'Nothing to order', '', 'warn', orderN ? 'amber' : 'green')}${sxTile('Not moving', idleN, 'In stock, no daily use', '', 'roll', 'purple')}</div></div>`;
@@ -29878,17 +29879,17 @@ function yRewRows(){
 function yRewHtml(){
   SX.rwsub = 'rew'; yCfg(); const q = (SX.wq || '').toLowerCase(), F = sxFget('rew'), mode = ySortOf('rew'), all = yRewRows();
   const flds = [['fam', 'Colour', SX_FAM.map(x => x[0])], ['sec', 'Section', ySecs()]];
-  let h = sxTop(sxSearch('sxWq', SX.wq, 'Search colour…') + sxFilt('rew', flds) + ySortBtn('rew', ['col', 'name', 'big']) + '<span class="grow"></span>' + sxDlBtn('rew') + sxGear('rew') + (sxCan('rew') ? sxAddBtn('yrew', 'Update') : '')) + sxFpop('rew', flds) + ySortPop('rew', ['col', 'name', 'big']);
+  let h = sxTop(sxSearch('sxWq', SX.wq, 'Search colour…') + sxFilt('rew', flds) + ySortBtn('rew', ['col', 'colbig', 'name', 'big']) + '<span class="grow"></span>' + sxDlBtn('rew') + sxGear('rew') + (sxCan('rew') ? sxAddBtn('yrew', 'Update') : '')) + sxFpop('rew', flds) + ySortPop('rew', ['col', 'name', 'big']);
   if(!sxCan('rew')) h += sxNoRight('rewinding');
   const T = { kg: all.reduce((a, r) => a + Math.max(0, r.kg), 0), rc: all.reduce((a, r) => a + Math.max(0, r.rc), 0), n: all.reduce((a, r) => a + Math.max(0, r.n), 0) };
   h += `<div class="card sxCard"><div class="sxGrid">${sxTile('Rewound in hand', sxN(T.kg + T.rc) + '<small> kg</small>', sxN(T.n) + ' bobbins', '', 'rew', 'purple')}${sxTile('Recovered from weaving', sxN(T.rc) + '<small> kg</small>', 'Included in the total', '', 'roll', 'cyan')}${sxTile('Items', all.length, 'with rewound yarn', '', 'raw', 'blue')}</div></div>`;
   let rows = all.filter(r => (!F.fam || r.fam === F.fam) && (!F.sec || (r.i && r.i.sec === F.sec)) && (!q || (r.label + ' ' + (r.i ? r.i.code : '')).toLowerCase().indexOf(q) >= 0));
-  rows.forEach(r => { r.kg0 = r.kg; }); const sk = { col: 1, name: 1, big: 1 }; if(!sk[mode]) SX.last.ys_rew = 'col';
-  rows.sort((a, b) => mode === 'big' ? (b.tot - a.tot) : mode === 'name' ? String(a.label).localeCompare(String(b.label)) : (yFamI(a.fam) - yFamI(b.fam)) || String(a.label).localeCompare(String(b.label)));
+  rows.forEach(r => { r.kg0 = r.kg; }); const sk = { col: 1, colbig: 1, name: 1, big: 1 }; const ft2 = {}; if(mode === 'colbig') rows.forEach(r => { ft2[r.fam] = (ft2[r.fam] || 0) + r.tot; }); if(!sk[mode]) SX.last.ys_rew = 'col';
+  rows.sort((a, b) => mode === 'colbig' ? (((ft2[b.fam] || 0) - (ft2[a.fam] || 0)) || (String(a.fam) < String(b.fam) ? -1 : String(a.fam) > String(b.fam) ? 1 : 0) || (b.tot - a.tot)) : mode === 'big' ? (b.tot - a.tot) : mode === 'name' ? String(a.label).localeCompare(String(b.label)) : (yFamI(a.fam) - yFamI(b.fam)) || String(a.label).localeCompare(String(b.label)));
   const cols = [['Code', ''], ['Colour', '', 'k'], ['In raw store kg', '', 'r'], ['Rewound kg', '', 'r'], ['Bobbins', '', 'r'], ['Recovered from weaving kg', '', 'r'], ['Total in hand kg', '', 'r']];
   const mk = (r) => [r.i ? `<span class="sxCode">${skEsc(r.i.code)}</span>` : '', `<span class="sxYc" title="${skEsc(r.label)}">${yDot(yHex(r.label, r.fam))}${skEsc(r.label)}</span>`, r.raw > 0 ? sxN(r.raw) : '<span class="sxSm2">-</span>', sxN(Math.max(0, r.kg)), sxN(Math.max(0, r.n)), r.rc > 0 ? sxN(r.rc) : '<span class="sxSm2">-</span>', `<b>${sxN(r.tot)}</b>`];
   const foot = ['', '<b>Total</b>', '', `<b>${sxN(rows.reduce((a, r) => a + Math.max(0, r.kg), 0))}</b>`, `<b>${sxN(rows.reduce((a, r) => a + Math.max(0, r.n), 0))}</b>`, `<b>${sxN(rows.reduce((a, r) => a + Math.max(0, r.rc), 0))}</b>`, `<b>${sxN(rows.reduce((a, r) => a + r.tot, 0))}</b>`];
-  h += sxHead('Rewound yarn in hand', mode === 'col' ? 'Grouped by colour' : Y_SORT[mode]) + '<div class="card sxCard">' + sxTbl(cols, yGroups(rows, mode === 'col' ? 'col' : 'none', cols, mk), foot, 'Nothing in stock. Press Update to add rewound yarn.') + '</div>';
+  h += sxHead('Rewound yarn in hand', mode === 'col' ? 'Grouped by colour' : Y_SORT[mode]) + '<div class="card sxCard">' + sxTbl(cols, yGroups(rows, (mode === 'col' || mode === 'colbig') ? mode : 'none', cols, mk), foot, 'Nothing in stock. Press Update to add rewound yarn.') + '</div>';
   return h + yRecent(['rew'], 'Recent entries');
 }
 function yOpenRew(){
