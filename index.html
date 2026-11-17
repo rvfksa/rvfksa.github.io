@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261117-134928">
+<meta name="rvf-build" content="20261117-135231">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -28565,6 +28565,14 @@ table.sxRT th.a, table.sxRT td.a{ width:1%; }
 
 .sxTop .grow{ display:none !important; }
 .sxTop{ justify-content:flex-start; }
+
+#stockMount .sxTop .sxQ{ flex:1 1 160px; width:auto; max-width:none; min-width:120px; }
+#stockMount .sxTop .sxStat{ flex:1; }
+@media (max-width:560px){
+ #stockMount .sxTop .sxQ{ flex:1 1 100%; }
+ #stockMount .sxTop .pcBtnMain{ flex:1 1 auto; justify-content:center; }
+ #stockMount .sxTop .pcBtnMain .sxAddL{ display:inline; }
+}
 </style>
 <div id="rvfBusy"><i></i><span id="rvfBusyTxt">Loading data…</span></div>
 <script>
