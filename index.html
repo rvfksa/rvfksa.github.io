@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261117-115556">
+<meta name="rvf-build" content="20261117-125911">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -28524,6 +28524,21 @@ table.sxRT th.a, table.sxRT td.a{ width:1%; }
 .yDl i{ display:block; width:44px; height:4px; border-radius:99px; background:var(--line); overflow:hidden; }
 .yDl u{ display:block; height:100%; border-radius:99px; background:currentColor; }
 .yDl.r{ color:var(--danger); } .yDl.a{ color:var(--warn); } .yDl.g{ color:var(--ok); }
+
+.sxFin{ display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+.sxFi{ display:inline-flex; align-items:center; gap:5px; height:34px; padding:0 4px 0 11px; border:1px solid var(--line,#e3e7f0); border-radius:999px; background:var(--panel,#fff); font-size:11.5px; color:var(--muted,#6b7280); }
+.sxFi.on{ border-color:var(--primary,#4f46e5); background:var(--panel-2,#f3f4ff); }
+.sxFi span{ white-space:nowrap; }
+.sxFi select,.sxFi input{ border:0; background:transparent; font:inherit; font-size:12px; font-weight:600; color:var(--text-strong,#111827); height:30px; max-width:120px; padding:0 4px; outline:none; cursor:pointer; }
+.sxFcl{ background:none; border:0; font:inherit; font-size:12px; font-weight:600; color:var(--primary,#4f46e5); cursor:pointer; padding:0 4px; }
+.sxFbN{ display:none; }
+.sxMw{ position:relative; display:inline-block; }
+.sxMenu{ position:absolute; top:40px; left:0; z-index:60; min-width:190px; background:var(--panel,#fff); border:1px solid var(--line,#e3e7f0); border-radius:12px; box-shadow:0 10px 28px rgba(20,24,50,.14); padding:5px; display:grid; gap:1px; }
+.sxMenu button{ text-align:left; background:none; border:0; padding:9px 12px; border-radius:8px; font:inherit; font-size:13px; color:var(--text); cursor:pointer; white-space:nowrap; }
+.sxMenu button:hover{ background:var(--panel-2); }
+.sxMenu button.active{ background:var(--panel-2); font-weight:700; color:var(--text-strong); }
+@media (min-width:821px){ .sxFp{ display:none; } }
+@media (max-width:820px){ .sxFin{ display:none; } .sxFbN{ display:inline-flex; } }
 </style>
 <div id="rvfBusy"><i></i><span id="rvfBusyTxt">Loading data…</span></div>
 <script>
@@ -29326,7 +29341,8 @@ function sxTbl(cols, rows, foot, empty){
 const sxFget = (key) => key === 'fin' ? SX.fil : (SX.ff[key] = SX.ff[key] || {});
 function sxFilt(key, fields){
   const f = sxFget(key), n = fields.filter(x => f[x[0]]).length;
-  return `<button type="button" class="filter-icon-btn sxFb${n ? ' active' : ''}" data-sx="fo" data-v="${key}" title="Filter" aria-label="Filter">${SX_FUN}${n ? `<b>${n}</b>` : ''}</button>`;
+  const inl = fields.map(x => x[2] === 'date' ? `<label class="sxFi${f[x[0]] ? ' on' : ''}"><span>${x[1]}</span><input type="date" data-ff="${key}" data-fn="${x[0]}" value="${skEsc(f[x[0]] || x[3] || '')}"></label>` : `<label class="sxFi${f[x[0]] ? ' on' : ''}"><span>${x[1]}</span><select data-ff="${key}" data-fn="${x[0]}">${sxOpt(x[2], f[x[0]], x[3] || 'All')}</select></label>`).join('');
+  return `<span class="sxFin">${inl}${n ? `<button type="button" class="sxFcl" data-sx="fclear" data-v="${key}">Clear</button>` : ''}</span><button type="button" class="filter-icon-btn sxFb sxFbN${n ? ' active' : ''}" data-sx="fo" data-v="${key}" title="Filter" aria-label="Filter">${SX_FUN}${n ? `<b>${n}</b>` : ''}</button>`;
 }
 function sxFpop(key, fields){
   if(SX.fo !== key) return ''; const f = sxFget(key);
@@ -29707,11 +29723,8 @@ const Y_ST = { order: ['Order now', 'open'], out: ['Out of stock', 'out'], idle:
 const yTag = (s) => Y_ST[s][0] ? `<span class="sxTag ${Y_ST[s][1]}">${Y_ST[s][0]}</span>` : '';
 const Y_SORT = { col: 'Colour (grouped)', sec: 'Section (grouped)', sup: 'Supplier (grouped)', name: 'A to Z', low: 'Least days left', big: 'Most stock' };
 const ySortOf = (pg) => (SX.last['ys_' + pg]) || 'col';
-const ySortBtn = (pg) => `<button type="button" class="filter-icon-btn sxFb${ySortOf(pg) !== 'col' ? ' active' : ''}" data-sx="ysm" data-v="${pg}" title="Sort and group" aria-label="Sort and group">${sxIc('sort', 15)}</button>`;
-function ySortPop(pg, keys){
-  if(SX.yso !== pg) return '';
-  return `<div class="filter-popover open sxFp"><div class="sxFpL">${keys.map(k => `<button type="button" class="${ySortOf(pg) === k ? 'active' : ''}" data-sx="ysort" data-v="${pg}:${k}">${Y_SORT[k]}</button>`).join('')}</div></div>`;
-}
+const ySortBtn = (pg, keys) => `<span class="sxMw"><button type="button" class="filter-icon-btn sxFb${ySortOf(pg) !== 'col' ? ' active' : ''}" data-sx="ysm" data-v="${pg}" title="Sort: ${Y_SORT[ySortOf(pg)]}" aria-label="Sort and group">${sxIc('sort', 15)}</button>${SX.yso === pg ? `<div class="sxMenu">${keys.map(k => `<button type="button" class="${ySortOf(pg) === k ? 'active' : ''}" data-sx="ysort" data-v="${pg}:${k}">${Y_SORT[k]}</button>`).join('')}</div>` : ''}</span>`;
+const ySortPop = () => '';
 function ySortRows(rows, mode, nm){
   const f = (r) => r.i ? [r.i.col, r.i.code] : [r.label || '', ''], c = (a, b) => { const x = f(a), y = f(b); return String(x[0]).localeCompare(String(y[0])) || String(x[1]).localeCompare(String(y[1])); };
   const key = { col: (r) => yFamI(r.fam), sec: (r) => r.i ? r.i.sec || '' : 'Earlier entries', sup: (r) => r.i ? r.i.sup || '' : '' }[mode];
@@ -29741,7 +29754,7 @@ function sxRawHtml(){
   yCfg(); if(!SX.yPrev){ SX.yPrev = 1; sxMonth('w', yPrevYm()).then(() => { if(SX.tab === 'raw' && !SX.sfor) skRender(); }); }
   const cfg = SX.cfg, q = (SX.rq || '').toLowerCase(), F = sxFget('raw'), mode = ySortOf('raw'), all = yRows(), ord = Number(cfg.yOrder) || 30;
   const flds = [['sec', 'Section', ySecs()], ['sup', 'Supplier', Array.from(new Set(yItems().map(i => i.sup).filter(Boolean))).sort()], ['fam', 'Colour', SX_FAM.map(x => x[0])], ['s', 'Status', [['order', 'Order now'], ['out', 'Out of stock'], ['idle', 'Not moving'], ['ok', 'OK']]], ['cols', 'Show also', [['sup', 'Supplier'], ['sz', 'Yarn size'], ['both', 'Supplier and yarn size']], 'Nothing extra'], ['show', 'Show', [['all', 'All items, also with no stock']], 'Only items with stock']];
-  let h = sxTop(sxSearch('sxRq', SX.rq, 'Search code, colour, supplier…') + sxFilt('raw', flds) + ySortBtn('raw') + '<span class="grow"></span>' + sxDlBtn('raw') + sxGear('raw') + (sxCan('raw') ? sxAddBtn('yraw', 'Update') : '')) + sxFpop('raw', flds) + ySortPop('raw', ['col', 'sec', 'sup', 'name', 'low', 'big']);
+  let h = sxTop(sxSearch('sxRq', SX.rq, 'Search code, colour, supplier…') + sxFilt('raw', flds) + ySortBtn('raw', ['col', 'sec', 'sup', 'name', 'low', 'big']) + '<span class="grow"></span>' + sxDlBtn('raw') + sxGear('raw') + (sxCan('raw') ? sxAddBtn('yraw', 'Update') : '')) + sxFpop('raw', flds) + ySortPop('raw', ['col', 'sec', 'sup', 'name', 'low', 'big']);
   if(!sxCan('raw')) h += sxNoRight('raw material');
   const t = yTot(), orderN = all.filter(r => r.s === 'order' || r.s === 'out').length, idleN = all.filter(r => r.s === 'idle').length;
   h += `<div class="card sxCard"><div class="sxGrid">${sxTile('Yarn in store', sxN(t.kg) + '<small> kg</small>', sxN(Math.round(t.bx)) + ' boxes', '', 'raw', 'blue')}${sxTile('Items in stock', t.n, 'of ' + yItems().filter(i => i.on !== false).length + ' in the list', '', 'pack', 'green')}${sxTile('Order now', orderN, orderN ? 'Less than ' + ord + ' days left' : 'Nothing to order', '', 'warn', orderN ? 'amber' : 'green')}${sxTile('Not moving', idleN, 'In stock, no daily use', '', 'roll', 'purple')}</div></div>`;
@@ -29831,7 +29844,7 @@ function yRewRows(){
 function yRewHtml(){
   SX.rwsub = 'rew'; yCfg(); const q = (SX.wq || '').toLowerCase(), F = sxFget('rew'), mode = ySortOf('rew'), all = yRewRows();
   const flds = [['fam', 'Colour', SX_FAM.map(x => x[0])], ['sec', 'Section', ySecs()]];
-  let h = sxTop(sxSearch('sxWq', SX.wq, 'Search colour…') + sxFilt('rew', flds) + ySortBtn('rew') + '<span class="grow"></span>' + sxDlBtn('rew') + sxGear('rew') + (sxCan('rew') ? sxAddBtn('yrew', 'Update') : '')) + sxFpop('rew', flds) + ySortPop('rew', ['col', 'name', 'big']);
+  let h = sxTop(sxSearch('sxWq', SX.wq, 'Search colour…') + sxFilt('rew', flds) + ySortBtn('rew', ['col', 'name', 'big']) + '<span class="grow"></span>' + sxDlBtn('rew') + sxGear('rew') + (sxCan('rew') ? sxAddBtn('yrew', 'Update') : '')) + sxFpop('rew', flds) + ySortPop('rew', ['col', 'name', 'big']);
   if(!sxCan('rew')) h += sxNoRight('rewinding');
   const T = { kg: all.reduce((a, r) => a + Math.max(0, r.kg), 0), rc: all.reduce((a, r) => a + Math.max(0, r.rc), 0), n: all.reduce((a, r) => a + Math.max(0, r.n), 0) };
   h += `<div class="card sxCard"><div class="sxGrid">${sxTile('Rewound in hand', sxN(T.kg + T.rc) + '<small> kg</small>', sxN(T.n) + ' bobbins', '', 'rew', 'purple')}${sxTile('Recovered from weaving', sxN(T.rc) + '<small> kg</small>', 'Included in the total', '', 'roll', 'cyan')}${sxTile('Items', all.length, 'with rewound yarn', '', 'raw', 'blue')}</div></div>`;
@@ -29934,6 +29947,7 @@ const _yOpenForm = sxOpenForm; sxOpenForm = function(kind){ if(kind === 'yraw') 
 const _yDl = sxDl; sxDl = function(kind){ if(kind === 'raw' || kind === 'rew' || kind === 'wp') return yDl(kind); return _yDl(kind); };
 Object.assign(SX_SM, { raw: ['yitems', 'ydaily', 'ydest', 'yrules', 'yopen'], rew: [], wp: ['beamCols', 'beamW'] });
 document.addEventListener('click', async (ev) => {
+  if(SX.yso && !(ev.target.closest && ev.target.closest('.sxMw'))){ SX.yso = ''; skRender(); }
   const el = ev.target.closest && ev.target.closest('[data-sx]'); if(!el || el.tagName === 'SELECT') return; const a = el.dataset.sx, v = el.dataset.v;
   if(a === 'yk'){ const s = sxSnap(); SX.yk = v; yOpenRaw(); sxRestore(s); yInfoUpd(); } else if(a === 'yk2'){ const s = sxSnap(); SX.yk2 = v; yOpenRew(); sxRestore(s); yInfoUpd(); } else if(a === 'yk3'){ const s = sxSnap(); SX.yk3 = v; yOpenWp(); sxRestore(s); }
   else if(a === 'ysm'){ SX.yso = SX.yso === v ? '' : v; SX.fo = ''; skRender(); } else if(a === 'ysort'){ const p = v.split(':'); SX.last['ys_' + p[0]] = p[1]; sxKeep({}); SX.yso = ''; skRender(); }
