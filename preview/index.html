@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head><meta name="robots" content="noindex">
-<meta name="rvf-build" content="20261117-112808">
+<meta name="rvf-build" content="20261117-113345">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -29286,7 +29286,7 @@ function sxDashHtml(){
   let h = sxPageTop('', sxPriv() ? 'Summary of every stage. Tap a box to open its page.' : 'Your pages. Tap a box to open it.', set);
   h += box('1 · Raw material', [
     T('raw', sxTile('Raw material store', sxN(rawKg) + '<small> kg</small>', yTot().n + ' yarns in stock', 'raw', 'raw', 'blue')),
-    T('rew', sxTile('Rewinding bobbins', sxN(rew.kg) + '<small> kg</small>', sxN(rew.n) + ' bobbins', 'rew', 'rew', 'purple')),
+    T('rew', sxTile('Rewound yarn', sxN(rew.kg) + '<small> kg</small>', rew.n > 0 ? sxN(rew.n) + ' bobbins' : 'In hand', 'rew', 'rew', 'purple')),
     T('wp', sxTile('Warping beams', sxN(wp.kg) + '<small> kg</small>', sxN(wp.n) + ' beams', 'wp', 'wp', 'cyan'))]);
   h += box('2 · Production', [
     T('fin', sxTile('Finishing today', sxN(mSum(ft, 'm')) + '<small> m</small>', sxN(mSum(ft, 'roll')) + ' rolls today · month ' + sxN(mSum(fe, 'm')) + ' m / ' + sxN(mSum(fe, 'roll')) + ' rolls', 'fin', 'fin', 'green')),
