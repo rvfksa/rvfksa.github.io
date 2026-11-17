@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261117-133930">
+<meta name="rvf-build" content="20261117-134150">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -28551,6 +28551,17 @@ table.sxRT th.a, table.sxRT td.a{ width:1%; }
 .sxFm select,.sxFm input{ width:100%; }
 .sxFm .sxFpF{ display:flex; justify-content:space-between; gap:8px; }
 @media (max-width:420px){ .sxFmG{ grid-template-columns:1fr; } }
+
+@media (max-width:560px){
+ .sxFm{ position:fixed; left:0; right:0; bottom:0; top:auto; min-width:0; width:auto; max-height:78vh; overflow:auto; border-radius:20px 20px 0 0; padding:26px 16px calc(18px + env(safe-area-inset-bottom)); z-index:300; box-shadow:0 -8px 30px rgba(20,24,50,.2); }
+ .sxFm::before{ content:''; position:fixed; inset:0; background:rgba(15,20,40,.38); z-index:-1; }
+ .sxFm::after{ content:''; position:absolute; top:9px; left:50%; width:38px; height:4px; margin-left:-19px; border-radius:4px; background:var(--line,#d5d9e6); }
+ .sxFmG{ grid-template-columns:1fr 1fr; gap:12px; }
+ .sxFm select,.sxFm input{ height:42px; font-size:14px; }
+ .sxFm .sxFpF{ margin-top:6px; } .sxFm .sxFpF button{ flex:1; height:42px; }
+ .sxMenu:not(.sxFm){ max-width:calc(100vw - 32px); }
+}
+@media (max-width:340px){ .sxFmG{ grid-template-columns:1fr; } }
 </style>
 <div id="rvfBusy"><i></i><span id="rvfBusyTxt">Loading data…</span></div>
 <script>
@@ -29956,7 +29967,7 @@ const _yOpenForm = sxOpenForm; sxOpenForm = function(kind){ if(kind === 'yraw') 
 const _yDl = sxDl; sxDl = function(kind){ if(kind === 'raw' || kind === 'rew' || kind === 'wp') return yDl(kind); return _yDl(kind); };
 Object.assign(SX_SM, { raw: ['yitems', 'ydaily', 'ydest', 'yrules', 'yopen'], rew: [], wp: ['beamCols', 'beamW'] });
 document.addEventListener('click', async (ev) => {
-  if((SX.yso || SX.fo) && !(ev.target.closest && ev.target.closest('.sxMw'))){ SX.yso = ''; SX.fo = ''; skRender(); }
+  if((SX.yso || SX.fo) && (!(ev.target.closest && ev.target.closest('.sxMw')) || (ev.target.classList && ev.target.classList.contains('sxFm') && ev.clientY < ev.target.getBoundingClientRect().top))){ SX.yso = ''; SX.fo = ''; skRender(); }
   const el = ev.target.closest && ev.target.closest('[data-sx]'); if(!el || el.tagName === 'SELECT') return; const a = el.dataset.sx, v = el.dataset.v;
   if(a === 'yk'){ const s = sxSnap(); SX.yk = v; yOpenRaw(); sxRestore(s); yInfoUpd(); } else if(a === 'yk2'){ const s = sxSnap(); SX.yk2 = v; yOpenRew(); sxRestore(s); yInfoUpd(); } else if(a === 'yk3'){ const s = sxSnap(); SX.yk3 = v; yOpenWp(); sxRestore(s); }
   else if(a === 'ysm'){ SX.yso = SX.yso === v ? '' : v; SX.fo = ''; skRender(); } else if(a === 'ysort'){ const p = v.split(':'); SX.last['ys_' + p[0]] = p[1]; sxKeep({}); SX.yso = ''; skRender(); }
