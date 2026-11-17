@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta name="robots" content="noindex">
-<meta name="rvf-build" content="20261117-103158">
+<meta name="rvf-build" content="20261117-104939">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -28966,11 +28966,12 @@ function skItemForm(id, desId, hint){
     <div class="skGrid2"><div><label>Code (ERP / FG)</label><input id="sfC" type="text" value="${skEsc(i.code || '')}"></div><div><label>Colour (pick or type new)</label><input id="sfCo" data-col="1" list="skColList" type="text" value="${skEsc(i.col || '')}"></div></div>
     <div class="skGrid2"><div><label>Design (pick or type a new one)</label><input id="sfDn" list="skDesList" type="text" value="${skEsc((skDesign(i.des) || {}).name || '')}"><datalist id="skDesList">${SK.designs.map(d => `<option value="${skEsc(d.name)}">`).join('')}</datalist></div><div><label>Benchmark (blank = group rule)</label><input id="sfS" type="number" inputmode="decimal" value="${i.safe || ''}"></div></div>
     <div class="skGrid2"><div><label>Pieces per bundle / box</label><input id="sfP" type="number" inputmode="decimal" value="${i.per || ''}"></div><div><label>Truck capacity (bundles)</label><input id="sfT" type="number" inputmode="decimal" value="${i.truck || ''}"></div></div>
+    <div class="sxXg" data-for="cr q2"><label>Type</label><select id="sfXkind">${['carpet', 'mat', 'up'].map(k => `<option value="${k}" ${sxKind(i) === k ? 'selected' : ''}>${SX_KN[k]}</option>`).join('')}</select></div>
     <div class="skGrid2 sxXg" data-for="cr"><div><label>Designs in 1 bundle</label><input id="sfXnd" type="number" inputmode="decimal" value="${skEsc((i.x || {}).nd || '')}"></div><div><label>Colours in 1 bundle</label><input id="sfXnc" type="number" inputmode="decimal" value="${skEsc((i.x || {}).nc || '')}"></div></div>
     <div class="sxXg" data-for="cr"><label>Which colours (optional)</label><input id="sfXcl" type="text" value="${skEsc((i.x || {}).cl || '')}" placeholder="e.g. Maroon, Grey, Brown"></div>
     <div class="skGrid2 sxXg" data-for="vip"><div><label>Model</label><input id="sfXmodel" type="text" value="${skEsc((i.x || {}).model || '')}"></div><div><label>Category</label><input id="sfXcat" type="text" value="${skEsc((i.x || {}).cat || '')}"></div></div>
-    <div class="skGrid2 sxXg" data-for="vip up"><div><label>Size</label><input id="sfXsize" type="text" value="${skEsc((i.x || {}).size || '')}" placeholder="e.g. 200 x 300"></div><div class="sxXg" data-for="vip"><label>Thickness</label><input id="sfXthk" type="text" value="${skEsc((i.x || {}).thk || '')}"></div></div>
-    <div class="skGrid2 sxXg" data-for="up"><div><label>Metres in 1 roll</label><input id="sfXmpr" type="number" inputmode="decimal" value="${skEsc((i.x || {}).mpr || '')}"></div><div><label>Quality</label><select id="sfXq"><option value="">-</option><option ${(i.x || {}).q === '1st' ? 'selected' : ''}>1st</option><option ${(i.x || {}).q === '2nd' ? 'selected' : ''}>2nd</option></select></div></div>
+    <div class="skGrid2 sxXg" data-for="cr vip up q2"><div><label>Size (cm)</label><input id="sfXsize" type="text" list="sxSzL" value="${skEsc((i.x || {}).size || '')}" placeholder="e.g. 140 x 200"><datalist id="sxSzL"></datalist></div><div class="sxXg" data-for="vip"><label>Thickness</label><input id="sfXthk" type="text" value="${skEsc((i.x || {}).thk || '')}"></div></div>
+    <div class="skGrid2 sxXg" data-for="up q2up"><div><label>Metres in 1 roll</label><input id="sfXmpr" type="number" inputmode="decimal" value="${skEsc((i.x || {}).mpr || '')}" placeholder="${SX.cfg.rollM || 30}"></div><div><label>Quality</label><select id="sfXq"><option value="">-</option><option ${(i.x || {}).q === '1st' ? 'selected' : ''}>1st</option><option ${(i.x || {}).q === '2nd' ? 'selected' : ''}>2nd</option></select></div></div>
     ${id ? '' : '<label>Opening stock now</label><input id="sfO" type="number" inputmode="decimal" placeholder="0">'}
     ${id ? `<label>Count / correct stock to</label><input id="sfB" type="number" inputmode="decimal" placeholder="${skNum(skBal(i))}">` : ''}
     <label style="display:flex;gap:8px;align-items:center;text-transform:none;letter-spacing:0;font-size:13px;"><input type="checkbox" id="sfOn" ${i.on !== false ? 'checked' : ''} style="width:auto;"> Active (untick to hide, nothing is deleted)</label>
@@ -28988,7 +28989,7 @@ function skDupShow(){
 async function skSaveItem(id){
   const name = $('sfN').value.trim(); if(!name){ toast('Type a name'); return; }
   if(!id){ const same = SK.items.find(i => i.g === $('sfG').value && String(i.name).trim().toLowerCase() === name.toLowerCase() && String(i.col || '').trim().toLowerCase() === $('sfCo').value.trim().toLowerCase()); if(same){ toast('This item already exists \u2014 opening it'); skUseItem(same.id); return; } }
-  const o = { g: $('sfG').value, name, ar: $('sfA').value.trim(), code: $('sfC').value.trim(), col: $('sfCo').value.trim(), des: skDesignId($('sfDn').value), safe: Number($('sfS').value) || 0, per: Number($('sfP').value) || 0, truck: Number($('sfT').value) || 0, on: $('sfOn').checked, x: (() => { const g = (k) => ($('sfX' + k) ? $('sfX' + k).value.trim() : ''); const x = { nd: g('nd'), nc: g('nc'), cl: g('cl'), model: g('model'), cat: g('cat'), size: g('size'), thk: g('thk'), mpr: g('mpr'), q: g('q') }; Object.keys(x).forEach(k => { if(!x[k]) delete x[k]; }); return x; })() };
+  const o = { g: $('sfG').value, name, ar: $('sfA').value.trim(), code: $('sfC').value.trim(), col: $('sfCo').value.trim(), des: skDesignId($('sfDn').value), safe: Number($('sfS').value) || 0, per: Number($('sfP').value) || 0, truck: Number($('sfT').value) || 0, on: $('sfOn').checked, x: (() => { const g = (k) => ($('sfX' + k) ? $('sfX' + k).value.trim() : ''); const x = { nd: g('nd'), nc: g('nc'), cl: g('cl'), model: g('model'), cat: g('cat'), size: g('size'), thk: g('thk'), mpr: g('mpr'), q: g('q'), kind: (['cr', 'q2'].indexOf($('sfG').value) >= 0 ? g('kind') : '') }; Object.keys(x).forEach(k => { if(!x[k]) delete x[k]; }); return x; })() };
   let it = id ? skItem(id) : null;
   if(it) Object.assign(it, o, skStamp()); else { it = Object.assign({ id: 'i' + Date.now().toString(36) + Math.random().toString(36).slice(2, 4) }, o, skStamp(true)); SK.items.push(it); if(SK.tab === 'move') SK.form.item = it.id; }
   try{
@@ -29118,7 +29119,7 @@ function skDownload(kind){
    Linked with what the app already has (machines, designs, colours, people, items). Small saves only.
    ============================================================ */
 const SX_TABS = [['dash', 'Stock'], ['raw', 'Raw weft store'], ['rew', 'Rewinding'], ['wp', 'Warping'], ['fin', 'Finishing report'], ['fst', 'Finished store'], ['req', 'Requests'], ['dm', 'Machines and designs'], ['set', 'Settings']];
-const SX_CFG0 = () => ({ stores: ['Store 1', 'Store 2', 'Store 3'], cats: ['Gama', 'Polyspin thread', 'China', 'India'], dests: ['Rewinding', 'Warping', 'Weaving', 'Other'], sizes: [], types: ['VL', 'MR', 'VIP'], depts: ['RVF', 'SSTM'], truckBundle: 0, truckRoll: 0, mins: {}, assign: {} });
+const SX_CFG0 = () => ({ stores: ['Store 1', 'Store 2', 'Store 3'], cats: ['Gama', 'Polyspin thread', 'China', 'India'], dests: ['Rewinding', 'Warping', 'Weaving', 'Other'], sizes: [], sizesC: ['140x200', '160x250', '200x300', '90x190', '100x200', '80x150', '90x150'], sizesM: ['70x115', '70x110', '67x114', '65x115', '65x110', '30x60', '40x80', '80x120'], types: ['VL', 'MR', 'VIP'], depts: ['RVF', 'SSTM'], truckBundle: 0, truckVip: 0, truckRoll: 0, rollM: 30, mins: {}, assign: {} });
 const SX = { loaded: false, loading: false, cfg: SX_CFG0(), bal: {}, q: [], mc: {}, tab: 'dash', fsub: 'cr', rwsub: 'rew', dmsub: 'plan', rawk: 'in', rwk: 'in', ff: {}, fo: '', fil: { from: '', to: '', mc: '', size: '', type: '', dept: '', q: '' }, last: {}, busy: false };
 try{ SX.last = JSON.parse(localStorage.getItem('rvfSxLast') || '{}') || {}; }catch(e){}
 const sxKeep = (o) => { Object.assign(SX.last, o); try{ localStorage.setItem('rvfSxLast', JSON.stringify(SX.last)); }catch(e){} };
@@ -29169,7 +29170,15 @@ const sxId = () => 'x' + Date.now().toString(36) + Math.random().toString(36).sl
 function sxRaw(){ const o = {}; Object.keys(SX.bal).forEach(k => { const p = k.split('|'); if(p[0] !== 'raw' || !(SX.bal[k] > 0.0004)) return; const c = (o[p[1]] = o[p[1]] || {}), r = (c[p[2]] = c[p[2]] || { tot: 0, st: {} }); r.st[p[3]] = (r.st[p[3]] || 0) + SX.bal[k]; r.tot += SX.bal[k]; }); return o; }
 function sxSum(pre, kg){ let t = 0, n = 0; Object.keys(SX.bal).forEach(k => { if(k.indexOf(pre + '|') === 0 && SX.bal[k] > 0) t += SX.bal[k]; if(kg !== false && k.indexOf(pre + 'N|') === 0 && SX.bal[k] > 0) n += SX.bal[k]; }); return { kg: t, n }; }
 function sxFl(i){ return Math.max(0, Number(SX.bal['fl|' + i.id]) || 0); }
-function sxTruck(i){ const t = Number(i.truck) > 0 ? Number(i.truck) : Number(SX.cfg.truckBundle) || 0; return t; }
+function sxTruck(i){ if(Number(i.truck) > 0) return Number(i.truck); const c = SX.cfg; return i.g === 'vip' ? (Number(c.truckVip) || 1000) : (Number(c.truckBundle) || 665); }
+const sxSzKey = (s) => String(s || '').toLowerCase().replace(/\s+/g, '').replace(/[×*]/g, 'x');
+function sxSizeOf(i){ const x = i.x || {}; if(x.size) return String(x.size); const m = String(i.name || '').match(/(\d+)\s*[xX×]\s*(\d+)/); return m ? m[1] + 'x' + m[2] : ''; }
+const sxFmtSize = (s) => String(s || '').replace(/\s*[xX×]\s*/g, ' x ');
+const SX_KN = { carpet: 'Carpet', mat: 'Prayer mat', up: 'Upholstery' };
+function sxKind(i){ const x = i.x || {}; if(x.kind) return x.kind; if(i.g === 'up' || /^\d+-\d+-\d/.test(String(i.code || ''))) return 'up'; if(i.g === 'vip') return 'mat'; const k = sxSzKey(sxSizeOf(i)); return k && (SX.cfg.sizesC || []).some(s => sxSzKey(s) === k) ? 'carpet' : 'mat'; }
+const sxAllSizes = () => { const s = {}; [].concat(SX.cfg.sizes || [], SX.cfg.sizesC || [], SX.cfg.sizesM || []).forEach(v => { if(v) s[sxSzKey(v)] = v; }); return Object.keys(s).map(k => s[k]); };
+const sxUnit = (i) => sxKind(i) === 'up' ? 'rolls' : 'bundles';
+const sxRollM = (i) => Number((i.x || {}).mpr) || Number(SX.cfg.rollM) || 30;
 function sxFin(ym){ return sxEnt('f', ym); }
 /* ---------- colour samples: a small dot (or dots) next to every colour name ---------- */
 const SX_CW = { black: '#1f2937', white: '#ffffff', grey: '#9ca3af', gray: '#9ca3af', ash: '#b6bcc6', silver: '#c0c6d0', blue: '#3b82f6', navy: '#1e3a8a', sky: '#7dd3fc', green: '#16a34a', olive: '#6b7a2a', maroon: '#8b1d2c', red: '#dc2626', wine: '#7f1d3a', burgundy: '#7f1d3a', brown: '#7b4a2a', brwn: '#7b4a2a', brwon: '#7b4a2a', pur: '#8b5cf6', rose: '#e11d74', lblue: '#7dd3fc', brn: '#7b4a2a', coffee: '#6f4e37', beige: '#d8c3a0', cream: '#f3e9cf', ivory: '#f6f0dc', sand: '#d9c29a', camel: '#c19a6b', tan: '#d2b48c', gold: '#d4a017', golden: '#d4a017', yellow: '#facc15', orange: '#f97316', pink: '#ec4899', purple: '#8b5cf6', violet: '#7c3aed', lilac: '#c4b5fd', turquoise: '#14b8a6', teal: '#0d9488', cyan: '#06b6d4', rose: '#fb7185', peach: '#fdba74', khaki: '#bdb76b', mustard: '#d4a72c', charcoal: '#374151' };
@@ -29258,7 +29267,7 @@ function sxDashHtml(){
   const ym = sxYm(), fe = sxFin(ym), today = sxToday(), ft = fe.filter(e => e.d === today), mSum = (l, u) => l.filter(e => e.u === u).reduce((a, e) => a + (Number(e.qty) || 0), 0);
   const fs = SK.items.filter(i => i.on !== false); const grp = (g) => fs.filter(i => i.g === g);
   const ready = grp('cr').reduce((a, i) => a + skBal(i), 0), floor = grp('cr').concat(grp('vip')).reduce((a, i) => a + sxFl(i), 0), vip = grp('vip').reduce((a, i) => a + skBal(i), 0), q2 = grp('q2').reduce((a, i) => a + skBal(i), 0), up = grp('up').reduce((a, i) => a + skBal(i), 0);
-  const tb = Number(SX.cfg.truckBundle) || 0, trucks = tb ? (ready / tb) : 0, open = SX.q.filter(r => r.st !== 'done').length;
+  const tb = 1, trucks = grp('cr').reduce((a, i) => a + skBal(i) / (sxTruck(i) || 1), 0), open = SX.q.filter(r => r.st !== 'done').length;
   const ms = state.machines || [], on = {}, runN = ms.filter(m => ((SK.plan.m || {})[m.id] || {}).st !== 'stop').length; Object.keys(SK.plan.m || {}).forEach(k => { const p = SK.plan.m[k]; if(p && p.st !== 'stop' && p.des) on[p.des] = 1; });
   const T = (pg, tile) => sxSee(pg) ? tile : '';
   const box = (title, tiles) => tiles.join('').trim() ? sxHead(title) + `<div class="card sxCard"><div class="sxGrid">${tiles.join('')}</div></div>` : '';
@@ -29274,7 +29283,7 @@ function sxDashHtml(){
   h += box('3 · Finished stores', [
     T('fst', sxTile('Ready to sell', sxN(ready) + '<small> bundles</small>', tb ? '= ' + sxN(trucks) + ' trucks' : 'Carpets and Rugs', 'fst:cr', 'pack', 'blue')),
     T('fst', sxTile('On the floor', sxN(floor) + '<small> bundles</small>', 'Finished, not packed', 'fst:cr', 'floor', 'amber')),
-    T('fst', sxTile('VIP', sxN(vip) + '<small> bundles</small>', '', 'fst:vip', 'star', 'purple')),
+    T('fst', sxTile('VIP prayer mats', sxN(vip) + '<small> bundles</small>', '', 'fst:vip', 'star', 'purple')),
     T('fst', sxTile('2nd quality', sxN(q2) + '<small> bundles</small>', '', 'fst:q2', 'warn', 'red')),
     T('fst', sxTile('Upholstery', sxN(up) + '<small> rolls</small>', grp('up').length + ' designs', 'fst:up', 'roll', 'cyan'))]);
   h += box('Requests', [T('req', sxTile('Open requests', open, open ? 'Waiting to be done' : 'Nothing waiting', 'req', 'req', open ? 'amber' : 'green'))]);
@@ -29353,7 +29362,7 @@ function sxFinRows(){ const f = SX.fil, a = f.from || sxToday().slice(0, 7) + '-
 function sxFinOpts(){ const cfg = SX.cfg, ms = (state.machines || []).slice().sort((a, b) => Number(a.id) - Number(b.id)); return { ms, depts: Array.from(new Set(cfg.depts.concat(ms.map(m => m.department).filter(Boolean)))), types: Array.from(new Set(cfg.types.concat(ms.map(m => machineCat(m)).filter(Boolean)))) }; }
 function sxFinHtml(){
   const cfg = SX.cfg, f = SX.fil, o = sxFinOpts(), td = sxToday();
-  const flds = [['from', 'From', 'date', td.slice(0, 7) + '-01'], ['to', 'To', 'date', td], ['mc', 'Machine', o.ms.map(m => [m.id, m.name || m.id])], ['size', 'Size', cfg.sizes], ['type', 'Type', o.types], ['dept', 'Department', o.depts]];
+  const flds = [['from', 'From', 'date', td.slice(0, 7) + '-01'], ['to', 'To', 'date', td], ['mc', 'Machine', o.ms.map(m => [m.id, m.name || m.id])], ['size', 'Size', sxAllSizes()], ['type', 'Type', o.types], ['dept', 'Department', o.depts]];
   let h = sxTop(sxSearch('sxFq', f.q, 'Search item…') + sxFilt('fin', flds) + '<span class="grow"></span>' + sxDlBtn('fin') + sxGear('fin') + (sxCan('fin') ? sxAddBtn('fin', 'Add') : '')) + sxFpop('fin', flds);
   if(!sxCan('fin')) h += sxNoRight('finishing');
   const rows = sxFinRows(), tm = rows.filter(e => e.u === 'm').reduce((a, e) => a + e.qty, 0), tr = rows.filter(e => e.u === 'roll').reduce((a, e) => a + e.qty, 0), adm = sxAdmin();
@@ -29364,48 +29373,54 @@ function sxFinHtml(){
   h += '<div class="card sxCard">' + sxTbl(cols, tb, ft, 'No entries for this filter.') + (rows.length > 200 ? '<div class="sxNote">Showing the latest 200. Use the filter or download the Excel for all.</div>' : '') + '</div>';
   return h;
 }
-const SX_FS = [['cr', 'Carpets & Rugs'], ['vip', 'VIP'], ['up', 'Upholstery'], ['q2', '2nd quality']];
+const SX_FS = [['cr', 'Carpets & Rugs'], ['vip', 'VIP Prayer Mats'], ['up', 'Upholstery'], ['q2', '2nd Quality']];
 /* what each group shows: only the columns that group needs (same plain table as the Report) */
 const sxPk = (i) => { const x = i.x || {}; let nd = x.nd, nc = x.nc, nm = String(i.name || ''); const m = nm.match(/\(\s*(\d+)\s*D\s*-\s*(\d+)\s*C\s*\)/i); if(m){ if(!nd) nd = m[1]; if(!nc) nc = m[2]; nm = nm.replace(m[0], ''); } return { nd: nd || '', nc: nc || '', name: nm.replace(/\s+/g, ' ').trim() }; };
 function sxFsCols(g){
-  if(g === 'cr') return [['Code', ''], ['Item', 'k'], ['Designs in 1 bundle', 'r'], ['Colours in 1 bundle', 'r'], ['Colour mix', 'k'], ['Available bundles', 'r'], ['Pieces', 'r'], ['Unpacked on floor', 'r'], ['', 'a']];
-  if(g === 'vip') return [['Code', ''], ['Item', 'k'], ['Size', ''], ['Model', ''], ['Category', ''], ['Thick', ''], ['Colour', 'k'], ['Pcs per bundle', 'r'], ['Available bundles', 'r'], ['Pieces', 'r'], ['Unpacked on floor', 'r'], ['', 'a']];
-  if(g === 'up') return [['Code', ''], ['Item', 'k'], ['Size', ''], ['Quality', ''], ['Colour', 'k'], ['Metres per roll', 'r'], ['Rolls in stock', 'r'], ['Total metres', 'r'], ['', 'a']];
-  return [['Code', ''], ['Item', 'k'], ['Colour', 'k'], ['Pcs per pack', 'r'], ['Packs in stock', 'r'], ['Pieces', 'r'], ['', 'a']];
+  const A = ['', 'a'];
+  if(g === 'cr') return [['Code', ''], ['Item', 'k'], ['Type', ''], ['Size (cm)', ''], ['Designs in 1 bundle', 'r'], ['Colours in 1 bundle', 'r'], ['Colour mix', 'k'], ['Available bundles', 'r'], ['Pieces', 'r'], ['Unpacked on floor', 'r'], A];
+  if(g === 'vip') return [['Code', ''], ['Item', 'k'], ['Size (cm)', ''], ['Model', ''], ['Category', ''], ['Thick', ''], ['Colour', 'k'], ['Pcs per bundle', 'r'], ['Available bundles', 'r'], ['Pieces', 'r'], ['Unpacked on floor', 'r'], A];
+  if(g === 'up') return [['Code', ''], ['Item', 'k'], ['Size', ''], ['Quality', ''], ['Colour', 'k'], ['Metres per roll', 'r'], ['Rolls in stock', 'r'], ['Total metres', 'r'], A];
+  return [['Code', ''], ['Item', 'k'], ['Type', ''], ['Size (cm)', ''], ['Colour', 'k'], ['Available', 'r'], ['Pcs per pack', 'r'], ['Pieces', 'r'], ['Metres', 'r'], A];
 }
 const sxLvl = (i) => { const b = skBal(i), sf = skSafe(i); return b <= 0 ? 'out' : sf > 0 && b < sf ? 'low' : 'ok'; };
 const sxDash = '<span class="sxSm2">—</span>';
 function sxFsRow(i){
-  const b = skBal(i), fl = sxFl(i), g = i.g, x = i.x || {}, per = Number(i.per) || 0, P = sxPk(i), L = sxLvl(i);
+  const b = skBal(i), fl = sxFl(i), g = i.g, x = i.x || {}, per = Number(i.per) || 0, P = sxPk(i), L = sxLvl(i), kd = sxKind(i), up = kd === 'up';
   const code = i.code ? `<span class="sxCode">${skEsc(i.code)}</span>` : sxDash;
   const name = skEsc(P.name);
   const av = `<span class="${L === 'ok' ? '' : 'sxBad'}" title="${L === 'out' ? 'Out of stock' : L === 'low' ? 'Below the minimum' : ''}">${skNum(b)}</span>`;
-  const pcs = per > 0 ? sxN(b * per) : sxDash;
+  const pcs = per > 0 && !up ? sxN(b * per) : sxDash;
   const flc = fl > 0 ? `<span class="sxFl">${skNum(fl)}</span>` : '<span class="sxSm2">0</span>';
   const col = i.col ? sxColT(i.col) : sxDash;
   const ed = sxCan('fst') ? `<button type="button" class="mini-icon-btn" data-sx="fsm" data-v="${skEsc(i.id)}" data-k="in" title="Put stock in or out" aria-label="Put stock in or out">${sxIc('pen', 13)}</button>` : '';
-  const t = (v) => v ? skEsc(v) : sxDash;
-  if(g === 'cr') return [code, name, t(P.nd), t(P.nc), col, av, pcs, flc, ed];
-  if(g === 'vip') return [code, name, t(x.size), t(x.model), t(x.cat), x.thk ? skEsc(x.thk) : sxDash, col, per > 0 ? sxN(per) : sxDash, av, pcs, flc, ed];
-  if(g === 'up') return [code, name, t(x.size), t(x.q), col, x.mpr ? sxN(x.mpr) : sxDash, av, x.mpr ? sxN(b * Number(x.mpr)) : sxDash, ed];
-  return [code, name, col, per > 0 ? sxN(per) : sxDash, av, pcs, ed];
+  const t = (v) => v ? skEsc(v) : sxDash, sz = sxSizeOf(i), szc = sz ? skEsc(sxFmtSize(sz)) : sxDash, kc = `<span class="sxSm2" style="color:var(--text);">${SX_KN[kd]}</span>`;
+  if(g === 'cr') return [code, name, kc, szc, t(P.nd), t(P.nc), col, av, pcs, flc, ed];
+  if(g === 'vip') return [code, name, szc, t(x.model), t(x.cat), x.thk ? skEsc(x.thk) : sxDash, col, per > 0 ? sxN(per) : sxDash, av, pcs, flc, ed];
+  if(g === 'up') return [code, name, szc, t(x.q), col, sxN(sxRollM(i)), av, sxN(b * sxRollM(i)), ed];
+  return [code, name, kc, szc, col, av + ' <small class="sxSm2">' + (up ? 'rolls' : 'bundles') + '</small>', per > 0 && !up ? sxN(per) : sxDash, pcs, up ? sxN(b * sxRollM(i)) : sxDash, ed];
 }
 const sxColTokens = (l) => { const s = {}; l.forEach(i => String(i.col || '').split(/[,\/\-+&]|\band\b/i).forEach(t => { t = t.trim().toUpperCase(); if(t.length > 1) s[t] = 1; })); return Object.keys(s).sort(); };
 function sxFstHtml(){
   const g = SX.fsub, q = (SX.fq || '').toLowerCase(), F = sxFget('fst'), two = (g === 'cr' || g === 'vip');
   const base = SK.items.filter(i => i.g === g && i.on !== false && (skBal(i) !== 0 || sxFl(i) > 0));
-  const flds = [['col', 'Colour', sxColTokens(base)], ['st', 'Stock', [['ok', 'Enough'], ['low', 'Low (below minimum)']]]].concat(two ? [['fl', 'Unpacked on floor', [['yes', 'Has unpacked stock']]]] : []);
-  let l = base.filter(i => (!q || (i.name + ' ' + (i.code || '') + ' ' + (i.col || '')).toLowerCase().includes(q)) && (!F.col || String(i.col || '').toUpperCase().indexOf(F.col) >= 0) && (!F.st || sxLvl(i) === F.st) && (!F.fl || sxFl(i) > 0));
-  l = l.slice().sort((a, b) => String(a.name).localeCompare(b.name) || String(a.col || '').localeCompare(String(b.col || '')));
+  const kinds = g === 'cr' ? [['carpet', 'Carpet'], ['mat', 'Prayer mat']] : g === 'q2' ? [['carpet', 'Carpet'], ['mat', 'Prayer mat'], ['up', 'Upholstery']] : null;
+  const sizes = g === 'vip' ? (SX.cfg.sizesM || []) : sxAllSizes();
+  const flds = (kinds ? [['kind', 'Type', kinds]] : []).concat(g === 'up' ? [] : [['size', 'Size (cm)', sizes.map(s => [s, sxFmtSize(s)])]]).concat([['col', 'Colour', sxColTokens(base)], ['st', 'Stock', [['ok', 'Enough'], ['low', 'Low (below minimum)']]]]).concat(two ? [['fl', 'Unpacked on floor', [['yes', 'Has unpacked stock']]]] : []);
+  let l = base.filter(i => (!q || (i.name + ' ' + (i.code || '') + ' ' + (i.col || '')).toLowerCase().includes(q)) && (!F.kind || sxKind(i) === F.kind) && (!F.size || sxSzKey(sxSizeOf(i)) === sxSzKey(F.size)) && (!F.col || String(i.col || '').toUpperCase().indexOf(F.col) >= 0) && (!F.st || sxLvl(i) === F.st) && (!F.fl || sxFl(i) > 0));
+  l = l.slice().sort((a, b) => String(a.name).localeCompare(String(b.name)) || String(a.col || '').localeCompare(String(b.col || '')));
   SK.cur = l; SK.grp = g;
-  const tot = l.reduce((a, i) => a + skBal(i), 0), fl = l.reduce((a, i) => a + sxFl(i), 0), pcs = l.reduce((a, i) => a + skBal(i) * (Number(i.per) || 0), 0), trk = l.reduce((a, i) => { const t = sxTruck(i); return a + (t ? skBal(i) / t : 0); }, 0), mtr = l.reduce((a, i) => a + skBal(i) * (Number((i.x || {}).mpr) || 0), 0);
+  const bl = l.filter(i => sxUnit(i) === 'bundles'), rl = l.filter(i => sxUnit(i) === 'rolls');
+  const tot = bl.reduce((a, i) => a + skBal(i), 0), roll = rl.reduce((a, i) => a + skBal(i), 0), mtr = rl.reduce((a, i) => a + skBal(i) * sxRollM(i), 0), fl = l.reduce((a, i) => a + sxFl(i), 0), pcs = bl.reduce((a, i) => a + skBal(i) * (Number(i.per) || 0), 0), trk = bl.reduce((a, i) => a + skBal(i) / (sxTruck(i) || 1), 0);
   let h = sxTop(sxSub('fsub', g, SX_FS) + sxSearch('sxFq2', SX.fq, 'Search name, code or colour…') + sxFilt('fst', flds) + '<span class="grow"></span>' + sxDlBtn('stock') + sxGear('fst') + (sxCan('fst') ? `<button type="button" class="pcBtnMain sm" data-sx="fsm" data-v="" data-k="in" title="Put stock in or take it out">${sxIc('plus', 14)}<span class="sxAddL">Update</span></button>` : '')) + sxFpop('fst', flds);
-  h += `<div class="card sxCard"><div class="sxGrid">${sxTile('Available stock', sxN(tot) + '<small> ' + skUnit(g) + '</small>', two && trk ? 'About ' + sxN(Math.round(trk * 10) / 10) + ' trucks' : '', '', 'pack', 'blue')}${two ? sxTile('Unpacked on floor', sxN(fl) + '<small> bundles</small>', 'Finished, not packed yet', '', 'floor', 'amber') : ''}${sxTile('Items', l.length, base.length !== l.length ? 'of ' + base.length : '', '', 'raw', 'purple')}</div></div>`;
+  const kb = (k) => bl.filter(i => sxKind(i) === k).reduce((a, i) => a + skBal(i), 0);
+  const t1 = g === 'up' ? sxTile('Available stock', sxN(roll) + '<small> rolls</small>', sxN(mtr) + ' metres', '', 'pack', 'blue') : sxTile('Available stock', sxN(tot) + '<small> bundles</small>', g === 'cr' ? 'Carpets ' + sxN(kb('carpet')) + ' · Prayer mats ' + sxN(kb('mat')) : (trk ? 'About ' + sxN(Math.round(trk * 10) / 10) + ' trucks' : ''), '', 'pack', 'blue');
+  h += `<div class="card sxCard"><div class="sxGrid">${t1}${g === 'q2' && roll ? sxTile('Upholstery', sxN(roll) + '<small> rolls</small>', sxN(mtr) + ' metres', '', 'roll', 'cyan') : ''}${two ? sxTile('Unpacked on floor', sxN(fl) + '<small> bundles</small>', 'Finished, not packed yet', '', 'floor', 'amber') : ''}${g === 'cr' && trk ? sxTile('Trucks', sxN(Math.round(trk * 10) / 10), 'If all ready stock is loaded', '', 'floor', 'green') : ''}${sxTile('Items', l.length, base.length !== l.length ? 'of ' + base.length : '', '', 'raw', 'purple')}</div></div>`;
   const cols = sxFsCols(g).map(c => [c[0], '', c[1]]); let foot;
-  if(g === 'cr') foot = ['', 'Total', '', '', '', skNum(tot), sxN(pcs), skNum(fl), ''];
+  if(g === 'cr') foot = ['', 'Total', '', '', '', '', '', skNum(tot), sxN(pcs), skNum(fl), ''];
   else if(g === 'vip') foot = ['', 'Total', '', '', '', '', '', '', skNum(tot), sxN(pcs), skNum(fl), ''];
-  else if(g === 'up') foot = ['', 'Total', '', '', '', '', skNum(tot), sxN(mtr), ''];
-  else foot = ['', 'Total', '', '', skNum(tot), sxN(pcs), ''];
+  else if(g === 'up') foot = ['', 'Total', '', '', '', '', skNum(roll), sxN(mtr), ''];
+  else foot = ['', 'Total', '', '', '', (tot ? skNum(tot) + ' bundles' : '') + (tot && roll ? ' · ' : '') + (roll ? skNum(roll) + ' rolls' : ''), '', sxN(pcs), roll ? sxN(mtr) : '', ''];
   h += '<div class="card sxCard">' + sxTbl(cols, l.map(i => sxFsRow(i)), foot, sxIsF('fst') || q ? 'No items match this filter.' : 'Nothing in stock yet. Items show here after stock is added with Update. Add the items themselves in Settings.') + '</div>';
   return h;
 }
@@ -29441,7 +29456,7 @@ function sxOpenForm(kind){
     const o = sxFinOpts();
     sxModal('Finishing entry', `<div class="sxF">${sxField('Date', `<input id="sxD" type="date" value="${skEsc(sxToday())}">`)}${sxField('Machine', `<select id="sxM">${sxOpt(o.ms.map(m => [m.id, m.name || m.id]), F.mc, 'Choose')}</select>`)}
       ${sxField('Item description', '<input id="sxItem" list="sxDesList" type="text" autocomplete="off" placeholder="Fills from the machine design">', 1)}
-      ${sxField('Size', cfg.sizes.length ? `<select id="sxSize">${sxOpt(cfg.sizes, F.size, 'Choose')}</select>` : '<input id="sxSize" type="text" placeholder="e.g. 200 x 300">')}${sxField('Type', `<select id="sxType">${sxOpt(o.types, F.type, 'Choose')}</select>`)}
+      ${sxField('Size', sxAllSizes().length ? `<select id="sxSize">${sxOpt(sxAllSizes(), F.size, 'Choose')}</select>` : '<input id="sxSize" type="text" placeholder="e.g. 200 x 300">')}${sxField('Type', `<select id="sxType">${sxOpt(o.types, F.type, 'Choose')}</select>`)}
       ${sxField('From department', `<select id="sxDept">${sxOpt(o.depts, F.dept, 'Choose')}</select>`)}${sxField('Quantity', '<input id="sxQty" type="number" inputmode="decimal" min="0" step="any" placeholder="0">')}
       ${sxField('In', `<select id="sxUnit">${sxOpt([['m', 'Meters'], ['roll', 'Rolls']], F.unit || 'roll')}</select>`)}</div><datalist id="sxDesList">${SK.designs.map(d => `<option value="${skEsc(d.name)}">`).join('')}</datalist>`, sxSave('savefin', 'Save'));
     if(F.mc){ const e = $('sxM'); if(e && e.value) sxMachFill(e.value); }
@@ -29455,7 +29470,7 @@ function sxFsModal(id, k){
   const ks = two ? [['in', 'Packed in'], ['fl', 'Floor in'], ['pk', 'Pack'], ['out', 'Out']] : [['in', 'In'], ['out', 'Out']];
   const items = SK.items.filter(x => x.g === g && x.on !== false).slice().sort((a, c) => String(a.name).localeCompare(String(c.name)) || String(a.col || '').localeCompare(String(c.col || '')));
   const opts = items.map(x => [x.id, [x.code, sxPk(x).name, x.col].filter(Boolean).join(' · ')]);
-  sxModal('Update stock · ' + skEsc((SX_FS.find(x => x[0] === g) || [0, ''])[1]), `<div class="hrTabs sxIO">${ks.map(x => `<button class="${k === x[0] ? 'active' : ''}" data-sx="fsk" data-k="${x[0]}">${x[1]}</button>`).join('')}</div><div class="sxF">${sxField('Item', `<select id="fsI">${sxOpt(opts, i ? i.id : '', 'Choose the item')}</select>`, 1)}</div><div class="sxNote" style="margin:12px 0;"><b>${lab}</b><br>${i ? 'Available ' + skNum(skBal(i)) + ' ' + skUnit(g) + (two ? ' · unpacked on floor ' + skNum(sxFl(i)) : '') + (skIsAdmin() ? ` · <a href="#" data-sk="edititem" data-v="${skEsc(i.id)}" onclick="sxClose()">Edit item details</a>` : '') : 'Choose the item first.'}</div><div class="sxF">${sxField('Quantity (' + skUnit(g) + ')', '<input id="fsQ" type="number" inputmode="decimal" min="0" step="any" placeholder="0">')}${sxField('Date', `<input id="fsD" type="date" value="${skEsc(sxToday())}">`)}${sxField(k === 'out' ? 'Customer / order (optional)' : 'Note (optional)', '<input id="fsN" type="text">', 1)}</div>`, sxSave('fssave', 'Save'));
+  sxModal('Update stock · ' + skEsc((SX_FS.find(x => x[0] === g) || [0, ''])[1]), `<div class="hrTabs sxIO">${ks.map(x => `<button class="${k === x[0] ? 'active' : ''}" data-sx="fsk" data-k="${x[0]}">${x[1]}</button>`).join('')}</div><div class="sxF">${sxField('Item', `<select id="fsI">${sxOpt(opts, i ? i.id : '', 'Choose the item')}</select>`, 1)}</div><div class="sxNote" style="margin:12px 0;"><b>${lab}</b><br>${i ? 'Available ' + skNum(skBal(i)) + ' ' + sxUnit(i) + (two ? ' · unpacked on floor ' + skNum(sxFl(i)) : '') + (skIsAdmin() ? ` · <a href="#" data-sk="edititem" data-v="${skEsc(i.id)}" onclick="sxClose()">Edit item details</a>` : '') : 'Choose the item first.'}</div><div class="sxF">${sxField('Quantity (' + (i ? sxUnit(i) : skUnit(g)) + ')', '<input id="fsQ" type="number" inputmode="decimal" min="0" step="any" placeholder="0">')}${sxField('Date', `<input id="fsD" type="date" value="${skEsc(sxToday())}">`)}${sxField(k === 'out' ? 'Customer / order (optional)' : 'Note (optional)', '<input id="fsN" type="text">', 1)}</div>`, sxSave('fssave', 'Save'));
   setTimeout(() => { const q = $(i ? 'fsQ' : 'fsI'); if(q) q.focus(); }, 60);
 }
 async function sxFsSave(id, k){
@@ -29470,7 +29485,7 @@ async function sxFsSave(id, k){
 }
 
 /* ---------- Settings: same look as Admin (collapsible sections, Add row, small list rows) ---------- */
-const SX_LISTS = [['stores', 'Stores', 'Where raw weft is kept.', 'e.g. Store 4'], ['cats', 'Weft categories', 'Shown when you enter raw weft.', 'e.g. Gama'], ['dests', 'Raw weft goes to', 'Shown when raw weft goes OUT.', 'e.g. Rewinding'], ['sizes', 'Sizes (size chart)', 'Shown in Finishing. Keep your size chart here.', 'e.g. 200 x 300'], ['types', 'Types', 'VL, MR, VIP and so on.', 'e.g. VL'], ['depts', 'Departments for finishing', 'Which department finished the carpet.', 'e.g. RVF']];
+const SX_LISTS = [['stores', 'Stores', 'Where raw weft is kept.', 'e.g. Store 4'], ['cats', 'Weft categories', 'Shown when you enter raw weft.', 'e.g. Gama'], ['dests', 'Raw weft goes to', 'Shown when raw weft goes OUT.', 'e.g. Rewinding'], ['sizesC', 'Carpet sizes (cm)', 'Sizes for carpets. Used when you add a carpet and in the filter.', 'e.g. 140x200'], ['sizesM', 'Prayer mat sizes (cm)', 'Sizes for prayer mats (also VIP). Used when you add one and in the filter.', 'e.g. 70x115'], ['sizes', 'Other sizes (Finishing)', 'Extra sizes shown in Finishing. Carpet and prayer mat sizes are added automatically.', 'e.g. 200 x 300'], ['types', 'Types', 'VL, MR, VIP and so on.', 'e.g. VL'], ['depts', 'Departments for finishing', 'Which department finished the carpet.', 'e.g. RVF']];
 const SX_ASG = [['raw', 'Raw weft store'], ['rew', 'Rewinding'], ['wp', 'Warping'], ['fin', 'Finishing report (unrolling)'], ['fst', 'Finished store'], ['req', 'Requests (weaving manager)'], ['mach', 'Change the design on a machine'], ['set', 'Change these settings']];
 const sxIcB = (a, ic, t, extra) => `<button type="button" class="mini-icon-btn${extra || ''}" data-sx="${a}" title="${t}">${sxIc(ic, 13)}</button>`;
 function sxSecAttr(k){ const o = SX.open || {}; return `data-sec="${k}" ${o[k] || (SX.sfor && !(k in o)) ? 'open' : ''}`; }
@@ -29489,7 +29504,7 @@ function sxItemsSec(){
   const opts = all.map(i => [i.id, [i.code, sxPk(i).name, i.col].filter(Boolean).join(' · ')]);
   return `<details class="acSec admD" ${sxSecAttr('items')}><summary>Items</summary><div class="acSecB"><p class="sub">Add a new item, or pick one to change its code, size, colour, designs or truck capacity.</p><div class="sxTop">${adm ? `<select id="sxEdSel" class="sxPs" style="flex:1 1 220px;max-width:380px;">${sxOpt(opts, '', 'Choose an item to change')}</select><button type="button" class="pcBtnSoft sm" data-sx="editsel">Change</button>` : ''}${skCanAdd() ? `<button type="button" class="pcBtnMain sm" data-sk="newitem">${sxIc('plus', 14)}<span>New item</span></button>` : ''}</div><p class="sub" style="margin-top:8px;">${all.length} items saved. An item shows in Finished store only after stock is added.</p></div></details>`;
 }
-const SX_SM = { raw: ['stores', 'cats', 'dests', 'mins'], rew: [], wp: [], fin: ['sizes', 'types', 'depts'], fst: ['items', 'truck', 'up'], req: [], dm: [] };
+const SX_SM = { raw: ['stores', 'cats', 'dests', 'mins'], rew: [], wp: [], fin: ['sizes', 'types', 'depts'], fst: ['items', 'sizesC', 'sizesM', 'roll', 'truck', 'up'], req: [], dm: [] };
 const SX_SW = { raw: ['raw'], rew: ['rew'], wp: ['wp'], fin: ['fin'], fst: ['fst'], req: ['req'], dm: ['mach'] };
 function sxSetHtml(){
   if(!(sxAdmin() || sxCan('set'))) return sxEmpty('Only the administrator or the people chosen for settings can change these.');
@@ -29497,7 +29512,8 @@ function sxSetHtml(){
   let h = P ? `<div class="sxPh"><button type="button" class="sxBack" data-sx="sback" title="Back">${sxIc('chev', 14).replace('style="', 'style="transform:rotate(180deg);')}<span>${P[1]}</span></button><div class="sxPhT"><h2>${P[1]} settings</h2><p>Saved on every change</p></div></div>` : sxHead('Stock settings', 'Saved on every change');
   if(show('items')) h += sxItemsSec();
   h += SX_LISTS.filter(x => show(x[0])).map(x => sxListSec(x[0], x[1], x[2], x[3])).join('');
-  if(show('truck')) h += `<details class="acSec admD" ${sxSecAttr('truck')}><summary>Truck loading (default)</summary><div class="acSecB"><p class="sub">How much goes on one truck when an item has no capacity of its own. Used to show "trucks" on the summary.</p><div class="sxF">${sxField('Bundles per truck', `<input id="sxTB" type="number" inputmode="decimal" value="${SX.cfg.truckBundle || ''}" placeholder="0">`)}${sxField('Rolls per truck', `<input id="sxTR" type="number" inputmode="decimal" value="${SX.cfg.truckRoll || ''}" placeholder="0">`)}</div><button type="button" class="btn btn-primary btn-sm" data-sx="savenum" style="margin-top:10px;">Save</button></div></details>`;
+  if(show('roll')) h += `<details class="acSec admD" ${sxSecAttr('roll')}><summary>Upholstery roll</summary><div class="acSecB"><p class="sub">Upholstery is counted in rolls. Set how many metres are in 1 roll. Each item can still have its own number.</p><div class="sxF">${sxField('Metres in 1 roll', `<input id="sxRM" type="number" inputmode="decimal" value="${SX.cfg.rollM || 30}" placeholder="30">`)}</div><button type="button" class="btn btn-primary btn-sm" data-sx="savenum" style="margin-top:10px;">Save</button></div></details>`;
+  if(show('truck')) h += `<details class="acSec admD" ${sxSecAttr('truck')}><summary>Truck loading (default)</summary><div class="acSecB"><p class="sub">How many bundles go on one truck when an item has no capacity of its own. Used for the "trucks" numbers.</p><div class="sxF">${sxField('Carpets and prayer mats (bundles)', `<input id="sxTB" type="number" inputmode="decimal" value="${SX.cfg.truckBundle || ''}" placeholder="665">`)}${sxField('VIP prayer mats (bundles)', `<input id="sxTV" type="number" inputmode="decimal" value="${SX.cfg.truckVip || ''}" placeholder="1000">`)}${sxField('Rolls per truck', `<input id="sxTR" type="number" inputmode="decimal" value="${SX.cfg.truckRoll || ''}" placeholder="0">`)}</div><button type="button" class="btn btn-primary btn-sm" data-sx="savenum" style="margin-top:10px;">Save</button></div></details>`;
   if(show('mins')) h += `<details class="acSec admD" ${sxSecAttr('mins')}><summary>Raw weft minimum (kg)</summary><div class="acSecB"><p class="sub">The Dashboard warns you when a category goes below its minimum. Leave empty for no warning.</p><div class="sxF">${cats.map(c => sxField(skEsc(c), `<input class="sxMin" data-c="${skEsc(c)}" type="number" inputmode="decimal" value="${(SX.cfg.mins || {})[c] || ''}" placeholder="No minimum">`)).join('') || '<span style="font-size:12px;color:var(--muted);">Add a weft category first.</span>'}</div>${cats.length ? '<button type="button" class="btn btn-primary btn-sm" data-sx="savenum" style="margin-top:10px;">Save</button>' : ''}</div></details>`;
   const asg = pg ? SX_ASG.filter(x => (SX_SW[pg] || []).indexOf(x[0]) >= 0) : SX_ASG;
   h += `<details class="acSec admD" ${sxSecAttr('who')}><summary>Who enters ${pg ? 'here' : 'what'}</summary><div class="acSecB"><p class="sub">Choose who enters data${pg ? ' on this page' : ' on each page'}. The person gets that page as a button in their top menu. Administrator and supervisors see all pages from Stock.</p>${asg.map(x => sxPeopleRow(x[0], x[1])).join('')}</div></details>`;
@@ -29555,7 +29571,7 @@ document.addEventListener('click', async (ev) => {
   else if(a === 'ladd'){ const i = $('sxAdd_' + v), t = i ? i.value.trim() : ''; if(!t){ toast('Type a name first'); return; } SX.cfg[v] = SX.cfg[v] || []; if(SX.cfg[v].some(x => x.toLowerCase() === t.toLowerCase())){ toast('Already in the list'); return; } SX.cfg[v].push(t); SX.open = SX.open || {}; SX.open[v] = 1; if(await sxPutCfg()) skRender(); }
   else if(a === 'ldel'){ const l = SX.cfg[v] || [], i = Number(el.dataset.i); if(!confirm('Delete "' + l[i] + '" from the list? Entries already saved are not changed.')) return; l.splice(i, 1); SX.open = SX.open || {}; SX.open[v] = 1; if(await sxPutCfg()) skRender(); }
   else if(a === 'lmv'){ const l = SX.cfg[v] || [], i = Number(el.dataset.i), j = i + Number(el.dataset.d); if(j < 0 || j >= l.length) return; const t = l[i]; l[i] = l[j]; l[j] = t; SX.open = SX.open || {}; SX.open[v] = 1; if(await sxPutCfg()) skRender(); }
-  else if(a === 'savenum'){ const c = SX.cfg; if($('sxTB')){ c.truckBundle = Number(sxVal('sxTB')) || 0; c.truckRoll = Number(sxVal('sxTR')) || 0; } if(document.querySelector('.sxMin')){ c.mins = {}; document.querySelectorAll('.sxMin').forEach(i => { const n = Number(i.value); if(n > 0) c.mins[i.dataset.c] = n; }); } if(await sxPutCfg()){ toast('Saved'); } }
+  else if(a === 'savenum'){ const c = SX.cfg; if($('sxTB')){ c.truckBundle = Number(sxVal('sxTB')) || 0; c.truckVip = Number(sxVal('sxTV')) || 0; c.truckRoll = Number(sxVal('sxTR')) || 0; } if($('sxRM')) c.rollM = Number(sxVal('sxRM')) || 30; if(document.querySelector('.sxMin')){ c.mins = {}; document.querySelectorAll('.sxMin').forEach(i => { const n = Number(i.value); if(n > 0) c.mins[i.dataset.c] = n; }); } if(await sxPutCfg()){ toast('Saved'); } }
   else if(a === 'dl') sxDl(v);
 });
 document.addEventListener('toggle', (ev) => { const d = ev.target; if(d && d.dataset && d.dataset.sec){ SX.open = SX.open || {}; SX.open[d.dataset.sec] = d.open ? 1 : 0; } }, true);
@@ -29611,9 +29627,9 @@ function sxDl(kind){
 /* design changes on a machine: the people chosen in Settings can do it (history is kept in the machine plan log) */
 function skCanMach(){ return skIsAdmin() || sxCan('mach'); }
 
-function sxXToggle(){ const g = $('sfG') ? $('sfG').value : ''; document.querySelectorAll('#skModal .sxXg').forEach(e => { e.style.display = (' ' + e.dataset.for + ' ').indexOf(' ' + g + ' ') >= 0 ? '' : 'none'; }); }
+function sxXToggle(){ const g = $('sfG') ? $('sfG').value : '', kd = $('sfXkind') ? $('sfXkind').value : '', tok = ' ' + g + ' ' + (g === 'q2' ? (kd === 'up' ? 'q2up' : 'q2mat') : '') + ' '; document.querySelectorAll('#skModal .sxXg').forEach(e => { e.style.display = e.dataset.for.split(' ').some(t => tok.indexOf(' ' + t + ' ') >= 0) ? '' : 'none'; }); const dl = $('sxSzL'); if(dl){ const l = g === 'vip' || kd === 'mat' ? (SX.cfg.sizesM || []) : g === 'up' || kd === 'up' ? [] : (SX.cfg.sizesC || []); dl.innerHTML = l.map(s => `<option value="${skEsc(sxFmtSize(s))}">`).join(''); } }
 (function(){ const o = skItemForm; skItemForm = function(){ const r = o.apply(this, arguments); sxXToggle(); return r; }; })();
-document.addEventListener('change', (ev) => { if(ev.target && ev.target.id === 'sfG') sxXToggle(); });
+document.addEventListener('change', (ev) => { if(ev.target && (ev.target.id === 'sfG' || ev.target.id === 'sfXkind')) sxXToggle(); });
 
 /* ---- clicks ---- */
 document.addEventListener('click', (ev) => {
