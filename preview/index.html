@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta name="robots" content="noindex">
-<meta name="rvf-build" content="20261117-090629">
+<meta name="rvf-build" content="20261117-090801">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -28509,6 +28509,21 @@ body.rvfBusy #screen-dashboard .card{ opacity:.5; transition:opacity .2s; }
   .sxTf{ margin-top:8px; }
   .sxMt{ margin-left:0; }
 }
+
+/* calmer rows: one line each, lighter text */
+.sxTr{ padding:8px 8px; font-size:13px; }
+.sxTr .c b{ font-weight:600; color:var(--text); }
+.sxTr .c .sxNm{ font-weight:500; color:var(--text-strong); }
+.sxTr .c .sxSm{ display:inline; margin:0 0 0 6px; }
+.sxColT{ display:flex; align-items:center; gap:8px; }
+.sxColT .t{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-weight:500; font-size:12.5px; }
+.sxDots.wide{ width:34px; max-width:34px; height:12px; margin:0; flex:none; }
+.sxBig{ display:inline; font-size:13.5px; }
+.sxTr .c .skTag{ display:inline-block; margin:0 8px 0 0; vertical-align:1px; }
+.sxMt{ display:inline-block; width:38px; margin:0 8px 0 0; vertical-align:middle; }
+.sxTh{ font-weight:600; }
+.sxTf .c b{ font-weight:700; }
+@media (max-width:700px){ .sxTr .c .sxSm{ display:block; margin:2px 0 0; } .sxColT .t{ white-space:normal; } }
 </style>
 <div id="rvfBusy"><i></i><span id="rvfBusyTxt">Loading data…</span></div>
 <script>
@@ -29186,7 +29201,7 @@ function sxColHex(name){
 }
 function sxDots(name, big){ const h = sxColHex(name).slice(0, 4); return `<span class="sxDots${big ? ' big' : ''}">${h.length ? h.map(c => `<i style="background:${c}"></i>`).join('') : '<i class="unk"></i>'}</span>`; }
 const sxCol = (n) => n ? `${sxDots(n)}${skEsc(n)}` : '';
-const sxColT = (n) => n ? `<span class="sxColT">${sxDots(n).replace('class="sxDots"','class="sxDots wide"')}<span class="t">${skEsc(n)}</span></span>` : '';
+const sxColT = (n) => n ? `<span class="sxColT" title="${skEsc(n)}">${sxDots(n).replace('class="sxDots"','class="sxDots wide"')}<span class="t">${skEsc(n)}</span></span>` : '';
 function sxColField(id, val, ph){
   const cs = sxColours();
   return `<div class="sxColW"><span class="sxColDot" id="${id}Dot">${val ? sxDots(val, 1) : ''}</span><input id="${id}" type="text" autocomplete="off" data-colfield="1" placeholder="${skEsc(ph || 'Type a colour')}" value="${skEsc(val || '')}"></div>` + (cs.length ? `<div class="sxStrip" id="${id}Strip">${cs.map(c => `<button type="button" class="sxCh" data-sx="pickcol" data-t="${id}" data-v="${skEsc(c)}" data-n="${skEsc(c.toLowerCase())}">${sxDots(c)}${skEsc(c)}</button>`).join('')}</div>` : '');
@@ -29373,11 +29388,11 @@ function sxFsRow(i){
   const b = skBal(i), fl = sxFl(i), g = i.g, x = i.x || {}, tb = sxTruck(i), two = (g === 'cr' || g === 'vip'), per = Number(i.per) || 0;
   const code = i.code ? `<span class="sxCode">${skEsc(i.code)}</span>` : '<span class="sxSm2">—</span>';
   const sub = g === 'cr' ? (x.nd ? `<span class="sxPk" title="${skEsc(x.nd + ' designs · ' + x.nc + ' colours in one bundle')}">${skEsc(x.nd)}D · ${skEsc(x.nc)}C</span>` : '') : g === 'vip' ? [x.model, x.cat, x.size, x.thk ? x.thk + ' thick' : ''].filter(Boolean).map(skEsc).join(' · ') : g === 'up' ? [x.size, x.q].filter(Boolean).map(skEsc).join(' · ') : '';
-  const name = `<b>${skEsc(i.name)}</b>${sub ? `<small class="sxSm">${sub}</small>` : ''}`;
-  const ready = `<b class="sxBig">${skNum(b)}</b>${sxStTag(i)}`;
-  const pcs = per > 0 ? `<b>${sxN(b * per)}</b><small class="sxSm">${sxN(per)} per ${g === 'q2' ? 'pack' : 'bundle'}</small>` : '<span class="sxSm2">—</span>';
+  const name = `<span class="sxNm">${skEsc(i.name)}</span>${sub ? ` <small class="sxSm">${sub}</small>` : ''}`;
+  const ready = `${sxStTag(i)}<b class="sxBig">${skNum(b)}</b>`;
+  const pcs = per > 0 ? `<b title="${sxN(per)} per ${g === 'q2' ? 'pack' : 'bundle'}">${sxN(b * per)}</b>` : '<span class="sxSm2">—</span>';
   const cap = tb ? `<b>${sxN(tb)}</b>` : (skIsAdmin() ? `<button type="button" class="sxSet" data-sk="edititem" data-v="${skEsc(i.id)}">Set</button>` : '<span class="sxSm2">—</span>');
-  const tr = tb ? (b / tb) : 0, trc = tb ? `<b>${tr >= 10 ? Math.round(tr) : (Math.round(tr * 100) / 100)}</b><span class="sxMt"><i style="width:${Math.min(100, Math.round((tr % 1 === 0 && tr > 0 ? 1 : tr % 1) * 100))}%"></i></span>` : '<span class="sxSm2">—</span>';
+  const tr = tb ? (b / tb) : 0, trc = tb ? `<span class="sxMt"><i style="width:${Math.min(100, Math.round((tr % 1 === 0 && tr > 0 ? 1 : tr % 1) * 100))}%"></i></span><b>${tr >= 10 ? Math.round(tr) : (Math.round(tr * 100) / 100)}</b>` : '<span class="sxSm2">—</span>';
   const flc = fl > 0 ? `<b class="sxFl">${skNum(fl)}</b>` : '<span class="sxSm2">0</span>';
   const btn = (sxCan('fst') ? `<button class="pcBtnSoft sm" data-sx="fsm" data-v="${skEsc(i.id)}" data-k="${g === 'up' || g === 'q2' ? 'in' : 'in'}">Update</button>` : '') + (skIsAdmin() ? `<button type="button" class="mini-icon-btn" data-sk="edititem" data-v="${skEsc(i.id)}" title="Edit item" aria-label="Edit item">${sxIc('cog', 13)}</button>` : '');
   const col = i.col ? sxColT(i.col) : '<span class="sxSm2">—</span>';
