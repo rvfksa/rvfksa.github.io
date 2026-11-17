@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head><meta name="robots" content="noindex">
-<meta name="rvf-build" content="20261117-081809">
+<meta name="rvf-build" content="20261117-081951">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -29187,18 +29187,18 @@ const sxColList = () => `<datalist id="sxColList">${sxColours().map(c => `<optio
 const sxSave = (a, label, v) => `<button type="button" class="pcBtnSoft" data-sx="close">Cancel</button><button type="button" class="pcBtnMain" data-sx="${a}"${v ? ` data-v="${skEsc(v)}"` : ''}>${label}</button>`;
 
 /* ---------- Dashboard ---------- */
-function sxPageTop(t, sub, right){ return `<div class="sxPh"><div class="sxPhT"><h2>${t}</h2><p>${sub}</p></div>${right || ''}</div>`; }
+function sxPageTop(t, sub, right){ return `<div class="sxPh"><div class="sxPhT">${t ? `<h2>${t}</h2>` : ''}<p>${sub}</p></div>${right || ''}</div>`; }
 function sxDashHtml(){
   const raw = sxRaw(), rawKg = Object.keys(raw).reduce((a, c) => a + Object.keys(raw[c]).reduce((b, k) => b + raw[c][k].tot, 0), 0), rew = sxSum('rew'), wp = sxSum('wp');
   const ym = sxYm(), fe = sxFin(ym), today = sxToday(), ft = fe.filter(e => e.d === today), mSum = (l, u) => l.filter(e => e.u === u).reduce((a, e) => a + (Number(e.qty) || 0), 0);
   const fs = SK.items.filter(i => i.on !== false); const grp = (g) => fs.filter(i => i.g === g);
   const ready = grp('cr').reduce((a, i) => a + skBal(i), 0), floor = grp('cr').concat(grp('vip')).reduce((a, i) => a + sxFl(i), 0), vip = grp('vip').reduce((a, i) => a + skBal(i), 0), q2 = grp('q2').reduce((a, i) => a + skBal(i), 0), up = grp('up').reduce((a, i) => a + skBal(i), 0);
   const tb = Number(SX.cfg.truckBundle) || 0, trucks = tb ? (ready / tb) : 0, open = SX.q.filter(r => r.st !== 'done').length;
-  const ms = (state.machines || []).filter(m => m.status !== 'stopped'), on = {}; let runN = 0; Object.keys(SK.plan.m || {}).forEach(k => { const p = SK.plan.m[k]; if(p && p.st !== 'stop' && p.des){ on[p.des] = 1; runN++; } });
+  const ms = state.machines || [], on = {}, runN = ms.filter(m => ((SK.plan.m || {})[m.id] || {}).st !== 'stop').length; Object.keys(SK.plan.m || {}).forEach(k => { const p = SK.plan.m[k]; if(p && p.st !== 'stop' && p.des) on[p.des] = 1; });
   const T = (pg, tile) => sxSee(pg) ? tile : '';
   const box = (title, tiles) => tiles.join('').trim() ? sxHead(title) + `<div class="card sxCard"><div class="sxGrid">${tiles.join('')}</div></div>` : '';
   const set = sxSee('set') ? `<button type="button" class="pcBtnSoft" data-sx="tab" data-v="set">${sxIc('cog', 15)}<span class="sxAddL">Settings</span></button>` : '';
-  let h = sxPageTop('Stock', sxPriv() ? 'Summary of every stage. Tap a box to open its page.' : 'Your pages. Tap a box to open it.', set);
+  let h = sxPageTop('', sxPriv() ? 'Summary of every stage. Tap a box to open its page.' : 'Your pages. Tap a box to open it.', set);
   h += box('1 · Raw material', [
     T('raw', sxTile('Raw weft store', sxN(rawKg) + '<small> kg</small>', Object.keys(raw).length + ' categories', 'raw', 'raw', 'blue')),
     T('rew', sxTile('Rewinding bobbins', sxN(rew.kg) + '<small> kg</small>', sxN(rew.n) + ' bobbins', 'rew', 'rew', 'purple')),
