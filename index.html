@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261117-100959">
+<meta name="rvf-build" content="20261117-101543">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -28498,6 +28498,15 @@ table.sxRT td.sxTe{ text-align:center; color:var(--muted); padding:22px 12px; wh
 /* colour chip: the name sits inside the colour, so it takes little space */
 .sxChip{ display:inline-block; max-width:100%; padding:2px 10px; border-radius:999px; border:1px solid; font-size:11.5px; font-weight:500; color:var(--text-strong); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; vertical-align:middle; line-height:1.5; }
 table.sxRT .sxChip{ max-width:210px; }
+
+/* centred headings, plain code, small colour chips */
+table.sxRT th, table.sxRT td{ text-align:center; }
+table.sxRT th.k, table.sxRT td.k{ text-align:left; }
+table.sxRT th.r, table.sxRT td.r, table.sxRT th.a, table.sxRT td.a{ text-align:center; }
+table.sxRT th.a, table.sxRT td.a{ width:1%; }
+.sxCode{ background:none; color:var(--text); padding:0; margin:0; border-radius:0; font-size:11.5px; font-weight:500; }
+.sxCw{ display:inline-flex; flex-wrap:wrap; gap:3px; justify-content:center; max-width:320px; vertical-align:middle; }
+.sxCc{ font-style:normal; font-size:9.5px; font-weight:600; line-height:1; padding:3px 6px; border-radius:5px; box-shadow:inset 0 0 0 1px rgba(15,23,42,.14); white-space:nowrap; letter-spacing:.02em; }
 </style>
 <div id="rvfBusy"><i></i><span id="rvfBusyTxt">Loading data…</span></div>
 <script>
@@ -29174,7 +29183,8 @@ function sxColHex(name){
 }
 function sxDots(name, big){ const h = sxColHex(name).slice(0, 4); return `<span class="sxDots${big ? ' big' : ''}">${h.length ? h.map(c => `<i style="background:${c}"></i>`).join('') : '<i class="unk"></i>'}</span>`; }
 const sxCol = (n) => n ? `${sxDots(n)}${skEsc(n)}` : '';
-const sxColT = (n) => { if(!n) return ''; const h = sxColHex(n).slice(0, 4), t = h.map(c => sxMix(c, 255, .74)), k = t.length; const bg = k > 1 ? `linear-gradient(90deg, ${t.map((c, x) => `${c} ${Math.round(x * 100 / k)}% ${Math.round((x + 1) * 100 / k)}%`).join(',')})` : (t[0] || '#f3f4f6'); return `<span class="sxChip" title="${skEsc(n)}" style="background:${bg};border-color:${sxMix(h[0] || '#9ca3af', 255, .35)}">${skEsc(n)}</span>`; };
+const sxLum = (h) => { const n = parseInt(h.slice(1), 16); return .299 * ((n >> 16) & 255) + .587 * ((n >> 8) & 255) + .114 * (n & 255); };
+const sxColT = (name) => { if(!name) return ''; const toks = String(name).split(/[,\/+&]|-/).map(s => s.trim()).filter(Boolean).slice(0, 8); return `<span class="sxCw" title="${skEsc(name)}">${toks.map(t => { const hx = sxColHex(t).slice(0, 2), bg = hx.length > 1 ? `linear-gradient(90deg, ${hx[0]} 50%, ${hx[1]} 50%)` : (hx[0] || '#e5e7eb'), c = sxLum(hx[0] || '#e5e7eb') > 150 ? '#1f2937' : '#ffffff'; return `<i class="sxCc" style="background:${bg};color:${c}">${skEsc(t)}</i>`; }).join('')}</span>`; };
 function sxColField(id, val, ph){
   const cs = sxColours();
   return `<div class="sxColW"><span class="sxColDot" id="${id}Dot">${val ? sxDots(val, 1) : ''}</span><input id="${id}" type="text" autocomplete="off" data-colfield="1" placeholder="${skEsc(ph || 'Type a colour')}" value="${skEsc(val || '')}"></div>` + (cs.length ? `<div class="sxStrip" id="${id}Strip">${cs.map(c => `<button type="button" class="sxCh" data-sx="pickcol" data-t="${id}" data-v="${skEsc(c)}" data-n="${skEsc(c.toLowerCase())}">${sxDots(c)}${skEsc(c)}</button>`).join('')}</div>` : '');
@@ -29277,7 +29287,7 @@ function sxPageHead(pg){
 const SX_FUN = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z"/></svg>';
 /* cols: [label, width, flags]  flags: k = main cell, r = right aligned, a = buttons */
 function sxTbl(cols, rows, foot, empty){
-  const n = cols.length + 1, cl = (c) => (c[2] || '').replace('k', '').trim();
+  const n = cols.length + 1, cl = (c) => (c[2] || '').replace('r', '').trim();
   let k = 0;
   const body = rows.map(r => { if(r && r.g != null) return `<tr class="date-group-row"><td colspan="${n}">${r.g}</td></tr>`; k++; return `<tr><td class="serial">${k}</td>${r.map((x, i) => `<td class="${cl(cols[i])}">${x == null ? '' : x}</td>`).join('')}</tr>`; }).join('');
   const ft = foot && k ? `<tr class="sxTot"><td class="serial"></td>${foot.map((x, i) => `<td class="${cl(cols[i])}">${x == null ? '' : x}</td>`).join('')}</tr>` : '';
@@ -29354,10 +29364,10 @@ const SX_FS = [['cr', 'Carpets & Rugs'], ['vip', 'VIP'], ['up', 'Upholstery'], [
 /* what each group shows: only the columns that group needs (same plain table as the Report) */
 const sxPk = (i) => { const x = i.x || {}; let nd = x.nd, nc = x.nc, nm = String(i.name || ''); const m = nm.match(/\(\s*(\d+)\s*D\s*-\s*(\d+)\s*C\s*\)/i); if(m){ if(!nd) nd = m[1]; if(!nc) nc = m[2]; nm = nm.replace(m[0], ''); } return { nd: nd || '', nc: nc || '', name: nm.replace(/\s+/g, ' ').trim() }; };
 function sxFsCols(g){
-  if(g === 'cr') return [['Code', ''], ['Item', ''], ['Designs in 1 bundle', 'r'], ['Colours in 1 bundle', 'r'], ['Colour mix', ''], ['Available bundles', 'r'], ['Pieces', 'r'], ['Unpacked on floor', 'r'], ['', 'a']];
-  if(g === 'vip') return [['Code', ''], ['Item', ''], ['Size', ''], ['Model', ''], ['Category', ''], ['Thick', ''], ['Colour', ''], ['Pcs per bundle', 'r'], ['Available bundles', 'r'], ['Pieces', 'r'], ['Unpacked on floor', 'r'], ['', 'a']];
-  if(g === 'up') return [['Code', ''], ['Item', ''], ['Size', ''], ['Quality', ''], ['Colour', ''], ['Metres per roll', 'r'], ['Rolls in stock', 'r'], ['Total metres', 'r'], ['', 'a']];
-  return [['Code', ''], ['Item', ''], ['Colour', ''], ['Pcs per pack', 'r'], ['Packs in stock', 'r'], ['Pieces', 'r'], ['', 'a']];
+  if(g === 'cr') return [['Code', ''], ['Item', 'k'], ['Designs in 1 bundle', 'r'], ['Colours in 1 bundle', 'r'], ['Colour mix', ''], ['Available bundles', 'r'], ['Pieces', 'r'], ['Unpacked on floor', 'r'], ['', 'a']];
+  if(g === 'vip') return [['Code', ''], ['Item', 'k'], ['Size', ''], ['Model', ''], ['Category', ''], ['Thick', ''], ['Colour', ''], ['Pcs per bundle', 'r'], ['Available bundles', 'r'], ['Pieces', 'r'], ['Unpacked on floor', 'r'], ['', 'a']];
+  if(g === 'up') return [['Code', ''], ['Item', 'k'], ['Size', ''], ['Quality', ''], ['Colour', ''], ['Metres per roll', 'r'], ['Rolls in stock', 'r'], ['Total metres', 'r'], ['', 'a']];
+  return [['Code', ''], ['Item', 'k'], ['Colour', ''], ['Pcs per pack', 'r'], ['Packs in stock', 'r'], ['Pieces', 'r'], ['', 'a']];
 }
 const sxLvl = (i) => { const b = skBal(i), sf = skSafe(i); return b <= 0 ? 'out' : sf > 0 && b < sf ? 'low' : 'ok'; };
 const sxDash = '<span class="sxSm2">—</span>';
@@ -29474,7 +29484,7 @@ function sxItemsSec(){
   const g = SX.isub || 'cr', two = (g === 'cr' || g === 'vip'), q = (SX.iq || '').toLowerCase();
   const l = SK.items.filter(i => i.g === g && (!q || (i.name + ' ' + (i.code || '') + ' ' + (i.col || '')).toLowerCase().includes(q))).slice().sort((a, b) => String(a.name).localeCompare(String(b.name)));
   const adm = skIsAdmin();
-  const cols = [['Code', '', ''], ['Item', '', '']].concat(g === 'cr' ? [['Designs', '', 'r'], ['Colours', '', 'r']] : []).concat([['Colour', '', ''], [g === 'up' ? 'Metres per roll' : g === 'q2' ? 'Pcs per pack' : 'Pcs per bundle', '', 'r']]).concat(two ? [['Truck holds (bundles)', '', 'r']] : []).concat([['Minimum', '', 'r'], ['', '', 'a']]);
+  const cols = [['Code', '', ''], ['Item', '', 'k']].concat(g === 'cr' ? [['Designs', '', 'r'], ['Colours', '', 'r']] : []).concat([['Colour', '', ''], [g === 'up' ? 'Metres per roll' : g === 'q2' ? 'Pcs per pack' : 'Pcs per bundle', '', 'r']]).concat(two ? [['Truck holds (bundles)', '', 'r']] : []).concat([['Minimum', '', 'r'], ['', '', 'a']]);
   const rows = l.map(i => { const P = sxPk(i), x = i.x || {}; return [i.code ? `<span class="sxCode">${skEsc(i.code)}</span>` : sxDash, skEsc(P.name)].concat(g === 'cr' ? [P.nd || sxDash, P.nc || sxDash] : []).concat([i.col ? sxColT(i.col) : sxDash, g === 'up' ? (x.mpr ? sxN(x.mpr) : sxDash) : (Number(i.per) ? sxN(i.per) : sxDash)]).concat(two ? [Number(i.truck) ? sxN(i.truck) : '<span class="sxSm2">default ' + (Number(SX.cfg.truckBundle) || '—') + '</span>'] : []).concat([Number(i.safe) ? sxN(i.safe) : sxDash, adm ? `<button type="button" class="mini-icon-btn" data-sk="edititem" data-v="${skEsc(i.id)}" title="Edit item" aria-label="Edit item">${sxIc('cog', 13)}</button>` : '']); });
   return `<details class="acSec admD" ${sxSecAttr('items')}><summary>Items · code, design, size, colour, truck capacity</summary><div class="acSecB"><p class="sub">Add every item here once. It shows in Finished store only after stock is added. Truck capacity is set here per item (or one default under "Truck loading").</p>${sxTop(sxSub('isub', g, SX_FS) + sxSearch('sxIq', SX.iq, 'Search…') + '<span class="grow"></span>' + (skCanAdd() ? `<button type="button" class="pcBtnMain sm" data-sk="newitem" title="New item">${sxIc('plus', 14)}<span class="sxAddL">New item</span></button>` : ''))}${sxTbl(cols, rows, null, 'No items here yet. Press New item.')}</div></details>`;
 }
