@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261117-112607">
+<meta name="rvf-build" content="20261117-112808">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -29744,7 +29744,7 @@ function yRecent(secs, title){
   const adm = sxAdmin(), l = sxEnt('w', sxYm()).filter(e => secs.indexOf(e.s) >= 0).slice().reverse().slice(0, 25);
   const cols = [['Date', ''], ['Item', '', 'k'], ['Details', ''], ['Type', '', 'a'], ['Kg', '', 'r'], ['Boxes', '', 'r']].concat(adm ? [['', '', 'a']] : []);
   const rows = l.map(e => {
-    const i = e.y ? yItem(e.y) : null, name = e.open ? `<b>Opening stock</b> <span class="sxSm2">${(e.rows || []).length} items</span>` : i ? `<span class="sxYc">${yDot(yHex(i.col, yFam(i.col)))}${skEsc(i.col)}</span> <span class="sxSm2">${skEsc(i.code)}</span>` : sxColT(e.col || '');
+    const i = e.y ? yItem(e.y) : null, name = e.open ? `<b>Opening stock</b> ${(e.rows || []).length ? '<span class="sxSm2">' + e.rows.length + ' items</span>' : ''}` : i ? `<span class="sxYc">${yDot(yHex(i.col, yFam(i.col)))}${skEsc(i.col)}</span> <span class="sxSm2">${skEsc(i.code)}</span>` : sxColT(e.col || '');
     const det = [e.k === 'mv' ? skEsc(e.store) + ' to ' + skEsc(e.store2) : e.store ? skEsc(e.store) : '', e.to ? 'to ' + skEsc(e.to) : '', e.src === 'rc' ? 'recovered from weaving' : '', e.bob ? sxN(e.bob) + (e.s === 'wp' ? ' beams' : ' bobbins') : '', e.n ? skEsc(e.n) : '', skEsc(e.by || '')].filter(Boolean).join(' · ');
     return [skEsc(e.d.slice(5)), name, `<span class="sxSm2">${det}</span>`, `<span class="sxTag ${e.k === 'out' ? 'out' : e.k === 'mv' ? 'open' : 'in'}">${e.k === 'out' ? 'OUT' : e.k === 'mv' ? 'MOVE' : 'IN'}</span>`, `<b>${sxN(e.kg)}</b>`, e.bx ? sxN(e.bx) : ''].concat(adm ? [`<button type="button" class="mini-icon-btn" data-sx="undo" data-p="w" data-v="${skEsc(e.id)}" data-ym="${sxYm(e.d)}" title="Remove this entry" aria-label="Remove this entry">${sxIc('del', 13)}</button>`] : []);
   });
@@ -29850,10 +29850,10 @@ function yWpHtml(){
   SX.rwsub = 'wp'; const rows = yWpRows(), T = { n: rows.reduce((a, r) => a + r.n, 0), kg: rows.reduce((a, r) => a + r.kg, 0) };
   let h = sxTop('<span class="grow"></span>' + sxDlBtn('wp') + sxGear('wp') + (sxCan('wp') ? sxAddBtn('ywp', 'Update') : ''));
   if(!sxCan('wp')) h += sxNoRight('warping');
-  h += `<div class="card sxCard"><div class="sxGrid">${sxTile('Beams in stock', sxN(T.n) + '<small> beams</small>', sxN(T.kg) + ' kg', '', 'wp', 'cyan')}${sxTile('Made this month', sxN(rows.reduce((a, r) => a + r.mo, 0)) + '<small> beams</small>', '', '', 'pack', 'green')}${sxTile('Used this month', sxN(rows.reduce((a, r) => a + r.us, 0)) + '<small> beams</small>', '', '', 'roll', 'purple')}</div></div>`;
-  const cols = [['Colour', '', 'k'], ['Kg per beam', '', 'r'], ['Start of month', '', 'r'], ['Made', '', 'r'], ['Used', '', 'r'], ['Closing beams', '', 'r'], ['Total kg', '', 'r']];
-  const body = rows.map(r => [sxColT(r.col), r.w > 0 ? sxN(r.w) : '<span class="sxSm2">-</span>', sxN(r.op), r.mo ? sxN(r.mo) : '<span class="sxSm2">-</span>', r.us ? sxN(r.us) : '<span class="sxSm2">-</span>', `<b>${sxN(r.n)}</b>`, `<b>${sxN(r.kg)}</b>`]);
-  h += sxHead('Warping beams', 'This month') + '<div class="card sxCard">' + sxTbl(cols, body, ['<b>Total</b>', '', `<b>${sxN(rows.reduce((a, r) => a + r.op, 0))}</b>`, `<b>${sxN(rows.reduce((a, r) => a + r.mo, 0))}</b>`, `<b>${sxN(rows.reduce((a, r) => a + r.us, 0))}</b>`, `<b>${sxN(T.n)}</b>`, `<b>${sxN(T.kg)}</b>`], 'No beam colours yet. Add them in Settings.') + '</div>';
+  h += `<div class="card sxCard"><div class="sxGrid">${sxTile('Beams in stock', sxN(T.n) + '<small> beams</small>', '', '', 'wp', 'cyan')}${sxTile('Total weight', sxN(T.kg) + '<small> kg</small>', '', '', 'pack', 'blue')}</div></div>`;
+  const cols = [['Colour', '', 'k'], ['Beams available', '', 'r'], ['Kg per beam', '', 'r'], ['Total kg', '', 'r']];
+  const body = rows.map(r => [sxColT(r.col), `<b>${sxN(r.n)}</b>`, r.n > 0 ? sxN(Math.round(r.kg / r.n * 100) / 100) : '<span class="sxSm2">-</span>', `<b>${sxN(r.kg)}</b>`]);
+  h += sxHead('Beams available now') + '<div class="card sxCard">' + sxTbl(cols, body, ['<b>Total</b>', `<b>${sxN(T.n)}</b>`, '', `<b>${sxN(T.kg)}</b>`], 'No beam colours yet. Add them in Settings.') + '</div>';
   return h + yRecent(['wp'], 'Recent entries');
 }
 function yOpenWp(){
