@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head><meta name="robots" content="noindex">
-<meta name="rvf-build" content="20261117-083026">
+<meta name="rvf-build" content="20261117-083038">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -6252,6 +6252,7 @@ function renderNav(){
   nav.innerHTML = '';
   const pages = userPages(state.user).slice();
   if(state.user.role === 'admin' && !pages.includes('stock')) pages.push('stock');
+  if(state.user.role === 'admin') ['stk_raw','stk_rew','stk_wp','stk_fin','stk_fst','stk_req'].forEach(k => { if(!pages.includes(k)) pages.push(k); });
   pages.forEach(key => {
     const def = PAGE_DEFS[key];
     if(!def || key === 'aichat') return;   // the AI page is switched off for everyone (nothing deleted)
