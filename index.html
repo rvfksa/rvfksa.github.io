@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261117-145606">
+<meta name="rvf-build" content="20261117-153230">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -28980,7 +28980,7 @@ function skFloorSvg(dept){
   const cell = (id, x, y0) => {
     const m = (state.machines || []).find(q => String(q.id) === String(id)), p = m ? ((SK.plan.m || {})[m.id] || {}) : {}, d = p.des ? skDesign(p.des) : null, stop = !m || p.st === 'stop' || (m && m.status === 'stopped' && false);
     const cx = PAD + x, cy = PAD + y0, mid = m ? m.id : id, label = m ? (m.name || ('M/C ' + id)) : 'M/C ' + id;
-    let g = `<g data-sk="mc" data-v="${E(mid)}" style="cursor:pointer"><rect x="${cx}" y="${cy}" width="${CW}" height="${H}" rx="7" fill="${stop ? '#f1f3f8' : '#fff'}" stroke="${stop ? '#aab3c2' : (d ? '#cdd4e0' : '#e0b84a')}" stroke-width="1" ${stop || !d ? 'stroke-dasharray="3.5 3"' : ''}/>`;
+    const ok = !window.__mpOk || window.__mpOk[String(mid)]; let g = `<g data-sk="mc" data-v="${E(mid)}" style="cursor:pointer;${ok ? '' : 'opacity:.22;'}"><rect x="${cx}" y="${cy}" width="${CW}" height="${H}" rx="7" fill="${stop ? '#f1f3f8' : '#fff'}" stroke="${stop ? '#aab3c2' : (d ? '#cdd4e0' : '#e0b84a')}" stroke-width="1" ${stop || !d ? 'stroke-dasharray="3.5 3"' : ''}/>`;
     g += `<text x="${cx + 9 * K}" y="${cy + 17 * K}" font-size="${9.5 * K}" fill="${stop ? '#7b8696' : '#1f2937'}">${E(label)}</text>`;
     if(m && (m.vip || (typeof machineCat === 'function' && machineCat(m) === 'VIP')) && !stop) g += `<polygon points="${flrStarPts(cx + CW - 13 * K, cy + 14 * K, 5.2 * K).map(q => q[0].toFixed(1) + ',' + q[1].toFixed(1)).join(' ')}" fill="#e0a000"/>`;
     if(stop) g += `<text x="${cx + CW / 2}" y="${cy + H / 2 + 8}" font-size="${10 * K}" fill="#7b8696" text-anchor="middle">Stopped</text>`;
@@ -28990,6 +28990,8 @@ function skFloorSvg(dept){
       if(p.col){ const hx = sxColHex(p.col).slice(0, 3), dr = 4.4 * K, dw = hx.length ? hx.length * dr * 1.5 + 3 : 0, ft = flrFit(p.col, 10 * K, false, CW - 18 - dw), x0 = cx + CW / 2 - (flrEst(ft, 10 * K, false) + dw) / 2; hx.forEach((c, q) => { g += `<circle cx="${(x0 + dr + q * dr * 1.5).toFixed(1)}" cy="${(ty - 3 * K).toFixed(1)}" r="${dr}" fill="${c}" stroke="rgba(15,23,42,.35)" stroke-width=".7"/>`; }); g += `<text x="${(x0 + dw).toFixed(1)}" y="${ty + 1}" font-size="${10 * K}" fill="#4338ca">${E(ft)}</text>`; ty += 13 * K; }
       const cl = [p.c1, p.c2, p.c3].filter(Boolean).join(' / '); if(cl) g += `<text x="${cx + CW / 2}" y="${ty + 1}" font-size="${8.5 * K}" fill="#6b7280" text-anchor="middle">${E(flrFit(cl, 8.5 * K, false, CW - 14))}</text>`;
     }
+    const xc = (typeof MP_XL !== 'undefined' && MP_XL[String(mid)]) || [], cat = p.cat || (stop ? '' : xc[1]) || '';
+    if(cat && !stop) g += `<text x="${cx + CW / 2}" y="${cy + H - 8 * K}" font-size="${8 * K}" fill="#5b4fd6" text-anchor="middle" letter-spacing=".6">${E(String(cat).toUpperCase())}</text>`;
     return g + '</g>';
   };
   sp.rows.forEach((r, t) => { r.L.forEach((id, i) => { b += cell(id, i * W, ys[t]); }); r.R.forEach((id, i) => { b += cell(id, rx + i * W, ys[t]); }); });
@@ -30038,12 +30040,12 @@ function mpRows(){
     return { m, p, d, it, st, dept: /^SSTM/i.test(String(m.name || '')) ? 'SSTM' : 'RVF', cat: p.cat || (st === 'stop' ? '' : x[1]) || '', col: p.col || (st === 'stop' ? '' : x[0]) || '', mix: [p.c1, p.c2, p.c3].filter(Boolean).join(' / '), nm: String(m.name || m.id) }; });
 }
 function sxMpHtml(){
-  const F = sxFget('mp'), q = (SX.mq || '').toLowerCase(), mode = ySortOf('mp'), all = mpRows(), lay = SX.mpv === 'layout';
+  const F = sxFget('mp'), q = (SX.mq || '').toLowerCase(), mode = ySortOf('mp'), all = mpRows(), lay = SX.mpv !== 'table';
   const uniq = (f) => Array.from(new Set(all.map(f).filter(Boolean))).sort();
   const flds = [['dept', 'Department', ['RVF', 'SSTM']], ['st', 'Status', [['run', 'Running'], ['none', 'No design'], ['stop', 'Stopped']]], ['cat', 'Category', uniq(r => r.cat)], ['des', 'Design', uniq(r => r.d && r.d.name)]];
-  let h = sxTop(sxSearch('sxMq', SX.mq, 'Search machine, design or colour…') + sxFilt('mp', flds) + ySortBtn('mp', ['mc', 'gdes', 'gcat', 'gcol', 'gdept']) + `<button type="button" class="pcBtnSoft sm" data-sx="mpv" title="Switch between the table and the floor drawing">${lay ? 'Table' : 'Layout'}</button>` + sxDlBtn('mp'));
-  if(lay) return h + skPlanHtml(true);
+  let h = sxTop(sxSearch('sxMq', SX.mq, 'Search machine, design or colour…') + sxFilt('mp', flds) + (lay ? '' : ySortBtn('mp', ['mc', 'gdes', 'gcat', 'gcol', 'gdept'])) + `<button type="button" class="pcBtnSoft sm" data-sx="mpv" title="Switch between the floor layout and the table">${lay ? 'Table' : 'Layout'}</button>` + sxDlBtn('mp'));
   const rows = all.filter(r => (!F.dept || r.dept === F.dept) && (!F.st || r.st === F.st) && (!F.cat || r.cat === F.cat) && (!F.des || (r.d && r.d.name === F.des)) && (!q || (r.nm + ' ' + (r.d ? r.d.name : '') + ' ' + r.col + ' ' + r.mix + ' ' + r.cat).toLowerCase().indexOf(q) >= 0));
+  if(lay){ const on = rows.length !== all.length; window.__mpOk = on ? rows.reduce((o, r) => (o[String(r.m.id)] = 1, o), {}) : null; SK.dept = F.dept || 'ALL'; const out = h + skPlanHtml(true); window.__mpOk = null; return out + (on ? `<div class="sxSm2" style="margin:8px 2px;">${rows.length} of ${all.length} machines match. The others are faded.</div>` : ''); }
   const key = { gdes: (r) => r.d ? r.d.name : '~ No design', gcat: (r) => r.cat || '~ No category', gcol: (r) => r.col || '~ No colour', gdept: (r) => r.dept }[mode];
   if(key) rows.sort((a, b) => String(key(a)).localeCompare(String(key(b))) || Number(a.m.id) - Number(b.m.id));
   const run = rows.filter(r => r.st === 'run').length, adm = skCanMach();
@@ -30071,7 +30073,7 @@ const _mpDl = sxDl; sxDl = function(kind){
   if(kind === 'dz'){ const pm = SK.plan.m || {}, rows = [['Code', 'Design', 'Colours', 'In stock', 'Machines running']]; (SK.designs || []).forEach(d => { const its = SK.items.filter(i => i.des === d.id); rows.push([d.code || '', d.name, its.length, Math.round(its.reduce((a, i) => a + skBal(i), 0) * 10) / 10, Object.keys(pm).filter(k => (pm[k] || {}).des === d.id && pm[k].st !== 'stop').length]); }); return skDlXlsx('designs', 'Designs', rows); }
   return _mpDl(kind);
 };
-document.addEventListener('click', (ev) => { const el = ev.target.closest && ev.target.closest('[data-sx="mpv"]'); if(!el) return; SX.mpv = SX.mpv === 'layout' ? '' : 'layout'; SX.yso = ''; SX.fo = ''; skRender(); });
+document.addEventListener('click', (ev) => { const el = ev.target.closest && ev.target.closest('[data-sx="mpv"]'); if(!el) return; SX.mpv = SX.mpv === 'table' ? 'layout' : 'table'; SX.yso = ''; SX.fo = ''; skRender(); });
 document.addEventListener('input', (ev) => { const t = ev.target; if(!t) return; if(t.id === 'sxMq'){ SX.mq = t.value; sxKeepFocus('sxMq'); } else if(t.id === 'sxDq'){ SX.dq = t.value; sxKeepFocus('sxDq'); } });
 
 /* ---- clicks ---- */
