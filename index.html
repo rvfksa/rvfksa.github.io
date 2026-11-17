@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261117-101543">
+<meta name="rvf-build" content="20261117-102214">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -28505,8 +28505,9 @@ table.sxRT th.k, table.sxRT td.k{ text-align:left; }
 table.sxRT th.r, table.sxRT td.r, table.sxRT th.a, table.sxRT td.a{ text-align:center; }
 table.sxRT th.a, table.sxRT td.a{ width:1%; }
 .sxCode{ background:none; color:var(--text); padding:0; margin:0; border-radius:0; font-size:11.5px; font-weight:500; }
-.sxCw{ display:inline-flex; flex-wrap:wrap; gap:3px; justify-content:center; max-width:320px; vertical-align:middle; }
-.sxCc{ font-style:normal; font-size:9.5px; font-weight:600; line-height:1; padding:3px 6px; border-radius:5px; box-shadow:inset 0 0 0 1px rgba(15,23,42,.14); white-space:nowrap; letter-spacing:.02em; }
+.sxCw{ display:inline-flex; flex-wrap:wrap; gap:3px 12px; justify-content:center; max-width:430px; vertical-align:middle; }
+.sxCc{ display:inline-flex; align-items:center; gap:5px; font-style:normal; font-size:11px; font-weight:400; line-height:1.3; color:var(--text); white-space:nowrap; }
+.sxCc b{ width:9px; height:9px; border-radius:50%; flex:none; box-shadow:inset 0 0 0 1px rgba(15,23,42,.22); }
 </style>
 <div id="rvfBusy"><i></i><span id="rvfBusyTxt">Loading data…</span></div>
 <script>
@@ -29184,7 +29185,7 @@ function sxColHex(name){
 function sxDots(name, big){ const h = sxColHex(name).slice(0, 4); return `<span class="sxDots${big ? ' big' : ''}">${h.length ? h.map(c => `<i style="background:${c}"></i>`).join('') : '<i class="unk"></i>'}</span>`; }
 const sxCol = (n) => n ? `${sxDots(n)}${skEsc(n)}` : '';
 const sxLum = (h) => { const n = parseInt(h.slice(1), 16); return .299 * ((n >> 16) & 255) + .587 * ((n >> 8) & 255) + .114 * (n & 255); };
-const sxColT = (name) => { if(!name) return ''; const toks = String(name).split(/[,\/+&]|-/).map(s => s.trim()).filter(Boolean).slice(0, 8); return `<span class="sxCw" title="${skEsc(name)}">${toks.map(t => { const hx = sxColHex(t).slice(0, 2), bg = hx.length > 1 ? `linear-gradient(90deg, ${hx[0]} 50%, ${hx[1]} 50%)` : (hx[0] || '#e5e7eb'), c = sxLum(hx[0] || '#e5e7eb') > 150 ? '#1f2937' : '#ffffff'; return `<i class="sxCc" style="background:${bg};color:${c}">${skEsc(t)}</i>`; }).join('')}</span>`; };
+const sxColT = (name) => { if(!name) return ''; const toks = String(name).split(/[,\/+&]|-/).map(s => s.trim()).filter(Boolean).slice(0, 8); return `<span class="sxCw" title="${skEsc(name)}">${toks.map(t => { const hx = sxColHex(t).slice(0, 2), bg = hx.length > 1 ? `linear-gradient(90deg, ${hx[0]} 50%, ${hx[1]} 50%)` : (hx[0] || 'repeating-linear-gradient(45deg,#e5e7eb 0 2px,#f9fafb 2px 4px)'); return `<i class="sxCc"><b style="background:${bg}"></b>${skEsc(t)}</i>`; }).join('')}</span>`; };
 function sxColField(id, val, ph){
   const cs = sxColours();
   return `<div class="sxColW"><span class="sxColDot" id="${id}Dot">${val ? sxDots(val, 1) : ''}</span><input id="${id}" type="text" autocomplete="off" data-colfield="1" placeholder="${skEsc(ph || 'Type a colour')}" value="${skEsc(val || '')}"></div>` + (cs.length ? `<div class="sxStrip" id="${id}Strip">${cs.map(c => `<button type="button" class="sxCh" data-sx="pickcol" data-t="${id}" data-v="${skEsc(c)}" data-n="${skEsc(c.toLowerCase())}">${sxDots(c)}${skEsc(c)}</button>`).join('')}</div>` : '');
