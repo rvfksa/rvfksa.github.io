@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head><meta name="robots" content="noindex">
-<meta name="rvf-build" content="20261117-113345">
+<meta name="rvf-build" content="20261117-115556">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -28519,6 +28519,11 @@ table.sxRT th.a, table.sxRT td.a{ width:1%; }
 .yOpT td, .yOpT th{ white-space:nowrap; }
 .yOpT td .sxSm2{ white-space:normal; }
 .sxRT tr.date-group-row td{ text-align:left !important; padding-left:14px; }
+.yDl{ display:inline-flex; flex-direction:column; align-items:center; gap:3px; min-width:52px; cursor:default; }
+.yDl b{ color:var(--text-strong); font-size:12.5px; }
+.yDl i{ display:block; width:44px; height:4px; border-radius:99px; background:var(--line); overflow:hidden; }
+.yDl u{ display:block; height:100%; border-radius:99px; background:currentColor; }
+.yDl.r{ color:var(--danger); } .yDl.a{ color:var(--warn); } .yDl.g{ color:var(--ok); }
 </style>
 <div id="rvfBusy"><i></i><span id="rvfBusyTxt">Loading data…</span></div>
 <script>
@@ -29692,9 +29697,9 @@ function yRows(){
   const idx = yIdx(), use = yUse(), ord = Number(SX.cfg.yOrder) || 30, rows = [];
   yItems().forEach(i => {
     const b = idx[i.id] || { tot: 0, st: {} }, u = use[i.id] || 0; if(i.on === false && !(b.tot > 0.0004)) return;
-    const per = u / 30, days = per > 0 ? b.tot / per : null; let st;
-    if(!(b.tot > 0.0004)) st = u > 0 ? 'out' : 'none'; else if(u > 0) st = days < ord ? 'order' : 'ok'; else st = 'idle';
-    rows.push({ i, fam: yFam(i.col), kg: b.tot, st: b.st, bx: i.kgb > 0 ? b.tot / i.kgb : null, use: u, per, days, s: st });
+    const set = Number(i.use) > 0 ? Number(i.use) : 0, per = set || u / 30, days = per > 0 ? b.tot / per : null; let st;
+    if(!(b.tot > 0.0004)) st = per > 0 ? 'out' : 'none'; else if(per > 0) st = days < ord ? 'order' : 'ok'; else st = 'idle';
+    rows.push({ i, fam: yFam(i.col), kg: b.tot, st: b.st, bx: i.kgb > 0 ? b.tot / i.kgb : null, use: u, per, set: !!set, days, s: st });
   });
   return rows;
 }
@@ -29720,20 +29725,34 @@ function yGroups(rows, mode, cols, mk){
   return out.map(x => x.gh ? { g: `${mode === 'col' ? yDot(yFamHex(x.gh.t)) : ''}<b>${skEsc(x.gh.t)}</b> <span class="sxSm2">· ${x.gh.n} item${x.gh.n === 1 ? '' : 's'} · ${sxN(x.gh.kg)} kg</span>` } : mk(x.r));
 }
 /* ---------- Raw store page ---------- */
+function yMain(id){
+  const ix = yIdx(), x = ix[id]; let b = '', m = -1;
+  if(x){ Object.keys(x.st).forEach(s => { if(x.st[s] > m){ m = x.st[s]; b = s; } }); return b; }
+  const all = {}; Object.keys(ix).forEach(k => Object.keys(ix[k].st).forEach(s => { all[s] = (all[s] || 0) + ix[k].st[s]; }));
+  b = SX.cfg.ystores[0]; Object.keys(all).forEach(s => { if(all[s] > m){ m = all[s]; b = s; } }); return b;
+}
+function yDays(r, ord){
+  if(r.days == null) return '<span class="sxSm2">-</span>';
+  const d = Math.round(r.days), cls = r.days < ord ? 'r' : r.days < ord * 1.5 ? 'a' : 'g', pct = Math.max(4, Math.min(100, r.days / (ord * 3) * 100)), end = new Date(Date.now() + r.days * 864e5);
+  const ends = r.days > 1500 ? '' : 'Lasts until about ' + end.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  return `<span class="yDl ${cls}" title="${skEsc(ends)}"><b>${d > 999 ? '999+' : sxN(d)}</b><i><u style="width:${pct}%"></u></i></span>`;
+}
 function sxRawHtml(){
   yCfg(); if(!SX.yPrev){ SX.yPrev = 1; sxMonth('w', yPrevYm()).then(() => { if(SX.tab === 'raw' && !SX.sfor) skRender(); }); }
-  const cfg = SX.cfg, q = (SX.rq || '').toLowerCase(), F = sxFget('raw'), mode = ySortOf('raw'), all = yRows(), stores = cfg.ystores;
-  const flds = [['sec', 'Section', ySecs()], ['sup', 'Supplier', Array.from(new Set(yItems().map(i => i.sup).filter(Boolean))).sort()], ['fam', 'Colour', SX_FAM.map(x => x[0])], ['store', 'Store', stores], ['s', 'Status', [['order', 'Order now'], ['out', 'Out of stock'], ['idle', 'Not moving'], ['ok', 'OK']]], ['show', 'Show', [['all', 'All items, also with no stock']], 'Only items with stock']];
+  const cfg = SX.cfg, q = (SX.rq || '').toLowerCase(), F = sxFget('raw'), mode = ySortOf('raw'), all = yRows(), ord = Number(cfg.yOrder) || 30;
+  const flds = [['sec', 'Section', ySecs()], ['sup', 'Supplier', Array.from(new Set(yItems().map(i => i.sup).filter(Boolean))).sort()], ['fam', 'Colour', SX_FAM.map(x => x[0])], ['s', 'Status', [['order', 'Order now'], ['out', 'Out of stock'], ['idle', 'Not moving'], ['ok', 'OK']]], ['cols', 'Show also', [['sup', 'Supplier'], ['sz', 'Yarn size'], ['both', 'Supplier and yarn size']], 'Nothing extra'], ['show', 'Show', [['all', 'All items, also with no stock']], 'Only items with stock']];
   let h = sxTop(sxSearch('sxRq', SX.rq, 'Search code, colour, supplier…') + sxFilt('raw', flds) + ySortBtn('raw') + '<span class="grow"></span>' + sxDlBtn('raw') + sxGear('raw') + (sxCan('raw') ? sxAddBtn('yraw', 'Update') : '')) + sxFpop('raw', flds) + ySortPop('raw', ['col', 'sec', 'sup', 'name', 'low', 'big']);
   if(!sxCan('raw')) h += sxNoRight('raw material');
   const t = yTot(), orderN = all.filter(r => r.s === 'order' || r.s === 'out').length, idleN = all.filter(r => r.s === 'idle').length;
-  h += `<div class="card sxCard"><div class="sxGrid">${sxTile('Yarn in store', sxN(t.kg) + '<small> kg</small>', sxN(Math.round(t.bx)) + ' boxes', '', 'raw', 'blue')}${sxTile('Items in stock', t.n, 'of ' + yItems().filter(i => i.on !== false).length + ' in the list', '', 'pack', 'green')}${sxTile('Order now', orderN, orderN ? 'Low or finished, still used' : 'Nothing to order', '', 'warn', orderN ? 'amber' : 'green')}${sxTile('Not moving', idleN, 'In stock, not used for 30 days', '', 'roll', 'purple')}</div></div>`;
-  let rows = all.filter(r => { if(F.sec && r.i.sec !== F.sec) return false; if(F.sup && r.i.sup !== F.sup) return false; if(F.fam && r.fam !== F.fam) return false; if(F.s && r.s !== F.s) return false; if(F.store && !(r.st[F.store] > 0)) return false; if(!F.show && !(r.kg > 0.0004 || r.s === 'out')) return false; if(q && (yLbl(r.i) + ' ' + r.i.sz).toLowerCase().indexOf(q) < 0) return false; return true; });
+  h += `<div class="card sxCard"><div class="sxGrid">${sxTile('Yarn in store', sxN(t.kg) + '<small> kg</small>', sxN(Math.round(t.bx)) + ' boxes', '', 'raw', 'blue')}${sxTile('Items in stock', t.n, 'of ' + yItems().filter(i => i.on !== false).length + ' in the list', '', 'pack', 'green')}${sxTile('Order now', orderN, orderN ? 'Less than ' + ord + ' days left' : 'Nothing to order', '', 'warn', orderN ? 'amber' : 'green')}${sxTile('Not moving', idleN, 'In stock, no daily use', '', 'roll', 'purple')}</div></div>`;
+  let rows = all.filter(r => { if(F.sec && r.i.sec !== F.sec) return false; if(F.sup && r.i.sup !== F.sup) return false; if(F.fam && r.fam !== F.fam) return false; if(F.s && r.s !== F.s) return false; if(!F.show && !(r.kg > 0.0004 || r.s === 'out')) return false; if(q && (yLbl(r.i) + ' ' + r.i.sz).toLowerCase().indexOf(q) < 0) return false; return true; });
   ySortRows(rows, mode);
-  const cols = [['Code', ''], ['Colour', '', 'k'], ['Supplier', ''], ['Yarn size', '']].concat(stores.map(s => [skEsc(s) + ' kg', '', 'r']), [['Boxes', '', 'r'], ['Total kg', '', 'r'], ['Used per day kg', '', 'r'], ['Days left', '', 'r'], ['Status', '', 'a']]);
-  const mk = (r) => [`<span class="sxCode">${skEsc(r.i.code)}</span>`, `<span class="sxYc" title="${skEsc(r.i.col)}">${yDot(yHex(r.i.col, r.fam))}${skEsc(r.i.col)}</span>`, `<span class="sxSm2">${skEsc(r.i.sup)}</span>`, `<span class="sxSm2">${skEsc(r.i.sz)}</span>`].concat(stores.map(s => r.st[s] > 0 ? sxN(r.st[s]) : '<span class="sxSm2">-</span>'), [r.bx != null && r.kg > 0 ? sxN(Math.round(r.bx * 10) / 10) : '', `<b>${sxN(r.kg)}</b>`, r.per > 0 ? sxN(r.per) : '<span class="sxSm2">-</span>', r.days != null ? sxN(Math.round(r.days)) : '<span class="sxSm2">-</span>', yTag(r.s)]);
-  const sk = F.store ? 0 : 1, tkg = rows.reduce((a, r) => a + (F.store ? (r.st[F.store] || 0) : r.kg), 0), tbx = rows.reduce((a, r) => a + (r.bx != null ? r.bx : 0), 0);
-  const foot = ['', '<b>Total</b>', '', ''].concat(stores.map(s => `<b>${sxN(rows.reduce((a, r) => a + (r.st[s] || 0), 0))}</b>`), [`<b>${sxN(Math.round(tbx))}</b>`, `<b>${sxN(tkg)}</b>`, '', '', '']);
+  const xs = F.cols === 'sup' || F.cols === 'both', xz = F.cols === 'sz' || F.cols === 'both';
+  const cols = [['Code', ''], ['Colour', '', 'k']].concat(xs ? [['Supplier', '']] : [], xz ? [['Yarn size', '']] : [], [['Boxes', '', 'r'], ['Available kg', '', 'r'], ['Used per day kg', '', 'r'], ['Days left', '', 'r'], ['Status', '', 'a']]);
+  const tip = (r) => [r.i.code, r.i.col, r.i.sup, r.i.sz, r.i.kgb > 0 ? sxN(r.i.kgb) + ' kg in 1 box' : 'kg only'].filter(Boolean).join(' · ');
+  const mk = (r) => [`<span class="sxCode">${skEsc(r.i.code)}</span>`, `<span class="sxYc" title="${skEsc(tip(r))}">${yDot(yHex(r.i.col, r.fam))}${skEsc(r.i.col)}</span>`].concat(xs ? [`<span class="sxSm2">${skEsc(r.i.sup)}</span>`] : [], xz ? [`<span class="sxSm2">${skEsc(r.i.sz)}</span>`] : [], [r.bx != null && r.kg > 0 ? sxN(Math.round(r.bx * 10) / 10) : '<span class="sxSm2">-</span>', `<b>${sxN(r.kg)}</b>`, r.per > 0 ? `<span title="${r.set ? 'Set in Settings' : 'Worked out from the last 30 days'}">${sxN(r.per)}</span>` : '<span class="sxSm2">-</span>', yDays(r, ord), yTag(r.s)]);
+  const tbx = rows.reduce((a, r) => a + (r.bx != null ? r.bx : 0), 0), tkg = rows.reduce((a, r) => a + r.kg, 0), tpd = rows.reduce((a, r) => a + (r.kg > 0 ? r.per : 0), 0);
+  const foot = ['', '<b>Total</b>'].concat(xs ? [''] : [], xz ? [''] : [], [`<b>${sxN(Math.round(tbx))}</b>`, `<b>${sxN(tkg)}</b>`, `<b>${sxN(tpd)}</b>`, '', '']);
   h += sxHead('Raw material in store', mode === 'col' ? 'Grouped by colour' : Y_SORT[mode]) + '<div class="card sxCard">' + sxTbl(cols, yGroups(rows, mode, cols, mk), foot, all.length ? 'Nothing found. Change the filter, or press Update to add stock.' : 'No items yet.') + '</div>';
   const old = sxRaw(), oc = Object.keys(old);
   if(oc.length){ const lr = []; oc.sort().forEach(c => Object.keys(old[c]).sort().forEach(k => Object.keys(old[c][k].st).forEach(s => lr.push([`<span class="sxSm2">${skEsc(c)}</span>`, sxColT(k), skEsc(s), `<b>${sxN(old[c][k].st[s])}</b>`])))); h += sxHead('Earlier raw weft entries', 'Kept as they were') + '<div class="card sxCard">' + sxTbl([['Category', ''], ['Colour', '', 'k'], ['Store', ''], ['Kg', '', 'r']], lr, null, '') + '</div>'; }
@@ -29745,7 +29764,7 @@ function yRecent(secs, title){
   const cols = [['Date', ''], ['Item', '', 'k'], ['Details', ''], ['Type', '', 'a'], ['Kg', '', 'r'], ['Boxes', '', 'r']].concat(adm ? [['', '', 'a']] : []);
   const rows = l.map(e => {
     const i = e.y ? yItem(e.y) : null, name = e.open ? `<b>Opening stock</b> ${(e.rows || []).length ? '<span class="sxSm2">' + e.rows.length + ' items</span>' : ''}` : i ? `<span class="sxYc">${yDot(yHex(i.col, yFam(i.col)))}${skEsc(i.col)}</span> <span class="sxSm2">${skEsc(i.code)}</span>` : sxColT(e.col || '');
-    const det = [e.k === 'mv' ? skEsc(e.store) + ' to ' + skEsc(e.store2) : e.store ? skEsc(e.store) : '', e.to ? 'to ' + skEsc(e.to) : '', e.src === 'rc' ? 'recovered from weaving' : '', e.bob ? sxN(e.bob) + (e.s === 'wp' ? ' beams' : ' bobbins') : '', e.n ? skEsc(e.n) : '', skEsc(e.by || '')].filter(Boolean).join(' · ');
+    const det = [e.s === 'yr' ? '' : e.k === 'mv' ? skEsc(e.store) + ' to ' + skEsc(e.store2) : e.store ? skEsc(e.store) : '', e.to ? 'to ' + skEsc(e.to) : '', e.src === 'rc' ? 'recovered from weaving' : '', e.bob ? sxN(e.bob) + (e.s === 'wp' ? ' beams' : ' bobbins') : '', e.n ? skEsc(e.n) : '', skEsc(e.by || '')].filter(Boolean).join(' · ');
     return [skEsc(e.d.slice(5)), name, `<span class="sxSm2">${det}</span>`, `<span class="sxTag ${e.k === 'out' ? 'out' : e.k === 'mv' ? 'open' : 'in'}">${e.k === 'out' ? 'OUT' : e.k === 'mv' ? 'MOVE' : 'IN'}</span>`, `<b>${sxN(e.kg)}</b>`, e.bx ? sxN(e.bx) : ''].concat(adm ? [`<button type="button" class="mini-icon-btn" data-sx="undo" data-p="w" data-v="${skEsc(e.id)}" data-ym="${sxYm(e.d)}" title="Remove this entry" aria-label="Remove this entry">${sxIc('del', 13)}</button>`] : []);
   });
   return sxHead(title || 'Recent entries', 'This month') + '<div class="card sxCard">' + sxTbl(cols, rows, null, 'No entries yet this month.') + '</div>';
@@ -29753,48 +29772,51 @@ function yRecent(secs, title){
 /* ---------- Update form (IN / OUT / MOVE) ---------- */
 const yDL = () => `<datalist id="yIL">${yItems().filter(i => i.on !== false).map(i => `<option value="${skEsc(yLbl(i))}">`).join('')}</datalist>`;
 function yOpenRaw(){
-  yCfg(); const c = SX.cfg, F = SX.last, k = SX.yk || 'in', st = c.ystores;
-  const tabs = `<div class="hrTabs sxIO">${[['in', 'IN · received'], ['out', 'OUT · issued'], ['mv', 'MOVE · store to store']].map(x => `<button class="${k === x[0] ? 'active' : ''}" data-sx="yk" data-v="${x[0]}">${x[1]}</button>`).join('')}</div>`;
+  yCfg(); const c = SX.cfg, F = SX.last, k = SX.yk === 'out' ? 'out' : 'in';
+  const tabs = `<div class="hrTabs sxIO">${[['in', 'IN · received'], ['out', 'OUT · issued']].map(x => `<button class="${k === x[0] ? 'active' : ''}" data-sx="yk" data-v="${x[0]}">${x[1]}</button>`).join('')}</div>`;
   sxModal('Raw material', tabs + `<div class="sxF">
     ${sxField('Item (type code or colour, then choose)', '<input id="yI" list="yIL" type="text" autocomplete="off" placeholder="e.g. RM625 or SOFT SKY GREY">', 1)}
     <div class="field wide"><div id="yInfo" class="sxNote" style="margin:0;">Choose the item to see what is in the store.</div></div>
-    ${sxField(k === 'in' ? 'Stored in' : k === 'out' ? 'Taken from' : 'From store', `<select id="yS">${sxOpt(st, F.ystore)}</select>`)}
-    ${k === 'mv' ? sxField('To store', `<select id="yS2">${sxOpt(st, st.find(x => x !== F.ystore) || '')}</select>`) : ''}
     <div class="field" id="yBxW"><label>Boxes</label><input id="yBx" type="number" inputmode="decimal" min="0" step="any" placeholder="0"></div>
     ${sxField('Kg', '<input id="yKg" type="number" inputmode="decimal" min="0" step="any" placeholder="0">')}
     ${sxField('Date', `<input id="sxD" type="date" value="${skEsc(sxToday())}">`)}
     ${k === 'out' ? sxField('Goes to', `<select id="yTo">${sxOpt(c.ydest, F.yto, 'Choose')}</select>`) : ''}
-    ${sxField('Note (optional)', '<input id="sxN" type="text" placeholder="e.g. supplier, invoice, machine">', k === 'in' ? 1 : 0)}</div>` + yDL(), sxSave('ysaveraw', k === 'out' ? 'Save OUT' : k === 'mv' ? 'Save MOVE' : 'Save IN'));
+    ${sxField('Note (optional)', '<input id="sxN" type="text" placeholder="e.g. supplier, invoice, machine">', k === 'in' ? 1 : 0)}</div>` + yDL(), sxSave('ysaveraw', k === 'out' ? 'Save OUT' : 'Save IN'));
   setTimeout(() => { const e = $('yI'); if(e) e.focus(); }, 60);
 }
 function yInfoUpd(){
   const e = $('yI'), box = $('yInfo'); if(!e || !box) return; const i = yFind(e.value), bw = $('yBxW');
   if(!i){ box.innerHTML = 'Choose the item to see what is in the store.'; if(bw) bw.style.display = ''; return; }
-  const b = (yIdx()[i.id] || { tot: 0, st: {} }), sp = Object.keys(b.st).map(s => skEsc(s) + ' <b>' + sxN(b.st[s]) + '</b>').join(' · ');
-  box.innerHTML = `<b>${skEsc(i.col)}</b> · ${skEsc(i.sup)}${i.sz ? ' · ' + skEsc(i.sz) : ''}<br>${i.kgb > 0 ? sxN(i.kgb) + ' kg in 1 box' : 'Counted in kg only'} · In store now: <b>${sxN(b.tot)} kg</b>${i.kgb > 0 ? ' (' + sxN(Math.round(b.tot / i.kgb * 10) / 10) + ' boxes)' : ''}${sp ? '<br>' + sp : ''}`;
+  const b = (yIdx()[i.id] || { tot: 0 });
+  box.innerHTML = `<b>${skEsc(i.col)}</b> · ${skEsc(i.sup)}${i.sz ? ' · ' + skEsc(i.sz) : ''}<br>${i.kgb > 0 ? sxN(i.kgb) + ' kg in 1 box' : 'Counted in kg only'} · In store now: <b>${sxN(b.tot)} kg</b>${i.kgb > 0 ? ' (' + sxN(Math.round(b.tot / i.kgb * 10) / 10) + ' boxes)' : ''}`;
   if(bw) bw.style.display = i.kgb > 0 ? '' : 'none';
 }
 async function ySaveRaw(){
-  if(!sxCan('raw')) return; const k = SX.yk || 'in', i = yFind(sxVal('yI')), store = sxVal('yS'), s2 = sxVal('yS2'), d = sxVal('sxD') || sxToday(), to = sxVal('yTo');
+  if(!sxCan('raw')) return; const k = SX.yk === 'out' ? 'out' : 'in', i = yFind(sxVal('yI')), d = sxVal('sxD') || sxToday(), to = sxVal('yTo');
   let kg = Number(sxVal('yKg')), bx = Number(sxVal('yBx')) || 0;
-  if(!i){ toast('Choose the item from the list'); return; } if(!store){ toast('Choose the store'); return; }
+  if(!i){ toast('Choose the item from the list'); return; }
   if(!(kg > 0) && bx > 0 && i.kgb > 0) kg = Math.round(bx * i.kgb * 100) / 100; if(!(kg > 0)){ toast('Type the boxes or the kg'); return; }
   if(!(bx > 0) && i.kgb > 0) bx = Math.round(kg / i.kgb * 10) / 10;
-  if(k === 'out' && !to){ toast('Choose where it goes'); return; } if(k === 'mv' && (!s2 || s2 === store)){ toast('Choose a different store to move to'); return; }
-  const dl = k === 'mv' ? { ['yr|' + i.id + '|' + store]: -kg, ['yr|' + i.id + '|' + s2]: kg } : { ['yr|' + i.id + '|' + store]: k === 'out' ? -kg : kg };
-  const e = { id: sxId(), t: Date.now(), s: 'yr', k, d, y: i.id, col: i.col, store, store2: k === 'mv' ? s2 : '', to: k === 'out' ? to : '', kg, bx: i.kgb > 0 ? bx : 0, n: sxVal('sxN'), by: sxMe(), u: String(state.user.loginId), dl };
-  if(await sxSaveMove('w', e, k !== 'in')){ sxKeep({ ystore: store, yto: to }); toast('Saved'); sxClose(); skRender(); }
+  if(k === 'out' && !to){ toast('Choose where it goes'); return; }
+  const dl = {}; let store = '';
+  if(k === 'in'){ store = yMain(i.id); dl['yr|' + i.id + '|' + store] = kg; }
+  else {
+    const x = yIdx()[i.id] || { tot: 0, st: {} }; if(kg > x.tot + 0.0005){ toast('Not enough in stock (only ' + sxN(x.tot) + ' kg available)'); return; }
+    let left = kg; const used = []; Object.keys(x.st).sort((a, b) => x.st[b] - x.st[a]).forEach(s => { if(left <= 0.0004) return; const t = Math.min(left, x.st[s]); dl['yr|' + i.id + '|' + s] = -Math.round(t * 1000) / 1000; left -= t; used.push(s); }); store = used.join(' + ');
+  }
+  const e = { id: sxId(), t: Date.now(), s: 'yr', k, d, y: i.id, col: i.col, store, to: k === 'out' ? to : '', kg, bx: i.kgb > 0 ? bx : 0, n: sxVal('sxN'), by: sxMe(), u: String(state.user.loginId), dl };
+  if(await sxSaveMove('w', e, k === 'out')){ sxKeep({ yto: to }); toast('Saved'); sxClose(); skRender(); }
 }
 /* ---------- Opening stock (one time, one small save) ---------- */
 function yOpenOpening(){
-  yCfg(); const st = SX.cfg.ystores, items = yItems().filter(i => i.on !== false);
+  yCfg(); const items = yItems().filter(i => i.on !== false);
   const ref = (i) => { const n = Number(i.id.slice(1)); const r = SX_YSEED[n - 1]; return r && r[2] === i.col && r[1] === i.code ? r[6] : 0; };
-  const rows = items.map(i => `<tr data-q="${skEsc((yLbl(i) + ' ' + i.sz).toLowerCase())}"><td><span class="sxCode">${skEsc(i.code)}</span></td><td><span class="sxYc">${yDot(yHex(i.col, yFam(i.col)))}${skEsc(i.col)}</span><div class="sxSm2">${skEsc(i.sup)}</div></td><td class="r">${ref(i) > 0 ? sxN(ref(i)) : '<span class="sxSm2">-</span>'}</td>${st.map(s => `<td><input class="yOp" data-y="${i.id}" data-s="${skEsc(s)}" type="number" inputmode="decimal" min="0" step="any" placeholder="0"></td>`).join('')}</tr>`).join('');
-  sxModal('Opening stock', `<div class="sxNote" style="margin-bottom:10px;">Type the kg you have now in each store. It is added to the stock. Leave empty what you do not have. The sheet column is only a hint from your Excel.</div><input id="yOq" class="sxQ" type="text" placeholder="Search code or colour…" style="margin-bottom:10px;max-width:none;"><div class="table-scroll" style="max-height:52vh;overflow:auto;"><table class="report-table sxRT yOpT"><thead><tr><th>Code</th><th class="k">Colour</th><th>Sheet kg</th>${st.map(s => `<th>${skEsc(s)} kg</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table></div>`, sxSave('ysaveopen', 'Save opening stock'));
+  const rows = items.map(i => `<tr data-q="${skEsc((yLbl(i) + ' ' + i.sz).toLowerCase())}"><td><span class="sxCode">${skEsc(i.code)}</span></td><td><span class="sxYc">${yDot(yHex(i.col, yFam(i.col)))}${skEsc(i.col)}</span><div class="sxSm2">${skEsc(i.sup)}</div></td><td class="r">${ref(i) > 0 ? sxN(ref(i)) : '<span class="sxSm2">-</span>'}</td><td><input class="yOp" data-y="${i.id}" type="number" inputmode="decimal" min="0" step="any" placeholder="0"></td></tr>`).join('');
+  sxModal('Opening stock', `<div class="sxNote" style="margin-bottom:10px;">Type the kg you have now. It is added to the stock. Leave empty what you do not have. The sheet column is only a hint from your Excel.</div><input id="yOq" class="sxQ" type="text" placeholder="Search code or colour…" style="margin-bottom:10px;max-width:none;"><div class="table-scroll" style="max-height:52vh;overflow:auto;"><table class="report-table sxRT yOpT"><thead><tr><th>Code</th><th class="k">Colour</th><th>Sheet kg</th><th>Kg now</th></tr></thead><tbody>${rows}</tbody></table></div>`, sxSave('ysaveopen', 'Save opening stock'));
 }
 async function ySaveOpen(){
   if(!sxCan('raw')) return; const rows = [], dl = {}; let tot = 0;
-  document.querySelectorAll('#sxModal .yOp').forEach(e => { const v = Number(e.value); if(v > 0){ rows.push({ y: e.dataset.y, s: e.dataset.s, kg: v }); dl['yr|' + e.dataset.y + '|' + e.dataset.s] = (dl['yr|' + e.dataset.y + '|' + e.dataset.s] || 0) + v; tot += v; } });
+  document.querySelectorAll('#sxModal .yOp').forEach(e => { const v = Number(e.value); if(v > 0){ const st = yMain(e.dataset.y); rows.push({ y: e.dataset.y, s: st, kg: v }); dl['yr|' + e.dataset.y + '|' + st] = (dl['yr|' + e.dataset.y + '|' + st] || 0) + v; tot += v; } });
   if(!rows.length){ toast('Type at least one quantity'); return; }
   if(!confirm('Add ' + sxN(tot) + ' kg of opening stock for ' + rows.length + ' lines?')) return;
   const e = { id: sxId(), t: Date.now(), s: 'yr', k: 'in', open: 1, d: sxToday(), rows, kg: tot, n: 'Opening stock', by: sxMe(), u: String(state.user.loginId), dl };
@@ -29876,10 +29898,10 @@ function yItemForm(id){
   sxModal(id ? 'Change yarn item' : 'New yarn item', `<div class="sxF">${sxField('Code', `<input id="yfCode" type="text" value="${skEsc(i.code)}" placeholder="e.g. RM625">`)}${sxField('Colour description', `<input id="yfCol" type="text" value="${skEsc(i.col)}" placeholder="e.g. SOFT SKY GREY-SF87">`)}
     ${sxField('Supplier', `<input id="yfSup" type="text" value="${skEsc(i.sup)}" placeholder="e.g. HUAYUAN, CHINA">`)}${sxField('Yarn size', `<input id="yfSz" type="text" value="${skEsc(i.sz)}" placeholder="e.g. 450D/192F">`)}
     ${sxField('Section', `<input id="yfSec" list="yfSecs" type="text" value="${skEsc(i.sec)}" placeholder="e.g. Pile">`)}${sxField('Kg in 1 box (0 = kg only)', `<input id="yfKgb" type="number" inputmode="decimal" min="0" step="any" value="${i.kgb || ''}" placeholder="25">`)}
-    ${sxField('Show in lists', `<select id="yfOn">${sxOpt([['1', 'Yes'], ['0', 'No (hide it, stock is kept)']], i.on === false ? '0' : '1')}</select>`)}</div><datalist id="yfSecs">${ySecs().map(s => `<option value="${skEsc(s)}">`).join('')}</datalist>`, sxSave('ysaveitem', 'Save', id || ''));
+    ${sxField('Used per day (kg, optional)', `<input id="yfUse" type="number" inputmode="decimal" min="0" step="any" value="${i.use || ''}" placeholder="e.g. 200">`)}${sxField('Show in lists', `<select id="yfOn">${sxOpt([['1', 'Yes'], ['0', 'No (hide it, stock is kept)']], i.on === false ? '0' : '1')}</select>`)}</div><datalist id="yfSecs">${ySecs().map(s => `<option value="${skEsc(s)}">`).join('')}</datalist>`, sxSave('ysaveitem', 'Save', id || ''));
 }
 async function ySaveItem(id){
-  const o = { code: sxVal('yfCode'), col: sxVal('yfCol'), sup: sxVal('yfSup'), sz: sxVal('yfSz'), sec: sxVal('yfSec') || 'Other', kgb: Number(sxVal('yfKgb')) || 0, on: sxVal('yfOn') !== '0' };
+  const o = { code: sxVal('yfCode'), col: sxVal('yfCol'), sup: sxVal('yfSup'), sz: sxVal('yfSz'), sec: sxVal('yfSec') || 'Other', kgb: Number(sxVal('yfKgb')) || 0, use: Number(sxVal('yfUse')) || 0, on: sxVal('yfOn') !== '0' };
   if(!o.col){ toast('Type the colour description'); return; }
   const L = yItems(); if(L.some(x => x.id !== id && x.code === o.code && x.col.toLowerCase() === o.col.toLowerCase() && x.sup.toLowerCase() === o.sup.toLowerCase())){ toast('This item is already in the list'); return; }
   if(id){ Object.assign(yItem(id), o); } else { const n = L.reduce((a, x) => Math.max(a, Number(String(x.id).slice(1)) || 0), 0) + 1; L.push(Object.assign({ id: 'y' + n }, o)); }
@@ -29892,9 +29914,9 @@ function yItemsSec(){
 function sxYSet(show){
   yCfg(); let h = '';
   if(show('yitems')) h += yItemsSec();
-  if(show('ystores')) h += sxListSec('ystores', 'Stores', 'Where yarn is kept (for example RVF and SSTM).', 'e.g. RVF');
+  if(show('ydaily')) h += `<details class="acSec admD" ${sxSecAttr('ydaily')}><summary>Box size and daily use</summary><div class="acSecB"><p class="sub">For every yarn, set the kg in 1 box and the kg used per day. The Raw Store works out boxes and days left from these. If daily use is empty, it is worked out from what you issued in the last 30 days.</p><button type="button" class="pcBtnSoft" data-sx="ydaily">Set box size and daily use</button></div></details>`;
   if(show('ydest')) h += sxListSec('ydest', 'Yarn goes to', 'Shown when yarn goes OUT of the store.', 'e.g. Weaving');
-  if(show('yrules')) h += `<details class="acSec admD" ${sxSecAttr('yrules')}><summary>Order warning</summary><div class="acSecB"><p class="sub">An item shows "Order now" when the stock will last fewer days than this, going by what was issued in the last 30 days.</p><div class="sxF">${sxField('Order when days left is below', `<input id="yOrd" type="number" inputmode="decimal" value="${SX.cfg.yOrder || 30}" placeholder="30">`)}</div><button type="button" class="btn btn-primary btn-sm" data-sx="ysaverules" style="margin-top:10px;">Save</button></div></details>`;
+  if(show('yrules')) h += `<details class="acSec admD" ${sxSecAttr('yrules')}><summary>Order warning</summary><div class="acSecB"><p class="sub">An item shows "Order now" when the stock will last fewer days than this.</p><div class="sxF">${sxField('Order when days left is below', `<input id="yOrd" type="number" inputmode="decimal" value="${SX.cfg.yOrder || 30}" placeholder="30">`)}</div><button type="button" class="btn btn-primary btn-sm" data-sx="ysaverules" style="margin-top:10px;">Save</button></div></details>`;
   if(show('yopen')) h += `<details class="acSec admD" ${sxSecAttr('yopen')}><summary>Opening stock</summary><div class="acSecB"><p class="sub">Enter what you have in each store today, for all yarns at once. Do this one time when you start.</p><button type="button" class="pcBtnSoft" data-sx="yopen">Enter opening stock</button></div></details>`;
   if(show('beamCols')) h += sxListSec('beamCols', 'Beam colours', 'The colours of warping beams.', 'e.g. White');
   if(show('beamW')) h += `<details class="acSec admD" ${sxSecAttr('beamW')}><summary>Kg in 1 beam</summary><div class="acSecB"><p class="sub">The standard weight of one beam for each colour. The kg is worked out from this when you enter beams.</p><div class="sxF">${SX.cfg.beamCols.map(c => sxField(skEsc(c), `<input class="yBw" data-c="${skEsc(c)}" type="number" inputmode="decimal" value="${SX.cfg.beamW[c] || ''}" placeholder="kg">`)).join('') || '<span style="font-size:12px;color:var(--muted);">Add a beam colour first.</span>'}</div>${SX.cfg.beamCols.length ? '<button type="button" class="btn btn-primary btn-sm" data-sx="ysavebw" style="margin-top:10px;">Save</button>' : ''}</div></details>`;
@@ -29902,7 +29924,7 @@ function sxYSet(show){
 }
 /* ---------- Download ---------- */
 function yDl(kind){
-  if(kind === 'raw'){ const st = SX.cfg.ystores, rows = [['Section', 'Code', 'Colour', 'Supplier', 'Yarn size'].concat(st.map(s => s + ' kg'), ['Boxes', 'Total kg', 'Used per day kg', 'Days left', 'Status'])]; ySortRows(yRows().filter(r => r.kg > 0.0004 || r.s === 'out'), 'col').forEach(r => rows.push([r.i.sec, r.i.code, r.i.col, r.i.sup, r.i.sz].concat(st.map(s => Math.round((r.st[s] || 0) * 100) / 100), [r.bx != null ? Math.round(r.bx * 10) / 10 : '', Math.round(r.kg * 100) / 100, Math.round(r.per * 100) / 100, r.days != null ? Math.round(r.days) : '', Y_ST[r.s][0]]))); skDlXlsx('raw-material-stock', 'Raw material', rows); }
+  if(kind === 'raw'){ const rows = [['Section', 'Code', 'Colour', 'Supplier', 'Yarn size', 'Boxes', 'Available kg', 'Used per day kg', 'Days left', 'Status']]; ySortRows(yRows().filter(r => r.kg > 0.0004 || r.s === 'out'), 'col').forEach(r => rows.push([r.i.sec, r.i.code, r.i.col, r.i.sup, r.i.sz, r.bx != null ? Math.round(r.bx * 10) / 10 : '', Math.round(r.kg * 100) / 100, Math.round(r.per * 100) / 100, r.days != null ? Math.round(r.days) : '', Y_ST[r.s][0]])); skDlXlsx('raw-material-stock', 'Raw material', rows); }
   else if(kind === 'rew'){ const rows = [['Code', 'Colour', 'In raw store kg', 'Rewound kg', 'Bobbins', 'Recovered from weaving kg', 'Total in hand kg']]; yRewRows().forEach(r => rows.push([r.i ? r.i.code : '', r.label, Math.round(r.raw * 100) / 100, Math.round(r.kg * 100) / 100, r.n, Math.round(r.rc * 100) / 100, Math.round(r.tot * 100) / 100])); skDlXlsx('rewinding-stock', 'Rewinding', rows); }
   else if(kind === 'wp'){ const rows = [['Colour', 'Kg per beam', 'Start of month', 'Made', 'Used', 'Closing beams', 'Total kg']]; yWpRows().forEach(r => rows.push([r.col, r.w, r.op, r.mo, r.us, r.n, Math.round(r.kg * 100) / 100])); skDlXlsx('warping-beams', 'Warping', rows); }
 }
@@ -29910,7 +29932,7 @@ function yDl(kind){
 function sxRwHtml(){ return SX.tab === 'wp' ? yWpHtml() : yRewHtml(); }
 const _yOpenForm = sxOpenForm; sxOpenForm = function(kind){ if(kind === 'yraw') return yOpenRaw(); if(kind === 'yrew') return yOpenRew(); if(kind === 'ywp') return yOpenWp(); return _yOpenForm(kind); };
 const _yDl = sxDl; sxDl = function(kind){ if(kind === 'raw' || kind === 'rew' || kind === 'wp') return yDl(kind); return _yDl(kind); };
-Object.assign(SX_SM, { raw: ['yitems', 'ystores', 'ydest', 'yrules', 'yopen'], rew: [], wp: ['beamCols', 'beamW'] });
+Object.assign(SX_SM, { raw: ['yitems', 'ydaily', 'ydest', 'yrules', 'yopen'], rew: [], wp: ['beamCols', 'beamW'] });
 document.addEventListener('click', async (ev) => {
   const el = ev.target.closest && ev.target.closest('[data-sx]'); if(!el || el.tagName === 'SELECT') return; const a = el.dataset.sx, v = el.dataset.v;
   if(a === 'yk'){ const s = sxSnap(); SX.yk = v; yOpenRaw(); sxRestore(s); yInfoUpd(); } else if(a === 'yk2'){ const s = sxSnap(); SX.yk2 = v; yOpenRew(); sxRestore(s); yInfoUpd(); } else if(a === 'yk3'){ const s = sxSnap(); SX.yk3 = v; yOpenWp(); sxRestore(s); }
@@ -29930,6 +29952,19 @@ document.addEventListener('input', (ev) => {
   else if(t.id === 'yOq'){ const q = t.value.trim().toLowerCase(); document.querySelectorAll('#sxModal tbody tr').forEach(r => { r.style.display = !q || (r.dataset.q || '').indexOf(q) >= 0 ? '' : 'none'; }); }
 });
 document.addEventListener('change', (ev) => { const t = ev.target; if(t && t.id === 'yI') yInfoUpd(); });
+
+/* ---------- Box size and daily use (Settings, one small save) ---------- */
+function yOpenDaily(){
+  yCfg(); const use = yUse(), items = yItems().filter(i => i.on !== false);
+  const rows = items.map(i => `<tr data-q="${skEsc((yLbl(i) + ' ' + i.sz).toLowerCase())}"><td><span class="sxCode">${skEsc(i.code)}</span></td><td><span class="sxYc">${yDot(yHex(i.col, yFam(i.col)))}${skEsc(i.col)}</span><div class="sxSm2">${skEsc(i.sup)}</div></td><td><input class="yDk" data-y="${i.id}" type="number" inputmode="decimal" min="0" step="any" value="${i.kgb || ''}" placeholder="kg"></td><td><input class="yDu" data-y="${i.id}" type="number" inputmode="decimal" min="0" step="any" value="${i.use || ''}" placeholder="${use[i.id] ? sxN(use[i.id] / 30) + ' auto' : 'kg'}"></td></tr>`).join('');
+  sxModal('Box size and daily use', `<div class="sxNote" style="margin-bottom:10px;">Kg in 1 box: leave empty if the yarn is counted in kg only. Used per day: leave empty to work it out from the last 30 days.</div><input id="yOq" class="sxQ" type="text" placeholder="Search code or colour…" style="margin-bottom:10px;max-width:none;"><div class="table-scroll" style="max-height:52vh;overflow:auto;"><table class="report-table sxRT yOpT"><thead><tr><th>Code</th><th class="k">Colour</th><th>Kg in 1 box</th><th>Used per day kg</th></tr></thead><tbody>${rows}</tbody></table></div>`, sxSave('ysavedaily', 'Save'));
+}
+async function ySaveDaily(){
+  let n = 0; document.querySelectorAll('#sxModal .yDk').forEach(e => { const i = yItem(e.dataset.y); if(i && (Number(e.value) || 0) !== (Number(i.kgb) || 0)){ i.kgb = Number(e.value) || 0; n++; } });
+  document.querySelectorAll('#sxModal .yDu').forEach(e => { const i = yItem(e.dataset.y); if(i && (Number(e.value) || 0) !== (Number(i.use) || 0)){ i.use = Number(e.value) || 0; n++; } });
+  if(!n){ toast('Nothing changed'); return; } if(await sxPutCfg()){ toast('Saved'); sxClose(); skRender(); }
+}
+document.addEventListener('click', (ev) => { const el = ev.target.closest && ev.target.closest('[data-sx]'); if(!el) return; const a = el.dataset.sx; if(a === 'ydaily') yOpenDaily(); else if(a === 'ysavedaily') ySaveDaily(); });
 
 /* ---- clicks ---- */
 document.addEventListener('click', (ev) => {
