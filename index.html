@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261117-144945">
+<meta name="rvf-build" content="20261117-145116">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -29843,7 +29843,7 @@ function yOpenRaw(){
 }
 function yInfoUpd(){
   const e = $('yI'), box = $('yInfo'); if(!e || !box) return; const i = yFind(e.value), bw = $('yBxW');
-  if(!i){ box.innerHTML = 'Choose the item to see what is in the store.'; if(bw) bw.style.display = ''; return; }
+  if(!i){ const t = (e.value || '').trim(); box.innerHTML = t.length > 1 ? (sxAdmin() ? `This yarn is not in the list yet. <button type="button" class="pcBtnSoft sm" data-sx="ynewraw">Add it as a new yarn</button><br>Fill in its code, colour, supplier and box size once. After that you only type the boxes or kg.` : 'This yarn is not in the list. Ask the administrator to add it.') : 'Choose the item to see what is in the store.'; if(bw) bw.style.display = ''; return; }
   const b = (yIdx()[i.id] || { tot: 0 });
   box.innerHTML = `<b>${skEsc(i.col)}</b> · ${skEsc(i.sup)}${i.sz ? ' · ' + skEsc(i.sz) : ''}<br>${i.kgb > 0 ? sxN(i.kgb) + ' kg in 1 box' : 'Counted in kg only'} · In store now: <b>${sxN(b.tot)} kg</b>${i.kgb > 0 ? ' (' + sxN(Math.round(b.tot / i.kgb * 10) / 10) + ' boxes)' : ''}`;
   if(bw) bw.style.display = i.kgb > 0 ? '' : 'none';
@@ -29963,7 +29963,7 @@ async function ySaveItem(id){
   if(!o.col){ toast('Type the colour description'); return; }
   const L = yItems(); if(L.some(x => x.id !== id && x.code === o.code && x.col.toLowerCase() === o.col.toLowerCase() && x.sup.toLowerCase() === o.sup.toLowerCase())){ toast('This item is already in the list'); return; }
   if(id){ Object.assign(yItem(id), o); } else { const n = L.reduce((a, x) => Math.max(a, Number(String(x.id).slice(1)) || 0), 0) + 1; L.push(Object.assign({ id: 'y' + n }, o)); }
-  SX.open = SX.open || {}; SX.open.yitems = 1; if(await sxPutCfg()){ toast('Saved'); sxClose(); skRender(); }
+  SX.open = SX.open || {}; SX.open.yitems = 1; if(await sxPutCfg()){ toast('Saved'); const back = !id && SX.yBack; SX.yBack = 0; sxClose(); skRender(); if(back){ const ni = yItems()[yItems().length - 1]; yOpenRaw(); const e = $('yI'); if(e && ni){ e.value = yLbl(ni); yInfoUpd(); const b = $('yBx'); if(b) b.focus(); } } }
 }
 function yItemsSec(){
   const all = yItems().slice().sort((a, b) => (a.sec || '').localeCompare(b.sec || '') || a.col.localeCompare(b.col)), n = all.filter(i => i.on !== false).length;
@@ -29997,7 +29997,7 @@ document.addEventListener('click', async (ev) => {
   if(a === 'yk'){ const s = sxSnap(); SX.yk = v; yOpenRaw(); sxRestore(s); yInfoUpd(); } else if(a === 'yk2'){ const s = sxSnap(); SX.yk2 = v; yOpenRew(); sxRestore(s); yInfoUpd(); } else if(a === 'yk3'){ const s = sxSnap(); SX.yk3 = v; yOpenWp(); sxRestore(s); }
   else if(a === 'ysm'){ SX.yso = SX.yso === v ? '' : v; SX.fo = ''; skRender(); } else if(a === 'ysort'){ const p = v.split(':'); SX.last['ys_' + p[0]] = p[1]; sxKeep({}); SX.yso = ''; skRender(); }
   else if(a === 'ysaveraw') ySaveRaw(); else if(a === 'ysaverew') ySaveRew(); else if(a === 'ysavewp') ySaveWp(); else if(a === 'ysaveopen') ySaveOpen(); else if(a === 'ysaveitem') ySaveItem(v);
-  else if(a === 'yopen'){ SX.sfor = ''; SX.tab = 'raw'; SK.tab = 'raw'; skRender(); yOpenOpening(); } else if(a === 'ynew') yItemForm('');
+  else if(a === 'yopen'){ SX.sfor = ''; SX.tab = 'raw'; SK.tab = 'raw'; skRender(); yOpenOpening(); } else if(a === 'ynew') yItemForm(''); else if(a === 'ynewraw'){ const t = sxVal('yI'); SX.yBack = 1; yItemForm(''); setTimeout(() => { const f = $('yfCol'); if(f && !f.value) f.value = t; }, 60); }
   else if(a === 'yedit'){ const id = $('yEdSel') ? $('yEdSel').value : ''; if(!id){ toast('Choose a yarn first'); return; } yItemForm(id); }
   else if(a === 'ysaverules'){ SX.cfg.yOrder = Number(sxVal('yOrd')) || 30; if(await sxPutCfg()) toast('Saved'); }
   else if(a === 'ysavebw'){ SX.cfg.beamW = {}; document.querySelectorAll('.yBw').forEach(i => { const n = Number(i.value); if(n > 0) SX.cfg.beamW[i.dataset.c] = n; }); if(await sxPutCfg()) toast('Saved'); }
