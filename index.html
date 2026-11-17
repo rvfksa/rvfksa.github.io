@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261117-164048">
+<meta name="rvf-build" content="20261117-164220">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -30096,9 +30096,12 @@ skFloorSvg = function(dept){
     else if(!d) g += `<text x="${cx + CW / 2}" y="${cy + H / 2 + 8}" font-size="${10 * K * FS}" fill="#a16207" text-anchor="middle">No design</text>`;
     else {
       const u = K * FS, fD = 10.6 * u, fC = 9.4 * u, fM = 7.9 * u, w = CW - 16, pillH = 12.5 * K * 0.95;
-      const dl = wrap(d.name, fD, w, 2), cl = [p.c1, p.c2, p.c3].filter(Boolean).join(' / '), ml = cl ? wrap(cl, fM, w, dl.length > 1 ? 1 : 2) : [];
-      const hD = dl.length * fD * 1.28, hC = p.col ? fC * 1.7 : 0, hM = ml.length * fM * 1.35 + (ml.length ? fM * 0.25 : 0), hT = hD + hC + hM;
-      const top = cy + 27 * K, bot = cy + H - 8 - pillH - 4 * K;
+      const dl = wrap(d.name, fD, w, 2), cl = [p.c1, p.c2, p.c3].filter(Boolean).join(' / ');
+      let ml = cl ? wrap(cl, fM, w, dl.length > 1 ? 1 : 2) : [];
+      const hD = dl.length * fD * 1.28, hC = p.col ? fC * 1.7 : 0, top = cy + 27 * K, bot = cy + H - 8 - pillH - 4 * K;
+      const mh = (n) => n * fM * 1.35 + (n ? fM * 0.25 : 0);
+      if(ml.length > 1 && hD + hC + mh(ml.length) > bot - top) ml = wrap(cl, fM, w, 1);
+      const hT = hD + hC + mh(ml.length);
       let ty = top + Math.max(0, (bot - top - hT) / 2);
       dl.forEach(l => { ty += fD * 1.0; g += `<text x="${cx + CW / 2}" y="${ty.toFixed(1)}" font-size="${fD}" font-weight="700" fill="#111827" text-anchor="middle" letter-spacing="-.1">${E(l)}</text>`; ty += fD * 0.28; });
       if(p.col){ ty += fC * 0.5; const hx = sxColHex(p.col).slice(0, 3), dr = 3.4 * u, dw = hx.length ? (hx.length - 1) * dr * 1.5 + 2 * dr + 6 * u : 0, ft = flrFit(p.col, fC, false, w - dw), x0 = cx + CW / 2 - (flrEst(ft, fC, false) + dw) / 2; ty += fC * 0.9; hx.forEach((c, q) => { g += `<circle cx="${(x0 + dr + q * dr * 1.5).toFixed(1)}" cy="${(ty - fC * 0.33).toFixed(1)}" r="${dr}" fill="${c}" stroke="rgba(15,23,42,.30)" stroke-width=".7"/>`; }); g += `<text x="${(x0 + dw).toFixed(1)}" y="${ty.toFixed(1)}" font-size="${fC}" font-weight="500" fill="#4338ca">${E(ft)}</text>`; ty += fC * 0.3; }
