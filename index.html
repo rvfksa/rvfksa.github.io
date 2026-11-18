@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261118-080839">
+<meta name="rvf-build" content="20261118-081555">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -28641,6 +28641,13 @@ table.sxRT th.a, table.sxRT td.a{ width:1%; }
 .sxTop .hrTabs.mpTabs button{flex:0 0 auto;padding:8px 14px;font-size:12.5px;white-space:nowrap}
 .mpEd:hover circle{fill:#dfe3f3}
 @media (max-width:560px){ .sxTop .hrTabs.mpTabs{flex:1 1 100%;display:flex} .sxTop .hrTabs.mpTabs button{flex:1 1 0} }
+button.mpS{all:unset;box-sizing:border-box;display:block;cursor:pointer;background:#f6f7fb;border-radius:12px;padding:12px 8px;text-align:center;border:1.5px solid transparent;transition:border-color .15s,background .15s}
+button.mpS:hover{background:#f0f2fb}
+button.mpS.on{background:#eef0fd;border-color:#6366f1}
+.mpPg{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px;border-top:1px solid #eef0f5;font-size:12px;color:#6b7694}
+.mpPb{display:inline-flex;align-items:center;gap:10px}.mpPb b{font-weight:600;color:#111827;font-size:12px}
+.mpPb button:disabled{opacity:.4;cursor:default}
+.mpLg .sxRT td{white-space:nowrap}
 </style>
 <div id="rvfBusy"><i></i><span id="rvfBusyTxt">Loading data…</span></div>
 <script>
@@ -30103,7 +30110,7 @@ function sxMpMachHtml(){
   const flds = [['dept', 'Department', ['RVF', 'SSTM']], ['st', 'Status', [['run', 'Running'], ['none', 'No design'], ['stop', 'Stopped']]], ['cat', 'Category', uniq(r => r.cat)], ['des', 'Design', uniq(r => r.d && r.d.name)]];
   let h = sxTop(mpTabsHtml() + sxSearch('sxMq', SX.mq, 'Search machine, design or colour…') + sxFilt('mp', flds) + (lay ? '' : ySortBtn('mp', ['mc', 'gdes', 'gcat', 'gcol', 'gdept'])) + `<button type="button" class="pcBtnSoft sm" data-sx="mpv" title="Switch between the floor layout and the table">${lay ? 'Table' : 'Layout'}</button>` + sxDlBtn('mp'));
   const rows = all.filter(r => (!F.dept || r.dept === F.dept) && (!F.st || r.st === F.st) && (!F.cat || r.cat === F.cat) && (!F.des || (r.d && r.d.name === F.des)) && (!q || (r.nm + ' ' + (r.d ? r.d.name : '') + ' ' + r.col + ' ' + r.mix + ' ' + r.cat).toLowerCase().indexOf(q) >= 0));
-  if(lay){ const on = rows.length !== all.length; window.__mpOk = on ? rows.reduce((o, r) => (o[String(r.m.id)] = 1, o), {}) : null; SK.dept = F.dept || 'ALL'; const out = skPlanHtml(true).replace(/<details class="acSec admD">[\s\S]*?<\/details>/, ''); window.__mpOk = null; return h + mpSumHtml(all) + out + (on ? `<div class="sxSm2" style="margin:8px 2px;">${rows.length} of ${all.length} machines match. The others are faded.</div>` : ''); }
+  if(lay){ const on = rows.length !== all.length; window.__mpOk = on ? rows.reduce((o, r) => (o[String(r.m.id)] = 1, o), {}) : null; SK.dept = F.dept || 'ALL'; const out = skPlanHtml(true).replace(/<details class="acSec admD">[\s\S]*?<\/details>/, ''); window.__mpOk = null; return h + mpSumHtml(all) + out.split('<h3 style="margin:18px 0 8px;font-size:15px;">Recent changes</h3>')[0] + (on ? `<div class="sxSm2" style="margin:8px 2px;">${rows.length} of ${all.length} machines match. The others are faded.</div>` : '') + mpLogHtml(); }
   const key = { gdes: (r) => r.d ? r.d.name : '~ No design', gcat: (r) => r.cat || '~ No category', gcol: (r) => r.col || '~ No colour', gdept: (r) => r.dept }[mode];
   if(key) rows.sort((a, b) => String(key(a)).localeCompare(String(key(b))) || Number(a.m.id) - Number(b.m.id));
   const run = rows.filter(r => r.st === 'run').length, adm = skCanMach();
@@ -30112,7 +30119,7 @@ function sxMpMachHtml(){
   let body = [];
   if(key){ let cur = null, g = null, grp = []; rows.forEach(r => { const t = String(key(r)).replace(/^~ /, ''); if(t !== cur){ cur = t; g = { t, n: 0, run: 0 }; grp.push(g); body.push({ g }); } g.n++; if(r.st === 'run') g.run++; body.push(mk(r)); }); body = body.map(x => x.g ? { g: `<b>${skEsc(x.g.t)}</b> <span class="sxSm2">· ${x.g.n} machine${x.g.n === 1 ? '' : 's'} · ${x.g.run} running</span>` } : x); } else body = rows.map(mk);
   const foot = ['<b>Total</b>', '', '', '', '', '', `<b>${run}</b> running of <b>${rows.length}</b>`].concat(adm ? [''] : []);
-  return h + mpSumHtml(all) + sxHead('Machines and what runs on them', key ? Y_SORT[mode] : 'In machine order') + '<div class="card sxCard mpTbl">' + sxTbl(cols, body, foot, 'No machine matches this filter.') + '</div>';
+  return h + mpSumHtml(all) + sxHead('Machines and what runs on them', key ? Y_SORT[mode] : 'In machine order') + '<div class="card sxCard mpTbl">' + sxTbl(cols, body, foot, 'No machine matches this filter.') + '</div>' + mpLogHtml();
 }
 function mpThumb(d, sz){
   const c = d && d.cover; const ini = skEsc(String((d && d.name) || '?').trim().charAt(0).toUpperCase());
@@ -30122,10 +30129,10 @@ function mpSumHtml(all){
   const run = all.filter(r => r.st === 'run'), stop = all.filter(r => r.st === 'stop').length, none = all.filter(r => r.st === 'none').length, by = {};
   run.forEach(r => { const n = r.d.name; by[n] = (by[n] || 0) + 1; });
   const l = Object.keys(by).map(n => [n, by[n]]).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])), mx = l.length ? l[0][1] : 1, q = (SX.mq || '').toLowerCase();
-  const tile = (n, t, c) => `<div class="mpS ${c || ''}"><b>${n}</b><span>${t}</span></div>`;
+  const F = sxFget('mp'), tile = (n, t, c, key) => `<button type="button" class="mpS ${c || ''} ${key && F.st === key ? 'on' : ''}" data-sx="${key === 'di' ? 'mpdi' : 'mpst'}" data-v="${key}" title="${key === 'di' ? 'Open the list of designs that are running' : 'Show only these machines'}"><b>${n}</b><span>${t}</span></button>`;
   const it = (x) => `<button type="button" class="mpDs ${q && x[0].toLowerCase() === q ? 'on' : ''}" data-sx="mpd" data-v="${skEsc(x[0])}" title="Show the machines running ${skEsc(x[0])}"><span class="mpDn">${skEsc(x[0])}</span><b>${x[1]}</b><i style="width:${Math.max(6, Math.round(x[1] / mx * 100))}%"></i></button>`;
   const rest = l.slice(6);
-  return `<div class="card sxCard mpSum"><div class="mpTiles">${tile(run.length, 'Running', 'g')}${tile(stop, 'Stopped')}${tile(none, 'No design', 'a')}${tile(l.length, 'Designs in use')}</div><div class="mpH">Designs running now<span>Tap a design to see its machines</span></div><div class="mpDg">${l.slice(0, 6).map(it).join('')}</div>${rest.length ? `<details class="mpMore"><summary>Show ${rest.length} more designs</summary><div class="mpDg">${rest.map(it).join('')}</div></details>` : ''}</div>`;
+  return `<div class="card sxCard mpSum"><div class="mpTiles">${tile(run.length, 'Running', 'g', 'run')}${tile(stop, 'Stopped', '', 'stop')}${tile(none, 'No design', 'a', 'none')}${tile(l.length, 'Designs in use', '', 'di')}</div><div class="mpH">Designs running now<span>Tap a design to see its machines</span></div><div class="mpDg">${l.slice(0, 6).map(it).join('')}</div>${rest.length ? `<details class="mpMore"><summary>Show ${rest.length} more designs</summary><div class="mpDg">${rest.map(it).join('')}</div></details>` : ''}</div>`;
 }
 function sxDzHtml(){
   const F = sxFget('dz'), q = (SX.dq || '').toLowerCase(), mode = ySortOf('dz'), pm = SK.plan.m || {};
@@ -30163,6 +30170,19 @@ document.addEventListener('click', (ev) => { const el = ev.target.closest && ev.
   document.addEventListener('mouseover', (ev) => { const t = ev.target.closest && ev.target.closest('.mpTh'); const p = document.getElementById('mpPop'); if(!t || t.classList.contains('no')){ if(p) p.style.display = 'none'; return; } const im = t.querySelector('img'); if(!im) return; const q = pop(); q.querySelector('img').src = im.src; q.style.display = 'block'; const r = t.getBoundingClientRect(), W = 236; let x = r.right + 10, y = r.top - 24; if(x + W > innerWidth) x = Math.max(8, r.left - W - 10); if(y + W > innerHeight) y = innerHeight - W - 10; if(y < 8) y = 8; q.style.left = x + 'px'; q.style.top = y + 'px'; });
   window.addEventListener('scroll', () => { const p = document.getElementById('mpPop'); if(p) p.style.display = 'none'; }, true);
 })();
+
+function mpLogHtml(){
+  const all = (SK.plan.log || []).slice().reverse(); if(!all.length) return '';
+  const per = 13, pages = Math.ceil(all.length / per); SX.mpl = Math.min(Math.max(0, SX.mpl || 0), pages - 1);
+  const a = SX.mpl * per, rows = all.slice(a, a + per).map(l => [`<span class="sxSm2">${skEsc(l.d)}</span>`, `<b>${skEsc(l.mc)}</b>`, l.to ? skEsc(l.to) : '<span class="sxSm2">Cleared</span>', l.from ? `<span class="sxSm2">${skEsc(l.from)}</span>` : '<span class="sxSm2">-</span>', `<span class="sxSm2">${skEsc(l.by || '')}</span>`]);
+  const pg = `<div class="mpPg"><span>${a + 1} to ${Math.min(a + per, all.length)} of ${all.length}</span><span class="mpPb"><button type="button" class="pcBtnSoft sm" data-sx="mplp" data-v="-1" ${SX.mpl <= 0 ? 'disabled' : ''}>Newer</button><b>${SX.mpl + 1} / ${pages}</b><button type="button" class="pcBtnSoft sm" data-sx="mplp" data-v="1" ${SX.mpl >= pages - 1 ? 'disabled' : ''}>Older</button></span></div>`;
+  return sxHead('Design changes', 'Newest first') + '<div class="card sxCard mpTbl mpLg">' + sxTbl([['Date', ''], ['Machine', '', 'k'], ['Changed to', '', 'k'], ['Was', '', 'k'], ['By', '']], rows, null, '') + pg + '</div>';
+}
+document.addEventListener('click', (ev) => { const el = ev.target.closest && ev.target.closest('[data-sx="mpst"],[data-sx="mpdi"],[data-sx="mplp"]'); if(!el || el.disabled) return; const a = el.dataset.sx;
+  if(a === 'mplp') SX.mpl = (SX.mpl || 0) + Number(el.dataset.v);
+  else if(a === 'mpst'){ const F = sxFget('mp'); F.st = F.st === el.dataset.v ? '' : el.dataset.v; SX.mq = ''; }
+  else { SX.mpt = 'des'; sxFget('dz').run = 'yes'; SX.dq = ''; }
+  SX.yso = ''; SX.fo = ''; skRender(); });
 
 /* ---------- Machine layout: nicer boxes (colour band, category pill) ---------- */
 skFloorSvg = function(dept){
