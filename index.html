@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261118-091128">
+<meta name="rvf-build" content="20261118-091426">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -28687,6 +28687,24 @@ button.mpS.on{background:#eef0fd;border-color:#6366f1}
 .sxStat{display:inline-flex;gap:8px;align-items:center}
 .sxFixW{padding:8px 2px 0;text-align:right}
 #asgHb .asgCh{white-space:normal;overflow-wrap:anywhere;line-height:1.45}#asgHb td{white-space:normal}#asgHb td:nth-child(2){white-space:nowrap}
+/* history lists everywhere: small text, short rows, no sideways scroll, long text wraps to 3 lines */
+.sxHs .table-scroll{overflow-x:visible}
+.sxHs table.sxRT{font-size:10.5px;width:100%;table-layout:auto}
+.sxHs table.sxRT th{font-size:9.5px;padding:5px 5px}
+.sxHs table.sxRT td{padding:4px 5px !important;white-space:normal !important;line-height:1.3;overflow-wrap:anywhere;vertical-align:middle}
+.sxHs table.sxRT td:nth-child(2){white-space:nowrap !important}
+.sxHs .sxEll{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;white-space:normal}
+.sxHs .sxSm2{font-size:10px}
+.sxHs .sxTag{font-size:9px;padding:1px 5px}
+.sxHs .sxYc{display:inline}
+#asgHb .table-scroll{overflow-x:visible}
+#asgHb table{width:100%;font-size:10.5px}
+#asgHb th{font-size:9.5px;padding:5px 6px}
+#asgHb td{padding:4px 6px !important;line-height:1.3;white-space:normal !important}
+#asgHb td:nth-child(2){white-space:nowrap !important}
+#asgHb .asgCh{font-size:10.5px;line-height:1.3;margin:0}
+#asgHb .asgMute{font-size:10px}
+.sxHs .mpPg,.mpPg{font-size:10.5px}
 </style>
 <div id="rvfBusy"><i></i><span id="rvfBusyTxt">Loading data…</span></div>
 <script>
@@ -30219,7 +30237,7 @@ function mpLogHtml(){
   const per = 10, pages = Math.ceil(all.length / per); SX.mpl = Math.min(Math.max(0, SX.mpl || 0), pages - 1);
   const a = SX.mpl * per, rows = all.slice(a, a + per).map(l => [`<span class="sxSm2">${skEsc(l.d)}</span>`, `<b>${skEsc(l.mc)}</b>`, l.to ? skEsc(l.to) : '<span class="sxSm2">Cleared</span>', l.from ? `<span class="sxSm2">${skEsc(l.from)}</span>` : '<span class="sxSm2">-</span>', `<span class="sxSm2">${skEsc(l.by || '')}</span>`]);
   const pg = `<div class="mpPg"><span>${a + 1} to ${Math.min(a + per, all.length)} of ${all.length}</span><span class="mpPb"><button type="button" class="pcBtnSoft sm" data-sx="mplp" data-v="-1" ${SX.mpl <= 0 ? 'disabled' : ''}>Newer</button><b>${SX.mpl + 1} / ${pages}</b><button type="button" class="pcBtnSoft sm" data-sx="mplp" data-v="1" ${SX.mpl >= pages - 1 ? 'disabled' : ''}>Older</button></span></div>`;
-  return sxHead('Design changes', 'Newest first') + '<div class="card sxCard mpTbl mpLg">' + sxTbl([['Date', ''], ['Machine', '', 'k'], ['Changed to', '', 'k'], ['Was', '', 'k'], ['By', '']], rows, null, '') + pg + '</div>';
+  return sxHead('Design changes', 'Newest first') + '<div class="card sxCard mpTbl mpLg sxHs">' + sxTbl([['Date', ''], ['Machine', '', 'k'], ['Changed to', '', 'k'], ['Was', '', 'k'], ['By', '']], rows, null, '') + pg + '</div>';
 }
 document.addEventListener('click', (ev) => { const el = ev.target.closest && ev.target.closest('[data-sx="mpst"],[data-sx="mpdi"],[data-sx="mplp"]'); if(!el || el.disabled) return; const a = el.dataset.sx;
   if(a === 'mplp') SX.mpl = (SX.mpl || 0) + Number(el.dataset.v);
@@ -30298,7 +30316,7 @@ function sxFsHist(){
   const b = sxEnt('s', ym).map(e => ({ e, ty: e.k === 'pack' ? 'PACKED' : 'FLOOR', c: 'open', i: e.i, q: e.q, n: e.k === 'pack' ? 'Packed from floor stock' : 'Finished, not packed yet' }));
   const g = SX.fsub, l = a.concat(b).filter(r => { const i = skItem(r.i); return i && i.g === g; }).sort((x, y) => (Number(y.e.t) || 0) - (Number(x.e.t) || 0)), pgi = sxPgInfo('fsh:' + g, l.length, 10);
   const rows = l.slice(pgi.a, pgi.b).map(r => [sxWhen(r.e), `<span class="sxYc">${nm(r.i)}</span>`, `<span class="sxTag ${r.c}">${r.ty}</span>`, `<b>${skNum(r.q)}</b>`, `<span class="sxSm2 sxEll" title="${skEsc(r.n || '')}">${skEsc(r.n || '')}</span>`, sxByC(r.e)]);
-  return sxHead('History', 'Newest first') + '<div class="card sxCard sxLg">' + sxTbl([['When', ''], ['Item', '', 'k'], ['Type', '', 'a'], ['Qty', '', 'r'], ['Note', ''], ['By', '']], rows, null, 'No entries yet this month.') + pgi.html + '</div>';
+  return sxHead('History', 'Newest first') + '<div class="card sxCard sxLg sxHs">' + sxTbl([['When', ''], ['Item', '', 'k'], ['Type', '', 'a'], ['Qty', '', 'r'], ['Note', ''], ['By', '']], rows, null, 'No entries yet this month.') + pgi.html + '</div>';
 }
 
 /* =====================================================================
@@ -30331,7 +30349,7 @@ async function sxUndo(p, ym, id){
 /* generic history card: rows = [{t, cells:[...]}] already newest first */
 function sxHistCard(key, title, cols, rows, empty){
   const pgi = sxPgInfo(key, rows.length, 10);
-  return sxHead(title || 'History', 'Newest first') + '<div class="card sxCard sxLg">' + sxTbl(cols, rows.slice(pgi.a, pgi.b).map(r => r.cells), null, empty || 'Nothing recorded yet this month.') + pgi.html + '</div>';
+  return sxHead(title || 'History', 'Newest first') + '<div class="card sxCard sxLg sxHs">' + sxTbl(cols, rows.slice(pgi.a, pgi.b).map(r => r.cells), null, empty || 'Nothing recorded yet this month.') + pgi.html + '</div>';
 }
 /* yarn / rewound / warp: what was added, plus what was removed */
 function yHRows(secs){
