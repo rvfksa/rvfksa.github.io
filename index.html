@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261118-075032">
+<meta name="rvf-build" content="20261118-075228">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -30161,7 +30161,7 @@ document.addEventListener('click', (ev) => { const el = ev.target.closest && ev.
 
 /* ---------- Machine layout: nicer boxes (colour band, category pill) ---------- */
 skFloorSvg = function(dept){
-  const sp = flrSpec(dept), W = dept === 'SSTM' ? 130 : 160, G = 10, AW = 40, WG = dept === 'SSTM' ? 34 : 24, BG = 10, CW = W - G, K = dept === 'SSTM' ? 1.85 : 1.6, H = dept === 'SSTM' ? 148 : 128, PAD = 12;
+  const sp = flrSpec(dept), W = dept === 'SSTM' ? 130 : 160, G = 10, AW = 40, WG = dept === 'SSTM' ? 34 : 24, BG = 10, CW = W - G, K = dept === 'SSTM' ? 1.85 : 1.6, H = dept === 'SSTM' ? 162 : 140, PAD = 12;
   const lw = sp.lc * W, rw = sp.rc * W, totalW = lw + AW + rw, rx = lw + AW, topPad = 0;
   const ys = []; let y = 0; sp.rows.forEach((r, t) => { ys.push(y); y += H; if(t < sp.rows.length - 1) y += sp.back(t) ? BG : WG; });
   const totalH = y, E = skEsc;
@@ -30182,10 +30182,10 @@ skFloorSvg = function(dept){
     else if(!d) g += `<text x="${cx + CW / 2}" y="${cy + H / 2 + 8 * S}" font-size="${10 * u}" fill="#a16207" text-anchor="middle">No design</text>`;
     else {
       const fD = 10.8 * u, fC = 9.4 * u, fM = 7.9 * u, dl = wrap(d.name, fD, w, 2);
-      const y1 = dl.length > 1 ? 46 * S : 52 * S;
-      dl.forEach((l, k) => { g += `<text x="${mx}" y="${(cy + y1 + k * 16.5 * S).toFixed(1)}" font-size="${fD}" font-weight="700" fill="#111827" letter-spacing="-.1">${E(l)}</text>`; });
-      if(p.col){ const hx = sxColHex(p.col).slice(0, 3), dr = 3.5 * u, dw = hx.length ? (hx.length - 1) * dr * 1.5 + 2 * dr + 6 * u : 0, ft = flrFit(p.col, fC, false, w - dw), by = cy + 82 * S; hx.forEach((c, q) => { g += `<circle cx="${(mx + dr + q * dr * 1.5).toFixed(1)}" cy="${(by - fC * 0.33).toFixed(1)}" r="${dr}" fill="${c}" stroke="rgba(15,23,42,.30)" stroke-width=".7"/>`; }); g += `<text x="${(mx + dw).toFixed(1)}" y="${by.toFixed(1)}" font-size="${fC}" font-weight="500" fill="#4338ca">${E(ft)}</text>`; }
-      if(cl) g += `<text x="${mx}" y="${cy + 96 * S}" font-size="${fM}" fill="#6b7280">${E(flrFit(cl, fM, false, w))}</text>`;
+      const y1 = dl.length > 1 ? 49 * S : 57 * S;
+      dl.forEach((l, k) => { g += `<text x="${mx}" y="${(cy + y1 + k * 17 * S).toFixed(1)}" font-size="${fD}" font-weight="700" fill="#111827" letter-spacing="-.1">${E(l)}</text>`; });
+      if(p.col){ const hx = sxColHex(p.col).slice(0, 3), dr = 3.5 * u, dw = hx.length ? (hx.length - 1) * dr * 1.5 + 2 * dr + 6 * u : 0, ft = flrFit(p.col, fC, false, w - dw), by = cy + 92 * S; hx.forEach((c, q) => { g += `<circle cx="${(mx + dr + q * dr * 1.5).toFixed(1)}" cy="${(by - fC * 0.33).toFixed(1)}" r="${dr}" fill="${c}" stroke="rgba(15,23,42,.30)" stroke-width=".7"/>`; }); g += `<text x="${(mx + dw).toFixed(1)}" y="${by.toFixed(1)}" font-size="${fC}" font-weight="500" fill="#4338ca">${E(ft)}</text>`; }
+      if(cl) g += `<text x="${mx}" y="${cy + 108 * S}" font-size="${fM}" fill="#6b7280">${E(flrFit(cl, fM, false, w))}</text>`;
     }
     if(cat && !stop){ const ct = String(cat).toUpperCase(), fs = 6.9 * u, ph = 15 * S, pw = Math.min(w, flrEst(ct, fs, true) + 14 * S), py = cy + H - 9 * S - ph; g += `<rect x="${mx}" y="${py.toFixed(1)}" width="${pw.toFixed(1)}" height="${ph}" rx="${ph / 2}" fill="#eef0fd"/><text x="${(mx + pw / 2).toFixed(1)}" y="${(py + ph / 2 + fs * 0.35).toFixed(1)}" font-size="${fs}" font-weight="700" fill="#4338ca" text-anchor="middle" letter-spacing=".7">${E(flrFit(ct, fs, true, w - 10))}</text>`; }
     return g + '</g>';
