@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261118-103628">
+<meta name="rvf-build" content="20261118-103806">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -11858,6 +11858,17 @@ async function rvfEnsurePdfLibs(){
   if(!(window.jspdf && window.jspdf.jsPDF)) await rvfLoadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
   if(!window.html2canvas) await rvfLoadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
 }
+function rvfAsciiFold(t){ return String(t == null ? '' : t)
+    .replace(/[‐‑⁃﹣－­]/g, '-').replace(/[‒–]/g, '–').replace(/[—―]/g, '—').replace(/−/g, '-')
+    .replace(/[‘’‚‛′ʼ]/g, "'").replace(/[“”„‟″]/g, '"').replace(/…/g, '...')
+    .replace(/[   -   　]/g, ' ').replace(/[​-‏‪-‮⁠﻿]/g, '')
+    .replace(/[→⇒➜➔]/g, '->').replace(/[←⇐]/g, '<-').replace(/≤/g, '<=').replace(/≥/g, '>=').replace(/≠/g, '!=')
+    .replace(/[●○◦∙⋅·▪■□‣]/g, '•').replace(/[✓✔✅]/g, 'v').replace(/[✗✘❌]/g, 'x').replace(/[★☆]/g, '*')
+    .replace(/[▾▴▸▼▲]/g, '').replace(/[⚠❗]/g, '!').replace(/⏸/g, '||').replace(/[⋯⋮]/g, '...').replace(/[\u{1F000}-\u{1FFFF}☀-➿️]/gu, '')
+    .replace(/€/g, 'EUR').replace(/[؀-ۿ]/g, '')
+    .replace(/ı/g, 'i').replace(/İ/g, 'I').replace(/ł/g, 'l').replace(/Ł/g, 'L').replace(/đ/g, 'd').replace(/Đ/g, 'D').replace(/œ/g, 'oe').replace(/Œ/g, 'OE')
+    .normalize('NFKD').replace(/[̀-ͯ]/g, '')
+    .replace(/[^ -ÿ–—•]/g, '?'); }
 async function rvfMakePdf(blocks, filename, opts){
   const LS = !!(opts && opts.landscape);
   try{ await rvfEnsurePdfLibs(); }catch(err){ console.error(err); toast('Could not load the PDF tool \u2014 check your connection'); return false; }
@@ -16093,16 +16104,7 @@ async function rvfVecBlock(pdf, root, ox, oy, k){
   const X = v => ox + (v - R.left) * k, Y = v => oy + (v - R.top) * k;
   const parse = (c) => { const m = String(c || '').match(/rgba?\(([^)]+)\)/); if(!m) return null; const p = m[1].split(',').map(parseFloat); return { r: p[0], g: p[1], b: p[2], a: p.length > 3 ? p[3] : 1 }; };
   const mix = (c) => c ? [255 - (255 - c.r) * c.a, 255 - (255 - c.g) * c.a, 255 - (255 - c.b) * c.a].map(Math.round) : null;
-  const asc = (t) => String(t)
-    .replace(/[‐‑⁃﹣－­]/g, '-').replace(/[‒–]/g, '–').replace(/[—―]/g, '—').replace(/−/g, '-')
-    .replace(/[‘’‚‛′ʼ]/g, "'").replace(/[“”„‟″]/g, '"').replace(/…/g, '...')
-    .replace(/[   -   　]/g, ' ').replace(/[​-‏‪-‮⁠﻿]/g, '')
-    .replace(/[→⇒➜➔]/g, '->').replace(/[←⇐]/g, '<-').replace(/≤/g, '<=').replace(/≥/g, '>=').replace(/≠/g, '!=')
-    .replace(/[●○◦∙⋅·▪■□‣]/g, '•').replace(/[✓✔✅]/g, 'v').replace(/[✗✘❌]/g, 'x').replace(/★|☆/g, '*')
-    .replace(/€/g, 'EUR').replace(/[؀-ۿ]/g, '')
-    .replace(/\u0131/g, 'i').replace(/\u0130/g, 'I').replace(/\u0142/g, 'l').replace(/\u0141/g, 'L').replace(/\u0111/g, 'd').replace(/\u0110/g, 'D').replace(/\u0153/g, 'oe').replace(/\u0152/g, 'OE')
-    .normalize('NFKD').replace(/[̀-ͯ]/g, '')
-    .replace(/[^ -ÿ–—•]/g, '?');
+  const asc = (t) => rvfAsciiFold(t);
   const drawText = (node, cs) => {
     const s = node.nodeValue; if(!/\S/.test(s)) return;
     let tt = cs.textTransform; const fpx = parseFloat(cs.fontSize) || 12, wt = parseInt(cs.fontWeight, 10) || 400, f0 = String(cs.fontFamily || '').split(',')[0].toLowerCase(), mono = /mono|courier|consolas/.test(f0);
@@ -17077,7 +17079,7 @@ function pcPdfModel0(o, kind, T, L){
   return { kind, title: isPO ? T.poTitle : T.reqTitle, intro: isPO ? T.poIntro : T.reqIntro, closing: isPO ? T.poClosing : T.reqClosing, signers: (isPO ? T.poSigners : T.reqSigners) || [],
     info, head, w, right, rows, total: withP ? pcTotal(o) : 0, ti: 8, dc: withP ? 7 : 6, cur, L };
 }
-function pcAscii(v){ return String(v == null ? '' : v).replace(/[‘’]/g, "'").replace(/[“”]/g, '"').replace(/…/g, '...').replace(/[^\u0000-ÿ–—•]/g, '?'); }
+function pcAscii(v){ return rvfAsciiFold(v); }
 const PC_AR = /[\u0590-\u08FF]/;
 function pcHasArabic(m){ return PC_AR.test(JSON.stringify([m.info, m.rows, m.title, m.intro, m.closing, m.signers])); }
 // the letterhead may be Arabic: only that small band is drawn as a picture, everything else stays text
