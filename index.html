@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261118-081555">
+<meta name="rvf-build" content="20261118-082448">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -28648,6 +28648,16 @@ button.mpS.on{background:#eef0fd;border-color:#6366f1}
 .mpPb{display:inline-flex;align-items:center;gap:10px}.mpPb b{font-weight:600;color:#111827;font-size:12px}
 .mpPb button:disabled{opacity:.4;cursor:default}
 .mpLg .sxRT td{white-space:nowrap}
+.sxTile.sxClk{cursor:pointer;transition:box-shadow .15s,transform .15s}
+.sxTile.sxClk:hover{transform:translateY(-1px)}
+.sxTile.sxOn{box-shadow:0 0 0 2px #6366f1 !important}
+.sxEll{display:inline-block;max-width:340px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:bottom}
+.sxLg .sxRT td{white-space:nowrap}
+.sxCh{all:unset;box-sizing:border-box;cursor:pointer;display:inline-flex;gap:5px;align-items:center;padding:6px 12px;border-radius:999px;border:1px solid #e3e7ef;background:#fff;font-size:12.5px;color:#4b5565}
+.sxCh b{color:#111827;font-weight:600}
+.sxCh:hover{border-color:#c7cbf5}
+.sxCh.on{background:#eef0fd;border-color:#6366f1;color:#3730a3}
+.sxStat{display:inline-flex;gap:8px;align-items:center}
 </style>
 <div id="rvfBusy"><i></i><span id="rvfBusyTxt">Loading data…</span></div>
 <script>
@@ -29493,9 +29503,11 @@ function sxReqHtml(){
   const F = sxFget('req'), flds = [['st', 'Status', [['open', 'Open'], ['done', 'Done']]], ['to', 'Asked to', ['Rewinding', 'Warping', 'Store']]];
   const all = SX.q.slice().sort((a, b) => (a.st === 'done') - (b.st === 'done') || b.t - a.t), op = all.filter(r => r.st !== 'done').length;
   const ls = all.filter(r => (!F.st || (F.st === 'done') === (r.st === 'done')) && (!F.to || r.to === F.to)), can = sxCan('raw') || sxCan('rew') || sxCan('wp');
-  let h = sxTop('<span class="sxStat"><b>' + op + '</b> open · ' + (all.length - op) + ' done</span>' + sxFilt('req', flds) + '<span class="grow"></span>' + sxGear('req') + (sxCan('req') ? sxAddBtn('req', 'New request') : '')) + sxFpop('req', flds);
-  const rows = ls.slice(0, 60).map(r => [skEsc(r.d.slice(5)), `<b>${skEsc(r.to)}</b> · ${sxCol(r.col)}`, r.qty ? skEsc(r.qty) : '', '<span class="sxSm2">' + skEsc(r.by || '') + (r.n ? ' · ' + skEsc(r.n) : '') + (r.st === 'done' ? ' · done by ' + skEsc(r.doneBy || '') + ' ' + skEsc(r.doneD || '') : '') + '</span>', r.st === 'done' ? '<span class="sxTag in">Done</span>' : (can ? `<button class="pcBtnSoft sm" data-sx="reqdone" data-v="${skEsc(r.id)}">Mark done</button>` : '<span class="sxTag open">Open</span>')]);
-  return h + '<div class="card sxCard">' + sxTbl([['Date', '70px'], ['Request', 'minmax(170px,1.8fr)', 'k'], ['Quantity', '100px'], ['Asked by / note', 'minmax(140px,1.6fr)'], ['Status', '110px', 'a']], rows, null, 'No requests yet.') + '</div>';
+  const chip = (v, n, t) => `<button type="button" class="sxCh ${F.st === v ? 'on' : ''}" data-sx="tf" data-p="req" data-k="st" data-v="${v}" title="Show only these"><b>${n}</b> ${t}</button>`;
+  const pgi = sxPgInfo('req', ls.length, 13);
+  let h = sxTop('<span class="sxStat">' + chip('open', op, 'open') + chip('done', all.length - op, 'done') + '</span>' + sxFilt('req', flds) + '<span class="grow"></span>' + sxGear('req') + (sxCan('req') ? sxAddBtn('req', 'New request') : '')) + sxFpop('req', flds);
+  const rows = ls.slice(pgi.a, pgi.b).map(r => [skEsc(r.d.slice(5)), `<b>${skEsc(r.to)}</b> · ${sxCol(r.col)}`, r.qty ? skEsc(r.qty) : '', '<span class="sxSm2">' + skEsc(r.by || '') + (r.n ? ' · ' + skEsc(r.n) : '') + (r.st === 'done' ? ' · done by ' + skEsc(r.doneBy || '') + ' ' + skEsc(r.doneD || '') : '') + '</span>', r.st === 'done' ? '<span class="sxTag in">Done</span>' : (can ? `<button class="pcBtnSoft sm" data-sx="reqdone" data-v="${skEsc(r.id)}">Mark done</button>` : '<span class="sxTag open">Open</span>')]);
+  return h + '<div class="card sxCard sxLg">' + sxTbl([['Date', '70px'], ['Request', 'minmax(170px,1.8fr)', 'k'], ['Quantity', '100px'], ['Asked by / note', 'minmax(140px,1.6fr)'], ['Status', '110px', 'a']], rows, null, 'No requests yet.') + pgi.html + '</div>';
 }
 async function sxFinLoad(){ const f = SX.fil, a = f.from || sxToday().slice(0, 7) + '-01', b = f.to || sxToday(); const ms = []; let y = +a.slice(0, 4), m = +a.slice(5, 7); const ey = +b.slice(0, 4), em = +b.slice(5, 7); while((y < ey || (y === ey && m <= em)) && ms.length < 24){ ms.push(y + '-' + String(m).padStart(2, '0')); m++; if(m > 12){ m = 1; y++; } } await Promise.all(ms.map(x => sxMonth('f', x))); }
 function sxFinRows(){ const f = SX.fil, a = f.from || sxToday().slice(0, 7) + '-01', b = f.to || sxToday(); let out = []; Object.keys(SX.mc).filter(k => k.indexOf('f_') === 0).forEach(k => { out = out.concat(SX.mc[k]); }); const q = (f.q || '').toLowerCase(); return out.filter(e => e.d >= a && e.d <= b && (!f.mc || String(e.mc) === f.mc) && (!f.size || e.size === f.size) && (!f.type || e.type === f.type) && (!f.dept || e.dept === f.dept) && (!q || String(e.item || '').toLowerCase().includes(q) || String(e.mcn || '').toLowerCase().includes(q))).sort((a, b) => (b.d + b.t).localeCompare(a.d + a.t) || b.t - a.t); }
@@ -29507,11 +29519,12 @@ function sxFinHtml(){
   if(!sxCan('fin')) h += sxNoRight('finishing');
   const rows = sxFinRows().slice(), fsm = ySortOf('fin'); if(fsm === 'old') rows.reverse(); else if(fsm === 'mbig') rows.sort((a, b) => b.qty - a.qty); else if(fsm === 'mc') rows.sort((a, b) => String(a.mcn).localeCompare(String(b.mcn), undefined, { numeric: true }) || String(b.d).localeCompare(String(a.d)));
   const tm = rows.filter(e => e.u === 'm').reduce((a, e) => a + e.qty, 0), tr = rows.filter(e => e.u === 'roll').reduce((a, e) => a + e.qty, 0), adm = sxAdmin();
-  h += `<div class="card sxCard"><div class="sxGrid">${sxTile('Entries', rows.length, f.from || f.to ? 'in this list' : 'this month', '', 'fin', 'blue')}${sxTile('Meters', sxN(tm) + '<small> m</small>', '', '', 'roll', 'green')}${sxTile('Rolls', sxN(tr) + '<small> rolls</small>', '', '', 'pack', 'purple')}</div></div>`;
+  const vis = f.u ? rows.filter(e => e.u === f.u) : rows, vm = vis.filter(e => e.u === 'm').reduce((a, e) => a + e.qty, 0), vr = vis.filter(e => e.u === 'roll').reduce((a, e) => a + e.qty, 0), pgi = sxPgInfo('fin', vis.length, 15);
+  h += `<div class="card sxCard"><div class="sxGrid">${sxTile('Entries', rows.length, f.from || f.to ? 'in this list' : 'this month', '', 'fin', 'blue')}${sxTileF('fin', 'u', 'm', 'Meters', sxN(tm) + '<small> m</small>', '', '', 'roll', 'green')}${sxTileF('fin', 'u', 'roll', 'Rolls', sxN(tr) + '<small> rolls</small>', '', '', 'pack', 'purple')}</div></div>`;
   const cols = [['Date', '70px'], ['Machine', 'minmax(120px,1.2fr)', 'k'], ['Item', 'minmax(140px,1.8fr)'], ['Size · type', '110px'], ['Department', '90px'], ['By', '90px'], ['Quantity', '96px', 'r']].concat(adm ? [['', '78px', 'a']] : []);
-  const tb = rows.slice(0, 200).map(e => [skEsc(e.d.slice(5)), `<b>${skEsc(e.mcn)}</b>`, skEsc(e.item || ''), `<span class="sxSm2">${skEsc(e.size || '')} ${skEsc(e.type || '')}</span>`, skEsc(e.dept || ''), `<span class="sxSm2">${skEsc(e.by || '')}</span>`, `<b>${sxN(e.qty)}</b> <small>${e.u === 'm' ? 'm' : 'rolls'}</small>`].concat(adm ? [`<button type="button" class="mini-icon-btn" data-sx="undo" data-p="f" data-v="${skEsc(e.id)}" data-ym="${sxYm(e.d)}" title="Remove this entry" aria-label="Remove this entry">${sxIc('del', 13)}</button>`] : []));
-  const ft = ['', '<b>Total</b>', '', '', '', '', `<b>${sxN(tm)}</b> m<br><b>${sxN(tr)}</b> rolls`].concat(adm ? [''] : []);
-  h += '<div class="card sxCard">' + sxTbl(cols, tb, ft, 'No entries for this filter.') + (rows.length > 200 ? '<div class="sxNote">Showing the latest 200. Use the filter or download the Excel for all.</div>' : '') + '</div>';
+  const tb = vis.slice(pgi.a, pgi.b).map(e => [skEsc(e.d.slice(5)), `<b>${skEsc(e.mcn)}</b>`, skEsc(e.item || ''), `<span class="sxSm2">${skEsc(e.size || '')} ${skEsc(e.type || '')}</span>`, skEsc(e.dept || ''), `<span class="sxSm2">${skEsc(e.by || '')}</span>`, `<b>${sxN(e.qty)}</b> <small>${e.u === 'm' ? 'm' : 'rolls'}</small>`].concat(adm ? [`<button type="button" class="mini-icon-btn" data-sx="undo" data-p="f" data-v="${skEsc(e.id)}" data-ym="${sxYm(e.d)}" title="Remove this entry" aria-label="Remove this entry">${sxIc('del', 13)}</button>`] : []));
+  const ft = ['', '<b>Total</b>', '', '', '', '', (vm ? `<b>${sxN(vm)}</b> m` : '') + (vm && vr ? '<br>' : '') + (vr ? `<b>${sxN(vr)}</b> rolls` : '')].concat(adm ? [''] : []);
+  h += '<div class="card sxCard sxLg">' + sxTbl(cols, tb, ft, 'No entries for this filter.') + pgi.html + '</div>';
   return h;
 }
 const SX_FS = [['cr', 'Carpets & Rugs'], ['vip', 'VIP Prayer Mats'], ['up', 'Upholstery'], ['q2', '2nd Quality']];
@@ -29557,7 +29570,7 @@ function sxFstHtml(){
   let h = sxTop(sxSub('fsub', g, SX_FS) + sxSearch('sxFq2', SX.fq, 'Search name, code or colour…') + sxFilt('fst', flds) + ySortBtn('fst', ['name', 'big', 'least', 'size']) + '<span class="grow"></span>' + sxDlBtn('stock') + sxGear('fst') + (sxCan('fst') ? `<button type="button" class="pcBtnMain sm" data-sx="fsm" data-v="" data-k="in" title="Put stock in or take it out">${sxIc('plus', 14)}<span class="sxAddL">Update</span></button>` : '')) + sxFpop('fst', flds);
   const kb = (k) => bl.filter(i => sxKind(i) === k).reduce((a, i) => a + skBal(i), 0);
   const t1 = g === 'up' ? sxTile('Available stock', sxN(roll) + '<small> rolls</small>', sxN(mtr) + ' metres', '', 'pack', 'blue') : sxTile('Available stock', sxN(tot) + '<small> bundles</small>', g === 'cr' ? 'Carpets ' + sxN(kb('carpet')) + ' · Prayer mats ' + sxN(kb('mat')) : (trk ? 'About ' + sxN(Math.round(trk * 10) / 10) + ' trucks' : ''), '', 'pack', 'blue');
-  h += `<div class="card sxCard"><div class="sxGrid">${t1}${g === 'q2' && roll ? sxTile('Upholstery', sxN(roll) + '<small> rolls</small>', sxN(mtr) + ' metres', '', 'roll', 'cyan') : ''}${two ? sxTile('Unpacked on floor', sxN(fl) + '<small> bundles</small>', 'Finished, not packed yet', '', 'floor', 'amber') : ''}${g === 'cr' && trk ? sxTile('Trucks', sxN(Math.round(trk * 10) / 10), 'If all ready stock is loaded', '', 'floor', 'green') : ''}${sxTile('Items', l.length, base.length !== l.length ? 'of ' + base.length : '', '', 'raw', 'purple')}</div></div>`;
+  h += `<div class="card sxCard"><div class="sxGrid">${t1}${g === 'q2' && roll ? sxTile('Upholstery', sxN(roll) + '<small> rolls</small>', sxN(mtr) + ' metres', '', 'roll', 'cyan') : ''}${two ? sxTileF('fst', 'fl', 'yes', 'Unpacked on floor', sxN(fl) + '<small> bundles</small>', 'Finished, not packed yet', '', 'floor', 'amber') : ''}${g === 'cr' && trk ? sxTile('Trucks', sxN(Math.round(trk * 10) / 10), 'If all ready stock is loaded', '', 'floor', 'green') : ''}${sxTile('Items', l.length, base.length !== l.length ? 'of ' + base.length : '', '', 'raw', 'purple')}</div></div>`;
   const cols = sxFsCols(g).map(c => [c[0], '', c[1]]); let foot;
   if(g === 'cr') foot = ['', 'Total', '', '', '', '', '', skNum(tot), sxN(pcs), skNum(fl), ''];
   else if(g === 'vip') foot = ['', 'Total', '', '', '', '', '', '', skNum(tot), sxN(pcs), skNum(fl), ''];
@@ -29866,12 +29879,12 @@ function yDays(r, ord){
 function sxRawHtml(){
   yCfg(); if(!SX.yPrev){ SX.yPrev = 1; sxMonth('w', yPrevYm()).then(() => { if(SX.tab === 'raw' && !SX.sfor) skRender(); }); }
   const cfg = SX.cfg, q = (SX.rq || '').toLowerCase(), F = sxFget('raw'), mode = ySortOf('raw'), all = yRows(), ord = Number(cfg.yOrder) || 30;
-  const flds = [['sec', 'Section', ySecs()], ['sup', 'Supplier', Array.from(new Set(yItems().map(i => i.sup).filter(Boolean))).sort()], ['fam', 'Colour', SX_FAM.map(x => x[0])], ['s', 'Status', [['order', 'Order now'], ['out', 'Out of stock'], ['idle', 'Not moving'], ['ok', 'OK']]], ['cols', 'Show also', [['sup', 'Supplier'], ['sz', 'Yarn size'], ['both', 'Supplier and yarn size']], 'Nothing extra'], ['show', 'Show', [['all', 'All items, also with no stock']], 'Only items with stock']];
+  const flds = [['sec', 'Section', ySecs()], ['sup', 'Supplier', Array.from(new Set(yItems().map(i => i.sup).filter(Boolean))).sort()], ['fam', 'Colour', SX_FAM.map(x => x[0])], ['s', 'Status', [['need', 'Order now or out of stock'], ['order', 'Order now'], ['out', 'Out of stock'], ['idle', 'Not moving'], ['ok', 'OK']]], ['cols', 'Show also', [['sup', 'Supplier'], ['sz', 'Yarn size'], ['both', 'Supplier and yarn size']], 'Nothing extra'], ['show', 'Show', [['all', 'All items, also with no stock']], 'Only items with stock']];
   let h = sxTop(sxSearch('sxRq', SX.rq, 'Search code, colour, supplier…') + sxFilt('raw', flds) + ySortBtn('raw', ['col', 'colbig', 'name', 'low', 'big']) + '<span class="grow"></span>' + sxDlBtn('raw') + sxGear('raw') + (sxCan('raw') ? sxAddBtn('yraw', 'Update') : '')) + sxFpop('raw', flds) + ySortPop('raw', ['col', 'sec', 'sup', 'name', 'low', 'big']);
   if(!sxCan('raw')) h += sxNoRight('raw material');
   const t = yTot(), orderN = all.filter(r => r.s === 'order' || r.s === 'out').length, idleN = all.filter(r => r.s === 'idle').length;
-  h += `<div class="card sxCard"><div class="sxGrid">${sxTile('Yarn in store', sxN(t.kg) + '<small> kg</small>', sxN(Math.round(t.bx)) + ' boxes', '', 'raw', 'blue')}${sxTile('Items in stock', t.n, 'of ' + yItems().filter(i => i.on !== false).length + ' in the list', '', 'pack', 'green')}${sxTile('Order now', orderN, orderN ? 'Less than ' + ord + ' days left' : 'Nothing to order', '', 'warn', orderN ? 'amber' : 'green')}${sxTile('Not moving', idleN, 'In stock, no daily use', '', 'roll', 'purple')}</div></div>`;
-  let rows = all.filter(r => { if(F.sec && r.i.sec !== F.sec) return false; if(F.sup && r.i.sup !== F.sup) return false; if(F.fam && r.fam !== F.fam) return false; if(F.s && r.s !== F.s) return false; if(!F.show && !(r.kg > 0.0004 || r.s === 'out')) return false; if(q && (yLbl(r.i) + ' ' + r.i.sz).toLowerCase().indexOf(q) < 0) return false; return true; });
+  h += `<div class="card sxCard"><div class="sxGrid">${sxTile('Yarn in store', sxN(t.kg) + '<small> kg</small>', sxN(Math.round(t.bx)) + ' boxes', '', 'raw', 'blue')}${sxTile('Items in stock', t.n, 'of ' + yItems().filter(i => i.on !== false).length + ' in the list', '', 'pack', 'green')}${sxTileF('raw', 's', 'need', 'Order now', orderN, orderN ? 'Less than ' + ord + ' days left' : 'Nothing to order', '', 'warn', orderN ? 'amber' : 'green')}${sxTileF('raw', 's', 'idle', 'Not moving', idleN, 'In stock, no daily use', '', 'roll', 'purple')}</div></div>`;
+  let rows = all.filter(r => { if(F.sec && r.i.sec !== F.sec) return false; if(F.sup && r.i.sup !== F.sup) return false; if(F.fam && r.fam !== F.fam) return false; if(F.s && !(F.s === 'need' ? (r.s === 'order' || r.s === 'out') : r.s === F.s)) return false; if(!F.show && !(r.kg > 0.0004 || r.s === 'out')) return false; if(q && (yLbl(r.i) + ' ' + r.i.sz).toLowerCase().indexOf(q) < 0) return false; return true; });
   ySortRows(rows, mode);
   const xs = F.cols === 'sup' || F.cols === 'both', xz = F.cols === 'sz' || F.cols === 'both';
   const cols = [['Code', ''], ['Colour', '', 'k']].concat(xs ? [['Supplier', '']] : [], xz ? [['Yarn size', '']] : [], [['Used per day kg', '', 'r'], ['Boxes', '', 'r'], ['Available kg', '', 'r'], ['Days left', '', 'r']]);
@@ -29886,14 +29899,14 @@ function sxRawHtml(){
 }
 /* small list of what was entered this month (admin can remove one) */
 function yRecent(secs, title){
-  const adm = sxAdmin(), l = sxEnt('w', sxYm()).filter(e => secs.indexOf(e.s) >= 0).slice().reverse().slice(0, 25);
+  const adm = sxAdmin(), l = sxEnt('w', sxYm()).filter(e => secs.indexOf(e.s) >= 0).slice().reverse(), pgi = sxPgInfo('rc:' + secs.join(','), l.length, 13);
   const cols = [['Date', ''], ['Item', '', 'k'], ['Details', ''], ['Type', '', 'a'], ['Kg', '', 'r'], ['Boxes', '', 'r']].concat(adm ? [['', '', 'a']] : []);
-  const rows = l.map(e => {
+  const rows = l.slice(pgi.a, pgi.b).map(e => {
     const i = e.y ? yItem(e.y) : null, name = e.open ? `<b>Opening stock</b> ${(e.rows || []).length ? '<span class="sxSm2">' + e.rows.length + ' items</span>' : ''}` : i ? `<span class="sxYc">${yDot(yHex(i.col, yFam(i.col)))}${skEsc(i.col)}</span> <span class="sxSm2">${skEsc(i.code)}</span>` : sxColT(e.col || '');
     const det = [e.s === 'yr' ? '' : e.k === 'mv' ? skEsc(e.store) + ' to ' + skEsc(e.store2) : e.store ? skEsc(e.store) : '', e.to ? 'to ' + skEsc(e.to) : '', e.src === 'rc' ? 'recovered from weaving' : '', e.bob ? sxN(e.bob) + (e.s === 'wp' ? ' beams' : ' bobbins') : '', e.n ? skEsc(e.n) : '', skEsc(e.by || '')].filter(Boolean).join(' · ');
-    return [skEsc(e.d.slice(5)), name, `<span class="sxSm2">${det}</span>`, `<span class="sxTag ${e.k === 'out' ? 'out' : e.k === 'mv' ? 'open' : 'in'}">${e.k === 'out' ? 'OUT' : e.k === 'mv' ? 'MOVE' : 'IN'}</span>`, `<b>${sxN(e.kg)}</b>`, e.bx ? sxN(e.bx) : ''].concat(adm ? [`<button type="button" class="mini-icon-btn" data-sx="undo" data-p="w" data-v="${skEsc(e.id)}" data-ym="${sxYm(e.d)}" title="Remove this entry" aria-label="Remove this entry">${sxIc('del', 13)}</button>`] : []);
+    return [skEsc(e.d.slice(5)), name, `<span class="sxSm2 sxEll" title="${det}">${det}</span>`, `<span class="sxTag ${e.k === 'out' ? 'out' : e.k === 'mv' ? 'open' : 'in'}">${e.k === 'out' ? 'OUT' : e.k === 'mv' ? 'MOVE' : 'IN'}</span>`, `<b>${sxN(e.kg)}</b>`, e.bx ? sxN(e.bx) : ''].concat(adm ? [`<button type="button" class="mini-icon-btn" data-sx="undo" data-p="w" data-v="${skEsc(e.id)}" data-ym="${sxYm(e.d)}" title="Remove this entry" aria-label="Remove this entry">${sxIc('del', 13)}</button>`] : []);
   });
-  return sxHead(title || 'Recent entries', 'This month') + '<div class="card sxCard">' + sxTbl(cols, rows, null, 'No entries yet this month.') + '</div>';
+  return sxHead(title || 'Recent entries', 'This month') + '<div class="card sxCard sxLg">' + sxTbl(cols, rows, null, 'No entries yet this month.') + pgi.html + '</div>';
 }
 /* ---------- Update form (IN / OUT / MOVE) ---------- */
 const yDL = () => `<datalist id="yIL">${yItems().filter(i => i.on !== false).map(i => `<option value="${skEsc(yLbl(i))}">`).join('')}</datalist>`;
@@ -29960,8 +29973,8 @@ function yRewHtml(){
   let h = sxTop(sxSearch('sxWq', SX.wq, 'Search colour…') + sxFilt('rew', flds) + ySortBtn('rew', ['col', 'colbig', 'name', 'big']) + '<span class="grow"></span>' + sxDlBtn('rew') + sxGear('rew') + (sxCan('rew') ? sxAddBtn('yrew', 'Update') : '')) + sxFpop('rew', flds) + ySortPop('rew', ['col', 'name', 'big']);
   if(!sxCan('rew')) h += sxNoRight('rewinding');
   const T = { kg: all.reduce((a, r) => a + Math.max(0, r.kg), 0), rc: all.reduce((a, r) => a + Math.max(0, r.rc), 0), n: all.reduce((a, r) => a + Math.max(0, r.n), 0) };
-  h += `<div class="card sxCard"><div class="sxGrid">${sxTile('Rewound in hand', sxN(T.kg + T.rc) + '<small> kg</small>', sxN(T.n) + ' bobbins', '', 'rew', 'purple')}${sxTile('Recovered from weaving', sxN(T.rc) + '<small> kg</small>', 'Included in the total', '', 'roll', 'cyan')}${sxTile('Items', all.length, 'with rewound yarn', '', 'raw', 'blue')}</div></div>`;
-  let rows = all.filter(r => (!F.fam || r.fam === F.fam) && (!F.sec || (r.i && r.i.sec === F.sec)) && (!q || (r.label + ' ' + (r.i ? r.i.code : '')).toLowerCase().indexOf(q) >= 0));
+  h += `<div class="card sxCard"><div class="sxGrid">${sxTile('Rewound in hand', sxN(T.kg + T.rc) + '<small> kg</small>', sxN(T.n) + ' bobbins', '', 'rew', 'purple')}${sxTileF('rew', 'rc', 'yes', 'Recovered from weaving', sxN(T.rc) + '<small> kg</small>', 'Included in the total', '', 'roll', 'cyan')}${sxTile('Items', all.length, 'with rewound yarn', '', 'raw', 'blue')}</div></div>`;
+  let rows = all.filter(r => (!F.rc || r.rc > 0) && (!F.fam || r.fam === F.fam) && (!F.sec || (r.i && r.i.sec === F.sec)) && (!q || (r.label + ' ' + (r.i ? r.i.code : '')).toLowerCase().indexOf(q) >= 0));
   rows.forEach(r => { r.kg0 = r.kg; }); const sk = { col: 1, colbig: 1, name: 1, big: 1 }; const ft2 = {}; if(mode === 'colbig') rows.forEach(r => { ft2[r.fam] = (ft2[r.fam] || 0) + r.tot; }); if(!sk[mode]) SX.last.ys_rew = 'col';
   rows.sort((a, b) => mode === 'colbig' ? (((ft2[b.fam] || 0) - (ft2[a.fam] || 0)) || (String(a.fam) < String(b.fam) ? -1 : String(a.fam) > String(b.fam) ? 1 : 0) || (b.tot - a.tot)) : mode === 'big' ? (b.tot - a.tot) : mode === 'name' ? String(a.label).localeCompare(String(b.label)) : (yFamI(a.fam) - yFamI(b.fam)) || String(a.label).localeCompare(String(b.label)));
   const cols = [['Code', ''], ['Colour', '', 'k'], ['In raw store kg', '', 'r'], ['Rewound kg', '', 'r'], ['Bobbins', '', 'r'], ['Recovered from weaving kg', '', 'r'], ['Total in hand kg', '', 'r']];
@@ -29995,11 +30008,12 @@ function yWpRows(){
   return cols.map(col => { const n = Math.max(0, Number(SX.bal['wpN|' + col]) || 0), kg = Math.max(0, Number(SX.bal['wp|' + col]) || 0), mo = made[col] || 0, us = used[col] || 0; return { col, w: Number(c.beamW[col]) || 0, n, kg, mo, us, op: Math.max(0, n - mo + us) }; });
 }
 function yWpHtml(){
-  SX.rwsub = 'wp'; const rows = yWpRows(), T = { n: rows.reduce((a, r) => a + r.n, 0), kg: rows.reduce((a, r) => a + r.kg, 0) };
+  SX.rwsub = 'wp'; let rows = yWpRows(), T = { n: rows.reduce((a, r) => a + r.n, 0), kg: rows.reduce((a, r) => a + r.kg, 0) };
   let h = sxTop('<span class="grow"></span>' + ySortBtn('wp', ['name', 'beams']) + sxDlBtn('wp') + sxGear('wp') + (sxCan('wp') ? sxAddBtn('ywp', 'Update') : ''));
   if(!sxCan('wp')) h += sxNoRight('warping');
-  h += `<div class="card sxCard"><div class="sxGrid">${sxTile('Beams in stock', sxN(T.n) + '<small> beams</small>', '', '', 'wp', 'cyan')}${sxTile('Total weight', sxN(T.kg) + '<small> kg</small>', '', '', 'pack', 'blue')}</div></div>`;
+  h += `<div class="card sxCard"><div class="sxGrid">${sxTileF('wp', 'has', 'yes', 'Beams in stock', sxN(T.n) + '<small> beams</small>', '', '', 'wp', 'cyan')}${sxTile('Total weight', sxN(T.kg) + '<small> kg</small>', '', '', 'pack', 'blue')}</div></div>`;
   const cols = [['Colour', '', 'k'], ['Beams available', '', 'r'], ['Kg per beam', '', 'r'], ['Total kg', '', 'r']];
+  const FW = sxFget('wp'); if(FW.has) rows = rows.filter(r => r.n > 0);
   if(ySortOf('wp') === 'beams') rows.sort((a, b) => b.n - a.n); else rows.sort((a, b) => String(a.col).localeCompare(String(b.col)));
   const body = rows.map(r => [sxColT(r.col), `<b>${sxN(r.n)}</b>`, r.n > 0 ? sxN(Math.round(r.kg / r.n * 10) / 10) : '<span class="sxSm2">-</span>', `<b>${sxN(r.kg)}</b>`]);
   h += sxHead('Beams available now') + '<div class="card sxCard">' + sxTbl(cols, body, ['<b>Total</b>', `<b>${sxN(T.n)}</b>`, '', `<b>${sxN(T.kg)}</b>`], 'No beam colours yet. Add them in Settings.') + '</div>';
@@ -30220,6 +30234,23 @@ skFloorSvg = function(dept){
   sp.rows.forEach((r, t) => { r.L.forEach((id, i) => { b += cell(id, i * W, ys[t]); }); r.R.forEach((id, i) => { b += cell(id, rx + i * W, ys[t]); }); });
   return `<div style="overflow-x:auto;"><svg viewBox="0 0 ${totalW + 2 * PAD} ${totalH + 2 * PAD}" style="width:100%;min-width:720px;height:auto;display:block;" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${E(dept)} machine layout">${b}</svg></div>`;
 };
+
+/* ---------- shared by all Stock pages: clickable summary tiles (filter the table in place) and paged one-line lists ---------- */
+function sxTileF(page, key, val, l, v, s, tab, ic, tone){
+  const on = sxFget(page)[key] === val;
+  return sxTile(l, v, s, tab, ic, tone).replace('class="ceoEmpStat sxTile"', `class="ceoEmpStat sxTile sxClk${on ? ' sxOn' : ''}" data-sx="tf" data-p="${page}" data-k="${key}" data-v="${val}" title="${on ? 'Click again to show all' : 'Click to show only these'}"`);
+}
+function sxPgInfo(key, total, per, back, next){
+  SX.pg = SX.pg || {}; const pages = Math.max(1, Math.ceil(total / per)); const p = Math.min(Math.max(0, SX.pg[key] || 0), pages - 1); SX.pg[key] = p;
+  const a = p * per, b = a + per;
+  return { a, b, p, pages, html: total > per ? `<div class="mpPg"><span>${a + 1} to ${Math.min(b, total)} of ${total}</span><span class="mpPb"><button type="button" class="pcBtnSoft sm" data-sx="pg" data-k="${skEsc(key)}" data-v="-1" ${p <= 0 ? 'disabled' : ''}>${back || 'Previous'}</button><b>${p + 1} / ${pages}</b><button type="button" class="pcBtnSoft sm" data-sx="pg" data-k="${skEsc(key)}" data-v="1" ${p >= pages - 1 ? 'disabled' : ''}>${next || 'Next'}</button></span></div>` : '' };
+}
+document.addEventListener('click', (ev) => {
+  const el = ev.target.closest && ev.target.closest('[data-sx="tf"],[data-sx="pg"]'); if(!el || el.disabled) return;
+  if(el.dataset.sx === 'pg'){ SX.pg = SX.pg || {}; SX.pg[el.dataset.k] = (SX.pg[el.dataset.k] || 0) + Number(el.dataset.v); }
+  else { const F = sxFget(el.dataset.p); F[el.dataset.k] = F[el.dataset.k] === el.dataset.v ? '' : el.dataset.v; SX.pg = {}; SX.fo = ''; SX.yso = ''; }
+  skRender();
+});
 
 /* ---- clicks ---- */
 document.addEventListener('click', (ev) => {
