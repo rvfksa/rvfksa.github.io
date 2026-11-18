@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261118-093250">
+<meta name="rvf-build" content="20261118-093601">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -24612,11 +24612,9 @@ const asgT1 = (d) => new Date(d + 'T00:00:00').getTime() + 86400000;
 function asgRenderHistory(box){
   const p = asgPeriod();
   const opts = []; for(let i = 0; i < 24; i++){ const c = rvfCycleAt(i); opts.push(`<option value="${i}" ${String(i) === asgH.period ? 'selected' : ''}>${assignEsc(c.label + (c.sub ? '  \u00B7  ' + c.sub : ''))}</option>`); }
-  box.innerHTML = `<div class="asgMute" style="margin:0 0 10px;">Every saved change of department, shift, machines or approver, by salary month. Pick the period, filter, then download if needed.</div>
-    <div class="asgFilters"><select id="asgHm">${opts.join('')}<option value="custom" ${asgH.period === 'custom' ? 'selected' : ''}>Custom dates\u2026</option></select>
+  box.innerHTML = `<div class="asgFilters"><select id="asgHm">${opts.join('')}<option value="custom" ${asgH.period === 'custom' ? 'selected' : ''}>Custom dates\u2026</option></select>
       ${asgH.period === 'custom' ? `<input type="date" id="asgHfrom" value="${p.from}" style="flex:0 1 150px"><input type="date" id="asgHto" value="${p.to}" style="flex:0 1 150px">` : ''}
       <span id="asgHf" style="display:contents"></span></div>
-    <div class="asgMute" style="margin:-2px 0 10px;">Showing <b>${assignEsc(p.label)}</b> &middot; ${asgFmtD(p.from + 'T00:00:00')} to ${asgFmtD(p.to + 'T00:00:00')}</div>
     <div id="asgHb"><div class="empty-state">Loading\u2026</div></div>`;
   $('asgHm').addEventListener('change', () => { asgH.period = $('asgHm').value; asgRenderHistory(box); });
   if($('asgHfrom')){ const chg = () => { asgH.from = $('asgHfrom').value; asgH.to = $('asgHto').value; asgRenderHistory(box); }; $('asgHfrom').addEventListener('change', chg); $('asgHto').addEventListener('change', chg); asgH.from = asgH.from || p.from; asgH.to = asgH.to || p.to; }
@@ -24652,8 +24650,7 @@ async function asgAssignView0(){
   const draw = () => {
     const rows = asgAssignRows(list), people = new Set([].concat.apply([], rows.map(r => r.people))).size;
     if(!list.length){ hb.innerHTML = `<div class="empty-state">No changes were saved in this period.</div>`; return; }
-    hb.innerHTML = `<div class="asgMute" style="margin:2px 0 8px;">${rows.length} save${rows.length === 1 ? '' : 's'} touching ${people} ${people === 1 ? 'person' : 'people'}. Newest first.</div>
-      <div class="table-scroll"><table class="report-table"><thead>${head}</thead><tbody>${rows.map(rowHtml).join('') || '<tr><td colspan="7" class="asgMute">Nothing matches.</td></tr>'}</tbody></table></div>`;
+    hb.innerHTML = `<div class="table-scroll"><table class="report-table"><thead>${head}</thead><tbody>${rows.map(rowHtml).join('') || '<tr><td colspan="7" class="asgMute">Nothing matches.</td></tr>'}</tbody></table></div>`;
   };
   draw();
   $('asgHt').addEventListener('change', () => { asgH.type = $('asgHt').value; asgH.pg = 0; draw(); });
@@ -30256,7 +30253,7 @@ function mpLogHtml(){
   const per = 10, pages = Math.ceil(all.length / per); SX.mpl = Math.min(Math.max(0, SX.mpl || 0), pages - 1);
   const a = SX.mpl * per, rows = all.slice(a, a + per).map(l => [`<span class="sxSm2">${skEsc(l.d)}</span>`, `<b>${skEsc(l.mc)}</b>`, l.to ? skEsc(l.to) : '<span class="sxSm2">Cleared</span>', l.from ? `<span class="sxSm2">${skEsc(l.from)}</span>` : '<span class="sxSm2">-</span>', `<span class="sxSm2">${skEsc(l.by || '')}</span>`]);
   const pg = `<div class="mpPg"><span>${a + 1} to ${Math.min(a + per, all.length)} of ${all.length}</span><span class="mpPb"><button type="button" class="pcBtnSoft sm" data-sx="mplp" data-v="-1" ${SX.mpl <= 0 ? 'disabled' : ''}>Newer</button><b>${SX.mpl + 1} / ${pages}</b><button type="button" class="pcBtnSoft sm" data-sx="mplp" data-v="1" ${SX.mpl >= pages - 1 ? 'disabled' : ''}>Older</button></span></div>`;
-  return sxHead('Design changes', 'Newest first') + '<div class="card sxCard mpTbl mpLg sxHs">' + sxTbl([['Date', ''], ['Machine', '', 'k'], ['Changed to', '', 'k'], ['Was', '', 'k'], ['By', '']], rows, null, '') + pg + '</div>';
+  return sxHead('Design changes', '') + '<div class="card sxCard mpTbl mpLg sxHs">' + sxTbl([['Date', ''], ['Machine', '', 'k'], ['Changed to', '', 'k'], ['Was', '', 'k'], ['By', '']], rows, null, '') + pg + '</div>';
 }
 document.addEventListener('click', (ev) => { const el = ev.target.closest && ev.target.closest('[data-sx="mpst"],[data-sx="mpdi"],[data-sx="mplp"]'); if(!el || el.disabled) return; const a = el.dataset.sx;
   if(a === 'mplp') SX.mpl = (SX.mpl || 0) + Number(el.dataset.v);
@@ -30335,7 +30332,7 @@ function sxFsHist(){
   const b = sxEnt('s', ym).map(e => ({ e, ty: e.k === 'pack' ? 'PACKED' : 'FLOOR', c: 'open', i: e.i, q: e.q, n: e.k === 'pack' ? 'Packed from floor stock' : 'Finished, not packed yet' }));
   const g = SX.fsub, l = a.concat(b).filter(r => { const i = skItem(r.i); return i && i.g === g; }).sort((x, y) => (Number(y.e.t) || 0) - (Number(x.e.t) || 0)), pgi = sxPgInfo('fsh:' + g, l.length, 10);
   const rows = l.slice(pgi.a, pgi.b).map(r => [sxWhen(r.e), `<span class="sxYc">${nm(r.i)}</span>`, `<span class="sxTag ${r.c}">${r.ty}</span>`, `<b>${skNum(r.q)}</b>`, `<span class="sxSm2 sxEll" title="${skEsc(r.n || '')}">${skEsc(r.n || '')}</span>`, sxByC(r.e)]);
-  return sxHead('History', 'Newest first') + '<div class="card sxCard sxLg sxHs">' + sxTbl([['When', ''], ['Item', '', 'k'], ['Type', '', 'a'], ['Qty', '', 'r'], ['Note', ''], ['By', '']], rows, null, 'No entries yet this month.') + pgi.html + '</div>';
+  return sxHead('History', '') + '<div class="card sxCard sxLg sxHs">' + sxTbl([['When', ''], ['Item', '', 'k'], ['Type', '', 'a'], ['Qty', '', 'r'], ['Note', ''], ['By', '']], rows, null, 'No entries yet this month.') + pgi.html + '</div>';
 }
 
 /* =====================================================================
@@ -30368,7 +30365,7 @@ async function sxUndo(p, ym, id){
 /* generic history card: rows = [{t, cells:[...]}] already newest first */
 function sxHistCard(key, title, cols, rows, empty){
   const pgi = sxPgInfo(key, rows.length, 10);
-  return sxHead(title || 'History', 'Newest first') + '<div class="card sxCard sxLg sxHs">' + sxTbl(cols, rows.slice(pgi.a, pgi.b).map(r => r.cells), null, empty || 'Nothing recorded yet this month.') + pgi.html + '</div>';
+  return sxHead(title || 'History', '') + '<div class="card sxCard sxLg sxHs">' + sxTbl(cols, rows.slice(pgi.a, pgi.b).map(r => r.cells), null, empty || 'Nothing recorded yet this month.') + pgi.html + '</div>';
 }
 /* yarn / rewound / warp: what was added, plus what was removed */
 function yHRows(secs){
