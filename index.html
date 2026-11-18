@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261118-085217">
+<meta name="rvf-build" content="20261118-090325">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -24656,8 +24656,8 @@ async function asgAssignView0(){
       <div class="table-scroll"><table class="report-table"><thead>${head}</thead><tbody>${rows.map(rowHtml).join('') || '<tr><td colspan="7" class="asgMute">Nothing matches.</td></tr>'}</tbody></table></div>`;
   };
   draw();
-  $('asgHt').addEventListener('change', () => { asgH.type = $('asgHt').value; draw(); });
-  $('asgHq').addEventListener('input', () => { asgH.q = $('asgHq').value; draw(); });
+  $('asgHt').addEventListener('change', () => { asgH.type = $('asgHt').value; asgH.pg = 0; draw(); });
+  $('asgHq').addEventListener('input', () => { asgH.q = $('asgHq').value; asgH.pg = 0; draw(); });
   $('asgHpdf').addEventListener('click', async () => {
     const rows = asgAssignRows(list); if(!rows.length){ toast('Nothing to download'); return; }
     toast('Making the PDF…');
@@ -25064,10 +25064,14 @@ async function asgAssignView(){
   const head = '<tr><th>#</th><th>Date</th><th>Operator</th><th>What changed</th><th>Changed by</th></tr>';
   const rowHtml = (g, i) => `<tr><td>${i + 1}</td><td style="white-space:nowrap">${asgFmt(g.t)}</td><td>${assignEsc(g.on)}<div class="asgMute">${assignEsc(g.o)}</div></td><td>${asgLines(g).map(l => `<div class="asgCh"><b>${l[0]}</b> ${assignEsc(l[1])}</div>`).join('')}</td><td>${assignEsc(g.by)}</td></tr>`;
   const draw = () => {
+    asgH.pg = asgH.pg || 0;
     const rows = asgGroupRows(list), people = new Set(rows.map(r => r.o)).size;
     if(!list.length){ hb.innerHTML = `<div class="empty-state">No changes were saved in this period.</div>`; return; }
     hb.innerHTML = `<div class="asgMute" style="margin:2px 0 8px;">${rows.length} change${rows.length === 1 ? '' : 's'} for ${people} ${people === 1 ? 'person' : 'people'}. Newest first. Everything changed in one save is on one row.</div>
-      <div class="table-scroll"><table class="report-table"><thead>${head}</thead><tbody>${rows.map(rowHtml).join('') || '<tr><td colspan="5" class="asgMute">Nothing matches.</td></tr>'}</tbody></table></div>`;
+      <div class="table-scroll"><table class="report-table"><thead>${head}</thead><tbody>${rows.slice(asgH.pg * 10, asgH.pg * 10 + 10).map((g, i) => rowHtml(g, asgH.pg * 10 + i)).join('') || '<tr><td colspan="5" class="asgMute">Nothing matches.</td></tr>'}</tbody></table></div>
+      ${rows.length > 10 ? `<div class="mpPg"><span>${asgH.pg * 10 + 1} to ${Math.min(asgH.pg * 10 + 10, rows.length)} of ${rows.length}</span><span class="mpPb"><button type="button" class="pcBtnSoft sm" id="asgHpv" ${asgH.pg <= 0 ? 'disabled' : ''}>Previous</button><button type="button" class="pcBtnSoft sm" id="asgHnx" ${(asgH.pg + 1) * 10 >= rows.length ? 'disabled' : ''}>Next</button></span></div>` : ''}`;
+    asgH.pg = Math.min(asgH.pg || 0, Math.max(0, Math.ceil(rows.length / 10) - 1));
+    const pv = $('asgHpv'), nx = $('asgHnx'); if(pv) pv.onclick = () => { asgH.pg--; draw(); }; if(nx) nx.onclick = () => { asgH.pg++; draw(); };
   };
   draw();
   $('asgHt').addEventListener('change', () => { asgH.type = $('asgHt').value; draw(); });
@@ -28658,6 +28662,7 @@ button.mpS.on{background:#eef0fd;border-color:#6366f1}
 .sxCh:hover{border-color:#c7cbf5}
 .sxCh.on{background:#eef0fd;border-color:#6366f1;color:#3730a3}
 .sxStat{display:inline-flex;gap:8px;align-items:center}
+.sxFixW{padding:8px 2px 0;text-align:right}
 </style>
 <div id="rvfBusy"><i></i><span id="rvfBusyTxt">Loading data…</span></div>
 <script>
@@ -29504,10 +29509,10 @@ function sxReqHtml(){
   const all = SX.q.slice().sort((a, b) => (a.st === 'done') - (b.st === 'done') || b.t - a.t), op = all.filter(r => r.st !== 'done').length;
   const ls = all.filter(r => (!F.st || (F.st === 'done') === (r.st === 'done')) && (!F.to || r.to === F.to)), can = sxCan('raw') || sxCan('rew') || sxCan('wp');
   const chip = (v, n, t) => `<button type="button" class="sxCh ${F.st === v ? 'on' : ''}" data-sx="tf" data-p="req" data-k="st" data-v="${v}" title="Show only these"><b>${n}</b> ${t}</button>`;
-  const pgi = sxPgInfo('req', ls.length, 13);
+  const pgi = sxPgInfo('req', ls.length, 10);
   let h = sxTop('<span class="sxStat">' + chip('open', op, 'open') + chip('done', all.length - op, 'done') + '</span>' + sxFilt('req', flds) + '<span class="grow"></span>' + sxGear('req') + (sxCan('req') ? sxAddBtn('req', 'New request') : '')) + sxFpop('req', flds);
   const rows = ls.slice(pgi.a, pgi.b).map(r => [sxWhen(r), `<b>${skEsc(r.to)}</b> · ${sxCol(r.col)}`, r.qty ? skEsc(r.qty) : '', sxByC(r), '<span class="sxSm2 sxEll">' + skEsc(r.n || '') + (r.st === 'done' ? (r.n ? ' · ' : '') + 'done by ' + skEsc(r.doneBy || '') + ' ' + skEsc((r.doneD || '').slice(5)) : '') + '</span>', r.st === 'done' ? '<span class="sxTag in">Done</span>' : (can ? `<button class="pcBtnSoft sm" data-sx="reqdone" data-v="${skEsc(r.id)}">Mark done</button>` : '<span class="sxTag open">Open</span>')]);
-  return h + '<div class="card sxCard sxLg">' + sxTbl([['When', '92px'], ['Request', 'minmax(170px,1.8fr)', 'k'], ['Quantity', '100px'], ['By', '100px'], ['Note', 'minmax(140px,1.6fr)'], ['Status', '110px', 'a']], rows, null, 'No requests yet.') + pgi.html + '</div>';
+  return h + '<div class="card sxCard sxLg">' + sxTbl([['When', '92px'], ['Request', 'minmax(170px,1.8fr)', 'k'], ['Quantity', '100px'], ['By', '100px'], ['Note', 'minmax(140px,1.6fr)'], ['Status', '110px', 'a']], rows, null, 'No requests yet.') + pgi.html + '</div>' + sxReqHist();
 }
 async function sxFinLoad(){ const f = SX.fil, a = f.from || sxToday().slice(0, 7) + '-01', b = f.to || sxToday(); const ms = []; let y = +a.slice(0, 4), m = +a.slice(5, 7); const ey = +b.slice(0, 4), em = +b.slice(5, 7); while((y < ey || (y === ey && m <= em)) && ms.length < 24){ ms.push(y + '-' + String(m).padStart(2, '0')); m++; if(m > 12){ m = 1; y++; } } await Promise.all(ms.map(x => sxMonth('f', x))); }
 function sxFinRows(){ const f = SX.fil, a = f.from || sxToday().slice(0, 7) + '-01', b = f.to || sxToday(); let out = []; Object.keys(SX.mc).filter(k => k.indexOf('f_') === 0).forEach(k => { out = out.concat(SX.mc[k]); }); const q = (f.q || '').toLowerCase(); return out.filter(e => e.d >= a && e.d <= b && (!f.mc || String(e.mc) === f.mc) && (!f.size || e.size === f.size) && (!f.type || e.type === f.type) && (!f.dept || e.dept === f.dept) && (!q || String(e.item || '').toLowerCase().includes(q) || String(e.mcn || '').toLowerCase().includes(q))).sort((a, b) => (b.d + b.t).localeCompare(a.d + a.t) || b.t - a.t); }
@@ -29519,12 +29524,12 @@ function sxFinHtml(){
   if(!sxCan('fin')) h += sxNoRight('finishing');
   const rows = sxFinRows().slice(), fsm = ySortOf('fin'); if(fsm === 'old') rows.reverse(); else if(fsm === 'mbig') rows.sort((a, b) => b.qty - a.qty); else if(fsm === 'mc') rows.sort((a, b) => String(a.mcn).localeCompare(String(b.mcn), undefined, { numeric: true }) || String(b.d).localeCompare(String(a.d)));
   const tm = rows.filter(e => e.u === 'm').reduce((a, e) => a + e.qty, 0), tr = rows.filter(e => e.u === 'roll').reduce((a, e) => a + e.qty, 0), adm = sxAdmin();
-  const vis = f.u ? rows.filter(e => e.u === f.u) : rows, vm = vis.filter(e => e.u === 'm').reduce((a, e) => a + e.qty, 0), vr = vis.filter(e => e.u === 'roll').reduce((a, e) => a + e.qty, 0), pgi = sxPgInfo('fin', vis.length, 15);
+  const vis = f.u ? rows.filter(e => e.u === f.u) : rows, vm = vis.filter(e => e.u === 'm').reduce((a, e) => a + e.qty, 0), vr = vis.filter(e => e.u === 'roll').reduce((a, e) => a + e.qty, 0), pgi = sxPgInfo('fin', vis.length, 10);
   h += `<div class="card sxCard"><div class="sxGrid">${sxTile('Entries', rows.length, f.from || f.to ? 'in this list' : 'this month', '', 'fin', 'blue')}${sxTileF('fin', 'u', 'm', 'Meters', sxN(tm) + '<small> m</small>', '', '', 'roll', 'green')}${sxTileF('fin', 'u', 'roll', 'Rolls', sxN(tr) + '<small> rolls</small>', '', '', 'pack', 'purple')}</div></div>`;
   const cols = [['When', '92px'], ['Machine', 'minmax(120px,1.2fr)', 'k'], ['Item', 'minmax(140px,1.8fr)'], ['Size · type', '110px'], ['Department', '90px'], ['By', '90px'], ['Quantity', '96px', 'r']].concat(adm ? [['', '78px', 'a']] : []);
   const tb = vis.slice(pgi.a, pgi.b).map(e => [sxWhen(e), `<b>${skEsc(e.mcn)}</b>`, skEsc(e.item || ''), `<span class="sxSm2">${skEsc(e.size || '')} ${skEsc(e.type || '')}</span>`, skEsc(e.dept || ''), sxByC(e), `<b>${sxN(e.qty)}</b> <small>${e.u === 'm' ? 'm' : 'rolls'}</small>`].concat(adm ? [`<button type="button" class="mini-icon-btn" data-sx="undo" data-p="f" data-v="${skEsc(e.id)}" data-ym="${sxYm(e.d)}" title="Remove this entry" aria-label="Remove this entry">${sxIc('del', 13)}</button>`] : []));
   const ft = ['', '<b>Total</b>', '', '', '', '', (vm ? `<b>${sxN(vm)}</b> m` : '') + (vm && vr ? '<br>' : '') + (vr ? `<b>${sxN(vr)}</b> rolls` : '')].concat(adm ? [''] : []);
-  h += '<div class="card sxCard sxLg">' + sxTbl(cols, tb, ft, 'No entries for this filter.') + pgi.html + '</div>';
+  h += '<div class="card sxCard sxLg">' + sxTbl(cols, tb, ft, 'No entries for this filter.') + pgi.html + '</div>' + sxFinHist();
   return h;
 }
 const SX_FS = [['cr', 'Carpets & Rugs'], ['vip', 'VIP Prayer Mats'], ['up', 'Upholstery'], ['q2', '2nd Quality']];
@@ -29773,7 +29778,7 @@ async function sxSaveReq(){
   try{ await window.__db.invSet('sxq', { list: next }); SX.q = next; sxKeep({ rto: to }); toast('Saved'); sxClose(); skRender(); }catch(err){ console.error(err); toast('Could not save'); }
 }
 async function sxReqDone(id){
-  const next = SX.q.map(r => r.id === id ? Object.assign({}, r, { st: 'done', doneBy: sxMe(), doneD: sxToday() }) : r);
+  const next = SX.q.map(r => r.id === id ? Object.assign({}, r, { st: 'done', doneBy: sxMe(), doneD: sxToday(), doneT: Date.now() }) : r);
   try{ await window.__db.invSet('sxq', { list: next }); SX.q = next; skRender(); }catch(err){ console.error(err); toast('Could not save'); }
 }
 function sxDl(kind){
@@ -30187,7 +30192,7 @@ document.addEventListener('click', (ev) => { const el = ev.target.closest && ev.
 
 function mpLogHtml(){
   const all = (SK.plan.log || []).slice().reverse(); if(!all.length) return '';
-  const per = 13, pages = Math.ceil(all.length / per); SX.mpl = Math.min(Math.max(0, SX.mpl || 0), pages - 1);
+  const per = 10, pages = Math.ceil(all.length / per); SX.mpl = Math.min(Math.max(0, SX.mpl || 0), pages - 1);
   const a = SX.mpl * per, rows = all.slice(a, a + per).map(l => [`<span class="sxSm2">${skEsc(l.d)}</span>`, `<b>${skEsc(l.mc)}</b>`, l.to ? skEsc(l.to) : '<span class="sxSm2">Cleared</span>', l.from ? `<span class="sxSm2">${skEsc(l.from)}</span>` : '<span class="sxSm2">-</span>', `<span class="sxSm2">${skEsc(l.by || '')}</span>`]);
   const pg = `<div class="mpPg"><span>${a + 1} to ${Math.min(a + per, all.length)} of ${all.length}</span><span class="mpPb"><button type="button" class="pcBtnSoft sm" data-sx="mplp" data-v="-1" ${SX.mpl <= 0 ? 'disabled' : ''}>Newer</button><b>${SX.mpl + 1} / ${pages}</b><button type="button" class="pcBtnSoft sm" data-sx="mplp" data-v="1" ${SX.mpl >= pages - 1 ? 'disabled' : ''}>Older</button></span></div>`;
   return sxHead('Design changes', 'Newest first') + '<div class="card sxCard mpTbl mpLg">' + sxTbl([['Date', ''], ['Machine', '', 'k'], ['Changed to', '', 'k'], ['Was', '', 'k'], ['By', '']], rows, null, '') + pg + '</div>';
@@ -30267,9 +30272,91 @@ function sxFsHist(){
   const nm = (id) => { const i = skItem(id); return i ? skEsc(i.name || '') + (i.col ? ' <span class="sxSm2">' + skEsc(i.col) + '</span>' : '') : skEsc(id || ''); };
   const a = (SK.mv || []).map(e => ({ e, ty: e.k === 'out' ? 'OUT' : 'IN', c: e.k === 'out' ? 'out' : 'in', i: e.i, q: e.q, n: e.n }));
   const b = sxEnt('s', ym).map(e => ({ e, ty: e.k === 'pack' ? 'PACKED' : 'FLOOR', c: 'open', i: e.i, q: e.q, n: e.k === 'pack' ? 'Packed from floor stock' : 'Finished, not packed yet' }));
-  const g = SX.fsub, l = a.concat(b).filter(r => { const i = skItem(r.i); return i && i.g === g; }).sort((x, y) => (Number(y.e.t) || 0) - (Number(x.e.t) || 0)), pgi = sxPgInfo('fsh:' + g, l.length, 13);
+  const g = SX.fsub, l = a.concat(b).filter(r => { const i = skItem(r.i); return i && i.g === g; }).sort((x, y) => (Number(y.e.t) || 0) - (Number(x.e.t) || 0)), pgi = sxPgInfo('fsh:' + g, l.length, 10);
   const rows = l.slice(pgi.a, pgi.b).map(r => [sxWhen(r.e), `<span class="sxYc">${nm(r.i)}</span>`, `<span class="sxTag ${r.c}">${r.ty}</span>`, `<b>${skNum(r.q)}</b>`, `<span class="sxSm2 sxEll" title="${skEsc(r.n || '')}">${skEsc(r.n || '')}</span>`, sxByC(r.e)]);
-  return sxHead('Recent entries', 'This month') + '<div class="card sxCard sxLg">' + sxTbl([['When', ''], ['Item', '', 'k'], ['Type', '', 'a'], ['Qty', '', 'r'], ['Note', ''], ['By', '']], rows, null, 'No entries yet this month.') + pgi.html + '</div>';
+  return sxHead('History', 'Newest first') + '<div class="card sxCard sxLg">' + sxTbl([['When', ''], ['Item', '', 'k'], ['Type', '', 'a'], ['Qty', '', 'r'], ['Note', ''], ['By', '']], rows, null, 'No entries yet this month.') + pgi.html + '</div>';
+}
+
+/* =====================================================================
+   HISTORY = a permanent record. One row for each whole action, newest first,
+   10 rows per page. No delete or edit buttons here. Removing an entry is
+   itself written into the history (and the entry still shows as added).
+   ===================================================================== */
+SX.hl = SX.hl || {};
+async function sxHLoad(ym, force){
+  if(SX.hl[ym] && !force) return SX.hl[ym];
+  try{ const d = await window.__db.invGet('sxh_' + ym); SX.hl[ym] = (d && d.list) || []; }catch(e){ console.error(e); SX.hl[ym] = SX.hl[ym] || []; }
+  return SX.hl[ym];
+}
+function sxHEnsure(){ const ym = sxYm(); if(!SX.hl[ym] && !SX.hlBusy){ SX.hlBusy = 1; sxHLoad(ym).then(() => { SX.hlBusy = 0; skRender(); }); } return SX.hl[ym] || []; }
+async function sxHAppend(item){
+  const ym = sxYm(), cur = await sxHLoad(ym, true), next = cur.concat([item]).slice(-600);
+  await window.__db.invSet('sxh_' + ym, { list: next }); SX.hl[ym] = next;
+}
+const sxHSnap = (e) => { const o = Object.assign({}, e); delete o.dl; if(o.rows){ o.nr = o.rows.length; delete o.rows; } return o; };
+async function sxUndo(p, ym, id){
+  if(!sxAdmin()){ toast('Only the administrator can remove an entry'); return; }
+  if(!confirm('Remove this entry? The stock goes back as before. The removal stays in the history.')) return;
+  const old = sxEnt(p, ym).find(x => x.id === id);
+  try{
+    SX.bal = await window.__db.sxUndo(p + '_' + ym, id); SX.mc[p + '_' + ym] = sxEnt(p, ym).filter(x => x.id !== id);
+    if(old){ try{ await sxHAppend({ t: Date.now(), by: sxMe(), p, e: sxHSnap(old) }); }catch(err){ console.error(err); } }
+    toast('Removed'); skRender();
+  }catch(err){ console.error(err); toast('Could not remove'); }
+}
+/* generic history card: rows = [{t, cells:[...]}] already newest first */
+function sxHistCard(key, title, cols, rows, empty){
+  const pgi = sxPgInfo(key, rows.length, 10);
+  return sxHead(title || 'History', 'Newest first') + '<div class="card sxCard sxLg">' + sxTbl(cols, rows.slice(pgi.a, pgi.b).map(r => r.cells), null, empty || 'Nothing recorded yet this month.') + pgi.html + '</div>';
+}
+/* yarn / rewound / warp: what was added, plus what was removed */
+function yHRows(secs){
+  const ym = sxYm(), out = [];
+  const row = (e, t, by, rem) => {
+    const i = e.y ? yItem(e.y) : null, name = e.open ? `<b>Opening stock</b> ${e.nr || (e.rows || []).length ? '<span class="sxSm2">' + (e.nr || e.rows.length) + ' items</span>' : ''}` : i ? `<span class="sxYc">${yDot(yHex(i.col, yFam(i.col)))}${skEsc(i.col)}</span> <span class="sxSm2">${skEsc(i.code)}</span>` : sxColT(e.col || '');
+    const det = [e.s === 'yr' ? '' : e.k === 'mv' ? skEsc(e.store) + ' to ' + skEsc(e.store2) : e.store ? skEsc(e.store) : '', e.to ? 'to ' + skEsc(e.to) : '', e.src === 'rc' ? 'recovered from weaving' : '', e.bob ? sxN(e.bob) + (e.s === 'wp' ? ' beams' : ' bobbins') : '', e.bx ? sxN(e.bx) + ' boxes' : '', e.n ? skEsc(e.n) : ''].filter(Boolean).join(' · ');
+    const tag = rem ? '<span class="sxTag out">REMOVED</span>' : `<span class="sxTag ${e.k === 'out' ? 'out' : e.k === 'mv' ? 'open' : 'in'}">${e.k === 'out' ? 'OUT' : e.k === 'mv' ? 'MOVE' : 'IN'}</span>`;
+    const dt = rem ? 'Entry of ' + skEsc(String(e.d || '').slice(5)) + (det ? ' · ' + det : '') : det;
+    return { t, cells: [sxWhen({ t, d: rem ? sxTodayOf(t) : e.d }), name, tag, `<b>${sxN(e.kg)}</b>`, `<span class="sxSm2 sxEll" title="${dt}">${dt}</span>`, `<span class="sxSm2 sxEll">${skEsc(by || '')}</span>`] };
+  };
+  sxEnt('w', ym).filter(e => secs.indexOf(e.s) >= 0).forEach(e => out.push(row(e, Number(e.t) || 0, e.by)));
+  sxHEnsure().filter(h => h.p === 'w' && h.e && secs.indexOf(h.e.s) >= 0).forEach(h => { out.push(row(h.e, Number(h.e.t) || 0, h.e.by)); out.push(row(h.e, h.t, h.by, 1)); });
+  return out.sort((a, b) => b.t - a.t);
+}
+const sxTodayOf = (t) => { const x = new Date(t), p = (n) => String(n).padStart(2, '0'); return x.getFullYear() + '-' + p(x.getMonth() + 1) + '-' + p(x.getDate()); };
+const YH_COLS = [['When', ''], ['Item', '', 'k'], ['Type', '', 'a'], ['Kg', '', 'r'], ['Details', ''], ['By', '']];
+function yRecent(secs, title){
+  return sxHistCard('rc:' + secs.join(','), 'History', YH_COLS, yHRows(secs), 'Nothing recorded yet this month.') + sxFixBtn(secs);
+}
+/* admin only: a separate place to correct a wrong entry (not part of the history) */
+function sxFixBtn(secs){
+  if(!sxAdmin()) return '';
+  return `<div class="sxFixW"><button type="button" class="pcBtnSoft sm" data-sx="fix" data-v="${skEsc(secs.join(','))}">Fix a wrong entry…</button></div>`;
+}
+function sxFixOpen(secs){
+  const ym = sxYm(), l = sxEnt('w', ym).filter(e => secs.indexOf(e.s) >= 0).slice().reverse().slice(0, 30);
+  const rows = l.map(e => { const i = e.y ? yItem(e.y) : null; return `<div class="sxRow"><div class="nm"><b>${e.open ? 'Opening stock' : i ? skEsc(i.col) : skEsc(e.col || '')}</b><small>${skEsc(String(e.d).slice(5))} · ${e.k === 'out' ? 'OUT' : e.k === 'mv' ? 'MOVE' : 'IN'} · ${sxN(e.kg)} kg · ${skEsc(e.by || '')}</small></div><button type="button" class="mini-icon-btn" data-sx="undo" data-p="w" data-v="${skEsc(e.id)}" data-ym="${ym}" title="Remove this entry" aria-label="Remove this entry">${sxIc('del', 13)}</button></div>`; });
+  sxModal('Fix a wrong entry', '<div class="sxNote" style="margin:0 0 8px;">Removing an entry puts the stock back. The history keeps both the entry and the removal.</div>' + (rows.join('') || '<div class="sxNote">No entries this month.</div>'), '');
+}
+document.addEventListener('click', (ev) => { const el = ev.target.closest && ev.target.closest('[data-sx="fix"]'); if(el){ ev.preventDefault(); sxFixOpen(el.dataset.v.split(',')); } });
+/* Unrolling: added and removed */
+function sxFinHist(){
+  const ym = sxYm(), out = [];
+  const row = (e, t, by, rem) => ({ t, cells: [sxWhen({ t, d: rem ? sxTodayOf(t) : e.d }), `<b>${skEsc(e.mcn || '')}</b>`, rem ? '<span class="sxTag out">REMOVED</span>' : '<span class="sxTag in">ADDED</span>', `<b>${sxN(e.qty)}</b> <small>${e.u === 'm' ? 'm' : 'roll'}</small>`, `<span class="sxSm2 sxEll">${skEsc([e.item, e.size, e.type, e.dept].filter(Boolean).join(' · '))}</span>`, `<span class="sxSm2 sxEll">${skEsc(by || '')}</span>`] });
+  sxEnt('f', ym).forEach(e => out.push(row(e, Number(e.t) || 0, e.by)));
+  sxHEnsure().filter(h => h.p === 'f' && h.e).forEach(h => { out.push(row(h.e, Number(h.e.t) || 0, h.e.by)); out.push(row(h.e, h.t, h.by, 1)); });
+  out.sort((a, b) => b.t - a.t);
+  return sxHistCard('fnh', 'History', [['When', ''], ['Machine', '', 'k'], ['Type', '', 'a'], ['Quantity', '', 'r'], ['Details', ''], ['By', '']], out);
+}
+/* Material requests: asked and done */
+function sxReqHist(){
+  const out = [];
+  (SX.q || []).forEach(r => {
+    out.push({ t: Number(r.t) || 0, cells: [sxWhen(r), `<b>${skEsc(r.to)}</b> · ${sxCol(r.col)}`, '<span class="sxTag open">ASKED</span>', r.qty ? skEsc(r.qty) : '', `<span class="sxSm2 sxEll">${skEsc(r.n || '')}</span>`, sxByC(r)] });
+    if(r.st === 'done'){ const t = Number(r.doneT) || (Number(r.t) || 0) + 1; out.push({ t, cells: [sxWhen({ t: Number(r.doneT) || 0, d: r.doneD }), `<b>${skEsc(r.to)}</b> · ${sxCol(r.col)}`, '<span class="sxTag in">DONE</span>', r.qty ? skEsc(r.qty) : '', '', `<span class="sxSm2 sxEll">${skEsc(r.doneBy || '')}</span>`] }); }
+  });
+  out.sort((a, b) => b.t - a.t);
+  return sxHistCard('rqh', 'History', [['When', ''], ['Request', '', 'k'], ['Type', '', 'a'], ['Quantity', ''], ['Note', ''], ['By', '']], out, 'No requests yet.');
 }
 
 /* ---- clicks ---- */
