@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261117-164220">
+<meta name="rvf-build" content="20261118-074902">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -6254,7 +6254,7 @@ function renderNav(){
   nav.innerHTML = '';
   const pages = userPages(state.user).slice();
   if(state.user.role === 'admin' && !pages.includes('stock')) pages.push('stock');
-  if(state.user.role === 'admin') ['stk_raw','stk_rew','stk_wp','stk_fin','stk_fst','stk_req','stk_mp','stk_dz'].forEach(k => { if(!pages.includes(k)) pages.push(k); });
+  if(state.user.role === 'admin') ['stk_raw','stk_rew','stk_wp','stk_fin','stk_fst','stk_req','stk_mp'].forEach(k => { if(!pages.includes(k)) pages.push(k); });
   pages.forEach(key => {
     const def = PAGE_DEFS[key];
     if(!def || key === 'aichat') return;   // the AI page is switched off for everyone (nothing deleted)
@@ -6279,7 +6279,7 @@ function route(){
   if(pages.length === 0){ showScreen('screen-pending'); return; }
   if(maybeResumeCapture()) return;   // the phone closed the page during the camera step: go back to it
   // land on the most relevant page for the role, falling back to the first assigned page
-  const priority = ['ceo','admin','approvals','select','stk_raw','stk_rew','stk_wp','stk_fin','stk_fst','stk_req','stk_mp','stk_dz','profile'];
+  const priority = ['ceo','admin','approvals','select','stk_raw','stk_rew','stk_wp','stk_fin','stk_fst','stk_req','stk_mp','profile'];
   const first = priority.find(p => pages.includes(p)) || pages[0];
   goTo(first);
 }
@@ -28583,6 +28583,57 @@ table.sxRT th.a, table.sxRT td.a{ width:1%; }
 .yPh{ min-width:54px; justify-content:center; }
 .hrTabs.sxIO{display:flex;width:100%}
 .hrTabs.sxIO button{flex:1 1 0;min-width:0;white-space:normal;line-height:1.2;padding:8px 4px;font-size:12px}
+/* Machine plan page: tabs, summary, designs list, table touches */
+.mpTabs{max-width:380px;margin:0 0 14px}
+.mpTabs button span{margin-left:5px;font-size:11px;font-weight:500;opacity:.6}
+.mpSum{padding:16px !important}
+.mpTiles{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.mpS{background:#f6f7fb;border-radius:12px;padding:12px 8px;text-align:center}
+.mpS b{display:block;font:600 22px/1.1 'JetBrains Mono',ui-monospace,monospace;color:#111827}
+.mpS span{display:block;margin-top:4px;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:#6b7694}
+.mpS.g b{color:#15803d}.mpS.a b{color:#b45309}
+.mpH{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:16px 2px 8px;font-size:13px;font-weight:600;color:#111827}
+.mpH span{font-size:11px;font-weight:400;color:#8b95a7}
+.mpDg{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px}
+.mpMore{margin-top:8px}.mpMore .mpDg{margin-top:8px}
+.mpMore summary{cursor:pointer;font-size:12px;color:#4338ca;padding:6px 2px;list-style:none}
+.mpMore summary::-webkit-details-marker{display:none}
+.mpDs{all:unset;box-sizing:border-box;position:relative;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 12px;border:1px solid #e6e9f2;border-radius:10px;background:#fff;cursor:pointer;overflow:hidden;font-size:12.5px;color:#111827}
+.mpDs:hover,.mpDs.on{border-color:#c7cbf5;background:#f5f6ff}
+.mpDs .mpDn{position:relative;z-index:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}
+.mpDs b{position:relative;z-index:1;font-weight:600;color:#4338ca}
+.mpDs i{position:absolute;left:0;bottom:0;height:3px;background:#c7cbf5;border-radius:0 2px 2px 0}
+.mpPill{display:inline-block;padding:2px 9px;border-radius:999px;background:#eef0fd;color:#4338ca;font-size:10.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase}
+.mpDc{display:inline-flex;align-items:center;gap:9px}
+.mpTh{display:inline-grid;place-items:center;flex:none;border-radius:10px;overflow:hidden;background:#eef0f6;border:1px solid #e3e7ef;font-weight:700;color:#6b7694;cursor:zoom-in}
+.mpTh.no{cursor:default}
+.mpTh img{width:100%;height:100%;object-fit:cover;display:block}
+#mpPop{display:none;position:fixed;z-index:99999;width:236px;height:236px;padding:5px;background:#fff;border-radius:16px;box-shadow:0 12px 34px rgba(15,23,42,.28);pointer-events:none}
+#mpPop img{width:100%;height:100%;object-fit:cover;border-radius:12px;display:block}
+.mpTbl .sxRT td{padding-top:11px;padding-bottom:11px}
+.dzCard{padding:0 !important;overflow:hidden}
+.dzHd,.dzRow{display:grid;grid-template-columns:34px 52px minmax(0,1fr) 84px 92px 140px 76px;align-items:center;column-gap:12px;padding:0 16px}
+.dzHd{height:40px;background:#f6f7fb;border-bottom:1px solid #eceff5;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:#6b7694;text-align:center}
+.dzHd .l{text-align:left}
+.dzRow{min-height:76px;border-bottom:1px solid #eef0f5;font-size:12.5px}
+.dzRow:hover{background:#fafbff}
+.dzN{text-align:center;color:#8b95a7;font-size:12px}
+.dzT{cursor:pointer}
+.dzNm{min-width:0}.dzNm b{display:block;font-size:13.5px;font-weight:600;color:#111827;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dzNm small{display:block;margin-top:2px;font-size:11.5px;color:#8b95a7}
+.dzPh{display:none !important}
+.dzC{text-align:center;color:#111827}.dzC i{color:#aab3c2;font-style:normal;font-size:12px}
+.mpOn{font-style:normal;display:inline-block;padding:3px 10px;border-radius:999px;background:#e8f7ee;color:#15803d;font-size:11.5px;font-weight:600}
+.dzFt{padding:12px 18px;font-size:12px;color:#6b7694;background:#fafbfd}
+.dzFt b{color:#111827}
+@media (max-width:700px){
+  .mpTiles{grid-template-columns:repeat(2,1fr)}
+  .dzHd{display:none}
+  .dzRow{grid-template-columns:52px minmax(0,1fr) auto;padding:10px 14px;min-height:72px}
+  .dzN,.dzC{display:none}
+  .dzPh{display:block !important}
+  .mpDg{grid-template-columns:1fr}
+}
 </style>
 <div id="rvfBusy"><i></i><span id="rvfBusyTxt">Loading data…</span></div>
 <script>
@@ -29206,9 +29257,9 @@ const sxN = (n) => (Math.round((Number(n) || 0) * 10) / 10).toLocaleString('en-U
 const sxMe = () => (state.user && (state.user.name || state.user.loginId)) || '';
 const sxAdmin = () => !!(state.user && state.user.role === 'admin');
 const SX_PK = { mp: 'stk_mp', dz: 'stk_dz', raw: 'stk_raw', rew: 'stk_rew', wp: 'stk_wp', fin: 'stk_fin', fst: 'stk_fst', req: 'stk_req' };
-function sxForce(p){ SX.sfor = ''; SX.force = p || ''; SX.tab = p || 'dash'; SK.tab = SX.tab; }
+function sxForce(p){ if(p === 'dz'){ SX.mpt = 'des'; p = 'mp'; } else if(p === 'mp') SX.mpt = 'mach'; SX.sfor = ''; SX.force = p || ''; SX.tab = p || 'dash'; SK.tab = SX.tab; }
 function sxCan(stage){ if(sxAdmin()) return true; try{ if(SX_PK[stage] && userPages(state.user).includes(SX_PK[stage])) return true; }catch(e){} const as = SX.cfg.assign || {}; let a = as[stage]; if((stage === 'rew' || stage === 'wp') && a === undefined) a = as.rw; a = a || []; const me = String(state.user && state.user.loginId); if(stage === 'set' || stage === 'mach') return a.indexOf(me) >= 0; if(stage === 'req') return a.length ? a.indexOf(me) >= 0 : true; return a.length ? a.indexOf(me) >= 0 : !!(state.user && state.user.role === 'supervisor'); }
-const SX_PG = [['raw', 'Raw yarn', 'Yarn in the store: what came in, what went out, how much is left and for how many days', 'raw'], ['rew', 'Rewound yarn', 'Yarn rewound onto bobbins, and yarn recovered from weaving', 'rew'], ['wp', 'Warp beams', 'Warp beams made and used', 'wp'], ['fin', 'Unrolling report', 'Rolls from weaving are unrolled, repacked and counted by category in pieces and metres', 'fin'], ['fst', 'Finished goods', 'Carpets and Rugs, VIP, Upholstery and 2nd quality ready for sale', 'fst'], ['req', 'Material requests', 'Requests from the weaving manager', 'req'], ['mp', 'Machine plan', 'Which design and colour runs on each machine, with its category', 'mach'], ['dz', 'Designs', 'Design codes and samples, stock and where each design is running', 'mach'], ['dm', 'Machines and designs', 'Which design runs on which machine', 'mach'], ['set', 'Settings', 'Lists, truck size, minimums and who enters what', 'set']];
+const SX_PG = [['raw', 'Raw yarn', 'Yarn in the store: what came in, what went out, how much is left and for how many days', 'raw'], ['rew', 'Rewound yarn', 'Yarn rewound onto bobbins, and yarn recovered from weaving', 'rew'], ['wp', 'Warp beams', 'Warp beams made and used', 'wp'], ['fin', 'Unrolling report', 'Rolls from weaving are unrolled, repacked and counted by category in pieces and metres', 'fin'], ['fst', 'Finished goods', 'Carpets and Rugs, VIP, Upholstery and 2nd quality ready for sale', 'fst'], ['req', 'Material requests', 'Requests from the weaving manager', 'req'], ['mp', 'Machine plan', 'Which design and colour runs on each machine, with its category, and the list of designs with samples', 'mach'], ['dz', 'Designs', 'Design codes and samples, stock and where each design is running', 'mach'], ['dm', 'Machines and designs', 'Which design runs on which machine', 'mach'], ['set', 'Settings', 'Lists, truck size, minimums and who enters what', 'set']];
 const sxPriv = () => sxAdmin() || !!(state.user && state.user.role === 'supervisor');
 function sxSee(pg){ if(pg === 'set') return sxAdmin() || sxCan('set'); if(sxPriv()) return true; const p = SX_PG.find(x => x[0] === pg); return !!p && sxCan(p[3]); }
 function sxWho(stage){ const as = SX.cfg.assign || {}; let a = as[stage]; if((stage === 'rew' || stage === 'wp') && a === undefined) a = as.rw; a = a || []; if(!a.length) return stage === 'req' ? 'Everybody' : (stage === 'set' || stage === 'mach') ? 'Administrator' : 'Administrator and supervisors'; return a.map(id => { const u = (state.users || []).find(x => String(x.loginId) === String(id)); return u ? u.name : id; }).join(', '); }
@@ -30039,22 +30090,35 @@ function mpRows(){
   return ms.map(m => { const p = pm[m.id] || {}, d = p.des ? skDesign(p.des) : null, it = p.it ? skItem(p.it) : null, x = MP_XL[m.id] || [], st = p.st === 'stop' ? 'stop' : d ? 'run' : 'none';
     return { m, p, d, it, st, dept: /^SSTM/i.test(String(m.name || '')) ? 'SSTM' : 'RVF', cat: p.cat || (st === 'stop' ? '' : x[1]) || '', col: p.col || (st === 'stop' ? '' : x[0]) || '', mix: [p.c1, p.c2, p.c3].filter(Boolean).join(' / '), nm: String(m.name || m.id) }; });
 }
-function sxMpHtml(){
+function sxMpMachHtml(){
   const F = sxFget('mp'), q = (SX.mq || '').toLowerCase(), mode = ySortOf('mp'), all = mpRows(), lay = SX.mpv !== 'table';
   const uniq = (f) => Array.from(new Set(all.map(f).filter(Boolean))).sort();
   const flds = [['dept', 'Department', ['RVF', 'SSTM']], ['st', 'Status', [['run', 'Running'], ['none', 'No design'], ['stop', 'Stopped']]], ['cat', 'Category', uniq(r => r.cat)], ['des', 'Design', uniq(r => r.d && r.d.name)]];
   let h = sxTop(sxSearch('sxMq', SX.mq, 'Search machine, design or colour…') + sxFilt('mp', flds) + (lay ? '' : ySortBtn('mp', ['mc', 'gdes', 'gcat', 'gcol', 'gdept'])) + `<button type="button" class="pcBtnSoft sm" data-sx="mpv" title="Switch between the floor layout and the table">${lay ? 'Table' : 'Layout'}</button>` + sxDlBtn('mp'));
   const rows = all.filter(r => (!F.dept || r.dept === F.dept) && (!F.st || r.st === F.st) && (!F.cat || r.cat === F.cat) && (!F.des || (r.d && r.d.name === F.des)) && (!q || (r.nm + ' ' + (r.d ? r.d.name : '') + ' ' + r.col + ' ' + r.mix + ' ' + r.cat).toLowerCase().indexOf(q) >= 0));
-  if(lay){ const on = rows.length !== all.length; window.__mpOk = on ? rows.reduce((o, r) => (o[String(r.m.id)] = 1, o), {}) : null; SK.dept = F.dept || 'ALL'; const out = h + skPlanHtml(true); window.__mpOk = null; return out + (on ? `<div class="sxSm2" style="margin:8px 2px;">${rows.length} of ${all.length} machines match. The others are faded.</div>` : ''); }
+  if(lay){ const on = rows.length !== all.length; window.__mpOk = on ? rows.reduce((o, r) => (o[String(r.m.id)] = 1, o), {}) : null; SK.dept = F.dept || 'ALL'; const out = skPlanHtml(true).replace(/<details class="acSec admD">[\s\S]*?<\/details>/, ''); window.__mpOk = null; return h + mpSumHtml(all) + out + (on ? `<div class="sxSm2" style="margin:8px 2px;">${rows.length} of ${all.length} machines match. The others are faded.</div>` : ''); }
   const key = { gdes: (r) => r.d ? r.d.name : '~ No design', gcat: (r) => r.cat || '~ No category', gcol: (r) => r.col || '~ No colour', gdept: (r) => r.dept }[mode];
   if(key) rows.sort((a, b) => String(key(a)).localeCompare(String(key(b))) || Number(a.m.id) - Number(b.m.id));
   const run = rows.filter(r => r.st === 'run').length, adm = skCanMach();
   const cols = [['Machine', '', 'k'], ['Department', ''], ['Design', '', 'k'], ['Colour', '', 'k'], ['Colour mix', ''], ['Category', ''], ['Since', ''], ['Status', '', 'a']].concat(adm ? [['', '', 'a']] : []);
-  const mk = (r) => [`<b>${skEsc(r.nm)}</b>`, `<span class="sxSm2">${r.dept}</span>`, r.d ? skEsc(r.d.name) : '<span class="sxSm2">-</span>', r.col ? sxColT(r.col) : '<span class="sxSm2">-</span>', r.mix ? `<span class="sxSm2">${skEsc(r.mix)}</span>` : '<span class="sxSm2">-</span>', r.cat ? skEsc(r.cat) : '<span class="sxSm2">-</span>', r.p.since ? `<span class="sxSm2">${skEsc(String(r.p.since).slice(5))}</span>` : '<span class="sxSm2">-</span>', `<span class="sxTag ${MP_ST[r.st][1]}">${MP_ST[r.st][0]}</span>`].concat(adm ? [`<button type="button" class="mini-icon-btn" data-sk="mc" data-v="${skEsc(r.m.id)}" title="Change the design on this machine" aria-label="Change the design">${sxIc('pen', 13)}</button>`] : []);
+  const mk = (r) => [`<b>${skEsc(r.nm)}</b>`, `<span class="sxSm2">${r.dept}</span>`, r.d ? `<span class="mpDc">${mpThumb(r.d, 30)}<b>${skEsc(r.d.name)}</b></span>` : '<span class="sxSm2">-</span>', r.col ? sxColT(r.col) : '<span class="sxSm2">-</span>', r.mix ? `<span class="sxSm2">${skEsc(r.mix)}</span>` : '<span class="sxSm2">-</span>', r.cat ? `<span class="mpPill">${skEsc(r.cat)}</span>` : '<span class="sxSm2">-</span>', r.p.since ? `<span class="sxSm2">${skEsc(String(r.p.since).slice(5))}</span>` : '<span class="sxSm2">-</span>', `<span class="sxTag ${MP_ST[r.st][1]}">${MP_ST[r.st][0]}</span>`].concat(adm ? [`<button type="button" class="mini-icon-btn" data-sk="mc" data-v="${skEsc(r.m.id)}" title="Change the design on this machine" aria-label="Change the design">${sxIc('pen', 13)}</button>`] : []);
   let body = [];
   if(key){ let cur = null, g = null, grp = []; rows.forEach(r => { const t = String(key(r)).replace(/^~ /, ''); if(t !== cur){ cur = t; g = { t, n: 0, run: 0 }; grp.push(g); body.push({ g }); } g.n++; if(r.st === 'run') g.run++; body.push(mk(r)); }); body = body.map(x => x.g ? { g: `<b>${skEsc(x.g.t)}</b> <span class="sxSm2">· ${x.g.n} machine${x.g.n === 1 ? '' : 's'} · ${x.g.run} running</span>` } : x); } else body = rows.map(mk);
   const foot = ['<b>Total</b>', '', '', '', '', '', '', `<b>${run}</b> running of <b>${rows.length}</b>`].concat(adm ? [''] : []);
-  return h + sxHead('Machines and what runs on them', key ? Y_SORT[mode] : 'In machine order') + '<div class="card sxCard">' + sxTbl(cols, body, foot, 'No machine matches this filter.') + '</div>';
+  return h + mpSumHtml(all) + sxHead('Machines and what runs on them', key ? Y_SORT[mode] : 'In machine order') + '<div class="card sxCard mpTbl">' + sxTbl(cols, body, foot, 'No machine matches this filter.') + '</div>';
+}
+function mpThumb(d, sz){
+  const c = d && d.cover; const ini = skEsc(String((d && d.name) || '?').trim().charAt(0).toUpperCase());
+  return c ? `<span class="mpTh" style="width:${sz}px;height:${sz}px;"><img src="${c}" alt=""></span>` : `<span class="mpTh no" style="width:${sz}px;height:${sz}px;font-size:${Math.round(sz * 0.4)}px;">${ini}</span>`;
+}
+function mpSumHtml(all){
+  const run = all.filter(r => r.st === 'run'), stop = all.filter(r => r.st === 'stop').length, none = all.filter(r => r.st === 'none').length, by = {};
+  run.forEach(r => { const n = r.d.name; by[n] = (by[n] || 0) + 1; });
+  const l = Object.keys(by).map(n => [n, by[n]]).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])), mx = l.length ? l[0][1] : 1, q = (SX.mq || '').toLowerCase();
+  const tile = (n, t, c) => `<div class="mpS ${c || ''}"><b>${n}</b><span>${t}</span></div>`;
+  const it = (x) => `<button type="button" class="mpDs ${q && x[0].toLowerCase() === q ? 'on' : ''}" data-sx="mpd" data-v="${skEsc(x[0])}" title="Show the machines running ${skEsc(x[0])}"><span class="mpDn">${skEsc(x[0])}</span><b>${x[1]}</b><i style="width:${Math.max(6, Math.round(x[1] / mx * 100))}%"></i></button>`;
+  const rest = l.slice(6);
+  return `<div class="card sxCard mpSum"><div class="mpTiles">${tile(run.length, 'Running', 'g')}${tile(stop, 'Stopped')}${tile(none, 'No design', 'a')}${tile(l.length, 'Designs in use')}</div><div class="mpH">Designs running now<span>Tap a design to see its machines</span></div><div class="mpDg">${l.slice(0, 6).map(it).join('')}</div>${rest.length ? `<details class="mpMore"><summary>Show ${rest.length} more designs</summary><div class="mpDg">${rest.map(it).join('')}</div></details>` : ''}</div>`;
 }
 function sxDzHtml(){
   const F = sxFget('dz'), q = (SX.dq || '').toLowerCase(), mode = ySortOf('dz'), pm = SK.plan.m || {};
@@ -30064,9 +30128,14 @@ function sxDzHtml(){
   const byName = (a, b) => String(a.d.name).localeCompare(String(b.d.name));
   rows.sort(mode === 'code' ? (a, b) => String(a.d.code || '~').localeCompare(String(b.d.code || '~'), undefined, { numeric: true }) || byName(a, b) : mode === 'big' ? (a, b) => (b.tot - a.tot) || byName(a, b) : mode === 'run' ? (a, b) => (b.mc.length - a.mc.length) || byName(a, b) : byName);
   let h = sxTop(sxSearch('sxDq', SX.dq, 'Search design name or code…') + sxFilt('dz', flds) + ySortBtn('dz', ['name', 'code', 'big', 'run']) + sxDlBtn('dz') + (skCanAdd() ? `<button type="button" class="pcBtnMain sm" data-sk="newdes" title="New design">${sxIc('plus', 14)}<span class="sxAddL">New design</span></button>` : ''));
-  const cols = [['Code', ''], ['Design', '', 'k'], ['Sample', '', 'a'], ['Colours', '', 'r'], ['In stock', '', 'r'], ['Running on', '', 'r']];
-  const body = rows.map(r => [r.d.code ? `<span class="sxCode">${skEsc(r.d.code)}</span>` : '<span class="sxSm2">-</span>', `<b>${skEsc(r.d.name)}</b>${r.d.ar ? ` <span class="sxSm2">${skEsc(r.d.ar)}</span>` : ''}`, `<button type="button" class="pcBtnSoft sm yPh" data-sk="des" data-v="${skEsc(r.d.id)}" title="View the photos of this design">View</button>`, r.n ? sxN(r.n) : '<span class="sxSm2">-</span>', r.tot ? sxN(r.tot) : '<span class="sxSm2">-</span>', r.mc.length ? `<span title="${skEsc(r.mc.map(k => ((state.machines || []).find(m => String(m.id) === String(k)) || {}).name || k).join(', '))}">${r.mc.length} machine${r.mc.length === 1 ? '' : 's'}</span>` : '<span class="sxSm2">Not running</span>']);
-  return h + sxHead('Designs', { name: 'A to Z', code: 'By code', big: 'Most stock', run: 'Most machines running' }[mode]) + '<div class="card sxCard">' + sxTbl(cols, body, ['', '<b>Total</b>', '', '', `<b>${sxN(rows.reduce((a, r) => a + r.tot, 0))}</b>`, `<b>${rows.filter(r => r.mc.length).length}</b> running`], 'No design matches this filter.') + '</div>';
+  const mcn = (r) => r.mc.map(k => ((state.machines || []).find(m => String(m.id) === String(k)) || {}).name || k).join(', ');
+  const body = rows.map((r, i) => {
+    const sub = [r.d.ar, r.d.code ? 'Code ' + r.d.code : ''].filter(Boolean).map(skEsc).join(' · ');
+    const ph = [r.n ? r.n + ' colour' + (r.n === 1 ? '' : 's') : '', r.tot ? sxN(r.tot) + ' in stock' : '', r.mc.length ? 'Running on ' + r.mc.length : 'Not running'].filter(Boolean).join(' · ');
+    return `<div class="dzRow"><span class="dzN">${i + 1}</span><span class="dzT" data-sk="des" data-v="${skEsc(r.d.id)}">${mpThumb(r.d, 48)}</span><div class="dzNm"><b>${skEsc(r.d.name)}</b>${sub ? `<small>${sub}</small>` : ''}<small class="dzPh">${ph}</small></div><span class="dzC">${r.n ? sxN(r.n) : '<i>-</i>'}</span><span class="dzC">${r.tot ? sxN(r.tot) : '<i>-</i>'}</span><span class="dzC" ${r.mc.length ? `title="${skEsc(mcn(r))}"` : ''}>${r.mc.length ? `<em class="mpOn">${r.mc.length} machine${r.mc.length === 1 ? '' : 's'}</em>` : '<i>Not running</i>'}</span><button type="button" class="pcBtnSoft sm dzV" data-sk="des" data-v="${skEsc(r.d.id)}" title="View the photos of this design">View</button></div>`;
+  }).join('');
+  const run = rows.filter(r => r.mc.length).length, stk = rows.reduce((a, r) => a + r.tot, 0);
+  return h + sxHead('Designs', { name: 'A to Z', code: 'By code', big: 'Most stock', run: 'Most machines running' }[mode]) + `<div class="card sxCard dzCard"><div class="dzHd"><span>#</span><span></span><span class="l">Design</span><span>Colours</span><span>In stock</span><span>Running on</span><span></span></div>${body || '<div class="sxTe" style="padding:22px;text-align:center;">No design matches this filter.</div>'}<div class="dzFt"><b>${rows.length}</b> designs · <b>${run}</b> running now · <b>${sxN(stk)}</b> in stock</div></div>`;
 }
 const _mpDl = sxDl; sxDl = function(kind){
   if(kind === 'mp'){ const rows = [['Machine', 'Department', 'Design', 'Colour', 'Colour mix', 'Category', 'Since', 'Status']]; mpRows().forEach(r => rows.push([r.nm, r.dept, r.d ? r.d.name : '', r.col, r.mix, r.cat, r.p.since || '', MP_ST[r.st][0]])); return skDlXlsx('machine-plan', 'Machine plan', rows); }
@@ -30076,9 +30145,21 @@ const _mpDl = sxDl; sxDl = function(kind){
 document.addEventListener('click', (ev) => { const el = ev.target.closest && ev.target.closest('[data-sx="mpv"]'); if(!el) return; SX.mpv = SX.mpv === 'table' ? 'layout' : 'table'; SX.yso = ''; SX.fo = ''; skRender(); });
 document.addEventListener('input', (ev) => { const t = ev.target; if(!t) return; if(t.id === 'sxMq'){ SX.mq = t.value; sxKeepFocus('sxMq'); } else if(t.id === 'sxDq'){ SX.dq = t.value; sxKeepFocus('sxDq'); } });
 
+function sxMpHtml(){
+  const tab = SX.mpt === 'des' ? 'des' : 'mach';
+  const tabs = `<div class="hrTabs sxIO mpTabs"><button type="button" class="${tab === 'mach' ? 'active' : ''}" data-sx="mpt" data-v="mach">Machines <span>${(state.machines || []).length}</span></button><button type="button" class="${tab === 'des' ? 'active' : ''}" data-sx="mpt" data-v="des">Designs <span>${(SK.designs || []).length}</span></button></div>`;
+  return tabs + (tab === 'des' ? sxDzHtml() : sxMpMachHtml());
+}
+document.addEventListener('click', (ev) => { const el = ev.target.closest && ev.target.closest('[data-sx="mpt"],[data-sx="mpd"]'); if(!el) return; if(el.dataset.sx === 'mpt'){ SX.mpt = el.dataset.v; } else { SX.mq = SX.mq && SX.mq.toLowerCase() === el.dataset.v.toLowerCase() ? '' : el.dataset.v; SX.mpv = SX.mpv; } SX.yso = ''; SX.fo = ''; skRender(); });
+(function(){
+  const pop = () => { let p = document.getElementById('mpPop'); if(!p){ p = document.createElement('div'); p.id = 'mpPop'; p.innerHTML = '<img alt="">'; document.body.appendChild(p); } return p; };
+  document.addEventListener('mouseover', (ev) => { const t = ev.target.closest && ev.target.closest('.mpTh'); const p = document.getElementById('mpPop'); if(!t || t.classList.contains('no')){ if(p) p.style.display = 'none'; return; } const im = t.querySelector('img'); if(!im) return; const q = pop(); q.querySelector('img').src = im.src; q.style.display = 'block'; const r = t.getBoundingClientRect(), W = 236; let x = r.right + 10, y = r.top - 24; if(x + W > innerWidth) x = Math.max(8, r.left - W - 10); if(y + W > innerHeight) y = innerHeight - W - 10; if(y < 8) y = 8; q.style.left = x + 'px'; q.style.top = y + 'px'; });
+  window.addEventListener('scroll', () => { const p = document.getElementById('mpPop'); if(p) p.style.display = 'none'; }, true);
+})();
+
 /* ---------- Machine layout: nicer boxes (colour band, category pill) ---------- */
 skFloorSvg = function(dept){
-  const sp = flrSpec(dept), W = dept === 'SSTM' ? 130 : 160, G = 10, AW = 40, WG = dept === 'SSTM' ? 34 : 24, BG = 10, CW = W - G, K = dept === 'SSTM' ? 1.85 : 1.6, H = dept === 'SSTM' ? 164 : 146, PAD = 12;
+  const sp = flrSpec(dept), W = dept === 'SSTM' ? 130 : 160, G = 10, AW = 40, WG = dept === 'SSTM' ? 34 : 24, BG = 10, CW = W - G, K = dept === 'SSTM' ? 1.85 : 1.6, H = dept === 'SSTM' ? 148 : 128, PAD = 12;
   const lw = sp.lc * W, rw = sp.rc * W, totalW = lw + AW + rw, rx = lw + AW, topPad = 0;
   const ys = []; let y = 0; sp.rows.forEach((r, t) => { ys.push(y); y += H; if(t < sp.rows.length - 1) y += sp.back(t) ? BG : WG; });
   const totalH = y, E = skEsc;
@@ -30086,29 +30167,25 @@ skFloorSvg = function(dept){
   let b = `<rect x="0" y="0" width="${totalW + 2 * PAD}" height="${totalH + 2 * PAD}" rx="14" fill="#f1f3f8"/><rect x="${PAD + lw + 2}" y="${PAD}" width="${AW - 4}" height="${totalH}" rx="6" fill="#e6e9f2"/><text x="${PAD + lw + AW / 2}" y="${PAD + totalH / 2}" font-size="${8 * K}" fill="#6b7694" text-anchor="middle" letter-spacing="3" transform="rotate(-90 ${PAD + lw + AW / 2} ${PAD + totalH / 2})">MIDDLE AISLE</text>`;
   sp.rows.forEach((r, t) => { if(t < sp.rows.length - 1 && !sp.back(t)){ const gy = PAD + ys[t] + H; [[0, lw], [rx, rw]].forEach(bk => { b += `<rect x="${PAD + bk[0]}" y="${gy + 4}" width="${bk[1] - G}" height="${WG - 8}" rx="4" fill="#e6e9f2"/><text x="${PAD + bk[0] + (bk[1] - G) / 2}" y="${gy + WG / 2 + 2.6}" font-size="${7.5 * K}" fill="#6b7694" text-anchor="middle" letter-spacing="2.4">WALKWAY</text>`; }); } });
   const FS = 0.84, cell = (id, x, y0) => {
-    const m = (state.machines || []).find(q => String(q.id) === String(id)), p = m ? ((SK.plan.m || {})[m.id] || {}) : {}, d = p.des ? skDesign(p.des) : null, stop = !m || p.st === 'stop' || (m && m.status === 'stopped' && false);
+    const m = (state.machines || []).find(q => String(q.id) === String(id)), p = m ? ((SK.plan.m || {})[m.id] || {}) : {}, d = p.des ? skDesign(p.des) : null, stop = !m || p.st === 'stop';
     const cx = PAD + x, cy = PAD + y0, mid = m ? m.id : id, label = m ? (m.name || ('M/C ' + id)) : 'M/C ' + id;
-    const ok = !window.__mpOk || window.__mpOk[String(mid)]; let g = `<g data-sk="mc" data-v="${E(mid)}" style="cursor:pointer;${ok ? '' : 'opacity:.22;'}"><title>${E([label, d ? d.name : (stop ? 'Stopped' : 'No design'), p.col, [p.c1, p.c2, p.c3].filter(Boolean).join(' / '), p.cat || (((typeof MP_XL !== 'undefined' && MP_XL[String(mid)]) || [])[1] || ''), p.since ? 'Since ' + p.since : ''].filter(Boolean).join(' \u00b7 '))}</title><rect x="${cx}" y="${cy}" width="${CW}" height="${H}" rx="9" fill="${stop ? '#f4f5f9' : d ? '#fff' : '#fffbeb'}" stroke="${stop ? '#c4cbd8' : d ? '#dfe4ee' : '#f0cf6a'}" stroke-width="1" ${stop || !d ? 'stroke-dasharray="4 3"' : ''}/>`;
+    const ok = !window.__mpOk || window.__mpOk[String(mid)];
+    const u = K * FS, S = u / 1.344, pad = 11 * S, mx = cx + pad, w = CW - 2 * pad;
+    const xc = (typeof MP_XL !== 'undefined' && MP_XL[String(mid)]) || [], cat = p.cat || (stop ? '' : xc[1]) || '', cl = [p.c1, p.c2, p.c3].filter(Boolean).join(' / ');
+    let g = `<g data-sk="mc" data-v="${E(mid)}" style="cursor:pointer;${ok ? '' : 'opacity:.22;'}"><title>${E([label, d ? d.name : (stop ? 'Stopped' : 'No design'), p.col, cl, cat, p.since ? 'Since ' + p.since : ''].filter(Boolean).join(' · '))}</title><rect x="${cx}" y="${cy}" width="${CW}" height="${H}" rx="9" fill="${stop ? '#f4f5f9' : d ? '#fff' : '#fffbeb'}" stroke="${stop ? '#c4cbd8' : d ? '#dfe4ee' : '#f0cf6a'}" stroke-width="1" ${stop || !d ? 'stroke-dasharray="4 3"' : ''}/>`;
     if(!stop && d){ const bh = sxColHex(p.col || '')[0] || '#d9deea'; g += `<path d="M${cx} ${cy + 9}A9 9 0 0 1 ${cx + 9} ${cy}H${cx + CW - 9}A9 9 0 0 1 ${cx + CW} ${cy + 9}V${cy + 10}H${cx}Z" fill="${bh}" stroke="rgba(15,23,42,.10)" stroke-width=".6"/>`; }
-    g += `<text x="${cx + 9 * K}" y="${cy + 19 * K}" font-size="${8.6 * K * FS}" font-weight="600" letter-spacing=".3" fill="${stop ? '#8b95a7' : '#7a859d'}">${E(label)}</text>`;
-    if(m && (m.vip || (typeof machineCat === 'function' && machineCat(m) === 'VIP')) && !stop) g += `<polygon points="${flrStarPts(cx + CW - 13 * K, cy + 14 * K, 5.2 * K).map(q => q[0].toFixed(1) + ',' + q[1].toFixed(1)).join(' ')}" fill="#e0a000"/>`;
-    if(stop) g += `<text x="${cx + CW / 2}" y="${cy + H / 2 + 8}" font-size="${10 * K * FS}" fill="#8b95a7" text-anchor="middle">Stopped</text>`;
-    else if(!d) g += `<text x="${cx + CW / 2}" y="${cy + H / 2 + 8}" font-size="${10 * K * FS}" fill="#a16207" text-anchor="middle">No design</text>`;
+    g += `<text x="${mx}" y="${cy + 24 * S}" font-size="${8.6 * u}" font-weight="600" letter-spacing=".3" fill="${stop ? '#8b95a7' : '#7a859d'}">${E(label)}</text>`;
+    if(m && (m.vip || (typeof machineCat === 'function' && machineCat(m) === 'VIP')) && !stop) g += `<polygon points="${flrStarPts(cx + CW - pad - 4 * S, cy + 20 * S, 5 * S * 1.2).map(q => q[0].toFixed(1) + ',' + q[1].toFixed(1)).join(' ')}" fill="#e0a000"/>`;
+    if(stop) g += `<text x="${cx + CW / 2}" y="${cy + H / 2 + 12 * S}" font-size="${10 * u}" fill="#8b95a7" text-anchor="middle">Stopped</text>`;
+    else if(!d) g += `<text x="${cx + CW / 2}" y="${cy + H / 2 + 8 * S}" font-size="${10 * u}" fill="#a16207" text-anchor="middle">No design</text>`;
     else {
-      const u = K * FS, fD = 10.6 * u, fC = 9.4 * u, fM = 7.9 * u, w = CW - 16, pillH = 12.5 * K * 0.95;
-      const dl = wrap(d.name, fD, w, 2), cl = [p.c1, p.c2, p.c3].filter(Boolean).join(' / ');
-      let ml = cl ? wrap(cl, fM, w, dl.length > 1 ? 1 : 2) : [];
-      const hD = dl.length * fD * 1.28, hC = p.col ? fC * 1.7 : 0, top = cy + 27 * K, bot = cy + H - 8 - pillH - 4 * K;
-      const mh = (n) => n * fM * 1.35 + (n ? fM * 0.25 : 0);
-      if(ml.length > 1 && hD + hC + mh(ml.length) > bot - top) ml = wrap(cl, fM, w, 1);
-      const hT = hD + hC + mh(ml.length);
-      let ty = top + Math.max(0, (bot - top - hT) / 2);
-      dl.forEach(l => { ty += fD * 1.0; g += `<text x="${cx + CW / 2}" y="${ty.toFixed(1)}" font-size="${fD}" font-weight="700" fill="#111827" text-anchor="middle" letter-spacing="-.1">${E(l)}</text>`; ty += fD * 0.28; });
-      if(p.col){ ty += fC * 0.5; const hx = sxColHex(p.col).slice(0, 3), dr = 3.4 * u, dw = hx.length ? (hx.length - 1) * dr * 1.5 + 2 * dr + 6 * u : 0, ft = flrFit(p.col, fC, false, w - dw), x0 = cx + CW / 2 - (flrEst(ft, fC, false) + dw) / 2; ty += fC * 0.9; hx.forEach((c, q) => { g += `<circle cx="${(x0 + dr + q * dr * 1.5).toFixed(1)}" cy="${(ty - fC * 0.33).toFixed(1)}" r="${dr}" fill="${c}" stroke="rgba(15,23,42,.30)" stroke-width=".7"/>`; }); g += `<text x="${(x0 + dw).toFixed(1)}" y="${ty.toFixed(1)}" font-size="${fC}" font-weight="500" fill="#4338ca">${E(ft)}</text>`; ty += fC * 0.3; }
-      ty += fM * 0.25; ml.forEach(l => { ty += fM * 1.35; g += `<text x="${cx + CW / 2}" y="${ty.toFixed(1)}" font-size="${fM}" fill="#6b7280" text-anchor="middle">${E(l)}</text>`; });
+      const fD = 10.8 * u, fC = 9.4 * u, fM = 7.9 * u, dl = wrap(d.name, fD, w, 2);
+      const y1 = dl.length > 1 ? 46 * S : 52 * S;
+      dl.forEach((l, k) => { g += `<text x="${mx}" y="${(cy + y1 + k * 16.5 * S).toFixed(1)}" font-size="${fD}" font-weight="700" fill="#111827" letter-spacing="-.1">${E(l)}</text>`; });
+      if(p.col){ const hx = sxColHex(p.col).slice(0, 3), dr = 3.5 * u, dw = hx.length ? (hx.length - 1) * dr * 1.5 + 2 * dr + 6 * u : 0, ft = flrFit(p.col, fC, false, w - dw), by = cy + 82 * S; hx.forEach((c, q) => { g += `<circle cx="${(mx + dr + q * dr * 1.5).toFixed(1)}" cy="${(by - fC * 0.33).toFixed(1)}" r="${dr}" fill="${c}" stroke="rgba(15,23,42,.30)" stroke-width=".7"/>`; }); g += `<text x="${(mx + dw).toFixed(1)}" y="${by.toFixed(1)}" font-size="${fC}" font-weight="500" fill="#4338ca">${E(ft)}</text>`; }
+      if(cl) g += `<text x="${mx}" y="${cy + 96 * S}" font-size="${fM}" fill="#6b7280">${E(flrFit(cl, fM, false, w))}</text>`;
     }
-    const xc = (typeof MP_XL !== 'undefined' && MP_XL[String(mid)]) || [], cat = p.cat || (stop ? '' : xc[1]) || '';
-    if(cat && !stop){ const ct = String(cat).toUpperCase(), fs = 7 * K * FS, pw = Math.min(CW - 14, flrEst(ct, fs, true) + 16 * K * 0.6 + 8), py = cy + H - 8 - 12.5 * K * 0.95; g += `<rect x="${cx + CW / 2 - pw / 2}" y="${py}" width="${pw}" height="${12.5 * K * 0.95}" rx="${7 * K * 0.95}" fill="#eef0fd"/><text x="${cx + CW / 2}" y="${py + 12.5 * K * 0.95 / 2 + fs * 0.35}" font-size="${fs}" font-weight="700" fill="#4338ca" text-anchor="middle" letter-spacing=".7">${E(flrFit(ct, fs, true, CW - 24))}</text>`; }
+    if(cat && !stop){ const ct = String(cat).toUpperCase(), fs = 6.9 * u, ph = 15 * S, pw = Math.min(w, flrEst(ct, fs, true) + 14 * S), py = cy + H - 9 * S - ph; g += `<rect x="${mx}" y="${py.toFixed(1)}" width="${pw.toFixed(1)}" height="${ph}" rx="${ph / 2}" fill="#eef0fd"/><text x="${(mx + pw / 2).toFixed(1)}" y="${(py + ph / 2 + fs * 0.35).toFixed(1)}" font-size="${fs}" font-weight="700" fill="#4338ca" text-anchor="middle" letter-spacing=".7">${E(flrFit(ct, fs, true, w - 10))}</text>`; }
     return g + '</g>';
   };
   sp.rows.forEach((r, t) => { r.L.forEach((id, i) => { b += cell(id, i * W, ys[t]); }); r.R.forEach((id, i) => { b += cell(id, rx + i * W, ys[t]); }); });
