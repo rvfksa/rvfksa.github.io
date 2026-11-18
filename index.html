@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261118-180109">
+<meta name="rvf-build" content="20261118-181732">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -15958,12 +15958,29 @@ async function renderPerformanceBox(ev){
   inRange.forEach(s => { const k = s.operatorId + '|' + s.date; (dayMach[k] = dayMach[k] || new Set()).add(String(s.machine)); });
   const clsKey = (id) => { const m = state.machines.find(x => String(x.id) === String(id)); return m ? [m.vip ? 1 : 0, m.widthCm || '', m.picksPerCm || '', m.speed || ''].join('|') : '?'; };
   const p90 = (arr) => { if(!arr.length) return 0; let a = arr.slice().sort((x, y) => x - y); const md = a[Math.floor((a.length - 1) / 2)]; a = a.filter(x => x <= 2.5 * md || md <= 0); return a[Math.min(a.length - 1, Math.floor(0.9 * (a.length - 1) + 0.5))]; };
-  const byM = {}, byC = {}, all = [];
-  inRange.forEach(s => { const c = calc(s); if(c.rate == null) return; (byM[s.machine] = byM[s.machine] || []).push(c.rate); (byC[clsKey(s.machine)] = byC[clsKey(s.machine)] || []).push(c.rate); all.push(c.rate); });
+  // MACHINE CONDITION: every machine is not equally good (the same type of machine can run 0.6x to 1.6x of its type's average). So the
+  // normal pace of each machine is LEARNED from everybody who worked on it in this period: picks = machine factor x operator factor x running hours.
+  // The machine factor is shrunk toward its machine type (a machine with little data is treated as an average one of its type).
+  // A good operator = the operator factor reached by the best 10% of operators. 100% = a good operator on that same machine.
+  const fitRows = []; inRange.forEach(s => { const c = calc(s); if(c.run >= 1) fitRows.push({ op: s.operatorId, mc: String(s.machine), v: c.v, run: c.run, k: clsKey(s.machine) }); });
+  const tp = fitRows.reduce((a, r) => a + r.v, 0), tr = fitRows.reduce((a, r) => a + r.run, 0), gAvg = tr ? tp / tr : 0;
+  const kp = {}, kr = {}; fitRows.forEach(r => { kp[r.k] = (kp[r.k] || 0) + r.v; kr[r.k] = (kr[r.k] || 0) + r.run; });
+  const kAvg = (k) => kr[k] >= 40 ? kp[k] / kr[k] : gAvg;
+  const mF = {}, oF = {}, mK = {}; fitRows.forEach(r => { mF[r.mc] = 1; oF[r.op] = 1; mK[r.mc] = r.k; });
+  for(let it = 0; it < 40; it++){
+    const nm = {}, dm = {}, no = {}, dd = {};
+    fitRows.forEach(r => { nm[r.mc] = (nm[r.mc] || 0) + r.v; dm[r.mc] = (dm[r.mc] || 0) + oF[r.op] * r.run; });
+    Object.keys(mF).forEach(j => { mF[j] = (nm[j] + 60 * kAvg(mK[j])) / (dm[j] + 60); });
+    fitRows.forEach(r => { no[r.op] = (no[r.op] || 0) + r.v; dd[r.op] = (dd[r.op] || 0) + mF[r.mc] * r.run; });
+    Object.keys(oF).forEach(o => { oF[o] = no[o] / dd[o]; });
+    const ov = Object.values(oF), mean = ov.length ? ov.reduce((a, b) => a + b, 0) / ov.length : 1;
+    Object.keys(oF).forEach(o => { oF[o] /= mean; }); Object.keys(mF).forEach(j => { mF[j] *= mean; });
+  }
+  const opDays = {}; fitRows.forEach(r => { (opDays[r.op] = opDays[r.op] || 0); opDays[r.op]++; });
+  const oSorted = Object.keys(oF).filter(o => opDays[o] >= 3).map(o => oF[o]).sort((a, b) => a - b);
+  const good = oSorted.length ? oSorted[Math.min(oSorted.length - 1, Math.floor(0.9 * (oSorted.length - 1) + 0.5))] : 1;
   const bm = {};
-  // Normal pace = the good pace (90th-percentile day, odd readings ignored) of machines of the SAME TYPE (VIP, width, picks per cm, speed),
-  // taken over all operators and days, so an operator is never compared with only his own days on a machine. Small types fall back to all machines.
-  const benchOf = (id) => { if(bm[id] != null) return bm[id]; const c = byC[clsKey(id)]; return bm[id] = c && c.length >= 30 ? p90(c) : p90(all); };
+  const benchOf = (id) => { id = String(id); if(bm[id] != null) return bm[id]; return bm[id] = (mF[id] != null ? mF[id] : gAvg) * good; };
   const rangeDays = Math.max(1, Math.round((new Date(range.toDate) - new Date(range.fromDate)) / 86400000) + 1), minDays = Math.min(3, rangeDays);
   const per = {}, mk = () => ({ h: 0, st: 0, v: 0, exp: 0, expH: 0, md: 0, days: new Set() });
   scoped.forEach(s => {
@@ -15987,7 +16004,7 @@ async function renderPerformanceBox(ev){
     const b = e.all, d = b.days.size;
     if(d < minDays) return;
     const dist = [3, 2, 1].filter(n => e.by[n]).map(n => n + ' machine' + (n > 1 ? 's' : '') + ': ' + e.by[n].days.size + ' day' + (e.by[n].days.size === 1 ? '' : 's')).join(' · ');
-    const eff = b.h ? Math.max(0, (b.h - b.st) / b.h * 100) : 0, out = b.exp ? Math.min(100, b.v / b.exp * 100) : 0, raw = b.expH ? Math.min(100, b.v / b.expH * 100) : 0;
+    const eff = b.h ? Math.max(0, (b.h - b.st) / b.h * 100) : 0, out = b.exp ? b.v / b.exp * 100 : 0, raw = b.expH ? b.v / b.expH * 100 : 0;
     const value = metric === 'score' ? raw : metric === 'avg' ? b.v / d : e.all.v;
     cats[best].push({ id, value, raw, H: b.h, st: b.st, pmd: b.md ? b.v / b.md : 0, eff, out, tot: e.all.v, days: metric === 'total' ? e.all.days.size : d, perDay: metric === 'total' ? e.all.v / e.all.days.size : b.v / d, dist });
   });
@@ -16002,7 +16019,7 @@ async function renderPerformanceBox(ev){
   const row = (r, i) => { const n = (x) => Math.round(x).toLocaleString(), f1 = (x) => (Math.round(x * 10) / 10).toLocaleString();
     const det = [['Total picks', n(r.tot)], ['Picks per day', n(r.pmd)], ['Machines used', assignEsc(r.dist)], ['Hours on duty', f1(r.H) + ' h'], ['Machine stopped', f1(r.st) + ' h'],
       ['Step 1: machine was running', n(r.eff) + '%'], ['Step 2: picks made vs a good operator', n(r.out) + '%'], ['Score', n(r.value) + '%']];
-    det.push(['<i class="perfEx"><b>How to read it.</b> Step 1 = out of his hours on duty, how long the machine was really running (stops lower it). Step 2 = while it was running, how many picks he made out of every 100 that a good operator makes on the same type of machine (a good operator = the best 10% of days). <b>Score = Step 1 x Step 2</b>: ' + n(r.eff) + '% x ' + n(r.out) + '% = about ' + n(r.eff * r.out / 100) + '%. A person with only a few working days is moved slightly toward the average, so the score shown can differ a little.</i>', '']);
+    det.push(['<i class="perfEx"><b>How to read it.</b> Step 1 = out of his hours on duty, how long the machine was really running (stops lower it). Step 2 = while it was running, how many picks he made out of every 100 that a good operator makes on the same machine (a good operator = the best 10% of operators, on that same machine, so a weak machine is not held against him). <b>Score = Step 1 x Step 2</b>: ' + n(r.eff) + '% x ' + n(r.out) + '% = about ' + n(r.eff * r.out / 100) + '%. A person with only a few working days is moved slightly toward the average, so the score shown can differ a little.</i>', '']);
     return `<div class="perfItem"><div class="perfRow" title="Click for the details"><span class="perfNo">${i + 1}</span><span class="perfNm"><span class="perfN1"><span class="pnF">${assignEsc(nameFor(r.id))}</span><span class="pnS">${assignEsc(String(nameFor(r.id)).trim().split(/\s+/)[0])}</span></span><span class="perfN2">Eff ${n(r.eff)}% · ${n(r.pmd)}/day · <b>${n(r.tot)}</b> picks</span></span><span class="perfV">${fmtV(r.value)}</span></div><div class="perfDet"><div class="perfDetId">${assignEsc(nameFor(r.id))} · ${assignEsc(r.id)}</div>${det.map(d => d[1] === '' ? `<div class="perfExW">${d[0]}</div>` : `<div><span>${d[0]}</span><b>${d[1]}</b></div>`).join('')}</div></div>`; };
   const box = (title, list, sub) => `<div class="perfCol"><div class="perfColHd"><span>${title}</span><em>${sub}</em></div><div class="perfBox">${list.map(row).join('')}</div></div>`;
   const R = rank.cats[1], cols = R ? box('Top ' + R.top.length + ' performers', R.top, R.count + ' operators ranked') + (R.low.length ? box('Lowest ' + R.low.length + ' performers', R.low, 'weakest first') : '') : '';
