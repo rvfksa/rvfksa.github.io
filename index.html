@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261118-094016">
+<meta name="rvf-build" content="20261118-094234">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -28721,6 +28721,11 @@ button.mpS.on{background:#eef0fd;border-color:#6366f1}
 .sxHs .sxTag,#asgHb .sxTag{font-size:9px !important;font-weight:500 !important;padding:1px 6px;white-space:nowrap;display:inline-block}
 #asgHb .asgCh b{color:var(--muted)}
 #asgHb .asgMute{color:var(--muted)}
+/* phone: the history keeps When, what, type, quantity and who; the long note goes (it shows on hover/desktop) */
+@media (max-width:600px){
+ .sxHs:not(.mpLg) table.sxRT th:nth-child(6),.sxHs:not(.mpLg) table.sxRT td:nth-child(6){display:none}
+ .sxHs table.sxRT td,.sxHs table.sxRT th{padding-left:4px !important;padding-right:4px !important}
+}
 </style>
 <div id="rvfBusy"><i></i><span id="rvfBusyTxt">Loading data…</span></div>
 <script>
