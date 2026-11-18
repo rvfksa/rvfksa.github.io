@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261118-100823">
+<meta name="rvf-build" content="20261118-101006">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -16100,6 +16100,7 @@ async function rvfVecBlock(pdf, root, ox, oy, k){
     .replace(/[→⇒➜➔]/g, '->').replace(/[←⇐]/g, '<-').replace(/≤/g, '<=').replace(/≥/g, '>=').replace(/≠/g, '!=')
     .replace(/[●○◦∙⋅·▪■□‣]/g, '•').replace(/[✓✔✅]/g, 'v').replace(/[✗✘❌]/g, 'x').replace(/★|☆/g, '*')
     .replace(/€/g, 'EUR').replace(/[؀-ۿ]/g, '')
+    .replace(/\u0131/g, 'i').replace(/\u0130/g, 'I').replace(/\u0142/g, 'l').replace(/\u0141/g, 'L').replace(/\u0111/g, 'd').replace(/\u0110/g, 'D').replace(/\u0153/g, 'oe').replace(/\u0152/g, 'OE')
     .normalize('NFKD').replace(/[̀-ͯ]/g, '')
     .replace(/[^ -ÿ–—•]/g, '?');
   const drawText = (node, cs) => {
