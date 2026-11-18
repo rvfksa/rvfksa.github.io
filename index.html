@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261118-103806">
+<meta name="rvf-build" content="20261118-143628">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -15938,8 +15938,7 @@ async function renderPerformanceBox(ev){
   if(range.department) scoped = scoped.filter(s => { const m = state.machines.find(x => String(x.id) === String(s.machine)); return m && m.department === range.department; });
   // How operators are compared (the standard factory measure, OEE-style, so every machine and every working pattern is fair):
   //  * Efficiency = running time / scheduled machine hours (the efficiency already shown on the operator's page).
-  //  * Pace = picks per running hour compared with the normal good pace of THAT SAME MACHINE (its 90th-percentile day this period,
-  //    odd readings ignored), never above 100%.
+  //  * Pace = picks per running hour compared with the normal good pace of THAT SAME MACHINE (its machine type's good pace, 90th-percentile, odd readings ignored), never above 100%.
   //  * Score = Efficiency x Pace = picks made / picks that machine normally makes in the same scheduled hours. It already contains the
   //    picks, the stop time, the number of machines and the hours he was responsible for, so no weights are needed.
   //  * Someone with few days is pulled toward the average (a small fixed weight of 60 machine hours), so a newcomer is not placed at the very
@@ -15961,7 +15960,9 @@ async function renderPerformanceBox(ev){
   const byM = {}, byC = {}, all = [];
   inRange.forEach(s => { const c = calc(s); if(c.rate == null) return; (byM[s.machine] = byM[s.machine] || []).push(c.rate); (byC[clsKey(s.machine)] = byC[clsKey(s.machine)] || []).push(c.rate); all.push(c.rate); });
   const bm = {};
-  const benchOf = (id) => { if(bm[id] != null) return bm[id]; const m = byM[id], c = byC[clsKey(id)]; return bm[id] = m && m.length >= 5 ? p90(m) : c && c.length >= 8 ? p90(c) : p90(all); };
+  // Normal pace = the good pace (90th-percentile day, odd readings ignored) of machines of the SAME TYPE (VIP, width, picks per cm, speed),
+  // taken over all operators and days, so an operator is never compared with only his own days on a machine. Small types fall back to all machines.
+  const benchOf = (id) => { if(bm[id] != null) return bm[id]; const c = byC[clsKey(id)]; return bm[id] = c && c.length >= 30 ? p90(c) : p90(all); };
   const rangeDays = Math.max(1, Math.round((new Date(range.toDate) - new Date(range.fromDate)) / 86400000) + 1), minDays = Math.min(3, rangeDays);
   const per = {}, mk = () => ({ h: 0, st: 0, v: 0, exp: 0, expH: 0, md: 0, days: new Set() });
   scoped.forEach(s => {
@@ -28743,6 +28744,12 @@ button.mpS.on{background:#eef0fd;border-color:#6366f1}
  .sxHs:not(.mpLg) table.sxRT td:last-child .sxEll{display:block;-webkit-line-clamp:unset;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 }
 @media (max-width:600px){ .sxHs.mpLg table.sxRT th:nth-child(5),.sxHs.mpLg table.sxRT td:nth-child(5){display:none} }
+@media (max-width:640px){
+ .perfRow{align-items:flex-start}
+ .perfNm{flex-direction:column;align-items:flex-start;gap:1px}
+ .perfN1{white-space:normal;overflow:visible;text-overflow:clip;font-size:12.5px;font-weight:600}
+ .perfN2{margin-left:0;white-space:normal;font-size:10.5px}
+}
 </style>
 <div id="rvfBusy"><i></i><span id="rvfBusyTxt">Loading data…</span></div>
 <script>
