@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261118-082448">
+<meta name="rvf-build" content="20261118-084638">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -29506,8 +29506,8 @@ function sxReqHtml(){
   const chip = (v, n, t) => `<button type="button" class="sxCh ${F.st === v ? 'on' : ''}" data-sx="tf" data-p="req" data-k="st" data-v="${v}" title="Show only these"><b>${n}</b> ${t}</button>`;
   const pgi = sxPgInfo('req', ls.length, 13);
   let h = sxTop('<span class="sxStat">' + chip('open', op, 'open') + chip('done', all.length - op, 'done') + '</span>' + sxFilt('req', flds) + '<span class="grow"></span>' + sxGear('req') + (sxCan('req') ? sxAddBtn('req', 'New request') : '')) + sxFpop('req', flds);
-  const rows = ls.slice(pgi.a, pgi.b).map(r => [skEsc(r.d.slice(5)), `<b>${skEsc(r.to)}</b> · ${sxCol(r.col)}`, r.qty ? skEsc(r.qty) : '', '<span class="sxSm2">' + skEsc(r.by || '') + (r.n ? ' · ' + skEsc(r.n) : '') + (r.st === 'done' ? ' · done by ' + skEsc(r.doneBy || '') + ' ' + skEsc(r.doneD || '') : '') + '</span>', r.st === 'done' ? '<span class="sxTag in">Done</span>' : (can ? `<button class="pcBtnSoft sm" data-sx="reqdone" data-v="${skEsc(r.id)}">Mark done</button>` : '<span class="sxTag open">Open</span>')]);
-  return h + '<div class="card sxCard sxLg">' + sxTbl([['Date', '70px'], ['Request', 'minmax(170px,1.8fr)', 'k'], ['Quantity', '100px'], ['Asked by / note', 'minmax(140px,1.6fr)'], ['Status', '110px', 'a']], rows, null, 'No requests yet.') + pgi.html + '</div>';
+  const rows = ls.slice(pgi.a, pgi.b).map(r => [sxWhen(r), `<b>${skEsc(r.to)}</b> · ${sxCol(r.col)}`, r.qty ? skEsc(r.qty) : '', sxByC(r), '<span class="sxSm2 sxEll">' + skEsc(r.n || '') + (r.st === 'done' ? (r.n ? ' · ' : '') + 'done by ' + skEsc(r.doneBy || '') + ' ' + skEsc((r.doneD || '').slice(5)) : '') + '</span>', r.st === 'done' ? '<span class="sxTag in">Done</span>' : (can ? `<button class="pcBtnSoft sm" data-sx="reqdone" data-v="${skEsc(r.id)}">Mark done</button>` : '<span class="sxTag open">Open</span>')]);
+  return h + '<div class="card sxCard sxLg">' + sxTbl([['When', '92px'], ['Request', 'minmax(170px,1.8fr)', 'k'], ['Quantity', '100px'], ['By', '100px'], ['Note', 'minmax(140px,1.6fr)'], ['Status', '110px', 'a']], rows, null, 'No requests yet.') + pgi.html + '</div>';
 }
 async function sxFinLoad(){ const f = SX.fil, a = f.from || sxToday().slice(0, 7) + '-01', b = f.to || sxToday(); const ms = []; let y = +a.slice(0, 4), m = +a.slice(5, 7); const ey = +b.slice(0, 4), em = +b.slice(5, 7); while((y < ey || (y === ey && m <= em)) && ms.length < 24){ ms.push(y + '-' + String(m).padStart(2, '0')); m++; if(m > 12){ m = 1; y++; } } await Promise.all(ms.map(x => sxMonth('f', x))); }
 function sxFinRows(){ const f = SX.fil, a = f.from || sxToday().slice(0, 7) + '-01', b = f.to || sxToday(); let out = []; Object.keys(SX.mc).filter(k => k.indexOf('f_') === 0).forEach(k => { out = out.concat(SX.mc[k]); }); const q = (f.q || '').toLowerCase(); return out.filter(e => e.d >= a && e.d <= b && (!f.mc || String(e.mc) === f.mc) && (!f.size || e.size === f.size) && (!f.type || e.type === f.type) && (!f.dept || e.dept === f.dept) && (!q || String(e.item || '').toLowerCase().includes(q) || String(e.mcn || '').toLowerCase().includes(q))).sort((a, b) => (b.d + b.t).localeCompare(a.d + a.t) || b.t - a.t); }
@@ -29521,8 +29521,8 @@ function sxFinHtml(){
   const tm = rows.filter(e => e.u === 'm').reduce((a, e) => a + e.qty, 0), tr = rows.filter(e => e.u === 'roll').reduce((a, e) => a + e.qty, 0), adm = sxAdmin();
   const vis = f.u ? rows.filter(e => e.u === f.u) : rows, vm = vis.filter(e => e.u === 'm').reduce((a, e) => a + e.qty, 0), vr = vis.filter(e => e.u === 'roll').reduce((a, e) => a + e.qty, 0), pgi = sxPgInfo('fin', vis.length, 15);
   h += `<div class="card sxCard"><div class="sxGrid">${sxTile('Entries', rows.length, f.from || f.to ? 'in this list' : 'this month', '', 'fin', 'blue')}${sxTileF('fin', 'u', 'm', 'Meters', sxN(tm) + '<small> m</small>', '', '', 'roll', 'green')}${sxTileF('fin', 'u', 'roll', 'Rolls', sxN(tr) + '<small> rolls</small>', '', '', 'pack', 'purple')}</div></div>`;
-  const cols = [['Date', '70px'], ['Machine', 'minmax(120px,1.2fr)', 'k'], ['Item', 'minmax(140px,1.8fr)'], ['Size · type', '110px'], ['Department', '90px'], ['By', '90px'], ['Quantity', '96px', 'r']].concat(adm ? [['', '78px', 'a']] : []);
-  const tb = vis.slice(pgi.a, pgi.b).map(e => [skEsc(e.d.slice(5)), `<b>${skEsc(e.mcn)}</b>`, skEsc(e.item || ''), `<span class="sxSm2">${skEsc(e.size || '')} ${skEsc(e.type || '')}</span>`, skEsc(e.dept || ''), `<span class="sxSm2">${skEsc(e.by || '')}</span>`, `<b>${sxN(e.qty)}</b> <small>${e.u === 'm' ? 'm' : 'rolls'}</small>`].concat(adm ? [`<button type="button" class="mini-icon-btn" data-sx="undo" data-p="f" data-v="${skEsc(e.id)}" data-ym="${sxYm(e.d)}" title="Remove this entry" aria-label="Remove this entry">${sxIc('del', 13)}</button>`] : []));
+  const cols = [['When', '92px'], ['Machine', 'minmax(120px,1.2fr)', 'k'], ['Item', 'minmax(140px,1.8fr)'], ['Size · type', '110px'], ['Department', '90px'], ['By', '90px'], ['Quantity', '96px', 'r']].concat(adm ? [['', '78px', 'a']] : []);
+  const tb = vis.slice(pgi.a, pgi.b).map(e => [sxWhen(e), `<b>${skEsc(e.mcn)}</b>`, skEsc(e.item || ''), `<span class="sxSm2">${skEsc(e.size || '')} ${skEsc(e.type || '')}</span>`, skEsc(e.dept || ''), sxByC(e), `<b>${sxN(e.qty)}</b> <small>${e.u === 'm' ? 'm' : 'rolls'}</small>`].concat(adm ? [`<button type="button" class="mini-icon-btn" data-sx="undo" data-p="f" data-v="${skEsc(e.id)}" data-ym="${sxYm(e.d)}" title="Remove this entry" aria-label="Remove this entry">${sxIc('del', 13)}</button>`] : []));
   const ft = ['', '<b>Total</b>', '', '', '', '', (vm ? `<b>${sxN(vm)}</b> m` : '') + (vm && vr ? '<br>' : '') + (vr ? `<b>${sxN(vr)}</b> rolls` : '')].concat(adm ? [''] : []);
   h += '<div class="card sxCard sxLg">' + sxTbl(cols, tb, ft, 'No entries for this filter.') + pgi.html + '</div>';
   return h;
@@ -29577,7 +29577,7 @@ function sxFstHtml(){
   else if(g === 'up') foot = ['', 'Total', '', '', '', '', skNum(roll), sxN(mtr), ''];
   else foot = ['', 'Total', '', '', '', (tot ? skNum(tot) + ' bundles' : '') + (tot && roll ? ' · ' : '') + (roll ? skNum(roll) + ' rolls' : ''), '', sxN(pcs), roll ? sxN(mtr) : '', ''];
   h += '<div class="card sxCard">' + sxTbl(cols, l.map(i => sxFsRow(i)), foot, sxIsF('fst') || q ? 'No items match this filter.' : 'Nothing in stock yet. Items show here after stock is added with Update. Add the items themselves in Settings.') + '</div>';
-  return h;
+  return h + sxFsHist();
 }
 function sxDmHtml(){
   const s = SX.dmsub; let h = sxTop(sxSub('dmsub', s, [['plan', 'Machines'], ['des', 'Designs'], ['hist', 'Change history']]));
@@ -29900,11 +29900,11 @@ function sxRawHtml(){
 /* small list of what was entered this month (admin can remove one) */
 function yRecent(secs, title){
   const adm = sxAdmin(), l = sxEnt('w', sxYm()).filter(e => secs.indexOf(e.s) >= 0).slice().reverse(), pgi = sxPgInfo('rc:' + secs.join(','), l.length, 13);
-  const cols = [['Date', ''], ['Item', '', 'k'], ['Details', ''], ['Type', '', 'a'], ['Kg', '', 'r'], ['Boxes', '', 'r']].concat(adm ? [['', '', 'a']] : []);
+  const cols = [['When', ''], ['Item', '', 'k'], ['Type', '', 'a'], ['Kg', '', 'r'], ['Boxes', '', 'r'], ['Details', ''], ['By', '']].concat(adm ? [['', '', 'a']] : []);
   const rows = l.slice(pgi.a, pgi.b).map(e => {
     const i = e.y ? yItem(e.y) : null, name = e.open ? `<b>Opening stock</b> ${(e.rows || []).length ? '<span class="sxSm2">' + e.rows.length + ' items</span>' : ''}` : i ? `<span class="sxYc">${yDot(yHex(i.col, yFam(i.col)))}${skEsc(i.col)}</span> <span class="sxSm2">${skEsc(i.code)}</span>` : sxColT(e.col || '');
-    const det = [e.s === 'yr' ? '' : e.k === 'mv' ? skEsc(e.store) + ' to ' + skEsc(e.store2) : e.store ? skEsc(e.store) : '', e.to ? 'to ' + skEsc(e.to) : '', e.src === 'rc' ? 'recovered from weaving' : '', e.bob ? sxN(e.bob) + (e.s === 'wp' ? ' beams' : ' bobbins') : '', e.n ? skEsc(e.n) : '', skEsc(e.by || '')].filter(Boolean).join(' · ');
-    return [skEsc(e.d.slice(5)), name, `<span class="sxSm2 sxEll" title="${det}">${det}</span>`, `<span class="sxTag ${e.k === 'out' ? 'out' : e.k === 'mv' ? 'open' : 'in'}">${e.k === 'out' ? 'OUT' : e.k === 'mv' ? 'MOVE' : 'IN'}</span>`, `<b>${sxN(e.kg)}</b>`, e.bx ? sxN(e.bx) : ''].concat(adm ? [`<button type="button" class="mini-icon-btn" data-sx="undo" data-p="w" data-v="${skEsc(e.id)}" data-ym="${sxYm(e.d)}" title="Remove this entry" aria-label="Remove this entry">${sxIc('del', 13)}</button>`] : []);
+    const det = [e.s === 'yr' ? '' : e.k === 'mv' ? skEsc(e.store) + ' to ' + skEsc(e.store2) : e.store ? skEsc(e.store) : '', e.to ? 'to ' + skEsc(e.to) : '', e.src === 'rc' ? 'recovered from weaving' : '', e.bob ? sxN(e.bob) + (e.s === 'wp' ? ' beams' : ' bobbins') : '', e.n ? skEsc(e.n) : ''].filter(Boolean).join(' · ');
+    return [sxWhen(e), name, `<span class="sxTag ${e.k === 'out' ? 'out' : e.k === 'mv' ? 'open' : 'in'}">${e.k === 'out' ? 'OUT' : e.k === 'mv' ? 'MOVE' : 'IN'}</span>`, `<b>${sxN(e.kg)}</b>`, e.bx ? sxN(e.bx) : '', `<span class="sxSm2 sxEll" title="${det}">${det}</span>`, sxByC(e)].concat(adm ? [`<button type="button" class="mini-icon-btn" data-sx="undo" data-p="w" data-v="${skEsc(e.id)}" data-ym="${sxYm(e.d)}" title="Remove this entry" aria-label="Remove this entry">${sxIc('del', 13)}</button>`] : []);
   });
   return sxHead(title || 'Recent entries', 'This month') + '<div class="card sxCard sxLg">' + sxTbl(cols, rows, null, 'No entries yet this month.') + pgi.html + '</div>';
 }
@@ -30251,6 +30251,26 @@ document.addEventListener('click', (ev) => {
   else { const F = sxFget(el.dataset.p); F[el.dataset.k] = F[el.dataset.k] === el.dataset.v ? '' : el.dataset.v; SX.pg = {}; SX.fo = ''; SX.yso = ''; }
   skRender();
 });
+
+/* ---------- shared "when" for every history list: date + time ---------- */
+function sxWhen(e, d){
+  const t = e && Number(e.t), dd = String((e && e.d) || d || '').slice(5);
+  if(!t) return skEsc(dd);
+  const x = new Date(t), p = (n) => String(n).padStart(2, '0');
+  return skEsc(dd || (p(x.getMonth() + 1) + '-' + p(x.getDate()))) + ' <span class="sxSm2">' + p(x.getHours()) + ':' + p(x.getMinutes()) + '</span>';
+}
+const sxByC = (e) => `<span class="sxSm2 sxEll">${skEsc((e && e.by) || '')}</span>`;
+/* Finished goods: recent entries (this month's IN/OUT + floor moves) */
+function sxFsHist(){
+  const ym = sxYm();
+  if(!SX.mc['s_' + ym] && !SX.fsHL){ SX.fsHL = 1; sxMonth('s', ym).then(() => skRender()); }
+  const nm = (id) => { const i = skItem(id); return i ? skEsc(i.name || '') + (i.col ? ' <span class="sxSm2">' + skEsc(i.col) + '</span>' : '') : skEsc(id || ''); };
+  const a = (SK.mv || []).map(e => ({ e, ty: e.k === 'out' ? 'OUT' : 'IN', c: e.k === 'out' ? 'out' : 'in', i: e.i, q: e.q, n: e.n }));
+  const b = sxEnt('s', ym).map(e => ({ e, ty: e.k === 'pack' ? 'PACKED' : 'FLOOR', c: 'open', i: e.i, q: e.q, n: e.k === 'pack' ? 'Packed from floor stock' : 'Finished, not packed yet' }));
+  const l = a.concat(b).sort((x, y) => (Number(y.e.t) || 0) - (Number(x.e.t) || 0)), pgi = sxPgInfo('fsh', l.length, 13);
+  const rows = l.slice(pgi.a, pgi.b).map(r => [sxWhen(r.e), `<span class="sxYc">${nm(r.i)}</span>`, `<span class="sxTag ${r.c}">${r.ty}</span>`, `<b>${skNum(r.q)}</b>`, `<span class="sxSm2 sxEll" title="${skEsc(r.n || '')}">${skEsc(r.n || '')}</span>`, sxByC(r.e)]);
+  return sxHead('Recent entries', 'This month') + '<div class="card sxCard sxLg">' + sxTbl([['When', ''], ['Item', '', 'k'], ['Type', '', 'a'], ['Qty', '', 'r'], ['Note', ''], ['By', '']], rows, null, 'No entries yet this month.') + pgi.html + '</div>';
+}
 
 /* ---- clicks ---- */
 document.addEventListener('click', (ev) => {
