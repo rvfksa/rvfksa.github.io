@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261118-084638">
+<meta name="rvf-build" content="20261118-085217">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -30267,7 +30267,7 @@ function sxFsHist(){
   const nm = (id) => { const i = skItem(id); return i ? skEsc(i.name || '') + (i.col ? ' <span class="sxSm2">' + skEsc(i.col) + '</span>' : '') : skEsc(id || ''); };
   const a = (SK.mv || []).map(e => ({ e, ty: e.k === 'out' ? 'OUT' : 'IN', c: e.k === 'out' ? 'out' : 'in', i: e.i, q: e.q, n: e.n }));
   const b = sxEnt('s', ym).map(e => ({ e, ty: e.k === 'pack' ? 'PACKED' : 'FLOOR', c: 'open', i: e.i, q: e.q, n: e.k === 'pack' ? 'Packed from floor stock' : 'Finished, not packed yet' }));
-  const l = a.concat(b).sort((x, y) => (Number(y.e.t) || 0) - (Number(x.e.t) || 0)), pgi = sxPgInfo('fsh', l.length, 13);
+  const g = SX.fsub, l = a.concat(b).filter(r => { const i = skItem(r.i); return i && i.g === g; }).sort((x, y) => (Number(y.e.t) || 0) - (Number(x.e.t) || 0)), pgi = sxPgInfo('fsh:' + g, l.length, 13);
   const rows = l.slice(pgi.a, pgi.b).map(r => [sxWhen(r.e), `<span class="sxYc">${nm(r.i)}</span>`, `<span class="sxTag ${r.c}">${r.ty}</span>`, `<b>${skNum(r.q)}</b>`, `<span class="sxSm2 sxEll" title="${skEsc(r.n || '')}">${skEsc(r.n || '')}</span>`, sxByC(r.e)]);
   return sxHead('Recent entries', 'This month') + '<div class="card sxCard sxLg">' + sxTbl([['When', ''], ['Item', '', 'k'], ['Type', '', 'a'], ['Qty', '', 'r'], ['Note', ''], ['By', '']], rows, null, 'No entries yet this month.') + pgi.html + '</div>';
 }
