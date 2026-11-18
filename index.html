@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261118-091814">
+<meta name="rvf-build" content="20261118-092112">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -28712,6 +28712,10 @@ button.mpS.on{background:#eef0fd;border-color:#6366f1}
 #asgHb .table-scroll,.sxHs .table-scroll{margin-bottom:6px}
 .sxHs{padding-bottom:6px}
 #asgHb .mpPg{padding:6px 4px 2px}
+/* clear gap between one history entry and the next */
+#asgHb td,.sxHs table.sxRT td{padding-top:5px !important;padding-bottom:5px !important;border-bottom:1px solid var(--line)}
+#asgHb tbody tr:last-child td,.sxHs table.sxRT tbody tr:last-child td{padding-bottom:10px !important;border-bottom:0}
+#asgHb .asgCh+.asgCh,.sxHs .sxRT td .sxEll+.sxEll{margin-top:1px}
 </style>
 <div id="rvfBusy"><i></i><span id="rvfBusyTxt">Loading data…</span></div>
 <script>
