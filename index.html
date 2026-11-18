@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261118-143628">
+<meta name="rvf-build" content="20261118-154943">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -16002,7 +16002,7 @@ async function renderPerformanceBox(ev){
     const det = [['Total picks', n(r.tot)], ['Daily average per machine', n(r.pmd) + ' picks'], ['Machines', assignEsc(r.dist)], ['Stop hours', f1(r.st) + ' h of ' + f1(r.H) + ' h'],
       ['Efficiency', n(r.eff) + '%'], ['Picks vs normal (same machines)', n(r.out) + '%'],
       ['Score (efficiency x pace)', n(r.value) + '%']];
-    return `<div class="perfItem"><div class="perfRow" title="Click for the details"><span class="perfNo">${i + 1}</span><span class="perfNm"><span class="perfN1">${assignEsc(nameFor(r.id))}</span><span class="perfN2">Eff ${n(r.eff)}% · ${n(r.pmd)} per machine/day · <b>${n(r.tot)}</b> picks</span></span><span class="perfV">${fmtV(r.value)}</span></div><div class="perfDet"><div class="perfDetId">${assignEsc(nameFor(r.id))} · ${assignEsc(r.id)}</div>${det.map(d => `<div><span>${d[0]}</span><b>${d[1]}</b></div>`).join('')}</div></div>`; };
+    return `<div class="perfItem"><div class="perfRow" title="Click for the details"><span class="perfNo">${i + 1}</span><span class="perfNm"><span class="perfN1"><span class="pnF">${assignEsc(nameFor(r.id))}</span><span class="pnS">${assignEsc(String(nameFor(r.id)).trim().split(/\s+/)[0])}</span></span><span class="perfN2">Eff ${n(r.eff)}% · ${n(r.pmd)}/day · <b>${n(r.tot)}</b> picks</span></span><span class="perfV">${fmtV(r.value)}</span></div><div class="perfDet"><div class="perfDetId">${assignEsc(nameFor(r.id))} · ${assignEsc(r.id)}</div>${det.map(d => `<div><span>${d[0]}</span><b>${d[1]}</b></div>`).join('')}</div></div>`; };
   const box = (title, list, sub) => `<div class="perfCol"><div class="perfColHd"><span>${title}</span><em>${sub}</em></div><div class="perfBox">${list.map(row).join('')}</div></div>`;
   const R = rank.cats[1], cols = R ? box('Top ' + R.top.length + ' performers', R.top, R.count + ' operators ranked') + (R.low.length ? box('Lowest ' + R.low.length + ' performers', R.low, 'weakest first') : '') : '';
   $('perfRankTitle').textContent = 'Top and lowest performers · ' + (metric === 'score' ? 'score = efficiency x picks vs normal (each machine against its own normal)' : metric === 'avg' ? 'average picks per day' : 'total picks') + ' · stop time ' + (withStop ? 'counted' : 'not counted') + ' · min ' + minDays + ' day' + (minDays === 1 ? '' : 's');
@@ -28749,6 +28749,13 @@ button.mpS.on{background:#eef0fd;border-color:#6366f1}
  .perfNm{flex-direction:column;align-items:flex-start;gap:1px}
  .perfN1{white-space:normal;overflow:visible;text-overflow:clip;font-size:12.5px;font-weight:600}
  .perfN2{margin-left:0;white-space:normal;font-size:10.5px}
+}
+.perfN1 .pnS{display:none}
+@media (max-width:640px){
+ .perfN1 .pnF{display:none}.perfN1 .pnS{display:inline}
+ #perfTopOperators .perfNm{flex-direction:row;align-items:baseline;gap:6px}
+ #perfTopOperators .perfN1{white-space:nowrap;flex:none;max-width:45%;overflow:hidden;text-overflow:ellipsis}
+ #perfTopOperators .perfN2{margin-left:auto;white-space:nowrap}
 }
 </style>
 <div id="rvfBusy"><i></i><span id="rvfBusyTxt">Loading data…</span></div>
