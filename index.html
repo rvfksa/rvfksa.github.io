@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261118-161244">
+<meta name="rvf-build" content="20261118-180109">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -16001,12 +16001,12 @@ async function renderPerformanceBox(ev){
   state.perfRank = rank;
   const row = (r, i) => { const n = (x) => Math.round(x).toLocaleString(), f1 = (x) => (Math.round(x * 10) / 10).toLocaleString();
     const det = [['Total picks', n(r.tot)], ['Picks per day', n(r.pmd)], ['Machines used', assignEsc(r.dist)], ['Hours on duty', f1(r.H) + ' h'], ['Machine stopped', f1(r.st) + ' h'],
-      ['Machine running time', n(r.eff) + '%'], ['Work speed vs a good operator', n(r.out) + '%'], ['Final score', n(r.value) + '%']];
-    det.push(['<i class="perfEx">Score: he made about ' + n(r.value) + ' of every 100 picks that a good operator makes on the same machines in the same hours. The hours when the machine was stopped are not held against him.</i>', '']);
+      ['Step 1: machine was running', n(r.eff) + '%'], ['Step 2: picks made vs a good operator', n(r.out) + '%'], ['Score', n(r.value) + '%']];
+    det.push(['<i class="perfEx"><b>How to read it.</b> Step 1 = out of his hours on duty, how long the machine was really running (stops lower it). Step 2 = while it was running, how many picks he made out of every 100 that a good operator makes on the same type of machine (a good operator = the best 10% of days). <b>Score = Step 1 x Step 2</b>: ' + n(r.eff) + '% x ' + n(r.out) + '% = about ' + n(r.eff * r.out / 100) + '%. A person with only a few working days is moved slightly toward the average, so the score shown can differ a little.</i>', '']);
     return `<div class="perfItem"><div class="perfRow" title="Click for the details"><span class="perfNo">${i + 1}</span><span class="perfNm"><span class="perfN1"><span class="pnF">${assignEsc(nameFor(r.id))}</span><span class="pnS">${assignEsc(String(nameFor(r.id)).trim().split(/\s+/)[0])}</span></span><span class="perfN2">Eff ${n(r.eff)}% · ${n(r.pmd)}/day · <b>${n(r.tot)}</b> picks</span></span><span class="perfV">${fmtV(r.value)}</span></div><div class="perfDet"><div class="perfDetId">${assignEsc(nameFor(r.id))} · ${assignEsc(r.id)}</div>${det.map(d => d[1] === '' ? `<div class="perfExW">${d[0]}</div>` : `<div><span>${d[0]}</span><b>${d[1]}</b></div>`).join('')}</div></div>`; };
   const box = (title, list, sub) => `<div class="perfCol"><div class="perfColHd"><span>${title}</span><em>${sub}</em></div><div class="perfBox">${list.map(row).join('')}</div></div>`;
   const R = rank.cats[1], cols = R ? box('Top ' + R.top.length + ' performers', R.top, R.count + ' operators ranked') + (R.low.length ? box('Lowest ' + R.low.length + ' performers', R.low, 'weakest first') : '') : '';
-  $('perfRankTitle').textContent = 'Top and lowest performers · ' + (metric === 'score' ? 'score out of 100 = how many picks he made compared with a good operator on the same machines in the same hours' : metric === 'avg' ? 'average picks per day' : 'total picks') + ' · stop time ' + (withStop ? 'counted' : 'not counted') + ' · min ' + minDays + ' day' + (minDays === 1 ? '' : 's');
+  $('perfRankTitle').textContent = 'Top and lowest performers · ' + (metric === 'score' ? 'score out of 100 = (how long the machine ran) x (how many picks he made vs a good operator while it ran) - tap a name to see' : metric === 'avg' ? 'average picks per day' : 'total picks') + ' · ' + (withStop ? 'stop hours are given credit' : 'machine stop hours lower the score') + ' · min ' + minDays + ' day' + (minDays === 1 ? '' : 's');
   $('perfTopOperators').innerHTML = cols ? `<div class="perfCols">${cols}</div>` : '<div class="empty-state">No approved readings in this range yet.</div>';
 
   // Top 5 reasons for stops, same scope — tallied from each summary's own
