@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261119-090246">
+<meta name="rvf-build" content="20261119-091226">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -30354,7 +30354,7 @@ skFloorSvg = function(dept){
     return g + '</g>';
   };
   sp.rows.forEach((r, t) => { r.L.forEach((id, i) => { b += cell(id, i * W, ys[t]); }); r.R.forEach((id, i) => { b += cell(id, rx + i * W, ys[t]); }); });
-  return `<div style="overflow-x:auto;"><svg class="flrSvg" style="max-height:none" viewBox="0 0 ${totalW + 2 * PAD} ${totalH + 2 * PAD}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${E(dept)} machine layout">${b}</svg></div>`;
+  return `<div class="card" style="margin-bottom:22px;"><div style="overflow-x:auto;"><svg class="flrSvg" style="max-height:none" viewBox="0 0 ${totalW + 2 * PAD} ${totalH + 2 * PAD}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${E(dept)} machine layout">${b}</svg></div></div>`;
 };
 
 /* ---------- shared by all Stock pages: clickable summary tiles (filter the table in place) and paged one-line lists ---------- */
