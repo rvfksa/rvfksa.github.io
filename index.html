@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261119-091226">
+<meta name="rvf-build" content="20261119-093334">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -30350,7 +30350,7 @@ skFloorSvg = function(dept){
           g += `<text x="${(x0 + dw).toFixed(1)}" y="${by.toFixed(1)}" font-size="${FS}" fill="${l.c}">${E(ft)}</text>`; }
         else g += `<text x="${cx + CW / 2}" y="${by.toFixed(1)}" font-size="${FS}" fill="${l.c}" text-anchor="middle">${E(flrFit(l.t, FS, false, CW - 16))}</text>`; });
       if(c.cat) g += `<text x="${cx + CW / 2}" y="${cy + H - 6}" font-size="${SZ.d}" fill="${FLR_C.acc}" text-anchor="middle">${E(flrFit(String(c.cat).toUpperCase(), SZ.d, false, CW - 14))}</text>`; }
-    if(canEd){ const pxc = cx + CW - 15, pyc = cy + 18; g += `<g class="mpEd" data-sk="mc" data-v="${E(mid)}" style="cursor:pointer"><title>Change the design on this machine</title><circle cx="${pxc}" cy="${pyc}" r="9" fill="#f1f3f8"/><path transform="translate(${pxc - 5} ${pyc - 5}) scale(${(10 / 24).toFixed(3)})" fill="#6b7694" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></g>`; }
+    if(canEd){ const pxc = cx + CW - 15, pyc = cy + 18; g += `<g class="mpEd" data-sk="mc" data-v="${E(mid)}" style="cursor:pointer"><title>Change the design on this machine</title><circle cx="${pxc}" cy="${pyc}" r="9" fill="transparent"/><path transform="translate(${pxc - 5} ${pyc - 5}) scale(${(10 / 24).toFixed(3)})" fill="#6b7694" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></g>`; }
     return g + '</g>';
   };
   sp.rows.forEach((r, t) => { r.L.forEach((id, i) => { b += cell(id, i * W, ys[t]); }); r.R.forEach((id, i) => { b += cell(id, rx + i * W, ys[t]); }); });
