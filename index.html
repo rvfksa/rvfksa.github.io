@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261119-095348">
+<meta name="rvf-build" content="20261119-095520">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -30245,7 +30245,7 @@ function sxMpMachHtml(){
   const flds = [['dept', 'Department', ['RVF', 'SSTM']], ['st', 'Status', [['run', 'Running'], ['none', 'No design'], ['stop', 'Stopped']]], ['cat', 'Category', uniq(r => r.cat)], ['des', 'Design', uniq(r => r.d && r.d.name)]];
   let h = sxTop(mpTabsHtml() + sxSearch('sxMq', SX.mq, 'Search machine, design or colour…') + sxFilt('mp', flds) + (lay ? '' : ySortBtn('mp', ['mc', 'gdes', 'gcat', 'gcol', 'gdept'])) + `<button type="button" class="pcBtnSoft sm" data-sx="mpv" title="Switch between the floor layout and the table">${lay ? 'Table' : 'Layout'}</button>` + sxDlBtn('mp'));
   const rows = all.filter(r => (!F.dept || r.dept === F.dept) && (!F.st || r.st === F.st) && (!F.cat || r.cat === F.cat) && (!F.des || (r.d && r.d.name === F.des)) && (!q || (r.nm + ' ' + (r.d ? r.d.name : '') + ' ' + r.col + ' ' + r.mix + ' ' + r.cat).toLowerCase().indexOf(q) >= 0));
-  if(lay){ const on = rows.length !== all.length; window.__mpOk = on ? rows.reduce((o, r) => (o[String(r.m.id)] = 1, o), {}) : null; SK.dept = F.dept === 'SSTM' ? 'SSTM' : 'RVF'; const out = skPlanHtml(true).replace(/<details class="acSec admD">[\s\S]*?<\/details>/, ''); window.__mpOk = null; return h + mpSumHtml(all) + out.split('<h3 style="margin:18px 0 8px;font-size:15px;">Recent changes</h3>')[0] + (on ? `<div class="sxSm2" style="margin:8px 2px;">${rows.length} of ${all.length} machines match. The others are faded.</div>` : '') + mpLogHtml(); }
+  if(lay){ const cd = F.dept === 'SSTM' ? 'SSTM' : 'RVF', dAll = all.filter(r => r.dept === cd), dRows = rows.filter(r => r.dept === cd), on = dRows.length !== dAll.length; window.__mpOk = on ? dRows.reduce((o, r) => (o[String(r.m.id)] = 1, o), {}) : null; SK.dept = cd; const out = skPlanHtml(true).replace(/<details class="acSec admD">[\s\S]*?<\/details>/, ''); window.__mpOk = null; return h + mpSumHtml(all) + out.split('<h3 style="margin:18px 0 8px;font-size:15px;">Recent changes</h3>')[0] + (on ? `<div class="sxSm2" style="margin:8px 2px;">${dRows.length} of ${dAll.length} machines match. The others are faded.</div>` : '') + mpLogHtml(); }
   const key = { gdes: (r) => r.d ? r.d.name : '~ No design', gcat: (r) => r.cat || '~ No category', gcol: (r) => r.col || '~ No colour', gdept: (r) => r.dept }[mode];
   if(key) rows.sort((a, b) => String(key(a)).localeCompare(String(key(b))) || Number(a.m.id) - Number(b.m.id));
   const run = rows.filter(r => r.st === 'run').length, adm = skCanMach();
