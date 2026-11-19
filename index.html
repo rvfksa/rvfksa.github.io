@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261119-101547">
+<meta name="rvf-build" content="20261119-102012">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -26188,7 +26188,7 @@ function flrSection(dept, cfg, D){
   const maxOp = blank ? 0 : Math.max(0, ...allCells.map(c => opLines(c, mwCell).reduce((a, l) => a + lh(l), 0)));
   const maxDet = Math.max(0, ...allCells.map(c => c.detL.reduce((a, l) => a + lh(l), 0)));
   const H = blank ? 46 : Math.max(44, Math.ceil(26 + maxOp + (maxDet ? maxDet + 4 : 0) + 8));
-  const lw = sp.lc * W, rw = sp.rc * W, totalW = lw + AW + rw, rx = lw + AW;
+  const lw = sp.lc * W, rw = sp.rc * W, totalW = lw + AW + rw - G, rx = lw + AW;
   const prims = [];
   const rect = (x, y, w, h, o) => prims.push(Object.assign({ k: 'rect', x, y, w, h }, o));
   const text = (x, y, s, o) => prims.push(Object.assign({ k: 'text', x, y, s }, o));
@@ -26198,7 +26198,7 @@ function flrSection(dept, cfg, D){
   const topPad = sp.dept === 'SSTM' ? 30 : 0, OY = topPad, aisleH = totalH + topPad * 2;
   rect(-FLR_PAD, -FLR_PAD, totalW + 2 * FLR_PAD, aisleH + 2 * FLR_PAD, { fill: FLR_C.floor, r: 14 });
   rect(lw, 0, AW - G, aisleH, { fill: FLR_C.aisle, r: 6 });
-  text(lw + (AW - G) / 2, aisleH / 2, 'MIDDLE AISLE', { size: 8, color: FLR_C.walkT, anchor: 'middle', spacing: 3, rot: -90 });
+  text(lw + (AW - G) / 2 + 2.8, aisleH / 2, 'MIDDLE AISLE', { size: 8, color: FLR_C.walkT, anchor: 'middle', spacing: 3, rot: -90 });
   rows.forEach((r, t) => {
     if(t < rows.length - 1 && !sp.back(t)){
       const gy = OY + ys[t] + H;
