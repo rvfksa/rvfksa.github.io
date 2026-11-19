@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261119-093948">
+<meta name="rvf-build" content="20261119-094345">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -30318,12 +30318,38 @@ document.addEventListener('click', (ev) => { const el = ev.target.closest && ev.
   else if(a === 'mpst'){ const F = sxFget('mp'); F.st = F.st === el.dataset.v ? '' : el.dataset.v; SX.mq = ''; }
   else { SX.mpt = 'des'; sxFget('dz').run = 'yes'; SX.dq = ''; }
   SX.yso = ''; SX.fo = ''; skRender(); });
+const MPO_KEY = 'rvfMpOpt';
+const MPO = { des: true, col: true, mix: false, cat: true, band: true, det: [], open: false };
+(function(){ try{ const o = JSON.parse(localStorage.getItem(MPO_KEY) || 'null'); if(o && typeof o === 'object'){ Object.keys(MPO).forEach(k => { if(k !== 'open' && o[k] !== undefined) MPO[k] = o[k]; }); } }catch(e){} if(!Array.isArray(MPO.det)) MPO.det = []; })();
+const MPO_DET = FLR_DET.filter(d => d[0] !== 'cat');
+function mpoSave(){ try{ localStorage.setItem(MPO_KEY, JSON.stringify({ des: MPO.des, col: MPO.col, mix: MPO.mix, cat: MPO.cat, band: MPO.band, det: MPO.det })); }catch(e){} }
+function mpoBadge(){ return (MPO.des ? 0 : 1) + (MPO.col ? 0 : 1) + (MPO.mix ? 1 : 0) + (MPO.cat ? 0 : 1) + (MPO.band ? 0 : 1) + MPO.det.length; }
 /* ---------- Machine Plan layout: the SAME look as the Dashboard "Machine Layout". One list of shapes drives the screen and the PDF. ---------- */
 function mpModel(dept, edit){
-  const sp = flrSpec(dept), W = dept === 'SSTM' ? 126 : 150, G = 12, AW = 44, WG = 28, BG = 12, CW = W - G, H = 63;
+  const sp = flrSpec(dept), W = dept === 'SSTM' ? 126 : 150, G = 12, AW = 44, WG = 28, BG = 12, CW = W - G;
   const lw = sp.lc * W, rw = sp.rc * W, totalW = lw + AW + rw, rx = lw + AW, P = FLR_PAD, prims = [], titles = {};
   const rect = (x, y, w, h, o) => prims.push(Object.assign({ k: 'rect', x, y, w, h }, o));
   const text = (x, y, s, o) => prims.push(Object.assign({ k: 'text', x, y, s }, o));
+  const blank = !MPO.des && !MPO.col && !MPO.mix && !MPO.cat && !MPO.det.length;
+  const info = (id) => {
+    const m = (state.machines || []).find(q => String(q.id) === String(id)), p = m ? ((SK.plan.m || {})[m.id] || {}) : {}, d = p.des ? skDesign(p.des) : null, stop = !m || p.st === 'stop';
+    const mid = String(m ? m.id : id), xc = (typeof MP_XL !== 'undefined' && MP_XL[mid]) || [], cat = p.cat || (stop ? '' : xc[1]) || '', mix = [p.c1, p.c2, p.c3].filter(Boolean).join(' / ');
+    const L = [];
+    if(!stop){
+      if(!d){ if(MPO.des) L.push({ z: 9, t: 'No design', c: FLR_C.warn }); }
+      else {
+        if(MPO.des) L.push({ z: 10, t: flrFit(d.name || '', 10, false, CW - 16), c: FLR_C.ink });
+        if(MPO.col && p.col) L.push({ z: 9, t: p.col, dot: sxColHex(p.col).slice(0, 3), c: FLR_C.mute });
+        if(MPO.mix && mix) L.push({ z: 9, t: flrFit(mix, 9, false, CW - 14), c: FLR_C.mute });
+      }
+      if(m && MPO.det.length) flrPack(flrDetails(m, MPO.det), 9, CW - 16).forEach(t => L.push({ z: 9, t, c: FLR_C.mute }));
+    }
+    return { m, p, d, stop, mid, cat, mix, L };
+  };
+  const infos = {}; sp.rows.forEach(r => r.L.concat(r.R).forEach(id => { infos[id] = info(id); }));
+  const lhh = (l) => l.z + 1;
+  const maxMain = Math.max(0, ...Object.values(infos).map(c => c.L.reduce((a, l) => a + lhh(l), 0)));
+  const H = blank ? 46 : Math.max(63, Math.ceil(25 + maxMain + (MPO.cat ? 15 : 6)));
   const ys = []; let y = 0; sp.rows.forEach((r, t) => { ys.push(y); y += H; if(t < sp.rows.length - 1) y += sp.back(t) ? BG : WG; });
   const totalH = y;
   rect(-P, -P, totalW + 2 * P, totalH + 2 * P, { fill: FLR_C.floor, r: 14 });
@@ -30331,25 +30357,27 @@ function mpModel(dept, edit){
   text(lw + AW / 2, totalH / 2, 'MIDDLE AISLE', { size: 8, color: FLR_C.walkT, anchor: 'middle', spacing: 3, rot: -90 });
   sp.rows.forEach((r, t) => { if(t < sp.rows.length - 1 && !sp.back(t)){ const gy = ys[t] + H; [[0, lw], [rx, rw]].forEach(b => { rect(b[0], gy + 5, b[1] - G, WG - 10, { fill: FLR_C.walk, r: 4 }); text(b[0] + (b[1] - G) / 2, gy + WG / 2 + 2.6, 'WALKWAY', { size: 7.5, color: FLR_C.walkT, anchor: 'middle', spacing: 2.4 }); }); } });
   const cell = (id, x, y0) => {
-    const m = (state.machines || []).find(q => String(q.id) === String(id)), p = m ? ((SK.plan.m || {})[m.id] || {}) : {}, d = p.des ? skDesign(p.des) : null, stop = !m || p.st === 'stop';
-    const mid = String(m ? m.id : id), xc = (typeof MP_XL !== 'undefined' && MP_XL[mid]) || [], cat = p.cat || (stop ? '' : xc[1]) || '', cl = [p.c1, p.c2, p.c3].filter(Boolean).join(' / ');
+    const c = infos[id], m = c.m, p = c.p, d = c.d, stop = c.stop, mid = c.mid;
     const ok = !window.__mpOk || window.__mpOk[mid], tag = { cell: mid, op: ok ? undefined : 0.22 };
-    titles[mid] = [m ? (m.name || 'M/C ' + id) : 'M/C ' + id, d ? d.name : (stop ? 'Stopped' : 'No design'), p.col, cl, cat, p.since ? 'Since ' + p.since : ''].filter(Boolean).join(' · ');
-    const R = (a, b, c, d2, o) => rect(a, b, c, d2, Object.assign({}, tag, o)), T = (a, b, s, o) => text(a, b, s, Object.assign({}, tag, o));
+    titles[mid] = [m ? (m.name || 'M/C ' + id) : 'M/C ' + id, d ? d.name : (stop ? 'Stopped' : 'No design'), p.col, c.mix, c.cat, p.since ? 'Since ' + p.since : ''].filter(Boolean).join(' · ');
+    const R = (a, b, cc, d2, o) => rect(a, b, cc, d2, Object.assign({}, tag, o)), T = (a, b, s2, o) => text(a, b, s2, Object.assign({}, tag, o));
     R(x, y0, CW, H, { fill: stop ? FLR_C.floor : (d ? '#ffffff' : '#fffbeb'), stroke: stop ? '#aab3c2' : (d ? '#cdd4e0' : '#f0cf6a'), sw: 1, dash: stop ? '3.5 3' : undefined, r: 7 });
-    if(!stop && d) R(x + 9, y0 + 5, CW - 18, 4, { fill: sxColHex(p.col || '')[0] || '#d9deea', r: 2 });
-    T(x + 9, y0 + 21, 'M/C ' + id, { size: 9.5, color: stop ? FLR_C.off : FLR_C.mute });
+    if(!stop && d && MPO.band && !blank) R(x + 9, y0 + 5, CW - 18, 4, { fill: sxColHex(p.col || '')[0] || '#d9deea', r: 2 });
+    if(blank){ T(x + CW / 2, y0 + H / 2 + 4.2, 'M/C ' + id, { size: 11.5, color: stop ? FLR_C.off : FLR_C.ink, anchor: 'middle' }); }
+    else T(x + 9, y0 + 21, 'M/C ' + id, { size: 9.5, color: stop ? FLR_C.off : FLR_C.mute });
     if(m && (m.vip || (typeof machineCat === 'function' && machineCat(m) === 'VIP')) && !stop) prims.push(Object.assign({ k: 'star', x: x + CW - 13, y: y0 + 18.5, r: 5.2, color: FLR_C.star }, tag));
+    if(blank) return;
     if(stop){ T(x + CW / 2, y0 + H / 2 + 4, 'Stopped', { size: 9, color: FLR_C.off, anchor: 'middle' }); return; }
-    const hasCol = !!(d && p.col), y1 = hasCol ? 34 : 38;
-    if(!d) T(x + CW / 2, y0 + y1, 'No design', { size: 9, color: FLR_C.warn, anchor: 'middle' });
-    else {
-      T(x + CW / 2, y0 + y1, flrFit(d.name || '', 10, false, CW - 16), { size: 10, color: FLR_C.ink, anchor: 'middle' });
-      if(hasCol){ const hx = sxColHex(p.col).slice(0, 3), dr = 3, dw = hx.length ? (hx.length - 1) * dr * 1.5 + 2 * dr + 4 : 0, ft = flrFit(p.col, 9, false, CW - 18 - dw), x0 = x + CW / 2 - (flrEst(ft, 9, false) + dw) / 2, by = y0 + y1 + 11.5;
+    const mainH = c.L.reduce((a, l) => a + lhh(l), 0), top = 25, bot = H - (MPO.cat ? 15 : 6); let ty = top + Math.max(0, (bot - top - mainH) / 2);
+    c.L.forEach(l => {
+      const by = y0 + ty + l.z;
+      if(l.dot){ const hx = l.dot, dr = 3, dw = hx.length ? (hx.length - 1) * dr * 1.5 + 2 * dr + 4 : 0, ft = flrFit(l.t, 9, false, CW - 18 - dw), x0 = x + CW / 2 - (flrEst(ft, 9, false) + dw) / 2;
         hx.forEach((q, i) => R(x0 + i * dr * 1.5, by - 2.7 - dr, 2 * dr, 2 * dr, { fill: q, stroke: '#6b7280', sw: 0.6, r: dr }));
-        T(x0 + dw, by, ft, { size: 9, color: FLR_C.mute }); }
-    }
-    if(cat) T(x + CW / 2, y0 + H - 6, flrFit(String(cat).toUpperCase(), 9, false, CW - 14), { size: 9, color: FLR_C.acc, anchor: 'middle' });
+        T(x0 + dw, by, ft, { size: 9, color: l.c }); }
+      else T(x + CW / 2, by, l.t, { size: l.z, color: l.c, anchor: 'middle' });
+      ty += lhh(l);
+    });
+    if(MPO.cat && c.cat) T(x + CW / 2, y0 + H - 6, flrFit(String(c.cat).toUpperCase(), 9, false, CW - 14), { size: 9, color: FLR_C.acc, anchor: 'middle' });
   };
   sp.rows.forEach((r, t) => { r.L.forEach((id, i) => cell(id, i * W, ys[t])); r.R.forEach((id, i) => cell(id, rx + i * W, ys[t])); });
   return { dept, w: totalW, h: totalH, prims, titles };
@@ -30370,9 +30398,26 @@ function mpSvg(S, edit){
 }
 const MP_IC_EDIT = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>';
 const MP_IC_OK = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+function mpPanelHtml(){
+  const chip = (act, on, label) => `<button type="button" class="flrChip${on ? ' on' : ''}" data-mpo="${act}">${label}</button>`;
+  const opt = (v, cur, l) => `<option value="${v}"${v === cur ? ' selected' : ''}>${l}</option>`;
+  const sel = (n, lbl, opts) => `<div class="fItem"><label>${lbl}</label><select data-mposel="${n}">${opts}</select></div>`, sh = (b) => b ? '1' : '0';
+  return `<div class="fPanel">
+    <div class="fHead"><span class="fTitle">${FLR_IC_FILTER.replace('width="17" height="17"', 'width="13" height="13"')}Filters</span><button type="button" class="fClear" data-mpo="reset" style="${mpoBadge() ? '' : 'visibility:hidden;'}">Clear all</button></div>
+    <div class="fGrid" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr));">
+      ${sel('des', 'Design name', opt('1', sh(MPO.des), 'Shown') + opt('0', sh(MPO.des), 'Hidden'))}
+      ${sel('col', 'Colour', opt('1', sh(MPO.col), 'Shown') + opt('0', sh(MPO.col), 'Hidden'))}
+      ${sel('mix', 'Weft / yarn colours', opt('0', sh(MPO.mix), 'Hidden') + opt('1', sh(MPO.mix), 'Shown'))}
+      ${sel('cat', 'Category', opt('1', sh(MPO.cat), 'Shown') + opt('0', sh(MPO.cat), 'Hidden'))}
+      ${sel('band', 'Colour line on top', opt('1', sh(MPO.band), 'Design colour') + opt('0', sh(MPO.band), 'No colour'))}
+      <div class="fItem fWide"><label>Machine details</label><div class="flrChips">${MPO_DET.map(d => chip('d:' + d[0], MPO.det.indexOf(d[0]) >= 0, d[1])).join('')}</div></div>
+    </div>
+  </div>`;
+}
 skFloorSvg = function(dept, first){
-  const canEd = typeof skCanMach === 'function' && skCanMach(), edit = !!(SX.mpEdit && canEd);
-  const bar = first ? `<div class="asumTop flrTop"><span style="flex:1;"></span><button type="button" class="pillBtn" data-mp="pdf" title="Download as PDF" aria-label="Download PDF">${FLR_IC_DL}PDF</button><button type="button" class="pillBtn" data-mp="xls" title="Download as Excel" aria-label="Download Excel">${FLR_IC_DL}Excel</button>${canEd ? `<button type="button" class="pillBtn${edit ? ' on' : ''}" data-sx="mpedit" title="${edit ? 'Finish editing' : 'Change the design on a machine'}">${edit ? MP_IC_OK + 'Done' : MP_IC_EDIT + 'Edit'}</button>` : ''}</div>` : '';
+  const canEd = typeof skCanMach === 'function' && skCanMach(), edit = !!(SX.mpEdit && canEd), F = sxFget('mp'), n = mpoBadge();
+  const seg = `<div class="seg">${['RVF', 'SSTM'].map(d => `<button type="button" class="${F.dept === d ? 'active' : ''}" data-mpo="dept:${d}">${d}</button>`).join('')}</div>`;
+  const bar = first ? `<div class="asumTop flrTop"><button type="button" class="iconBtn${MPO.open || n ? ' on' : ''}" data-mpo="open" title="Filters" aria-label="Filters" aria-expanded="${MPO.open ? 'true' : 'false'}">${FLR_IC_FILTER}${n ? `<span class="iconBadge">${n}</span>` : ''}</button>${seg}<span style="flex:1;"></span><button type="button" class="pillBtn" data-mp="pdf" title="Download as PDF" aria-label="Download PDF">${FLR_IC_DL}PDF</button><button type="button" class="pillBtn" data-mp="xls" title="Download as Excel" aria-label="Download Excel">${FLR_IC_DL}Excel</button>${canEd ? `<button type="button" class="pillBtn${edit ? ' on' : ''}" data-sx="mpedit" title="${edit ? 'Finish editing' : 'Change the design on a machine'}">${edit ? MP_IC_OK + 'Done' : MP_IC_EDIT + 'Edit'}</button>` : ''}</div>${MPO.open ? mpPanelHtml() : ''}` : '';
   return `<div class="card" style="margin-bottom:22px;">${bar}<div style="overflow-x:auto;">${mpSvg(mpModel(dept), edit)}</div></div>`;
 };
 async function mpPdf(){
@@ -30414,6 +30459,20 @@ document.addEventListener('click', (ev) => {
   const e1 = ev.target.closest && ev.target.closest('[data-sx="mpedit"]'); if(e1){ SX.mpEdit = !SX.mpEdit; skRender(); return; }
   const e2 = ev.target.closest && ev.target.closest('[data-mp]'); if(!e2) return;
   if(e2.dataset.mp === 'pdf') mpPdf(); else if(e2.dataset.mp === 'xls') sxDl('mp');
+});
+
+document.addEventListener('click', (ev) => {
+  const el = ev.target.closest && ev.target.closest('[data-mpo]'); if(!el) return;
+  const a = el.dataset.mpo, ci = a.indexOf(':'), k = ci < 0 ? a : a.slice(0, ci), v = ci < 0 ? '' : a.slice(ci + 1);
+  if(k === 'open'){ MPO.open = !MPO.open; skRender(); return; }
+  if(k === 'dept'){ const F = sxFget('mp'); F.dept = F.dept === v ? '' : v; }
+  else if(k === 'reset'){ Object.assign(MPO, { des: true, col: true, mix: false, cat: true, band: true, det: [] }); }
+  else if(k === 'd'){ const i = MPO.det.indexOf(v); if(i >= 0) MPO.det.splice(i, 1); else MPO.det.push(v); MPO.det.sort((x, y) => MPO_DET.findIndex(q => q[0] === x) - MPO_DET.findIndex(q => q[0] === y)); }
+  mpoSave(); skRender();
+});
+document.addEventListener('change', (ev) => {
+  const t = ev.target; if(!t || !t.dataset || !t.dataset.mposel) return;
+  MPO[t.dataset.mposel] = t.value === '1'; mpoSave(); skRender();
 });
 
 /* ---------- shared by all Stock pages: clickable summary tiles (filter the table in place) and paged one-line lists ---------- */
