@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261119-101012">
+<meta name="rvf-build" content="20261119-101547">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -30326,8 +30326,8 @@ function mpoSave(){ try{ localStorage.setItem(MPO_KEY, JSON.stringify({ des: MPO
 function mpoBadge(){ return (MPO.des ? 0 : 1) + (MPO.col ? 0 : 1) + (MPO.mix ? 1 : 0) + (MPO.cat ? 0 : 1) + (MPO.band ? 0 : 1) + MPO.det.length; }
 /* ---------- Machine Plan layout: the SAME look as the Dashboard "Machine Layout". One list of shapes drives the screen and the PDF. ---------- */
 function mpModel(dept, edit){
-  const sp = flrSpec(dept), W = dept === 'SSTM' ? 128 : 152, G = 8, AW = 30, WG = 28, BG = 8, CW = W - G;
-  const lw = sp.lc * W, rw = sp.rc * W, totalW = lw + AW + rw, rx = lw + AW, P = FLR_PAD, prims = [], titles = {};
+  const sp = flrSpec(dept), W = dept === 'SSTM' ? 120 : 152, G = 8, AW = dept === 'SSTM' ? 26 : 30, WG = 28, BG = 8, CW = W - G;
+  const lw = sp.lc * W, rw = sp.rc * W, totalW = lw + AW + rw - G, rx = lw + AW, P = FLR_PAD, prims = [], titles = {};
   const rect = (x, y, w, h, o) => prims.push(Object.assign({ k: 'rect', x, y, w, h }, o));
   const text = (x, y, s, o) => prims.push(Object.assign({ k: 'text', x, y, s }, o));
   const blank = !MPO.des && !MPO.col && !MPO.mix && !MPO.cat && !MPO.det.length;
@@ -30354,7 +30354,7 @@ function mpModel(dept, edit){
   const totalH = y;
   rect(-P, -P, totalW + 2 * P, totalH + 2 * P, { fill: FLR_C.floor, r: 14 });
   rect(lw, 0, AW - G, totalH, { fill: FLR_C.aisle, r: 6 });   // same gap to the boxes on both sides
-  text(lw + (AW - G) / 2, totalH / 2, 'MIDDLE AISLE', { size: 8, color: FLR_C.walkT, anchor: 'middle', spacing: 3, rot: -90 });
+  text(lw + (AW - G) / 2 + 2.8, totalH / 2, 'MIDDLE AISLE', { size: 8, color: FLR_C.walkT, anchor: 'middle', spacing: 3, rot: -90 });
   sp.rows.forEach((r, t) => { if(t < sp.rows.length - 1 && !sp.back(t)){ const gy = ys[t] + H; [[0, lw], [rx, rw]].forEach(b => { rect(b[0], gy + 5, b[1] - G, WG - 10, { fill: FLR_C.walk, r: 4 }); text(b[0] + (b[1] - G) / 2, gy + WG / 2 + 2.6, 'WALKWAY', { size: 7.5, color: FLR_C.walkT, anchor: 'middle', spacing: 2.4 }); }); } });
   const cell = (id, x, y0) => {
     const c = infos[id], m = c.m, p = c.p, d = c.d, stop = c.stop, mid = c.mid;
