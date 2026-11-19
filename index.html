@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261119-094935">
+<meta name="rvf-build" content="20261119-095348">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -30245,7 +30245,7 @@ function sxMpMachHtml(){
   const flds = [['dept', 'Department', ['RVF', 'SSTM']], ['st', 'Status', [['run', 'Running'], ['none', 'No design'], ['stop', 'Stopped']]], ['cat', 'Category', uniq(r => r.cat)], ['des', 'Design', uniq(r => r.d && r.d.name)]];
   let h = sxTop(mpTabsHtml() + sxSearch('sxMq', SX.mq, 'Search machine, design or colour…') + sxFilt('mp', flds) + (lay ? '' : ySortBtn('mp', ['mc', 'gdes', 'gcat', 'gcol', 'gdept'])) + `<button type="button" class="pcBtnSoft sm" data-sx="mpv" title="Switch between the floor layout and the table">${lay ? 'Table' : 'Layout'}</button>` + sxDlBtn('mp'));
   const rows = all.filter(r => (!F.dept || r.dept === F.dept) && (!F.st || r.st === F.st) && (!F.cat || r.cat === F.cat) && (!F.des || (r.d && r.d.name === F.des)) && (!q || (r.nm + ' ' + (r.d ? r.d.name : '') + ' ' + r.col + ' ' + r.mix + ' ' + r.cat).toLowerCase().indexOf(q) >= 0));
-  if(lay){ const on = rows.length !== all.length; window.__mpOk = on ? rows.reduce((o, r) => (o[String(r.m.id)] = 1, o), {}) : null; SK.dept = F.dept || 'ALL'; const out = skPlanHtml(true).replace(/<details class="acSec admD">[\s\S]*?<\/details>/, ''); window.__mpOk = null; return h + mpSumHtml(all) + out.split('<h3 style="margin:18px 0 8px;font-size:15px;">Recent changes</h3>')[0] + (on ? `<div class="sxSm2" style="margin:8px 2px;">${rows.length} of ${all.length} machines match. The others are faded.</div>` : '') + mpLogHtml(); }
+  if(lay){ const on = rows.length !== all.length; window.__mpOk = on ? rows.reduce((o, r) => (o[String(r.m.id)] = 1, o), {}) : null; SK.dept = F.dept === 'SSTM' ? 'SSTM' : 'RVF'; const out = skPlanHtml(true).replace(/<details class="acSec admD">[\s\S]*?<\/details>/, ''); window.__mpOk = null; return h + mpSumHtml(all) + out.split('<h3 style="margin:18px 0 8px;font-size:15px;">Recent changes</h3>')[0] + (on ? `<div class="sxSm2" style="margin:8px 2px;">${rows.length} of ${all.length} machines match. The others are faded.</div>` : '') + mpLogHtml(); }
   const key = { gdes: (r) => r.d ? r.d.name : '~ No design', gcat: (r) => r.cat || '~ No category', gcol: (r) => r.col || '~ No colour', gdept: (r) => r.dept }[mode];
   if(key) rows.sort((a, b) => String(key(a)).localeCompare(String(key(b))) || Number(a.m.id) - Number(b.m.id));
   const run = rows.filter(r => r.st === 'run').length, adm = skCanMach();
@@ -30417,7 +30417,7 @@ function mpPanelHtml(){
 }
 skFloorSvg = function(dept, first){
   const canEd = typeof skCanMach === 'function' && skCanMach(), edit = !!(SX.mpEdit && canEd), F = sxFget('mp'), n = mpoBadge();
-  const seg = `<div class="seg">${['RVF', 'SSTM'].map(d => `<button type="button" class="${F.dept === d ? 'active' : ''}" data-mpo="dept:${d}">${d}</button>`).join('')}</div>`;
+  const seg = `<div class="seg">${['RVF', 'SSTM'].map(d => `<button type="button" class="${(F.dept === 'SSTM' ? 'SSTM' : 'RVF') === d ? 'active' : ''}" data-mpo="dept:${d}">${d}</button>`).join('')}</div>`;
   const bar = first ? `<div class="asumTop flrTop"><button type="button" class="iconBtn${MPO.open || n ? ' on' : ''}" data-mpo="open" title="Filters" aria-label="Filters" aria-expanded="${MPO.open ? 'true' : 'false'}">${FLR_IC_FILTER}${n ? `<span class="iconBadge">${n}</span>` : ''}</button>${seg}<span style="flex:1;"></span><button type="button" class="pillBtn" data-mp="pdf" title="Download as PDF" aria-label="Download PDF">${FLR_IC_DL}PDF</button><button type="button" class="pillBtn" data-mp="xls" title="Download as Excel" aria-label="Download Excel">${FLR_IC_DL}Excel</button>${canEd ? `<button type="button" class="pillBtn${edit ? ' on' : ''}" data-sx="mpedit" title="${edit ? 'Finish editing' : 'Change the design on a machine'}">${edit ? MP_IC_OK + 'Done' : MP_IC_EDIT + 'Edit'}</button>` : ''}</div>${MPO.open ? mpPanelHtml() : ''}` : '';
   return `<div class="card" style="margin-bottom:22px;">${bar}<div style="overflow-x:auto;">${mpSvg(mpModel(dept), edit)}</div></div>`;
 };
@@ -30466,7 +30466,7 @@ document.addEventListener('click', (ev) => {
   const el = ev.target.closest && ev.target.closest('[data-mpo]'); if(!el) return;
   const a = el.dataset.mpo, ci = a.indexOf(':'), k = ci < 0 ? a : a.slice(0, ci), v = ci < 0 ? '' : a.slice(ci + 1);
   if(k === 'open'){ MPO.open = !MPO.open; skRender(); return; }
-  if(k === 'dept'){ const F = sxFget('mp'); F.dept = F.dept === v ? '' : v; }
+  if(k === 'dept'){ const F = sxFget('mp'); F.dept = v; }
   else if(k === 'reset'){ Object.assign(MPO, { des: true, col: true, mix: false, cat: true, band: true, det: [] }); }
   else if(k === 'd'){ const i = MPO.det.indexOf(v); if(i >= 0) MPO.det.splice(i, 1); else MPO.det.push(v); MPO.det.sort((x, y) => MPO_DET.findIndex(q => q[0] === x) - MPO_DET.findIndex(q => q[0] === y)); }
   mpoSave(); skRender();
