@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261119-094345">
+<meta name="rvf-build" content="20261119-094935">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -30347,9 +30347,9 @@ function mpModel(dept, edit){
     return { m, p, d, stop, mid, cat, mix, L };
   };
   const infos = {}; sp.rows.forEach(r => r.L.concat(r.R).forEach(id => { infos[id] = info(id); }));
-  const lhh = (l) => l.z + 1;
+  const lhh = (l) => l.z + 3.5;
   const maxMain = Math.max(0, ...Object.values(infos).map(c => c.L.reduce((a, l) => a + lhh(l), 0)));
-  const H = blank ? 46 : Math.max(63, Math.ceil(25 + maxMain + (MPO.cat ? 15 : 6)));
+  const H = blank ? 46 : Math.max(63, Math.ceil(26 + maxMain + 11));
   const ys = []; let y = 0; sp.rows.forEach((r, t) => { ys.push(y); y += H; if(t < sp.rows.length - 1) y += sp.back(t) ? BG : WG; });
   const totalH = y;
   rect(-P, -P, totalW + 2 * P, totalH + 2 * P, { fill: FLR_C.floor, r: 14 });
@@ -30365,10 +30365,12 @@ function mpModel(dept, edit){
     if(!stop && d && MPO.band && !blank) R(x + 9, y0 + 5, CW - 18, 4, { fill: sxColHex(p.col || '')[0] || '#d9deea', r: 2 });
     if(blank){ T(x + CW / 2, y0 + H / 2 + 4.2, 'M/C ' + id, { size: 11.5, color: stop ? FLR_C.off : FLR_C.ink, anchor: 'middle' }); }
     else T(x + 9, y0 + 21, 'M/C ' + id, { size: 9.5, color: stop ? FLR_C.off : FLR_C.mute });
-    if(m && (m.vip || (typeof machineCat === 'function' && machineCat(m) === 'VIP')) && !stop) prims.push(Object.assign({ k: 'star', x: x + CW - 13, y: y0 + 18.5, r: 5.2, color: FLR_C.star }, tag));
+    const isVip = !!(m && (m.vip || (typeof machineCat === 'function' && machineCat(m) === 'VIP'))) && !stop, catT = (MPO.cat && c.cat && !stop && String(c.cat).toUpperCase() !== 'VIP') ? flrFit(String(c.cat).toUpperCase(), 8.5, false, CW - 62) : '';
+    if(catT && !blank) T(x + CW - 9, y0 + 21, catT, { size: 8.5, color: FLR_C.acc, anchor: 'end' });
+    if(isVip) prims.push(Object.assign({ k: 'star', x: x + CW - 13 - (catT && !blank ? flrEst(catT, 8.5, false) + 4 : 0), y: y0 + 18.5, r: 5.2, color: FLR_C.star }, tag));
     if(blank) return;
     if(stop){ T(x + CW / 2, y0 + H / 2 + 4, 'Stopped', { size: 9, color: FLR_C.off, anchor: 'middle' }); return; }
-    const mainH = c.L.reduce((a, l) => a + lhh(l), 0), top = 25, bot = H - (MPO.cat ? 15 : 6); let ty = top + Math.max(0, (bot - top - mainH) / 2);
+    let ty = 29 + Math.max(0, (H - 40 - c.L.reduce((a, l) => a + lhh(l), 0)) / 2);
     c.L.forEach(l => {
       const by = y0 + ty + l.z;
       if(l.dot){ const hx = l.dot, dr = 3, dw = hx.length ? (hx.length - 1) * dr * 1.5 + 2 * dr + 4 : 0, ft = flrFit(l.t, 9, false, CW - 18 - dw), x0 = x + CW / 2 - (flrEst(ft, 9, false) + dw) / 2;
@@ -30377,7 +30379,6 @@ function mpModel(dept, edit){
       else T(x + CW / 2, by, l.t, { size: l.z, color: l.c, anchor: 'middle' });
       ty += lhh(l);
     });
-    if(MPO.cat && c.cat) T(x + CW / 2, y0 + H - 6, flrFit(String(c.cat).toUpperCase(), 9, false, CW - 14), { size: 9, color: FLR_C.acc, anchor: 'middle' });
   };
   sp.rows.forEach((r, t) => { r.L.forEach((id, i) => cell(id, i * W, ys[t])); r.R.forEach((id, i) => cell(id, rx + i * W, ys[t])); });
   return { dept, w: totalW, h: totalH, prims, titles };
@@ -30444,7 +30445,7 @@ async function mpPdf(){
           if(r > 0) pdf.roundedRect(x, y, w, h, r, r, st); else pdf.rect(x, y, w, h, st);
         } else {
           const c = flrRgb(p.color); pdf.setTextColor(c[0], c[1], c[2]); pdf.setFont('helvetica', 'normal'); pdf.setFontSize(p.size * k * 2.835);
-          const opt = { align: p.anchor === 'middle' ? 'center' : 'left' }; if(p.spacing) opt.charSpace = p.spacing * k;
+          const opt = { align: p.anchor === 'middle' ? 'center' : p.anchor === 'end' ? 'right' : 'left' }; if(p.spacing) opt.charSpace = p.spacing * k;
           const tx = ox + (p.x + P) * k; let ty = oy + (p.y + P) * k;
           if(p.rot){ opt.align = 'left'; opt.angle = -p.rot; if(p.spacing) pdf.setCharSpace(p.spacing * k); const tw = pdf.getTextWidth(String(p.s)); if(p.spacing) pdf.setCharSpace(0); ty += tw / 2; }
           pdf.text(rvfAsciiFold(p.s), tx, ty, opt);
