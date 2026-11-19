@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261119-095752">
+<meta name="rvf-build" content="20261119-100642">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -26197,8 +26197,8 @@ function flrSection(dept, cfg, D){
   const totalH = y;
   const topPad = sp.dept === 'SSTM' ? 30 : 0, OY = topPad, aisleH = totalH + topPad * 2;
   rect(-FLR_PAD, -FLR_PAD, totalW + 2 * FLR_PAD, aisleH + 2 * FLR_PAD, { fill: FLR_C.floor, r: 14 });
-  rect(lw + 2, 0, AW - 4, aisleH, { fill: FLR_C.aisle, r: 6 });
-  text(lw + AW / 2, aisleH / 2, 'MIDDLE AISLE', { size: 8, color: FLR_C.walkT, anchor: 'middle', spacing: 3, rot: -90 });
+  rect(lw, 0, AW - G, aisleH, { fill: FLR_C.aisle, r: 6 });
+  text(lw + (AW - G) / 2, aisleH / 2, 'MIDDLE AISLE', { size: 8, color: FLR_C.walkT, anchor: 'middle', spacing: 3, rot: -90 });
   rows.forEach((r, t) => {
     if(t < rows.length - 1 && !sp.back(t)){
       const gy = OY + ys[t] + H;
@@ -30326,7 +30326,7 @@ function mpoSave(){ try{ localStorage.setItem(MPO_KEY, JSON.stringify({ des: MPO
 function mpoBadge(){ return (MPO.des ? 0 : 1) + (MPO.col ? 0 : 1) + (MPO.mix ? 1 : 0) + (MPO.cat ? 0 : 1) + (MPO.band ? 0 : 1) + MPO.det.length; }
 /* ---------- Machine Plan layout: the SAME look as the Dashboard "Machine Layout". One list of shapes drives the screen and the PDF. ---------- */
 function mpModel(dept, edit){
-  const sp = flrSpec(dept), W = dept === 'SSTM' ? 126 : 150, G = 12, AW = 44, WG = 28, BG = 12, CW = W - G;
+  const sp = flrSpec(dept), W = dept === 'SSTM' ? 128 : 152, G = 8, AW = 30, WG = 28, BG = 8, CW = W - G;
   const lw = sp.lc * W, rw = sp.rc * W, totalW = lw + AW + rw, rx = lw + AW, P = FLR_PAD, prims = [], titles = {};
   const rect = (x, y, w, h, o) => prims.push(Object.assign({ k: 'rect', x, y, w, h }, o));
   const text = (x, y, s, o) => prims.push(Object.assign({ k: 'text', x, y, s }, o));
@@ -30353,8 +30353,8 @@ function mpModel(dept, edit){
   const ys = []; let y = 0; sp.rows.forEach((r, t) => { ys.push(y); y += H; if(t < sp.rows.length - 1) y += sp.back(t) ? BG : WG; });
   const totalH = y;
   rect(-P, -P, totalW + 2 * P, totalH + 2 * P, { fill: FLR_C.floor, r: 14 });
-  rect(lw + 2, 0, AW - 4, totalH, { fill: FLR_C.aisle, r: 6 });
-  text(lw + AW / 2, totalH / 2, 'MIDDLE AISLE', { size: 8, color: FLR_C.walkT, anchor: 'middle', spacing: 3, rot: -90 });
+  rect(lw, 0, AW - G, totalH, { fill: FLR_C.aisle, r: 6 });   // same gap to the boxes on both sides
+  text(lw + (AW - G) / 2, totalH / 2, 'MIDDLE AISLE', { size: 8, color: FLR_C.walkT, anchor: 'middle', spacing: 3, rot: -90 });
   sp.rows.forEach((r, t) => { if(t < sp.rows.length - 1 && !sp.back(t)){ const gy = ys[t] + H; [[0, lw], [rx, rw]].forEach(b => { rect(b[0], gy + 5, b[1] - G, WG - 10, { fill: FLR_C.walk, r: 4 }); text(b[0] + (b[1] - G) / 2, gy + WG / 2 + 2.6, 'WALKWAY', { size: 7.5, color: FLR_C.walkT, anchor: 'middle', spacing: 2.4 }); }); } });
   const cell = (id, x, y0) => {
     const c = infos[id], m = c.m, p = c.p, d = c.d, stop = c.stop, mid = c.mid;
