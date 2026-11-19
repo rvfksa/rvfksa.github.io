@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261119-085855">
+<meta name="rvf-build" content="20261119-090246">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -30324,17 +30324,12 @@ skFloorSvg = function(dept){
     const m = (state.machines || []).find(q => String(q.id) === String(id)), p = m ? ((SK.plan.m || {})[m.id] || {}) : {}, d = p.des ? skDesign(p.des) : null, stop = !m || p.st === 'stop';
     const xc = (typeof MP_XL !== 'undefined' && MP_XL[String(m ? m.id : id)]) || [], cat = p.cat || (stop ? '' : xc[1]) || '', cl = [p.c1, p.c2, p.c3].filter(Boolean).join(' / ');
     const L = [];
-    if(!stop && d){
-      const w = CW - 18, words = String(d.name || '').split(/\s+/).filter(Boolean); let cur = ''; const nl = [];
-      words.forEach(wd => { const t = cur ? cur + ' ' + wd : wd; if(cur && flrEst(t, SZ.n, false) > w){ nl.push(cur); cur = wd; } else cur = t; }); if(cur) nl.push(cur);
-      nl.slice(0, 2).forEach((l, i, a) => L.push({ z: SZ.n, t: flrFit(i === a.length - 1 && nl.length > 2 ? l + ' ' + nl.slice(2).join(' ') : l, SZ.n, false, w), c: FLR_C.ink }));
-      if(p.col) L.push({ z: SZ.i, t: p.col, dot: sxColHex(p.col).slice(0, 3), c: FLR_C.mute });
-      if(cl) L.push({ z: SZ.d, t: cl, c: FLR_C.mute });
-    } else if(!stop){ L.push({ z: SZ.s, t: 'No design', c: FLR_C.warn }); }
+    if(!stop && d){ L.push({ z: 10, t: d.name || '', c: FLR_C.ink }); if(p.col) L.push({ z: 9, t: p.col, dot: sxColHex(p.col).slice(0, 3), c: FLR_C.mute }); }
+    else if(!stop){ L.push({ z: 9, t: 'No design', c: FLR_C.warn }); }
     return { m, p, d, stop, cat, L, id };
   };
   const cells = {}; sp.rows.forEach(r => r.L.concat(r.R).forEach(id => { cells[id] = info(id); }));
-  const maxL = Math.max(0, ...Object.values(cells).map(c => c.L.reduce((a, l) => a + lh(l), 0))), H = Math.max(44, Math.ceil(26 + maxL + 24));
+  const H = 63;   // the same box height as the Dashboard layout
   const ys = []; let y = 0; sp.rows.forEach((r, t) => { ys.push(y); y += H; if(t < sp.rows.length - 1) y += sp.back(t) ? BG : WG; });
   const totalH = y;
   let b = `<rect x="0" y="0" width="${totalW + 2 * PAD}" height="${totalH + 2 * PAD}" rx="14" fill="${FLR_C.floor}"/><rect x="${PAD + lw + 2}" y="${PAD}" width="${AW - 4}" height="${totalH}" rx="6" fill="${FLR_C.aisle}"/><text x="${PAD + lw + AW / 2}" y="${PAD + totalH / 2}" font-size="8" fill="${FLR_C.walkT}" text-anchor="middle" letter-spacing="3" transform="rotate(-90 ${PAD + lw + AW / 2} ${PAD + totalH / 2})">MIDDLE AISLE</text>`;
@@ -30348,13 +30343,13 @@ skFloorSvg = function(dept){
     g += `<text x="${cx + 9}" y="${cy + 21}" font-size="${SZ.t}" fill="${stop ? FLR_C.off : FLR_C.mute}">${E(label)}</text>`;
     if(m && (m.vip || (typeof machineCat === 'function' && machineCat(m) === 'VIP')) && !stop) g += `<polygon points="${flrStarPts(cx + CW - (canEd ? 29 : 13), cy + 18.5, 5.2).map(q => q[0].toFixed(1) + ',' + q[1].toFixed(1)).join(' ')}" fill="${FLR_C.star}"/>`;
     if(stop) g += `<text x="${cx + CW / 2}" y="${cy + H / 2 + 4}" font-size="${SZ.s}" fill="${FLR_C.off}" text-anchor="middle">Stopped</text>`;
-    else { const bh = c.L.reduce((a, l) => a + lh(l), 0); let ty = cy + 26 + (H - 26 - 20 - bh) / 2; c.L.forEach(l => { const FS = l.z;
-      if(l.dot){ const dr = 3, hx = l.dot, dw = hx.length ? (hx.length - 1) * dr * 1.5 + 2 * dr + 4 : 0, ft = flrFit(l.t, FS, false, CW - 18 - dw), x0 = cx + CW / 2 - (flrEst(ft, FS, false) + dw) / 2;
-        hx.forEach((q, i) => { g += `<circle cx="${(x0 + dr + i * dr * 1.5).toFixed(1)}" cy="${(ty + FS - 2.6).toFixed(1)}" r="${dr}" fill="${q}" stroke="rgba(15,23,42,.30)" stroke-width=".6"/>`; });
-        g += `<text x="${(x0 + dw).toFixed(1)}" y="${(ty + FS).toFixed(1)}" font-size="${FS}" fill="${l.c}">${E(ft)}</text>`; }
-      else g += `<text x="${cx + CW / 2}" y="${(ty + FS).toFixed(1)}" font-size="${FS}" fill="${l.c}" text-anchor="middle">${E(flrFit(l.t, FS, false, CW - 14))}</text>`;
-      ty += lh(l); });
-      if(c.cat) g += `<text x="${cx + CW / 2}" y="${cy + H - 9}" font-size="${SZ.d}" fill="${FLR_C.acc}" text-anchor="middle">${E(flrFit(String(c.cat).toUpperCase(), SZ.d, false, CW - 14))}</text>`; }
+    else { const n = c.L.length, y1 = n > 1 ? 34 : 38;
+      c.L.forEach((l, k) => { const FS = l.z, by = cy + (k === 0 ? y1 : y1 + 11.5);
+        if(l.dot){ const dr = 3, hx = l.dot, dw = hx.length ? (hx.length - 1) * dr * 1.5 + 2 * dr + 4 : 0, ft = flrFit(l.t, FS, false, CW - 18 - dw), x0 = cx + CW / 2 - (flrEst(ft, FS, false) + dw) / 2;
+          hx.forEach((q, i) => { g += `<circle cx="${(x0 + dr + i * dr * 1.5).toFixed(1)}" cy="${(by - 2.7).toFixed(1)}" r="${dr}" fill="${q}" stroke="rgba(15,23,42,.30)" stroke-width=".6"/>`; });
+          g += `<text x="${(x0 + dw).toFixed(1)}" y="${by.toFixed(1)}" font-size="${FS}" fill="${l.c}">${E(ft)}</text>`; }
+        else g += `<text x="${cx + CW / 2}" y="${by.toFixed(1)}" font-size="${FS}" fill="${l.c}" text-anchor="middle">${E(flrFit(l.t, FS, false, CW - 16))}</text>`; });
+      if(c.cat) g += `<text x="${cx + CW / 2}" y="${cy + H - 6}" font-size="${SZ.d}" fill="${FLR_C.acc}" text-anchor="middle">${E(flrFit(String(c.cat).toUpperCase(), SZ.d, false, CW - 14))}</text>`; }
     if(canEd){ const pxc = cx + CW - 15, pyc = cy + 18; g += `<g class="mpEd" data-sk="mc" data-v="${E(mid)}" style="cursor:pointer"><title>Change the design on this machine</title><circle cx="${pxc}" cy="${pyc}" r="9" fill="#f1f3f8"/><path transform="translate(${pxc - 5} ${pyc - 5}) scale(${(10 / 24).toFixed(3)})" fill="#6b7694" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></g>`; }
     return g + '</g>';
   };
