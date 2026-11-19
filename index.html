@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261118-181732">
+<meta name="rvf-build" content="20261119-084355">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -26140,7 +26140,7 @@ function flrPack(items, size, w){
 }
 // everything drawn is a plain shape or a line of text, so the screen and the PDF come from the same list
 function flrSection(dept, cfg, D){
-  const sp = flrSpec(dept), W = dept === 'SSTM' ? 126 : 150, G = 12, AW = 44, WG = 28, BG = 12, SZ = { t: 9.5, n: 12.5, i: 9.5, s: 9, d: 9 };
+  const sp = flrSpec(dept), W = dept === 'SSTM' ? 126 : 150, G = 12, AW = 44, WG = 28, BG = 12, SZ = { t: 9, n: 9, i: 9, s: 9, d: 9 };
   const supCol = { '__none__': FLR_C.c1 }; D.sups.slice().sort((a, b) => a.name.localeCompare(b.name)).forEach((x, i) => { supCol[x.id] = FLR_SP[i % FLR_SP.length]; });
   const sel = cfg.sups || [];
   const blank = !cfg.op && !cfg.id && !cfg.showSup && !cfg.det.length;
@@ -26177,17 +26177,17 @@ function flrSection(dept, cfg, D){
     const out = [];
     if(!c.run) return c.opL;
     const ops = c.op ? [c.op] : [];
-    if(cfg.op) out.push(c.op ? { s: flrFit(first(c.op.name) + (c.lines > 1 ? ' +' + (c.lines - 1) : ''), SZ.n, false, w), size: SZ.n, color: c.dim ? FLR_C.dim : FLR_C.ink } : { s: 'No operator', size: SZ.s, color: c.dim ? FLR_C.dim : FLR_C.noop });
-    if(cfg.id && c.op) out.push({ s: 'ID ' + c.op.id, size: SZ.i, color: c.dim ? FLR_C.dim : FLR_C.mute });
+    if(cfg.op) out.push(c.op ? { s: flrFit(first(c.op.name) + (c.lines > 1 ? ' +' + (c.lines - 1) : ''), SZ.n, false, w), size: SZ.n, bold: true, color: c.dim ? FLR_C.dim : FLR_C.ink } : { s: 'No operator', size: SZ.s, color: c.dim ? FLR_C.dim : FLR_C.noop });
+    if(cfg.id && c.op) out.push({ s: 'ID ' + c.op.id, size: SZ.i, pill: true, dim: c.dim, color: c.dim ? FLR_C.dim : FLR_C.acc });
     if(cfg.showSup && c.op){ const lead = !cfg.op; out.push({ s: flrFit((lead ? '' : 'Sup. ') + c.supTxt, lead ? SZ.n : SZ.s, false, w), size: lead ? SZ.n : SZ.s, color: c.dim ? FLR_C.dim : (c.supWarn ? FLR_C.warn : (lead ? FLR_C.ink : FLR_C.acc)) }); }
     return out;
   };
   const mwCell = W - G - 14;
   allCells.forEach(c => { c.detL = c.detRaw ? flrPack(c.detRaw, SZ.d, mwCell).map(s => ({ s, size: SZ.d, color: (c.off || c.dim) ? FLR_C.off : FLR_C.mute })) : []; });
-  const lh = (l) => l.size + 3.4;
+  const lh = (l) => l.pill ? 18 : l.size + 4;
   const maxOp = blank ? 0 : Math.max(0, ...allCells.map(c => opLines(c, mwCell).reduce((a, l) => a + lh(l), 0)));
   const maxDet = Math.max(0, ...allCells.map(c => c.detL.reduce((a, l) => a + lh(l), 0)));
-  const H = blank ? 46 : Math.max(44, Math.ceil(26 + maxOp + (maxDet ? maxDet + 4 : 0) + 8));
+  const H = blank ? 46 : Math.max(48, Math.ceil(28 + maxOp + (maxDet ? maxDet + 2 : 0) + 6));
   const lw = sp.lc * W, rw = sp.rc * W, totalW = lw + AW + rw, rx = lw + AW;
   const prims = [];
   const rect = (x, y, w, h, o) => prims.push(Object.assign({ k: 'rect', x, y, w, h }, o));
@@ -26222,13 +26222,19 @@ function flrSection(dept, cfg, D){
       if(c.conf && !c.dim) stroke = FLR_C.warn;
       const tag = { cell: 1, c: cid };
       rect(x, y0, CW, H, Object.assign({ fill, stroke, sw: c.conf && !c.dim ? 1.6 : 1, dash: dash || undefined, r: 7 }, tag));
-      if(bar) rect(x + 9, y0 + 5, CW - 18, 4, Object.assign({ fill: bar, r: 2 }, tag));
+      if(bar) rect(x + 1, y0 + 1, CW - 2, 5, Object.assign({ fill: bar, r: 2.5 }, tag));
       if(blank) text(x + CW / 2, y0 + H / 2 + 4.2, 'M/C ' + String(c.id), Object.assign({ size: 11.5, color: quiet ? FLR_C.off : FLR_C.ink, anchor: 'middle' }, tag));
-      else text(x + 9, y0 + 21, 'M/C ' + String(c.id), Object.assign({ size: SZ.t, color: quiet ? FLR_C.off : FLR_C.mute }, tag));
-      if(c.m && (c.m.vip || machineCat(c.m) === 'VIP') && !off) prims.push({ k: 'star', x: x + CW - 13, y: y0 + 18.5, r: 5.2, color: c.dim ? FLR_C.dim : FLR_C.star, cell: 1, c: cid });
+      else text(x + 9, y0 + 22, 'M/C ' + String(c.id), Object.assign({ size: SZ.t, bold: true, color: quiet ? FLR_C.off : '#7a859d' }, tag));
+      if(c.m && (c.m.vip || machineCat(c.m) === 'VIP') && !off) prims.push({ k: 'star', x: x + CW - 13, y: y0 + 19.5, r: 5.2, color: c.dim ? FLR_C.dim : FLR_C.star, cell: 1, c: cid });
       if(!blank){
-        let ty = y0 + 25; opLines(c, CW - 16).forEach(l => { text(x + CW / 2, ty + l.size, l.s, Object.assign({ size: l.size, color: l.color, anchor: 'middle' }, tag)); ty += lh(l); });
-        ty = y0 + 25 + maxOp + 4; c.detL.forEach(l => { text(x + CW / 2, ty + l.size, l.s, Object.assign({ size: l.size, color: l.color, anchor: 'middle' }, tag)); ty += lh(l); });
+        let ty = y0 + 28;
+        if(!c.run){ const L = c.opL; L.forEach(l => { text(x + CW / 2, y0 + H / 2 + 3.2, l.s, Object.assign({ size: l.size, color: l.color, anchor: 'middle' }, tag)); }); }
+        else opLines(c, CW - 18).forEach(l => {
+          if(l.pill){ const pw = flrEst(l.s, l.size, true) + 12; rect(x + 9, ty - 1, pw, 14, Object.assign({ fill: l.dim ? '#f1f3f8' : '#eef0fd', r: 7 }, tag)); text(x + 9 + pw / 2, ty + 9, l.s, Object.assign({ size: l.size, bold: true, color: l.color, anchor: 'middle' }, tag)); }
+          else text(x + 9, ty + l.size, l.s, Object.assign({ size: l.size, bold: !!l.bold, color: l.color }, tag));
+          ty += lh(l);
+        });
+        ty = y0 + 28 + maxOp + 2; c.detL.forEach(l => { text(x + 9, ty + l.size, l.s, Object.assign({ size: l.size, color: l.color }, tag)); ty += lh(l); });
       }
     });
   };
@@ -26258,7 +26264,7 @@ function flrSvg(S){
     if(p.k === 'star'){ const pts = flrStarPts(p.x, p.y, p.r).map(q => (q[0] + pad).toFixed(2) + ',' + (q[1] + pad).toFixed(2)).join(' '); return `<polygon points="${pts}" fill="${p.color}"${dc}/>`; }
     if(p.k === 'rect') return `<rect${dc} x="${p.x + pad}" y="${p.y + pad}" width="${p.w}" height="${p.h}" rx="${p.r || 0}" fill="${p.fill || 'none'}"${p.stroke ? ` stroke="${p.stroke}" stroke-width="${p.sw || 1}"` : ''}${p.dash ? ` stroke-dasharray="${p.dash}"` : ''}/>`;
     const tr = p.rot ? ` transform="rotate(${p.rot} ${p.x + pad} ${p.y + pad})"` : '';
-    return `<text${dc} x="${p.x + pad}" y="${p.y + pad}" font-size="${p.size}" font-weight="400" fill="${p.color}" text-anchor="${p.anchor || 'start'}"${p.spacing ? ` letter-spacing="${p.spacing}"` : ''}${tr}>${flrEsc(p.s)}</text>`;
+    return `<text${dc} x="${p.x + pad}" y="${p.y + pad}" font-size="${p.size}" font-weight="${p.bold ? 700 : 400}" fill="${p.color}" text-anchor="${p.anchor || 'start'}"${p.spacing ? ` letter-spacing="${p.spacing}"` : ''}${tr}>${flrEsc(p.s)}</text>`;
   }).join('');
   return `<svg class="flrSvg" viewBox="0 0 ${S.w + pad * 2} ${S.h + pad * 2}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${S.dept} floor layout">${body}</svg>`;
 }
@@ -26391,7 +26397,7 @@ async function flrPdf(){
           const st = p.fill && p.stroke && p.w >= 2 ? 'FD' : p.fill ? 'F' : 'S';
           if(r > 0) pdf.roundedRect(x, y, w, h, r, r, st); else pdf.rect(x, y, w, h, st);
         } else {
-          const c = flrRgb(p.color); pdf.setTextColor(c[0], c[1], c[2]); pdf.setFont('helvetica', 'normal'); pdf.setFontSize(p.size * k * 2.835);
+          const c = flrRgb(p.color); pdf.setTextColor(c[0], c[1], c[2]); pdf.setFont('helvetica', p.bold ? 'bold' : 'normal'); pdf.setFontSize(p.size * k * 2.835);
           const opt = { align: p.anchor === 'middle' ? 'center' : 'left' }; if(p.spacing) opt.charSpace = p.spacing * k;
           let tx = ox + (p.x + FLR_PAD) * k, ty = oy + (p.y + FLR_PAD) * k;
           if(p.rot){ opt.align = 'left'; opt.angle = -p.rot; if(p.spacing) pdf.setCharSpace(p.spacing * k); const tw = pdf.getTextWidth(String(p.s)); if(p.spacing) pdf.setCharSpace(0); ty += tw / 2; }
