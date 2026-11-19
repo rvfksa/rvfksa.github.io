@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261119-093334">
+<meta name="rvf-build" content="20261119-093948">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -28777,6 +28777,8 @@ button.mpS.on{background:#eef0fd;border-color:#6366f1}
 }
 .perfDet .perfExW{display:block;margin-top:4px;padding-top:5px;border-top:1px solid var(--line,#e5e7ef)}
 .perfDet .perfEx{font-style:normal;color:var(--muted);font-size:10.5px;line-height:1.4}
+.pillBtn.on{background:#4f46e5;border-color:#4f46e5;color:#fff}
+.flrSvg.mpEd .mpCl{cursor:pointer} .flrSvg.mpEd .mpCl:hover rect:first-of-type{stroke:#4f46e5}
 </style>
 <div id="rvfBusy"><i></i><span id="rvfBusyTxt">Loading data…</span></div>
 <script>
@@ -29195,7 +29197,7 @@ function skFloorHtml(list, depts){
   const ids = {}; list.forEach(m => { ids[String(m.id)] = 1; });
   const want = SK.dept === 'ALL' ? ['RVF', 'SSTM'] : [SK.dept].filter(d => d === 'RVF' || d === 'SSTM');
   let h = '', placed = {};
-  want.forEach(d => { const sp = flrSpec(d); sp.rows.forEach(r => r.L.concat(r.R).forEach(id => { placed[String(id)] = 1; })); h += `<h3 style="margin:16px 0 8px;font-size:15px;">${d} floor layout</h3>` + skFloorSvg(d); });
+  want.forEach((d, wi) => { const sp = flrSpec(d); sp.rows.forEach(r => r.L.concat(r.R).forEach(id => { placed[String(id)] = 1; })); h += `<h3 style="margin:16px 0 8px;font-size:15px;">${d} floor layout</h3>` + skFloorSvg(d, wi === 0); });
   return { h, placed };
 }
 
@@ -30316,46 +30318,103 @@ document.addEventListener('click', (ev) => { const el = ev.target.closest && ev.
   else if(a === 'mpst'){ const F = sxFget('mp'); F.st = F.st === el.dataset.v ? '' : el.dataset.v; SX.mq = ''; }
   else { SX.mpt = 'des'; sxFget('dz').run = 'yes'; SX.dq = ''; }
   SX.yso = ''; SX.fo = ''; skRender(); });
-/* ---------- Machine Plan layout: the SAME look as the Dashboard "Machine Layout" (small boxes, thin colour line on top, centred text, font 9) ---------- */
-skFloorSvg = function(dept){
-  const sp = flrSpec(dept), W = dept === 'SSTM' ? 126 : 150, G = 12, AW = 44, WG = 28, BG = 12, CW = W - G, PAD = FLR_PAD, E = skEsc, SZ = { t: 9.5, n: 12.5, i: 9.5, s: 9, d: 9 }, lh = (l) => l.z + 3.4;
-  const lw = sp.lc * W, rw = sp.rc * W, totalW = lw + AW + rw, rx = lw + AW, canEd = typeof skCanMach === 'function' && skCanMach();
-  const info = (id) => {
-    const m = (state.machines || []).find(q => String(q.id) === String(id)), p = m ? ((SK.plan.m || {})[m.id] || {}) : {}, d = p.des ? skDesign(p.des) : null, stop = !m || p.st === 'stop';
-    const xc = (typeof MP_XL !== 'undefined' && MP_XL[String(m ? m.id : id)]) || [], cat = p.cat || (stop ? '' : xc[1]) || '', cl = [p.c1, p.c2, p.c3].filter(Boolean).join(' / ');
-    const L = [];
-    if(!stop && d){ L.push({ z: 10, t: d.name || '', c: FLR_C.ink }); if(p.col) L.push({ z: 9, t: p.col, dot: sxColHex(p.col).slice(0, 3), c: FLR_C.mute }); }
-    else if(!stop){ L.push({ z: 9, t: 'No design', c: FLR_C.warn }); }
-    return { m, p, d, stop, cat, L, id };
-  };
-  const cells = {}; sp.rows.forEach(r => r.L.concat(r.R).forEach(id => { cells[id] = info(id); }));
-  const H = 63;   // the same box height as the Dashboard layout
+/* ---------- Machine Plan layout: the SAME look as the Dashboard "Machine Layout". One list of shapes drives the screen and the PDF. ---------- */
+function mpModel(dept, edit){
+  const sp = flrSpec(dept), W = dept === 'SSTM' ? 126 : 150, G = 12, AW = 44, WG = 28, BG = 12, CW = W - G, H = 63;
+  const lw = sp.lc * W, rw = sp.rc * W, totalW = lw + AW + rw, rx = lw + AW, P = FLR_PAD, prims = [], titles = {};
+  const rect = (x, y, w, h, o) => prims.push(Object.assign({ k: 'rect', x, y, w, h }, o));
+  const text = (x, y, s, o) => prims.push(Object.assign({ k: 'text', x, y, s }, o));
   const ys = []; let y = 0; sp.rows.forEach((r, t) => { ys.push(y); y += H; if(t < sp.rows.length - 1) y += sp.back(t) ? BG : WG; });
   const totalH = y;
-  let b = `<rect x="0" y="0" width="${totalW + 2 * PAD}" height="${totalH + 2 * PAD}" rx="14" fill="${FLR_C.floor}"/><rect x="${PAD + lw + 2}" y="${PAD}" width="${AW - 4}" height="${totalH}" rx="6" fill="${FLR_C.aisle}"/><text x="${PAD + lw + AW / 2}" y="${PAD + totalH / 2}" font-size="8" fill="${FLR_C.walkT}" text-anchor="middle" letter-spacing="3" transform="rotate(-90 ${PAD + lw + AW / 2} ${PAD + totalH / 2})">MIDDLE AISLE</text>`;
-  sp.rows.forEach((r, t) => { if(t < sp.rows.length - 1 && !sp.back(t)){ const gy = PAD + ys[t] + H; [[0, lw], [rx, rw]].forEach(bk => { b += `<rect x="${PAD + bk[0]}" y="${gy + 5}" width="${bk[1] - G}" height="${WG - 10}" rx="4" fill="${FLR_C.walk}"/><text x="${PAD + bk[0] + (bk[1] - G) / 2}" y="${gy + WG / 2 + 2.6}" font-size="7.5" fill="${FLR_C.walkT}" text-anchor="middle" letter-spacing="2.4">WALKWAY</text>`; }); } });
+  rect(-P, -P, totalW + 2 * P, totalH + 2 * P, { fill: FLR_C.floor, r: 14 });
+  rect(lw + 2, 0, AW - 4, totalH, { fill: FLR_C.aisle, r: 6 });
+  text(lw + AW / 2, totalH / 2, 'MIDDLE AISLE', { size: 8, color: FLR_C.walkT, anchor: 'middle', spacing: 3, rot: -90 });
+  sp.rows.forEach((r, t) => { if(t < sp.rows.length - 1 && !sp.back(t)){ const gy = ys[t] + H; [[0, lw], [rx, rw]].forEach(b => { rect(b[0], gy + 5, b[1] - G, WG - 10, { fill: FLR_C.walk, r: 4 }); text(b[0] + (b[1] - G) / 2, gy + WG / 2 + 2.6, 'WALKWAY', { size: 7.5, color: FLR_C.walkT, anchor: 'middle', spacing: 2.4 }); }); } });
   const cell = (id, x, y0) => {
-    const c = cells[id], m = c.m, p = c.p, d = c.d, stop = c.stop, cx = PAD + x, cy = PAD + y0, mid = m ? m.id : id, label = 'M/C ' + id;
-    const ok = !window.__mpOk || window.__mpOk[String(mid)];
-    let g = `<g style="${ok ? '' : 'opacity:.22;'}"><title>${E([m ? (m.name || label) : label, d ? d.name : (stop ? 'Stopped' : 'No design'), p.col, [p.c1, p.c2, p.c3].filter(Boolean).join(' / '), c.cat, p.since ? 'Since ' + p.since : ''].filter(Boolean).join(' · '))}</title>`;
-    g += `<rect x="${cx}" y="${cy}" width="${CW}" height="${H}" rx="7" fill="${stop ? FLR_C.floor : (d ? '#ffffff' : '#fffbeb')}" stroke="${stop ? '#aab3c2' : (d ? '#cdd4e0' : '#f0cf6a')}" stroke-width="1"${stop ? ' stroke-dasharray="3.5 3"' : ''}/>`;
-    if(!stop && d){ const bh = sxColHex(p.col || '')[0] || '#d9deea'; g += `<rect x="${cx + 9}" y="${cy + 5}" width="${CW - 18}" height="4" rx="2" fill="${bh}" stroke="rgba(15,23,42,.10)" stroke-width=".5"/>`; }
-    g += `<text x="${cx + 9}" y="${cy + 21}" font-size="${SZ.t}" fill="${stop ? FLR_C.off : FLR_C.mute}">${E(label)}</text>`;
-    if(m && (m.vip || (typeof machineCat === 'function' && machineCat(m) === 'VIP')) && !stop) g += `<polygon points="${flrStarPts(cx + CW - (canEd ? 29 : 13), cy + 18.5, 5.2).map(q => q[0].toFixed(1) + ',' + q[1].toFixed(1)).join(' ')}" fill="${FLR_C.star}"/>`;
-    if(stop) g += `<text x="${cx + CW / 2}" y="${cy + H / 2 + 4}" font-size="${SZ.s}" fill="${FLR_C.off}" text-anchor="middle">Stopped</text>`;
-    else { const n = c.L.length, y1 = n > 1 ? 34 : 38;
-      c.L.forEach((l, k) => { const FS = l.z, by = cy + (k === 0 ? y1 : y1 + 11.5);
-        if(l.dot){ const dr = 3, hx = l.dot, dw = hx.length ? (hx.length - 1) * dr * 1.5 + 2 * dr + 4 : 0, ft = flrFit(l.t, FS, false, CW - 18 - dw), x0 = cx + CW / 2 - (flrEst(ft, FS, false) + dw) / 2;
-          hx.forEach((q, i) => { g += `<circle cx="${(x0 + dr + i * dr * 1.5).toFixed(1)}" cy="${(by - 2.7).toFixed(1)}" r="${dr}" fill="${q}" stroke="rgba(15,23,42,.30)" stroke-width=".6"/>`; });
-          g += `<text x="${(x0 + dw).toFixed(1)}" y="${by.toFixed(1)}" font-size="${FS}" fill="${l.c}">${E(ft)}</text>`; }
-        else g += `<text x="${cx + CW / 2}" y="${by.toFixed(1)}" font-size="${FS}" fill="${l.c}" text-anchor="middle">${E(flrFit(l.t, FS, false, CW - 16))}</text>`; });
-      if(c.cat) g += `<text x="${cx + CW / 2}" y="${cy + H - 6}" font-size="${SZ.d}" fill="${FLR_C.acc}" text-anchor="middle">${E(flrFit(String(c.cat).toUpperCase(), SZ.d, false, CW - 14))}</text>`; }
-    if(canEd){ const pxc = cx + CW - 15, pyc = cy + 18; g += `<g class="mpEd" data-sk="mc" data-v="${E(mid)}" style="cursor:pointer"><title>Change the design on this machine</title><circle cx="${pxc}" cy="${pyc}" r="9" fill="transparent"/><path transform="translate(${pxc - 5} ${pyc - 5}) scale(${(10 / 24).toFixed(3)})" fill="#6b7694" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></g>`; }
-    return g + '</g>';
+    const m = (state.machines || []).find(q => String(q.id) === String(id)), p = m ? ((SK.plan.m || {})[m.id] || {}) : {}, d = p.des ? skDesign(p.des) : null, stop = !m || p.st === 'stop';
+    const mid = String(m ? m.id : id), xc = (typeof MP_XL !== 'undefined' && MP_XL[mid]) || [], cat = p.cat || (stop ? '' : xc[1]) || '', cl = [p.c1, p.c2, p.c3].filter(Boolean).join(' / ');
+    const ok = !window.__mpOk || window.__mpOk[mid], tag = { cell: mid, op: ok ? undefined : 0.22 };
+    titles[mid] = [m ? (m.name || 'M/C ' + id) : 'M/C ' + id, d ? d.name : (stop ? 'Stopped' : 'No design'), p.col, cl, cat, p.since ? 'Since ' + p.since : ''].filter(Boolean).join(' · ');
+    const R = (a, b, c, d2, o) => rect(a, b, c, d2, Object.assign({}, tag, o)), T = (a, b, s, o) => text(a, b, s, Object.assign({}, tag, o));
+    R(x, y0, CW, H, { fill: stop ? FLR_C.floor : (d ? '#ffffff' : '#fffbeb'), stroke: stop ? '#aab3c2' : (d ? '#cdd4e0' : '#f0cf6a'), sw: 1, dash: stop ? '3.5 3' : undefined, r: 7 });
+    if(!stop && d) R(x + 9, y0 + 5, CW - 18, 4, { fill: sxColHex(p.col || '')[0] || '#d9deea', r: 2 });
+    T(x + 9, y0 + 21, 'M/C ' + id, { size: 9.5, color: stop ? FLR_C.off : FLR_C.mute });
+    if(m && (m.vip || (typeof machineCat === 'function' && machineCat(m) === 'VIP')) && !stop) prims.push(Object.assign({ k: 'star', x: x + CW - 13, y: y0 + 18.5, r: 5.2, color: FLR_C.star }, tag));
+    if(stop){ T(x + CW / 2, y0 + H / 2 + 4, 'Stopped', { size: 9, color: FLR_C.off, anchor: 'middle' }); return; }
+    const hasCol = !!(d && p.col), y1 = hasCol ? 34 : 38;
+    if(!d) T(x + CW / 2, y0 + y1, 'No design', { size: 9, color: FLR_C.warn, anchor: 'middle' });
+    else {
+      T(x + CW / 2, y0 + y1, flrFit(d.name || '', 10, false, CW - 16), { size: 10, color: FLR_C.ink, anchor: 'middle' });
+      if(hasCol){ const hx = sxColHex(p.col).slice(0, 3), dr = 3, dw = hx.length ? (hx.length - 1) * dr * 1.5 + 2 * dr + 4 : 0, ft = flrFit(p.col, 9, false, CW - 18 - dw), x0 = x + CW / 2 - (flrEst(ft, 9, false) + dw) / 2, by = y0 + y1 + 11.5;
+        hx.forEach((q, i) => R(x0 + i * dr * 1.5, by - 2.7 - dr, 2 * dr, 2 * dr, { fill: q, stroke: '#6b7280', sw: 0.6, r: dr }));
+        T(x0 + dw, by, ft, { size: 9, color: FLR_C.mute }); }
+    }
+    if(cat) T(x + CW / 2, y0 + H - 6, flrFit(String(cat).toUpperCase(), 9, false, CW - 14), { size: 9, color: FLR_C.acc, anchor: 'middle' });
   };
-  sp.rows.forEach((r, t) => { r.L.forEach((id, i) => { b += cell(id, i * W, ys[t]); }); r.R.forEach((id, i) => { b += cell(id, rx + i * W, ys[t]); }); });
-  return `<div class="card" style="margin-bottom:22px;"><div style="overflow-x:auto;"><svg class="flrSvg" style="max-height:none" viewBox="0 0 ${totalW + 2 * PAD} ${totalH + 2 * PAD}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${E(dept)} machine layout">${b}</svg></div></div>`;
+  sp.rows.forEach((r, t) => { r.L.forEach((id, i) => cell(id, i * W, ys[t])); r.R.forEach((id, i) => cell(id, rx + i * W, ys[t])); });
+  return { dept, w: totalW, h: totalH, prims, titles };
+}
+function mpSvg(S, edit){
+  const P = FLR_PAD, E = skEsc, one = (p) => {
+    if(p.k === 'star') return `<polygon points="${flrStarPts(p.x, p.y, p.r).map(q => (q[0] + P).toFixed(2) + ',' + (q[1] + P).toFixed(2)).join(' ')}" fill="${p.color}"/>`;
+    if(p.k === 'rect') return `<rect x="${(p.x + P).toFixed(1)}" y="${(p.y + P).toFixed(1)}" width="${p.w}" height="${p.h}" rx="${p.r || 0}" fill="${p.fill || 'none'}"${p.stroke ? ` stroke="${p.stroke}" stroke-width="${p.sw || 1}"` : ''}${p.dash ? ` stroke-dasharray="${p.dash}"` : ''}/>`;
+    const tr = p.rot ? ` transform="rotate(${p.rot} ${p.x + P} ${p.y + P})"` : '';
+    return `<text x="${(p.x + P).toFixed(1)}" y="${(p.y + P).toFixed(1)}" font-size="${p.size}" fill="${p.color}" text-anchor="${p.anchor || 'start'}"${p.spacing ? ` letter-spacing="${p.spacing}"` : ''}${tr}>${E(p.s)}</text>`;
+  };
+  let b = '', cur = null, buf = '';
+  const flush = () => { if(cur === null) return; b += `<g${p0op(cur.op)}${edit ? ` data-sk="mc" data-v="${E(cur.cell)}" class="mpCl"` : ''}><title>${E(S.titles[cur.cell] || '')}</title>${buf}</g>`; buf = ''; cur = null; };
+  function p0op(o){ return o != null ? ` opacity="${o}"` : ''; }
+  S.prims.forEach(p => { if(p.cell === undefined){ flush(); b += one(p); return; } if(cur === null || cur.cell !== p.cell){ flush(); cur = { cell: p.cell, op: p.op }; } buf += one(p); });
+  flush();
+  return `<svg class="flrSvg${edit ? ' mpEd' : ''}" style="max-height:none" viewBox="0 0 ${S.w + 2 * P} ${S.h + 2 * P}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${E(S.dept)} machine layout">${b}</svg>`;
+}
+const MP_IC_EDIT = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>';
+const MP_IC_OK = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+skFloorSvg = function(dept, first){
+  const canEd = typeof skCanMach === 'function' && skCanMach(), edit = !!(SX.mpEdit && canEd);
+  const bar = first ? `<div class="asumTop flrTop"><span style="flex:1;"></span><button type="button" class="pillBtn" data-mp="pdf" title="Download as PDF" aria-label="Download PDF">${FLR_IC_DL}PDF</button><button type="button" class="pillBtn" data-mp="xls" title="Download as Excel" aria-label="Download Excel">${FLR_IC_DL}Excel</button>${canEd ? `<button type="button" class="pillBtn${edit ? ' on' : ''}" data-sx="mpedit" title="${edit ? 'Finish editing' : 'Change the design on a machine'}">${edit ? MP_IC_OK + 'Done' : MP_IC_EDIT + 'Edit'}</button>` : ''}</div>` : '';
+  return `<div class="card" style="margin-bottom:22px;">${bar}<div style="overflow-x:auto;">${mpSvg(mpModel(dept), edit)}</div></div>`;
 };
+async function mpPdf(){
+  const ds = (SK.dept === 'ALL' || !SK.dept) ? ['RVF', 'SSTM'] : [SK.dept].filter(d => d === 'RVF' || d === 'SSTM'); if(!ds.length) ds.push('RVF');
+  toast('Making the PDF…');
+  try{ if(!(window.jspdf && window.jspdf.jsPDF)) await rvfLoadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'); }catch(err){ console.error(err); toast('Could not load the PDF tool — check your connection'); return; }
+  try{
+    const pdf = new window.jspdf.jsPDF({ unit: 'mm', format: 'a4', orientation: 'landscape' }), PW = 297, PH = 210, M = 10, HD = 17, P = FLR_PAD;
+    ds.forEach((d, pi) => {
+      if(pi) pdf.addPage();
+      const S = mpModel(d); S.prims.forEach(p => { if(p.op != null) p.op = undefined; });
+      pdf.setFont('helvetica', 'normal'); pdf.setFontSize(7); pdf.setTextColor(79, 70, 229); pdf.text('RIYADH VELVET FACTORY', M, M + 2, { charSpace: 0.6 });
+      pdf.setFontSize(13); pdf.setTextColor(17, 24, 39); pdf.text('Machine Plan · ' + d, M, M + 9);
+      pdf.setFontSize(7.5); pdf.setTextColor(107, 114, 128); pdf.text('Created ' + rvfNowText(), PW - M, M + 9, { align: 'right' });
+      const availW = PW - 2 * M, top = M + HD, availH = PH - M - top, k = Math.min(availW / (S.w + 2 * P), availH / (S.h + 2 * P)), ox = M + (availW - (S.w + 2 * P) * k) / 2, oy = top;
+      S.prims.forEach(p => {
+        if(p.k === 'star'){ const pts = flrStarPts(p.x + P, p.y + P, p.r).map(q => [ox + q[0] * k, oy + q[1] * k]), c = flrRgb(p.color); pdf.setFillColor(c[0], c[1], c[2]); pdf.lines(pts.slice(1).map((q, i) => [q[0] - pts[i][0], q[1] - pts[i][1]]), pts[0][0], pts[0][1], [1, 1], 'F', true); }
+        else if(p.k === 'rect'){
+          const x = ox + (p.x + P) * k, y = oy + (p.y + P) * k, w = p.w * k, h = p.h * k, r = (p.r || 0) * k;
+          if(p.fill){ const c = flrRgb(p.fill); pdf.setFillColor(c[0], c[1], c[2]); }
+          if(p.stroke){ const c = flrRgb(p.stroke); pdf.setDrawColor(c[0], c[1], c[2]); pdf.setLineWidth((p.sw || 1) * k); }
+          if(p.dash){ const q = p.dash.split(' ').map(Number); pdf.setLineDashPattern([q[0] * k, (q[1] || q[0]) * k], 0); } else pdf.setLineDashPattern([], 0);
+          const st = p.fill && p.stroke ? 'FD' : p.fill ? 'F' : 'S';
+          if(r > 0) pdf.roundedRect(x, y, w, h, r, r, st); else pdf.rect(x, y, w, h, st);
+        } else {
+          const c = flrRgb(p.color); pdf.setTextColor(c[0], c[1], c[2]); pdf.setFont('helvetica', 'normal'); pdf.setFontSize(p.size * k * 2.835);
+          const opt = { align: p.anchor === 'middle' ? 'center' : 'left' }; if(p.spacing) opt.charSpace = p.spacing * k;
+          const tx = ox + (p.x + P) * k; let ty = oy + (p.y + P) * k;
+          if(p.rot){ opt.align = 'left'; opt.angle = -p.rot; if(p.spacing) pdf.setCharSpace(p.spacing * k); const tw = pdf.getTextWidth(String(p.s)); if(p.spacing) pdf.setCharSpace(0); ty += tw / 2; }
+          pdf.text(rvfAsciiFold(p.s), tx, ty, opt);
+        }
+      });
+      pdf.setLineDashPattern([], 0);
+    });
+    pdf.save('machine-plan-' + (ds.length > 1 ? 'all' : ds[0].toLowerCase()) + '-' + rvfDateStamp() + '.pdf');
+  }catch(err){ console.error(err); toast('Could not make the PDF'); }
+}
+document.addEventListener('click', (ev) => {
+  const e1 = ev.target.closest && ev.target.closest('[data-sx="mpedit"]'); if(e1){ SX.mpEdit = !SX.mpEdit; skRender(); return; }
+  const e2 = ev.target.closest && ev.target.closest('[data-mp]'); if(!e2) return;
+  if(e2.dataset.mp === 'pdf') mpPdf(); else if(e2.dataset.mp === 'xls') sxDl('mp');
+});
 
 /* ---------- shared by all Stock pages: clickable summary tiles (filter the table in place) and paged one-line lists ---------- */
 function sxTileF(page, key, val, l, v, s, tab, ic, tone){
