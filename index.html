@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261121-162325">
+<meta name="rvf-build" content="20261121-163548">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -28855,6 +28855,11 @@ td.cmpOldBest .cmpD{ color:#b45309; text-transform:uppercase; letter-spacing:.04
 .sxWc{ flex:0 0 70px; font:600 11px ui-monospace,Menlo,Consolas,monospace; color:#64748b; } .sxWn{ flex:1 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; } .sxWs{ font-size:11px; color:#94a3b8; white-space:nowrap; }
 .sxWbtn{ border:1px solid #e3e7ef; background:#fff; color:#4f46e5; border-radius:999px; height:24px; padding:0 12px; font:600 11px Inter,system-ui,sans-serif; cursor:pointer; } .sxWbtn:hover{ background:#f7f7ff; border-color:#c7cbf5; }
 @media (max-width:640px){ .sxWs{ display:none; } .sxWc{ flex-basis:58px; } }
+.sxMore{margin:10px 0 4px;border:1px solid var(--border);border-radius:12px;padding:0 12px;background:var(--surface-2,transparent);}
+.sxMore>summary{cursor:pointer;padding:10px 0;font-size:12.5px;font-weight:600;color:var(--muted);list-style:none;}
+.sxMore>summary::-webkit-details-marker{display:none;}
+.sxMore[open]>summary{border-bottom:1px solid var(--border);margin-bottom:10px;}
+.sxMoreB{padding-bottom:10px;}
 </style>
 <div id="rvfBusy"><i></i><span id="rvfBusyTxt">Loading data…</span></div>
 <script>
@@ -31402,6 +31407,23 @@ document.addEventListener('click', (ev) => {
   if(el.dataset.sx === 'ywaitwp'){ SX.yk3 = 'in'; yOpenWp(); return; }
   const i = yItem(el.dataset.v); if(!i) return; SX.yk2 = 'in'; yOpenRew(); const e = $('yI'); if(e){ e.value = yLbl(i); yRewInfo(); const g = $('yGross'); if(g) g.focus(); }
 });
+
+/* ---------- p266 item form: fewer boxes (finished goods) ---------- */
+function sxItemTidy(){
+  const m = document.getElementById('skModal'); if(!m || !$('sfG') || !$('sfN')) return;
+  const lb = (id, t) => { const e = $(id), l = e && (e.previousElementSibling && e.previousElementSibling.tagName === 'LABEL' ? e.previousElementSibling : e.parentElement.querySelector('label')); if(l) l.textContent = t; };
+  lb('sfG', 'Category'); lb('sfCo', 'Colours'); lb('sfXkind', 'Carpet / Prayer mat'); lb('sfXmt', 'Type (MR / VL)');
+  if(!window.__skEditId) Array.from($('sfG').options).forEach(o => { if(o.value === 'q2') o.remove(); });
+  const cl = $('sfXcl'); if(cl && cl.parentElement){ cl.parentElement.classList.remove('sxXg'); cl.parentElement.style.display = 'none'; }
+  const kw = $('sfXkind') && $('sfXkind').parentElement, mw = $('sfXmt') && $('sfXmt').parentElement, szg = $('sfXsize') && $('sfXsize').closest('.skGrid2');
+  const ndg = $('sfXnd') && $('sfXnd').closest('.skGrid2'), vg = $('sfXmodel') && $('sfXmodel').closest('.skGrid2');
+  if(szg && kw && mw){ const g = document.createElement('div'); g.className = 'skGrid2'; g.appendChild(kw); g.appendChild(mw); szg.after(g); let at = g; [ndg, vg].forEach(x => { if(x){ at.after(x); at = x; } }); }
+  const mo = document.createElement('details'); mo.className = 'sxMore'; mo.innerHTML = '<summary>More options</summary><div class="skGrid2 sxMoreB"></div>';
+  const box = mo.querySelector('.sxMoreB'); ['sfA', 'sfDn', 'sfS', 'sfP', 'sfT'].forEach(id => { const e = $(id); if(e && e.parentElement){ const w = e.parentElement; w.style.display = ''; box.appendChild(w); } });
+  const anc = $('sfO') ? $('sfO').previousElementSibling : $('sfB') ? $('sfB').previousElementSibling : null; if(anc) anc.before(mo);
+  m.querySelectorAll('.skGrid2').forEach(g => { if(!g.children.length) g.remove(); });
+}
+(function(){ const o = skItemForm; skItemForm = function(){ const r = o.apply(this, arguments); sxItemTidy(); sxXToggle(); return r; }; })();
 
 /* ---- clicks ---- */
 document.addEventListener('click', (ev) => {
