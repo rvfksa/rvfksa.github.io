@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261121-165135">
+<meta name="rvf-build" content="20261121-165332">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -29766,7 +29766,7 @@ function sxFsRow(i, R){
   const av = `<span class="${L === 'ok' ? '' : 'sxBad'}" title="${L === 'out' ? 'Out of stock' : L === 'low' ? 'Below the minimum' : ''}">${skNum(b)}</span>`;
   const pcs = R && R.p != null ? sxN(R.p) : per > 0 && !up ? sxN(b * per) : sxDash;
   const flc = fl > 0 ? `<span class="sxFl">${skNum(fl)}</span>` : '<span class="sxSm2">0</span>';
-  const col = R && R.det && R.det.length ? R.det.map(d => sxColT(d.col) + '<small class="sxSm2"> ' + sxN(d.p) + '</small>').join(' ') + (R.rest > 0.0001 && i.col ? ' ' + sxColT(i.col) : '') : i.col ? sxColT(i.col) : sxDash, FO = sxFloorOn();
+  const col = R && R.det && R.det.length ? R.det.map(d => '<span style="white-space:nowrap;display:inline-block;margin:0 8px 2px 0;">' + sxColT(d.col) + '<small class="sxSm2"> ' + sxN(d.p) + '</small></span>').join('') + (R.rest > 0.0001 && i.col ? ' ' + sxColT(i.col) : '') : i.col ? sxColT(i.col) : sxDash, FO = sxFloorOn();
   const ed = sxCan('fst') ? `<button type="button" class="mini-icon-btn" data-sx="fsm" data-v="${skEsc(i.id)}" data-k="in" title="Put stock in or out" aria-label="Put stock in or out">${sxIc('pen', 13)}</button>` : '';
   const t = (v) => v ? skEsc(v) : sxDash, sz = sxSizeOf(i), szc = sz ? skEsc(sxFmtSize(sz)) : sxDash, kc = `<span class="sxSm2" style="color:var(--text);">${SX_KN[kd]}</span>`;
   if(g === 'cr') return [code, name, sxTyOf(i), szc, t(P.nd), t(P.nc), col, av, pcs].concat(FO ? [flc] : [], [ed]);
