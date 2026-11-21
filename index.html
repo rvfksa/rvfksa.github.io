@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261121-113556">
+<meta name="rvf-build" content="20261121-113708">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -31121,11 +31121,11 @@ function cmpMark(){
       if(d){ if(v && old){ const p = (v - old) / old * 100; d.textContent = (p > 0 ? '+' : '') + (Math.round(p * 10) / 10) + '%'; d.className = 'cmpD ' + (p > 0 ? 'up' : p < 0 ? 'dn' : ''); } else { d.textContent = ''; d.className = 'cmpD'; } }
     });
   });
-  const grand = c.sups.map((s, k) => sums[k] ? sums[k] + cmpNum((c.ship[k] || {}).a) : 0), gl = Math.min.apply(null, grand.filter(x => x > 0).concat([Infinity]));
+  const grand = c.sups.map((s, k) => sums[k] ? sums[k] + cmpNum((c.ship[k] || {}).a) : 0), gl = Math.min.apply(null, grand.filter((x, k) => x > 0 && !miss[k]).concat([Infinity]));
   c.sups.forEach((s, k) => {
     const it = document.querySelector('[data-it="' + k + '"]'), g = document.querySelector('[data-gr="' + k + '"]'), w = document.querySelector('[data-w="' + k + '"]');
     if(it) it.innerHTML = sums[k] ? cmpFmt(sums[k]) + (miss[k] ? `<div class="cmpD">${miss[k]} not priced</div>` : '') : '';
-    if(g){ g.textContent = grand[k] ? cmpFmt(grand[k]) : ''; g.classList.toggle('cmpLow', grand[k] > 0 && grand[k] === gl && !miss.some(m => m && false)); }
+    if(g){ g.textContent = grand[k] ? cmpFmt(grand[k]) : ''; g.classList.toggle('cmpLow', grand[k] > 0 && grand[k] === gl && !miss[k]); }
     if(w) w.textContent = wins[k] || '';
   });
 }
