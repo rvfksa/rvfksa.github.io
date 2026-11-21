@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261121-162041">
+<meta name="rvf-build" content="20261121-162325">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -29838,7 +29838,7 @@ function sxOpenForm(kind){
 function sxMachFill(id){ const m = (state.machines || []).find(x => String(x.id) === String(id)); if(!m) return; const p = (SK.plan.m || {})[m.id] || {}, d = p.des ? skDesign(p.des) : null; const it = $('sxItem'); if(it && !it.value) it.value = d ? d.name + (p.col ? ' ' + p.col : '') : ''; const ty = $('sxType'); if(ty && !ty.value && machineCat(m)) ty.value = machineCat(m); const de = $('sxDept'); if(de && !de.value && m.department) de.value = m.department; }
 function sxFsModal(id, k){
   if(SX.fsub === 'q2'){ SX.fsub = 'cr'; SX.fqual = '2'; }
-  const g = SX.fsub, QQ = sxQual(), i = id ? skItem(id) : null, two = (g === 'cr' || g === 'vip') && QQ !== '2'; k = k || 'in'; if(QQ === '2' && (k === 'fl' || k === 'pk')) k = 'in'; SX.fsk = k; SX.fsid = i ? i.id : '';
+  const g = SX.fsub, QQ = sxQual(), i = id ? skItem(id) : null, two = (g === 'cr' || g === 'vip') && QQ !== '2' && sxFloorOn(); k = k || 'in'; if(!two && (k === 'fl' || k === 'pk')) k = 'in'; if(QQ === '2' && (k === 'fl' || k === 'pk')) k = 'in'; SX.fsk = k; SX.fsid = i ? i.id : '';
   const lab = { in: g === 'up' ? 'IN · received / produced' : 'PACKED IN · ready to sell', fl: 'FLOOR IN · finished, not packed yet', pk: 'PACK · floor stock to ready', out: 'OUT · sold / used' }[k];
   const ks = two ? [['in', 'Packed in'], ['fl', 'Floor in'], ['pk', 'Pack'], ['out', 'Out']] : [['in', 'In'], ['out', 'Out']], qks = [['1', '1st quality'], ['2', '2nd quality']];
   const items = SK.items.filter(x => x.on !== false && (QQ === '2' ? sxQCat(x) === g : x.g === g)).slice().sort((a, c) => String(a.name).localeCompare(String(c.name)) || String(a.col || '').localeCompare(String(c.col || '')));
