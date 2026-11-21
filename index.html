@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261121-135508">
+<meta name="rvf-build" content="20261121-140240">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -31105,7 +31105,7 @@ function cmpEditHtml(){
   const ords = (pc.open || []).filter(x => x.items && x.items.length);
   const picker = c.isNew ? `<div class="cmpPick"><select data-cmp="order"><option value="">Choose an order…</option>${ords.map(x => `<option value="${pcEsc(x.id)}" ${x.id === c.oid ? 'selected' : ''}>${pcEsc(x.id)}${x.dept ? ' · ' + pcEsc(x.dept) : ''} · ${x.items.length} items</option>`).join('')}</select></div>` : '';
   const cur = c.cur || 'SAR';
-  const bar = `<div class="cmpBar"><button class="pcBtnSoft sm" data-cmp="back">‹ Back</button><b class="cmpTitle">${pcEsc(c.label || 'New comparison')}</b><span class="grow"></span>${c.isNew ? '' : `<button class="pcBtnSoft sm danger" data-cmp="del">${pcSvg('trash', 13)}Delete</button>`}<button class="pcBtnSoft sm" data-cmp="dl" title="Download a copy (Excel)">${pcSvg('down', 13)}Download</button><button class="pcBtnMain sm" data-cmp="save">Save</button></div>`;
+  const bar = `<div class="cmpBar"><button class="pcBtnSoft sm" data-cmp="back">‹ Back</button><b class="cmpTitle">${pcEsc(c.label || 'New comparison')}</b><span class="grow"></span>${c.isNew ? '' : `<button class="pcBtnSoft sm danger" data-cmp="del">${pcSvg('trash', 13)}Delete</button>`}<button class="pcBtnSoft sm" data-cmp="pdf" title="Download a PDF copy">${pcSvg('down', 13)}PDF</button><button class="pcBtnSoft sm" data-cmp="dl" title="Download a copy (Excel)">${pcSvg('down', 13)}Excel</button><button class="pcBtnMain sm" data-cmp="save">Save</button></div>`;
   if(!c.rows.length) return bar + '<div class="card cmpCardBox">' + picker + '<div class="hrEmpty">Choose an order to start.</div></div>';
   const th = c.sups.map((s, k) => `<th class="cmpS"><div class="cmpSH"><input type="text" list="cmpSupL" autocomplete="off" data-cmp="sup" data-k="${k}" placeholder="Supplier ${k + 1}" value="${pcEsc(s)}">${c.sups.length > 1 ? `<button class="cmpX" data-cmp="supdel" data-k="${k}" title="Remove supplier">×</button>` : ''}</div></th>`).join('');
   if(typeof pp !== 'undefined' && !pp.sups && !pp.supLoading) pcpLoadSups().then(() => { const dl = document.getElementById('cmpSupL'); if(dl) dl.innerHTML = cmpSupOpts(); }).catch(() => {});
@@ -31231,6 +31231,7 @@ document.addEventListener('click', (e) => {
   else if(a === 'save') cmpSave();
   else if(a === 'mode'){ CMP.mode = el.dataset.v; pcRender(); }
   else if(a === 'dl' && c) cmpDl(c);
+  else if(a === 'pdf' && c) cmpPdf(c);
   else if(a === 'del'){ if(c && confirm('Delete this comparison?')){ CMP.list = CMP.list.filter(x => x.id !== c.id); cmpPersist().then(() => toast('Deleted')).catch(() => toast('Could not delete')); CMP.cur = null; pcRender(); } }
   else if(a === 'supadd' && c){ c.sups.push(''); c.rows.forEach(r => r.pr.push('')); cmpShip(c); pcRender(); }
   else if(a === 'supdel' && c){ const k = +el.dataset.k; c.sups.splice(k, 1); c.rows.forEach(r => r.pr.splice(k, 1)); c.ship.splice(k, 1); pcRender(); }
@@ -31259,6 +31260,45 @@ function cmpDl(c){
   rows.push(['', 'Advance amount', '', '', ''].concat(sm.map((v, k) => { const g = v ? v - cmpDisc(c, k, v) + cmpNum(c.ship[k].a) : 0; return g && cmpNum(c.ship[k].p) ? Math.round(g * cmpNum(c.ship[k].p)) / 100 : ''; })));
   rows.push(['', 'Lowest on (items)', '', '', ''].concat(lows));
   skDlXlsx('comparison-' + (c.oid || 'quotes'), 'Comparison', rows);
+}
+
+/* compare: PDF copy that looks like the screen */
+async function cmpPdf(c){
+  if(!c.rows.length){ toast('Choose an order first'); return; }
+  cmpShip(c);
+  const tot = CMP.mode === 'total', ns = c.sups.length;
+  const sn = c.sups.map((x, k) => x || 'Supplier ' + (k + 1)), E = (t) => assignEsc(String(t == null ? '' : t));
+  const sums = c.sups.map(() => 0), miss = c.sups.map(() => 0), wins = c.sups.map(() => 0); let bsum = 0, bmiss = 0;
+  const cell = 'padding:5px 6px; border-bottom:1px solid #eef0f5; text-align:center; vertical-align:middle; font-size:11px;';
+  const box = (txt, kind, sub, subCol) => { const st = { n: 'background:#fff; border:1px solid #dfe3ec; color:#1e293b;', g: 'background:#e9f9f0; border:1px solid #7fd3a0; color:#0f6b3a;', o: 'background:#fff3e2; border:1px solid #f2b36b; color:#9a4a05;', old: 'background:#f4f5f8; border:1px solid #e6e8ee; color:#64748b;' }[kind || 'n'];
+    return `<div style="${st} border-radius:7px; padding:5px 4px; font-weight:700; min-height:16px;">${txt === '' ? '&nbsp;' : E(txt)}</div><div style="font-size:8.5px; font-weight:700; height:11px; margin-top:1px; color:${subCol || '#94a3b8'};">${sub ? E(sub) : '&nbsp;'}</div>`; };
+  const body = c.rows.map((r, i) => {
+    const b = cmpBest(c, r), old = cmpNum(r.old), qt = cmpNum(r.q) || 1;
+    const oc = box(old ? cmpFmt(old * (tot ? qt : 1)) : '', b.oldBest ? 'o' : 'old', b.oldBest ? 'BEST' : '', '#b45309');
+    const sc = c.sups.map((s, k) => { const v = cmpNum(r.pr[k]), low = v > 0 && v === b.low && !b.oldBest; if(low) wins[k]++; if(v) sums[k] += v * qt; else miss[k]++;
+      let sub = '', col = '#94a3b8'; if(v && old){ const p = (v - old) / old * 100; sub = (p > 0 ? '+' : '') + (Math.round(p * 10) / 10) + '%'; col = p > 0 ? '#dc2626' : p < 0 ? '#16a34a' : '#94a3b8'; }
+      return `<td style="${cell}">${box(v ? cmpFmt(v * (tot ? qt : 1)) : '', low ? 'g' : 'n', sub, col)}</td>`; }).join('');
+    if(b.v) bsum += b.v * qt; else bmiss++;
+    return `<tr><td style="${cell} color:#94a3b8; width:22px;">${i + 1}</td><td style="${cell} text-align:left;"><div style="font-weight:700; font-size:11.5px; color:#1e293b;">${E(r.n)}</div><div style="font-size:9px; color:#94a3b8;">${E(r.cd)}${r.q ? ' &nbsp; ' + E(r.q) + ' ' + E(r.u || '') : ''}</div></td><td style="${cell}">${oc}</td>${sc}<td style="${cell} background:#f5f6ff; border-left:1px solid #dfe2fb;"><div style="font-weight:800; font-size:13px; color:#3730a3; min-height:26px; line-height:26px;">${b.v ? cmpFmt(b.v * (tot ? qt : 1)) : '&nbsp;'}</div><div style="font-size:8.5px; font-weight:700; color:#6366a8; height:11px;">${b.v ? E(b.s) : '&nbsp;'}</div></td></tr>`;
+  });
+  const grand = c.sups.map((s, k) => sums[k] ? sums[k] - cmpDisc(c, k, sums[k]) + cmpNum(c.ship[k].a) : 0), gl = Math.min.apply(null, grand.filter((x, k) => x > 0 && !miss[k]).concat([Infinity]));
+  const lab = (t, st) => `<td style="${cell} background:#f8fafc;"></td><td style="${cell} background:#f8fafc; text-align:left; font-weight:700; color:#475569; ${st || ''}">${t}</td><td style="${cell} background:#f8fafc;"></td>`;
+  const bc = (t, st) => `<td style="${cell} background:#eceefe; border-left:1px solid #dfe2fb; font-weight:800; color:#3730a3; ${st || ''}">${t || '&nbsp;'}</td>`;
+  const sm = (fn, st) => c.sups.map((s, k) => `<td style="${cell} background:#f8fafc; ${st || ''}">${fn(k)}</td>`).join('');
+  const sumTr = `<tr>${lab('Items total')}${sm(k => sums[k] ? E(cmpFmt(sums[k])) + (miss[k] ? `<div style="font-size:8.5px; color:#94a3b8;">${miss[k]} not priced</div>` : '') : '&nbsp;', 'font-weight:700; font-size:12px;')}${bc(bsum ? cmpFmt(bsum) : '')}</tr>`;
+  const shipTr = `<tr>${lab('Shipping')}${sm(k => { const a = cmpNum(c.ship[k].a); return (a ? E(cmpFmt(a)) : '&nbsp;') + (c.ship[k].n ? `<div style="font-size:9px; color:#64748b;">${E(c.ship[k].n)}</div>` : ''); }, 'font-weight:600;')}${bc('')}</tr>`;
+  const discTr = `<tr>${lab('Discount')}${sm(k => { const dv = sums[k] ? cmpDisc(c, k, sums[k]) : 0; return c.ship[k].d ? E(c.ship[k].d) + (dv ? `<div style="font-size:9px; color:#64748b;">- ${E(cmpFmt(dv))}</div>` : '') : '&nbsp;'; }, 'font-weight:600;')}${bc('')}</tr>`;
+  const grTr = `<tr>${lab('Total to pay', 'color:#312e81;').replace(/background:#f8fafc/g, 'background:#eef2ff')}${c.sups.map((s, k) => `<td style="${cell} background:${grand[k] > 0 && grand[k] === gl && !miss[k] ? '#d1f5df' : '#eef2ff'}; font-weight:800; font-size:14px; color:${grand[k] > 0 && grand[k] === gl && !miss[k] ? '#0f6b3a' : '#312e81'}; border-top:1px solid #c7cbf5;">${grand[k] ? E(cmpFmt(grand[k])) : '&nbsp;'}</td>`).join('')}${bc(bsum ? cmpFmt(bsum) : '', 'font-size:14px; border-top:1px solid #c7cbf5;')}</tr>`;
+  const advTr = `<tr>${lab('Advance')}${sm(k => { const p = cmpNum(c.ship[k].p); return p ? E(p + '%') + (grand[k] ? `<div style="font-size:9px; color:#64748b;">${E(cmpFmt(grand[k] * p / 100))}</div>` : '') : '&nbsp;'; }, 'font-weight:600;')}${bc('')}</tr>`;
+  const lowTr = `<tr>${lab('Lowest on', 'font-size:9.5px; color:#94a3b8;')}${sm(k => wins[k] || '&nbsp;', 'font-size:9.5px; color:#94a3b8;')}${bc('', '')}</tr>`;
+  const th = (t, st) => `<th style="padding:6px; font-size:9.5px; text-transform:uppercase; letter-spacing:.04em; color:#64748b; text-align:center; border-bottom:2px solid #e3e7ef; ${st || ''}">${t}</th>`;
+  const thead = `<thead><tr>${th('#')}${th('Product', 'text-align:left;')}${th('Old price')}${sn.map(x => th(E(x), 'color:#1e293b; font-size:10.5px;')).join('')}${th('Best price', 'color:#3730a3;')}</tr></thead>`;
+  const tbl = (rows) => `<table style="width:100%; border-collapse:collapse; font-family:Inter,Arial,sans-serif;">${thead}<tbody>${rows}</tbody></table>`;
+  const per = 14, blocks = [rvfPdfHeader('Quotation comparison', [c.label || '', (c.cur || 'SAR') + ' · ' + (tot ? 'Quantity × price' : 'Price per piece') + ' · ' + fmtDate(pcDateStr(Date.now()))])];
+  for(let i = 0; i < body.length; i += per) blocks.push(tbl(body.slice(i, i + per).join('')));
+  blocks.push(tbl(sumTr + shipTr + discTr + grTr + advTr + lowTr));
+  toast('Making the PDF…');
+  await rvfMakePdf(blocks, 'comparison-' + (c.oid || 'quotes') + '.pdf', { landscape: true });
 }
 
 /* ---- clicks ---- */
