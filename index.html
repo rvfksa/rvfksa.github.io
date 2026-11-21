@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261121-133055">
+<meta name="rvf-build" content="20261121-134307">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -31174,13 +31174,13 @@ async function cmpSave(){
     const rec = { id: c.id, t: Date.now(), by: pcMe(), oid: c.oid, label: c.label, cur: c.cur, sups: c.sups.slice(), ship: (c.ship || []).map(x => ({ a: x.a || '', n: x.n || '', d: x.d || '', p: x.p || '' })), rows: c.rows.map(r => ({ oi: r.oi, n: r.n, cd: r.cd, d: r.d, q: r.q, u: r.u, old: r.old || '', pr: r.pr.slice() })) };
     const k = CMP.list.findIndex(x => x.id === c.id);
     if(k >= 0) CMP.list[k] = rec; else CMP.list.push(rec);
-    await cmpPersist(); c.isNew = false; toast('Comparison saved');
+    await cmpPersist(); c.isNew = false; c.dirty = false; toast('Comparison saved');
   }catch(e){ console.error(e); toast('Could not save'); }
   CMP.busy = false; pcRender();
 }
 document.addEventListener('input', (e) => {
   const el = e.target.closest && e.target.closest('[data-cmp]'); const c = CMP.cur; if(!el || !c) return;
-  const a = el.dataset.cmp;
+  const a = el.dataset.cmp; c.dirty = true;
   if(a === 'sup'){ c.sups[+el.dataset.k] = el.value; }
   else if(a === 'old'){ c.rows[+el.dataset.i].old = el.value; cmpMark(); }
   else if(a === 'sha'){ c.ship[+el.dataset.k].a = el.value; cmpMark(); }
@@ -31198,7 +31198,7 @@ document.addEventListener('click', (e) => {
   const a = el.dataset.cmp, c = CMP.cur;
   if(a === 'new'){ CMP.cur = { id: 'c' + Date.now().toString(36), isNew: true, oid: '', label: '', cur: 'SAR', sups: ['', '', ''], ship: [{ a: '', n: '', d: '', p: '' }, { a: '', n: '', d: '', p: '' }, { a: '', n: '', d: '', p: '' }], rows: [] }; pcRender(); }
   else if(a === 'open'){ const r = CMP.list.find(x => x.id === el.dataset.id); if(r){ CMP.cur = JSON.parse(JSON.stringify(r)); cmpShip(CMP.cur); const oo = cmpOrder(CMP.cur.oid); if(oo && cmpSync(CMP.cur, oo)) toast('Updated from the order — press Save to keep'); pcRender(); } }
-  else if(a === 'back'){ CMP.cur = null; pcRender(); }
+  else if(a === 'back'){ if(c && c.dirty && !confirm('You have changes not saved. Leave without saving?')) return; CMP.cur = null; pcRender(); }
   else if(a === 'save') cmpSave();
   else if(a === 'mode'){ CMP.mode = el.dataset.v; pcRender(); }
   else if(a === 'dl' && c) cmpDl(c);
