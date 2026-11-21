@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261121-134307">
+<meta name="rvf-build" content="20261121-135342">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -28835,6 +28835,19 @@ button.mpS.on{background:#eef0fd;border-color:#6366f1}
 .cmpT tr.cmpGrand td.cmpLow{ background:#bbf7d0; color:#14532d; }
 .cmpT tr.cmpLast td{ font:600 10.5px Inter,system-ui,sans-serif; color:#94a3b8; border-bottom:0; } .cmpT tr.cmpLast td.cmpP{ font-size:10.5px; color:#94a3b8; }
 .cmpT tr.cmpB td.cmpN, .cmpT tr.cmpB td.cmpP{ background:#f8fafc; } .cmpT tr.cmpGrand td.cmpN, .cmpT tr.cmpGrand td.cmpP{ background:#eef2ff; }
+
+/* compare v2: aligned boxes, softer colours, best column */
+.cmpT tr[data-i] td{ vertical-align:middle; background:transparent; } .cmpT tr[data-i] td.cmpN, .cmpT tr[data-i] td.cmpP{ background:#fff; }
+.cmpT td.cmpLow{ background:transparent; } .cmpT tr.cmpGrand td.cmpLow{ background:#d1f5df; color:#0f6b3a; }
+.cmpIn, .cmpTot{ width:100%; height:34px; box-sizing:border-box; border:1px solid #dfe3ec; border-radius:9px; background:#fff; text-align:center; font:600 13px Inter,system-ui,sans-serif; color:#1e293b; padding:0 4px; }
+.cmpTot{ line-height:32px; } .cmpOld, td[data-co] .cmpTot{ background:#f4f5f8; color:#64748b; border-color:#e6e8ee; }
+.cmpT tr[data-i] td.cmpLow .cmpIn, .cmpT tr[data-i] td.cmpLow .cmpTot{ background:#e9f9f0; border-color:#7fd3a0; color:#0f6b3a; }
+.cmpT tr[data-i] td.cmpOldBest .cmpIn, .cmpT tr[data-i] td.cmpOldBest .cmpTot{ background:#fff3e2; border-color:#f2b36b; color:#9a4a05; }
+td.cmpOldBest .cmpD{ color:#b45309; text-transform:uppercase; letter-spacing:.04em; font-size:9.5px; }
+.cmpD{ height:12px; line-height:12px; margin-top:2px; font:600 10px Inter,system-ui,sans-serif; color:#94a3b8; text-align:center; white-space:nowrap; }
+.cmpBh{ min-width:96px; color:#3730a3 !important; } .cmpBc{ min-width:96px; background:#f5f6ff !important; border-left:1px solid #dfe2fb; }
+.cmpBv{ height:34px; line-height:34px; font:700 14px Inter,system-ui,sans-serif; color:#3730a3; } .cmpBc .cmpD{ color:#6366a8; overflow:hidden; text-overflow:ellipsis; max-width:100px; margin:2px auto 0; }
+.cmpT tr.cmpB td.cmpBc, .cmpT tr.cmpGrand td.cmpBc{ background:#eceefe !important; } .cmpT tr.cmpGrand td.cmpBc{ color:#3730a3; }
 </style>
 <div id="rvfBusy"><i></i><span id="rvfBusyTxt">Loading data…</span></div>
 <script>
@@ -31094,46 +31107,58 @@ function cmpEditHtml(){
   const cur = c.cur || 'SAR';
   const bar = `<div class="cmpBar"><button class="pcBtnSoft sm" data-cmp="back">‹ Back</button><b class="cmpTitle">${pcEsc(c.label || 'New comparison')}</b><span class="grow"></span>${c.isNew ? '' : `<button class="pcBtnSoft sm danger" data-cmp="del">${pcSvg('trash', 13)}Delete</button>`}<button class="pcBtnSoft sm" data-cmp="dl" title="Download a copy (Excel)">${pcSvg('down', 13)}Download</button><button class="pcBtnMain sm" data-cmp="save">Save</button></div>`;
   if(!c.rows.length) return bar + '<div class="card cmpCardBox">' + picker + '<div class="hrEmpty">Choose an order to start.</div></div>';
-  const th = c.sups.map((s, k) => `<th class="cmpS"><div class="cmpSH"><input type="text" data-cmp="sup" data-k="${k}" placeholder="Supplier ${k + 1}" value="${pcEsc(s)}">${c.sups.length > 1 ? `<button class="cmpX" data-cmp="supdel" data-k="${k}" title="Remove supplier">×</button>` : ''}</div></th>`).join('');
+  const th = c.sups.map((s, k) => `<th class="cmpS"><div class="cmpSH"><input type="text" list="cmpSupL" autocomplete="off" data-cmp="sup" data-k="${k}" placeholder="Supplier ${k + 1}" value="${pcEsc(s)}">${c.sups.length > 1 ? `<button class="cmpX" data-cmp="supdel" data-k="${k}" title="Remove supplier">×</button>` : ''}</div></th>`).join('');
+  if(window.pp && !pp.sups && !pp.supLoading) pcpLoadSups().then(() => { const dl = document.getElementById('cmpSupL'); if(dl) dl.innerHTML = cmpSupOpts(); }).catch(() => {});
   const tot = CMP.mode === 'total';
   const body = c.rows.map((r, i) => {
     const ph = cmpPhotos(c, r).length;
     return `<tr data-i="${i}"><td class="cmpN">${i + 1}</td><td class="cmpP"><div class="cmpPn">${pcEsc(r.n)}</div><div class="cmpPc">${r.cd ? pcEsc(r.cd) : ''}${r.q ? `<span>${pcEsc(r.q)} ${pcEsc(r.u || '')}</span>` : ''}${ph ? `<button class="cmpPh" data-cmp="photo" data-i="${i}" title="See photo">${pcSvg('cam', 13)}</button>` : ''}</div></td>
-      <td data-co="${i}">${tot ? '<div class="cmpTot"></div>' : `<input class="cmpIn cmpOld" inputmode="decimal" data-cmp="old" data-i="${i}" placeholder="—" value="${pcEsc(r.old || '')}">`}</td>
-      ${c.sups.map((s, k) => `<td data-c="${i}-${k}">${tot ? '<div class="cmpTot"></div>' : `<input class="cmpIn" inputmode="decimal" data-cmp="pr" data-i="${i}" data-k="${k}" placeholder="—" value="${pcEsc(r.pr[k] || '')}">`}<div class="cmpD"></div></td>`).join('')}</tr>`;
+      <td data-co="${i}">${tot ? '<div class="cmpTot"></div>' : `<input class="cmpIn cmpOld" inputmode="decimal" data-cmp="old" data-i="${i}" placeholder="—" value="${pcEsc(r.old || '')}">`}<div class="cmpD"></div></td>
+      ${c.sups.map((s, k) => `<td data-c="${i}-${k}">${tot ? '<div class="cmpTot"></div>' : `<input class="cmpIn" inputmode="decimal" data-cmp="pr" data-i="${i}" data-k="${k}" placeholder="—" value="${pcEsc(r.pr[k] || '')}">`}<div class="cmpD"></div></td>`).join('')}<td class="cmpBc" data-b="${i}"><div class="cmpBv"></div><div class="cmpD"></div></td></tr>`;
   }).join('');
   cmpShip(c);
-  const mk = (cls, label, cell) => `<tr class="cmpB ${cls}"><td class="cmpN"></td><td class="cmpP">${label}</td><td></td>${c.sups.map((s, k) => `<td${cell.attr ? ' ' + cell.attr(k) : ''}>${cell.html ? cell.html(k) : ''}</td>`).join('')}</tr>`;
-  const sumRows = mk('cmpSum cmpFirst', 'Items total', { attr: k => `data-it="${k}"` });
+  const mk = (cls, label, cell) => `<tr class="cmpB ${cls}"><td class="cmpN"></td><td class="cmpP">${label}</td><td></td>${c.sups.map((s, k) => `<td${cell.attr ? ' ' + cell.attr(k) : ''}>${cell.html ? cell.html(k) : ''}</td>`).join('')}<td class="cmpBc"${cell.b ? ' ' + cell.b : ''}></td></tr>`;
+  const sumRows = mk('cmpSum cmpFirst', 'Items total', { attr: k => `data-it="${k}"`, b: 'data-bit' });
   const shipRow = mk('', 'Shipping', { html: k => `<input class="cmpIn cmpSm" inputmode="decimal" data-cmp="sha" data-k="${k}" placeholder="amount" value="${pcEsc(c.ship[k].a)}"><input class="cmpNote" type="text" data-cmp="shn" data-k="${k}" placeholder="air / sea…" value="${pcEsc(c.ship[k].n)}">` });
   const discRow = mk('', 'Discount', { html: k => `<input class="cmpIn cmpSm" data-cmp="dsc" data-k="${k}" placeholder="amount or %" value="${pcEsc(c.ship[k].d)}"><div class="cmpD" data-dd="${k}"></div>` });
-  const grandRow = mk('cmpGrand', 'Total to pay', { attr: k => `data-gr="${k}"` });
+  const grandRow = mk('cmpGrand', 'Total to pay', { attr: k => `data-gr="${k}"`, b: 'data-bgr' });
   const advRow = mk('', 'Advance', { html: k => `<input class="cmpIn cmpSm" inputmode="decimal" data-cmp="adv" data-k="${k}" placeholder="%" value="${pcEsc(c.ship[k].p)}"><div class="cmpD" data-ad="${k}"></div>` });
-  const foot = `<tr class="cmpB cmpLast"><td class="cmpN"></td><td class="cmpP">Lowest on</td><td></td>${c.sups.map((s, k) => `<td data-w="${k}"></td>`).join('')}</tr>`;
-  return bar + `<div class="card cmpCardBox">${picker}<div class="cmpTop"><div class="cmpSeg"><button class="${tot ? '' : 'on'}" data-cmp="mode" data-v="unit">Per piece</button><button class="${tot ? 'on' : ''}" data-cmp="mode" data-v="total">Total</button></div><span class="hrNote">${pcEsc(cur)} · ${tot ? 'Quantity × price' : 'Type the price per piece'} · lowest is green</span></div>
-    <div class="cmpWrap"><table class="cmpT"><thead><tr><th class="cmpN">#</th><th class="cmpP">Product</th><th class="cmpO">Old price</th>${th}</tr></thead><tbody>${body}${sumRows}${shipRow}${discRow}${grandRow}${advRow}${foot}</tbody></table>
-    ${c.sups.length < 6 ? `<button class="pcBtnSoft sm cmpAdd" data-cmp="supadd">${pcSvg('plus', 13)}Supplier</button>` : ''}</div></div>`;
+  const foot = `<tr class="cmpB cmpLast"><td class="cmpN"></td><td class="cmpP">Lowest on</td><td></td>${c.sups.map((s, k) => `<td data-w="${k}"></td>`).join('')}<td class="cmpBc"></td></tr>`;
+  return bar + `<div class="card cmpCardBox">${picker}<div class="cmpTop"><div class="cmpSeg"><button class="${tot ? '' : 'on'}" data-cmp="mode" data-v="unit">Per piece</button><button class="${tot ? 'on' : ''}" data-cmp="mode" data-v="total">Total</button></div><span class="hrNote">${pcEsc(cur)} · ${tot ? 'Quantity × price' : 'Type the price per piece'} · lowest is green</span><span class="grow"></span>${c.sups.length < 6 ? `<button class="pcBtnSoft sm" data-cmp="supadd">${pcSvg('plus', 13)}Add supplier</button>` : ''}</div><datalist id="cmpSupL">${cmpSupOpts()}</datalist>
+    <div class="cmpWrap"><table class="cmpT"><thead><tr><th class="cmpN">#</th><th class="cmpP">Product</th><th class="cmpO">Old price</th>${th}<th class="cmpBh">Best price</th></tr></thead><tbody>${body}${sumRows}${shipRow}${discRow}${grandRow}${advRow}${foot}</tbody></table>
+    </div></div>`;
 }
 function cmpPhotos(c, r){
   const o = cmpOrder(c.oid), it = o && o.items && o.items[r.oi];
   if(it && it.photos && it.photos.length) return it.photos.map((p, k) => ({ o, i: r.oi, k }));
   return [];
 }
+function cmpBest(c, r){
+  const q = r.pr.map(cmpNum), low = Math.min.apply(null, q.filter(x => x > 0).concat([Infinity])), old = cmpNum(r.old);
+  if(low === Infinity) return { v: 0, s: '', oldBest: false, low: 0 };
+  const k = q.indexOf(low);
+  if(old > 0 && old < low) return { v: old, s: 'Old price', oldBest: true, low: low };
+  return { v: low, s: c.sups[k] || ('Supplier ' + (k + 1)), oldBest: false, low: low };
+}
 function cmpMark(){
   const c = CMP.cur; if(!c) return; const tot = CMP.mode === 'total';
-  const wins = c.sups.map(() => 0), sums = c.sups.map(() => 0), miss = c.sups.map(() => 0), q = {};
+  const wins = c.sups.map(() => 0), sums = c.sups.map(() => 0), miss = c.sups.map(() => 0); let bsum = 0, bmiss = 0;
   c.rows.forEach((r, i) => {
-    const low = cmpLowest(r), old = cmpNum(r.old), qt = cmpNum(r.q) || 1;
-    const oc = document.querySelector('td[data-co="' + i + '"] .cmpTot'); if(oc) oc.textContent = old ? cmpFmt(old * qt) : '';
+    const b = cmpBest(c, r), old = cmpNum(r.old), qt = cmpNum(r.q) || 1;
+    const ot = document.querySelector('td[data-co="' + i + '"]');
+    if(ot){ ot.classList.toggle('cmpOldBest', b.oldBest); const oc = ot.querySelector('.cmpTot'); if(oc) oc.textContent = old ? cmpFmt(old * qt) : ''; const od = ot.querySelector('.cmpD'); if(od) od.textContent = b.oldBest ? 'best' : ''; }
     c.sups.forEach((s, k) => {
       const td = document.querySelector('td[data-c="' + i + '-' + k + '"]'); if(!td) return;
-      const v = cmpNum(r.pr[k]), isLow = v > 0 && v === low;
+      const v = cmpNum(r.pr[k]), isLow = v > 0 && v === b.low && !b.oldBest;
       td.classList.toggle('cmpLow', isLow); if(isLow) wins[k]++;
       if(v) sums[k] += v * qt; else miss[k]++;
       const t = td.querySelector('.cmpTot'); if(t) t.textContent = v ? cmpFmt(v * qt) : '';
       const d = td.querySelector('.cmpD');
       if(d){ if(v && old){ const p = (v - old) / old * 100; d.textContent = (p > 0 ? '+' : '') + (Math.round(p * 10) / 10) + '%'; d.className = 'cmpD ' + (p > 0 ? 'up' : p < 0 ? 'dn' : ''); } else { d.textContent = ''; d.className = 'cmpD'; } }
     });
+    const bt = document.querySelector('td[data-b="' + i + '"]');
+    if(bt){ const bv = bt.querySelector('.cmpBv'), bd = bt.querySelector('.cmpD'); bv.textContent = b.v ? cmpFmt(b.v * (tot ? qt : 1)) : ''; bd.textContent = b.v ? b.s : ''; }
+    if(b.v) bsum += b.v * qt; else bmiss++;
   });
   const grand = c.sups.map((s, k) => sums[k] ? sums[k] - cmpDisc(c, k, sums[k]) + cmpNum((c.ship[k] || {}).a) : 0), gl = Math.min.apply(null, grand.filter((x, k) => x > 0 && !miss[k]).concat([Infinity]));
   c.sups.forEach((s, k) => {
@@ -31144,7 +31169,11 @@ function cmpMark(){
     const ad = document.querySelector('[data-ad="' + k + '"]'); if(ad){ const pc2 = cmpNum((c.ship[k] || {}).p); ad.textContent = grand[k] && pc2 ? cmpFmt(grand[k] * pc2 / 100) : ''; }
     if(w) w.textContent = wins[k] || '';
   });
+  const bi = document.querySelector('[data-bit]'), bg = document.querySelector('[data-bgr]');
+  if(bi) bi.innerHTML = bsum ? cmpFmt(bsum) + (bmiss ? `<div class="cmpD">${bmiss} not priced</div>` : '') : '';
+  if(bg) bg.textContent = bsum ? cmpFmt(bsum) : '';
 }
+function cmpSupOpts(){ return ((window.pp && pp.sups) || []).filter(s => !s.off).map(s => `<option value="${pcEsc(s.n)}">`).join(''); }
 function cmpDisc(c, k, sum){ const v = String((c.ship[k] || {}).d || '').trim(); if(!v) return 0; return v.slice(-1) === '%' ? sum * (cmpNum(v.slice(0, -1)) / 100) : cmpNum(v); }
 function cmpSync(c, o){
   if(!o || !o.items) return false;
@@ -31216,8 +31245,8 @@ function cmpDl(c){
   if(!c.rows.length){ toast('Choose an order first'); return; }
   cmpShip(c);
   const sn = c.sups.map((x, k) => x || 'Supplier ' + (k + 1));
-  const rows = [['Order', c.label || '', 'Currency', c.cur || 'SAR'], [], ['Code', 'Product', 'Qty', 'Unit', 'Old price'].concat(sn)];
-  c.rows.forEach(r => rows.push([r.cd, r.n, r.q, r.u, cmpNum(r.old) || ''].concat(c.sups.map((x, k) => cmpNum(r.pr[k]) || ''))));
+  const rows = [['Order', c.label || '', 'Currency', c.cur || 'SAR'], [], ['Code', 'Product', 'Qty', 'Unit', 'Old price'].concat(sn).concat(['Best price', 'Best from'])];
+  c.rows.forEach(r => { const b = cmpBest(c, r); rows.push([r.cd, r.n, r.q, r.u, cmpNum(r.old) || ''].concat(c.sups.map((x, k) => cmpNum(r.pr[k]) || '')).concat([b.v || '', b.s])); });
   rows.push(['', 'Shipping', '', '', ''].concat(c.sups.map((x, k) => cmpNum(c.ship[k].a) || '')));
   rows.push(['', 'Shipping note', '', '', ''].concat(c.sups.map((x, k) => c.ship[k].n || '')));
   const lows = c.sups.map(() => 0);
