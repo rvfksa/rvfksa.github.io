@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261121-155525">
+<meta name="rvf-build" content="20261121-155700">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -29628,7 +29628,7 @@ function sxDashHtml(){
     T('rew', sxTile('Rewound yarn', sxN(rew.kg) + '<small> kg</small>', rew.n > 0 ? sxN(rew.n) + ' bobbins' : 'In hand', 'rew', 'rew', 'purple')),
     T('wp', sxTile('Warp beams', sxN(wp.kg) + '<small> kg</small>', sxN(wp.n) + ' beams', 'wp', 'wp', 'cyan'))]);
   h += box('2 · Production', [
-    T('fin', sxTile('Finishing today', sxN(mSum(ft, 'm')) + '<small> m</small>', sxN(mSum(ft, 'roll')) + ' rolls today · month ' + sxN(mSum(fe, 'm')) + ' m / ' + sxN(mSum(fe, 'roll')) + ' rolls' + (mSum(fe, 'pcs') > 0 ? ' / ' + sxN(mSum(fe, 'pcs')) + ' pcs' : ''), 'fin', 'fin', 'green')),
+    T('fin', sxTile('Finishing today', sxN(mSum(ft, 'm')) + '<small> m</small>', (mSum(ft, 'pcs') > 0 ? sxN(mSum(ft, 'pcs')) + ' pcs today · ' : '') + (mSum(ft, 'roll') > 0 ? sxN(mSum(ft, 'roll')) + ' rolls today · ' : '') + 'month ' + sxN(mSum(fe, 'm')) + ' m' + (mSum(fe, 'pcs') > 0 ? ' / ' + sxN(mSum(fe, 'pcs')) + ' pcs' : '') + (mSum(fe, 'roll') > 0 ? ' / ' + sxN(mSum(fe, 'roll')) + ' rolls' : ''), 'fin', 'fin', 'green')),
     T('dm', sxTile('Machines running', runN + '<small> of ' + ms.length + '</small>', Object.keys(on).length + ' designs', 'mp', 'mach', 'blue'))]);
   h += box('3 · Finished stores', [
     T('fst', sxTile('Ready to sell', sxN(ready) + '<small> bundles</small>', tb ? '= ' + sxN(trucks) + ' trucks' : 'Carpets and Rugs', 'fst:cr', 'pack', 'blue')),
@@ -29718,7 +29718,7 @@ function sxFinHtml(){
   const rows = sxFinRows().slice(), fsm = ySortOf('fin'); if(fsm === 'old') rows.reverse(); else if(fsm === 'mbig') rows.sort((a, b) => b.qty - a.qty); else if(fsm === 'mc') rows.sort((a, b) => String(a.mcn).localeCompare(String(b.mcn), undefined, { numeric: true }) || String(b.d).localeCompare(String(a.d)));
   const tm = rows.filter(e => e.u === 'm').reduce((a, e) => a + e.qty, 0), tr = rows.filter(e => e.u === 'roll').reduce((a, e) => a + e.qty, 0), tp = rows.filter(e => e.u === 'pcs').reduce((a, e) => a + e.qty, 0), adm = sxAdmin();
   const vis = f.u ? rows.filter(e => e.u === f.u) : rows, vm = vis.filter(e => e.u === 'm').reduce((a, e) => a + e.qty, 0), vr = vis.filter(e => e.u === 'roll').reduce((a, e) => a + e.qty, 0), pgi = sxPgInfo('fin', vis.length, 10);
-  h += `<div class="card sxCard"><div class="sxGrid">${sxTile('Entries', rows.length, f.from || f.to ? 'in this list' : 'this month', '', 'fin', 'blue')}${sxTileF('fin', 'u', 'm', 'Meters', sxN(tm) + '<small> m</small>', '', '', 'roll', 'green')}${sxTileF('fin', 'u', 'roll', 'Rolls', sxN(tr) + '<small> rolls</small>', '', '', 'pack', 'purple')}${tp > 0 || f.u === 'pcs' ? sxTileF('fin', 'u', 'pcs', 'Pcs', sxN(tp) + '<small> pcs</small>', '', '', 'pack', 'cyan') : ''}</div></div>`;
+  h += `<div class="card sxCard"><div class="sxGrid">${sxTile('Entries', rows.length, f.from || f.to ? 'in this list' : 'this month', '', 'fin', 'blue')}${sxTileF('fin', 'u', 'm', 'Meters', sxN(tm) + '<small> m</small>', '', '', 'roll', 'green')}${tr > 0 || f.u === 'roll' ? sxTileF('fin', 'u', 'roll', 'Rolls', sxN(tr) + '<small> rolls</small>', '', '', 'pack', 'purple') : ''}${tp > 0 || f.u === 'pcs' ? sxTileF('fin', 'u', 'pcs', 'Pcs', sxN(tp) + '<small> pcs</small>', '', '', 'pack', 'cyan') : ''}</div></div>`;
   const cols = [['When', '92px'], ['Machine', 'minmax(120px,1.2fr)', 'k'], ['Item', 'minmax(140px,1.8fr)'], ['Size · type', '110px'], ['Department', '90px'], ['By', '90px'], ['Quantity', '96px', 'r']].concat(adm ? [['', '78px', 'a']] : []);
   const tb = vis.slice(pgi.a, pgi.b).map(e => [sxWhen(e), `<b>${skEsc(e.mcn)}</b>`, skEsc(e.item || ''), `<span class="sxSm2">${skEsc(e.size || '')} ${skEsc(e.type || '')}</span>`, skEsc(e.dept || ''), sxByC(e), `<b>${sxN(e.qty)}</b> <small>${e.u === 'm' ? 'm' : e.u === 'pcs' ? 'pcs' : 'rolls'}</small>`].concat(adm ? [`<button type="button" class="mini-icon-btn" data-sx="undo" data-p="f" data-v="${skEsc(e.id)}" data-ym="${sxYm(e.d)}" title="Remove this entry" aria-label="Remove this entry">${sxIc('del', 13)}</button>`] : []));
   const ft = ['', '<b>Total</b>', '', '', '', '', (vm ? `<b>${sxN(vm)}</b> m` : '') + (vm && vr ? '<br>' : '') + (vr ? `<b>${sxN(vr)}</b> rolls` : '')].concat(adm ? [''] : []);
@@ -29811,7 +29811,7 @@ function sxOpenForm(kind){
       ${sxField('Item description', '<input id="sxItem" list="sxDesList" type="text" autocomplete="off" placeholder="Fills from the machine design">', 1)}
       ${sxField('Size', sxAllSizes().length ? `<select id="sxSize">${sxOpt(sxAllSizes(), F.size, 'Choose')}</select>` : '<input id="sxSize" type="text" placeholder="e.g. 200 x 300">')}${sxField('Type', `<select id="sxType">${sxOpt(o.types, F.type, 'Choose')}</select>`)}
       ${sxField('From department', `<select id="sxDept">${sxOpt(o.depts, F.dept, 'Choose')}</select>`)}${sxField('Quantity', '<input id="sxQty" type="number" inputmode="decimal" min="0" step="any" placeholder="0">')}
-      ${sxField('In', `<select id="sxUnit">${sxOpt([['m', 'Meters'], ['roll', 'Rolls'], ['pcs', 'Pcs']], F.unit || 'roll')}</select>`)}</div><datalist id="sxDesList">${SK.designs.map(d => `<option value="${skEsc(d.name)}">`).join('')}</datalist>`, sxSave('savefin', 'Save'));
+      ${sxField('In', `<select id="sxUnit">${sxOpt([['m', 'Meters'], ['pcs', 'Pcs']].concat(F.unit === 'roll' ? [['roll', 'Rolls']] : []), F.unit || 'm')}</select>`)}</div><datalist id="sxDesList">${SK.designs.map(d => `<option value="${skEsc(d.name)}">`).join('')}</datalist>`, sxSave('savefin', 'Save'));
     if(F.mc){ const e = $('sxM'); if(e && e.value) sxMachFill(e.value); }
   }
   setTimeout(() => { const e = $('sxCat') || $('sxCol') || $('sxM') || $('sxRTo'); if(e && !e.value) e.focus(); else { const k = $('sxKg') || $('sxQty'); if(k) k.focus(); } }, 60);
@@ -29962,7 +29962,7 @@ async function sxSaveRw(){
 async function sxSaveFin(){
   if(!sxCan('fin')) return; const mid = sxVal('sxM'), m = (state.machines || []).find(x => String(x.id) === String(mid)), qty = Number(sxVal('sxQty')), d = sxVal('sxD') || sxToday();
   if(!m){ toast('Choose the machine'); return; } if(!(qty > 0)){ toast('Type the quantity'); return; }
-  const e = { id: sxId(), t: Date.now(), d, mc: String(m.id), mcn: m.name || m.id, item: sxVal('sxItem'), size: sxVal('sxSize'), type: sxVal('sxType'), dept: sxVal('sxDept'), qty, u: sxVal('sxUnit') || 'roll', by: sxMe(), uid: String(state.user.loginId), dl: {} };
+  const e = { id: sxId(), t: Date.now(), d, mc: String(m.id), mcn: m.name || m.id, item: sxVal('sxItem'), size: sxVal('sxSize'), type: sxVal('sxType'), dept: sxVal('sxDept'), qty, u: sxVal('sxUnit') || 'm', by: sxMe(), uid: String(state.user.loginId), dl: {} };
   if(await sxSaveMove('f', e, false)){ sxKeep({ mc: String(m.id), size: e.size, type: e.type, dept: e.dept, unit: e.u }); toast('Saved'); sxClose(); skRender(); }
 }
 async function sxSaveReq(){
