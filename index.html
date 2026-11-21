@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261121-120631">
+<meta name="rvf-build" content="20261121-121255">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -28827,6 +28827,14 @@ button.mpS.on{background:#eef0fd;border-color:#6366f1}
 .cmpSum td, .cmpGrand td{ font:700 13px Inter,system-ui,sans-serif; color:#1e293b; } .cmpGrand td{ border-top:2px solid #e3e7ef; } .cmpGrand td.cmpP, .cmpSum td.cmpP{ font-size:12px; }
 .cmpT .cmpN{ width:28px; min-width:28px; text-align:center; color:#94a3b8; font:600 11px Inter,system-ui,sans-serif; position:sticky; left:0; background:#fff; z-index:2; padding:6px 2px; }
 .cmpT .cmpP{ left:28px; } .cmpShip td.cmpN, .cmpFoot td.cmpN{ background:#fafbfd; } .cmpFoot td.cmpN{ background:#fff; }
+.cmpT tr.cmpB td{ background:#f8fafc; border-bottom:1px solid #eef0f5; padding:3px 5px; } .cmpT tr.cmpB td.cmpP{ font:600 12px Inter,system-ui,sans-serif; color:#475569; }
+.cmpT tr.cmpFirst td{ border-top:2px solid #e3e7ef; } .cmpT tr.cmpSum td{ font:700 13px Inter,system-ui,sans-serif; color:#1e293b; }
+.cmpT .cmpSm{ height:28px; font-size:12.5px; } .cmpT .cmpNote{ height:18px; margin-top:2px; border:0; border-bottom:1px dashed #d5dae4; border-radius:0; background:transparent; font:500 10.5px Inter,system-ui,sans-serif; color:#64748b; }
+.cmpT tr.cmpB .cmpD{ height:11px; margin-top:1px; font-size:10px; }
+.cmpT tr.cmpGrand td{ background:#eef2ff; border-top:1px solid #c7cbf5; border-bottom:1px solid #c7cbf5; padding:8px 5px; font:700 15px Inter,system-ui,sans-serif; color:#312e81; } .cmpT tr.cmpGrand td.cmpP{ font:700 12px Inter,system-ui,sans-serif; color:#312e81; }
+.cmpT tr.cmpGrand td.cmpLow{ background:#bbf7d0; color:#14532d; }
+.cmpT tr.cmpLast td{ font:600 10.5px Inter,system-ui,sans-serif; color:#94a3b8; border-bottom:0; } .cmpT tr.cmpLast td.cmpP{ font-size:10.5px; color:#94a3b8; }
+.cmpT tr.cmpB td.cmpN, .cmpT tr.cmpB td.cmpP{ background:#f8fafc; } .cmpT tr.cmpGrand td.cmpN, .cmpT tr.cmpGrand td.cmpP{ background:#eef2ff; }
 </style>
 <div id="rvfBusy"><i></i><span id="rvfBusyTxt">Loading data…</span></div>
 <script>
@@ -31094,12 +31102,13 @@ function cmpEditHtml(){
       ${c.sups.map((s, k) => `<td data-c="${i}-${k}">${tot ? '<div class="cmpTot"></div>' : `<input class="cmpIn" inputmode="decimal" data-cmp="pr" data-i="${i}" data-k="${k}" placeholder="—" value="${pcEsc(r.pr[k] || '')}">`}<div class="cmpD"></div></td>`).join('')}</tr>`;
   }).join('');
   cmpShip(c);
-  const shipRow = `<tr class="cmpShip"><td class="cmpN"></td><td class="cmpP">Shipping<div class="cmpPc">for the whole order</div></td><td></td>${c.sups.map((s, k) => `<td><input class="cmpIn" inputmode="decimal" data-cmp="sha" data-k="${k}" placeholder="—" value="${pcEsc(c.ship[k].a)}"><input class="cmpNote" type="text" data-cmp="shn" data-k="${k}" placeholder="Note (air / sea…)" value="${pcEsc(c.ship[k].n)}"></td>`).join('')}</tr>`;
-  const sumRows = `<tr class="cmpFoot cmpSum"><td class="cmpN"></td><td class="cmpP">Items total</td><td></td>${c.sups.map((s, k) => `<td data-it="${k}"></td>`).join('')}</tr>`;
-  const discRow = `<tr class="cmpShip"><td class="cmpN"></td><td class="cmpP">Discount<div class="cmpPc">on the total · amount or %</div></td><td></td>${c.sups.map((s, k) => `<td><input class="cmpIn" data-cmp="dsc" data-k="${k}" placeholder="—" value="${pcEsc(c.ship[k].d)}"><div class="cmpD" data-dd="${k}"></div></td>`).join('')}</tr>`;
-  const grandRow = `<tr class="cmpFoot cmpGrand"><td class="cmpN"></td><td class="cmpP">Grand total<div class="cmpPc">items − discount + shipping</div></td><td></td>${c.sups.map((s, k) => `<td data-gr="${k}"></td>`).join('')}</tr>`;
-  const advRow = `<tr class="cmpShip"><td class="cmpN"></td><td class="cmpP">Advance asked<div class="cmpPc">% of grand total</div></td><td></td>${c.sups.map((s, k) => `<td><input class="cmpIn" inputmode="decimal" data-cmp="adv" data-k="${k}" placeholder="%" value="${pcEsc(c.ship[k].p)}"><div class="cmpD" data-ad="${k}"></div></td>`).join('')}</tr>`;
-  const foot = `<tr class="cmpFoot"><td class="cmpN"></td><td class="cmpP">Lowest on</td><td></td>${c.sups.map((s, k) => `<td data-w="${k}"></td>`).join('')}</tr>`;
+  const mk = (cls, label, cell) => `<tr class="cmpB ${cls}"><td class="cmpN"></td><td class="cmpP">${label}</td><td></td>${c.sups.map((s, k) => `<td${cell.attr ? ' ' + cell.attr(k) : ''}>${cell.html ? cell.html(k) : ''}</td>`).join('')}</tr>`;
+  const sumRows = mk('cmpSum cmpFirst', 'Items total', { attr: k => `data-it="${k}"` });
+  const shipRow = mk('', 'Shipping', { html: k => `<input class="cmpIn cmpSm" inputmode="decimal" data-cmp="sha" data-k="${k}" placeholder="amount" value="${pcEsc(c.ship[k].a)}"><input class="cmpNote" type="text" data-cmp="shn" data-k="${k}" placeholder="air / sea…" value="${pcEsc(c.ship[k].n)}">` });
+  const discRow = mk('', 'Discount', { html: k => `<input class="cmpIn cmpSm" data-cmp="dsc" data-k="${k}" placeholder="amount or %" value="${pcEsc(c.ship[k].d)}"><div class="cmpD" data-dd="${k}"></div>` });
+  const grandRow = mk('cmpGrand', 'Total to pay', { attr: k => `data-gr="${k}"` });
+  const advRow = mk('', 'Advance', { html: k => `<input class="cmpIn cmpSm" inputmode="decimal" data-cmp="adv" data-k="${k}" placeholder="%" value="${pcEsc(c.ship[k].p)}"><div class="cmpD" data-ad="${k}"></div>` });
+  const foot = `<tr class="cmpB cmpLast"><td class="cmpN"></td><td class="cmpP">Lowest on</td><td></td>${c.sups.map((s, k) => `<td data-w="${k}"></td>`).join('')}</tr>`;
   return bar + `<div class="card cmpCardBox">${picker}<div class="cmpTop"><div class="cmpSeg"><button class="${tot ? '' : 'on'}" data-cmp="mode" data-v="unit">Per piece</button><button class="${tot ? 'on' : ''}" data-cmp="mode" data-v="total">Total</button></div><span class="hrNote">${pcEsc(cur)} · ${tot ? 'Quantity × price' : 'Type the price per piece'} · lowest is green</span></div>
     <div class="cmpWrap"><table class="cmpT"><thead><tr><th class="cmpN">#</th><th class="cmpP">Product</th><th class="cmpO">Old price</th>${th}</tr></thead><tbody>${body}${sumRows}${shipRow}${discRow}${grandRow}${advRow}${foot}</tbody></table>
     ${c.sups.length < 6 ? `<button class="pcBtnSoft sm cmpAdd" data-cmp="supadd">${pcSvg('plus', 13)}Supplier</button>` : ''}</div></div>`;
