@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261121-155818">
+<meta name="rvf-build" content="20261121-160538">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -29615,7 +29615,7 @@ function sxDashHtml(){
   const raw = sxRaw(), rawKg = Object.keys(raw).reduce((a, c) => a + Object.keys(raw[c]).reduce((b, k) => b + raw[c][k].tot, 0), 0) + yTot().kg, rew = sxSum('rew'), wp = sxSum('wp');
   const ym = sxYm(), fe = sxFin(ym), today = sxToday(), ft = fe.filter(e => e.d === today), mSum = (l, u) => l.filter(e => e.u === u).reduce((a, e) => a + (Number(e.qty) || 0), 0);
   const fs = SK.items.filter(i => i.on !== false); const grp = (g) => fs.filter(i => i.g === g);
-  const ready = grp('cr').reduce((a, i) => a + skBal(i), 0), floor = grp('cr').concat(grp('vip')).reduce((a, i) => a + sxFl(i), 0), vip = grp('vip').reduce((a, i) => a + skBal(i), 0), q2 = grp('q2').reduce((a, i) => a + skBal(i), 0), up = grp('up').reduce((a, i) => a + skBal(i), 0);
+  const ready = grp('cr').reduce((a, i) => a + skBal(i), 0), floor = grp('cr').concat(grp('vip')).reduce((a, i) => a + sxFl(i), 0), vip = grp('vip').reduce((a, i) => a + skBal(i), 0), q2 = grp('q2').reduce((a, i) => a + skBal(i), 0) + sxQ2All(), up = grp('up').reduce((a, i) => a + skBal(i), 0);
   const tb = 1, trucks = grp('cr').reduce((a, i) => a + skBal(i) / (sxTruck(i) || 1), 0), open = SX.q.filter(r => r.st !== 'done').length;
   const ms = state.machines || [], on = {}, runN = ms.filter(m => ((SK.plan.m || {})[m.id] || {}).st !== 'stop').length; Object.keys(SK.plan.m || {}).forEach(k => { const p = SK.plan.m[k]; if(p && p.st !== 'stop' && p.des) on[p.des] = 1; });
   const T = (pg, tile) => sxSee(pg) ? tile : '';
@@ -29729,7 +29729,13 @@ function sxFinHtml(){
   h += '<div class="card sxCard sxLg">' + sxTbl(cols, tb, ft, 'No entries for this filter.') + pgi.html + '</div>' + sxFinHist();
   return h;
 }
-const SX_FS = [['cr', 'Carpets & Rugs'], ['vip', 'VIP Prayer Mats'], ['up', 'Upholstery'], ['q2', '2nd Quality']];
+const SX_FS = [['cr', 'Carpets & Rugs'], ['vip', 'VIP Prayer Mats'], ['up', 'Upholstery']];
+/* 1st / 2nd quality: 2nd quality of an item is its own balance q2|itemId; old 2nd-quality items (group q2) belong to the category they fit */
+const sxQCat = (i) => i.g !== 'q2' ? i.g : sxKind(i) === 'up' ? 'up' : /vip/i.test(String(i.name || '')) ? 'vip' : 'cr';
+const sxQ2B = (i) => Math.max(0, Number(SX.bal['q2|' + i.id]) || 0);
+const sxQual = () => { const F = sxFget('fst'); return F.ql || SX.fqual || '1'; };
+const sxQB = (i, q) => q === '2' && i.g !== 'q2' ? sxQ2B(i) : skBal(i);
+const sxQ2All = () => Object.keys(SX.bal).filter(k => k.indexOf('q2|') === 0).reduce((a, k) => a + Math.max(0, Number(SX.bal[k]) || 0), 0);
 /* what each group shows: only the columns that group needs (same plain table as the Report) */
 const sxPk = (i) => { const x = i.x || {}; let nd = x.nd, nc = x.nc, nm = String(i.name || ''); const m = nm.match(/\(\s*(\d+)\s*D\s*-\s*(\d+)\s*C\s*\)/i); if(m){ if(!nd) nd = m[1]; if(!nc) nc = m[2]; nm = nm.replace(m[0], ''); } return { nd: nd || '', nc: nc || '', name: nm.replace(/\s+/g, ' ').trim() }; };
 function sxFsCols(g){
@@ -29739,10 +29745,10 @@ function sxFsCols(g){
   if(g === 'up') return [['Code', ''], ['Item', 'k'], ['Size', ''], ['Quality', ''], ['Colour', 'k'], ['Metres per roll', 'r'], ['Rolls in stock', 'r'], ['Total metres', 'r'], A];
   return [['Code', ''], ['Item', 'k'], ['Type', ''], ['Size (cm)', ''], ['Colour', 'k'], ['Available', 'r'], ['Pcs per pack', 'r'], ['Pieces', 'r'], ['Metres', 'r'], A];
 }
-const sxLvl = (i) => { const b = skBal(i), sf = skSafe(i); return b <= 0 ? 'out' : sf > 0 && b < sf ? 'low' : 'ok'; };
+const sxLvl = (i) => { const q = sxQual(), b = sxQB(i, q), sf = q === '2' ? 0 : skSafe(i); return b <= 0 ? 'out' : sf > 0 && b < sf ? 'low' : 'ok'; };
 const sxDash = '<span class="sxSm2">—</span>';
 function sxFsRow(i){
-  const b = skBal(i), fl = sxFl(i), g = i.g, x = i.x || {}, per = Number(i.per) || 0, P = sxPk(i), L = sxLvl(i), kd = sxKind(i), up = kd === 'up';
+  const QQ = sxQual(), b = sxQB(i, QQ), fl = QQ === '2' ? 0 : sxFl(i), g = sxQCat(i), x = i.x || {}, per = Number(i.per) || 0, P = sxPk(i), L = sxLvl(i), kd = sxKind(i), up = kd === 'up';
   const code = i.code ? `<span class="sxCode">${skEsc(i.code)}</span>` : sxDash;
   const name = skEsc(P.name);
   const av = `<span class="${L === 'ok' ? '' : 'sxBad'}" title="${L === 'out' ? 'Out of stock' : L === 'low' ? 'Below the minimum' : ''}">${skNum(b)}</span>`;
@@ -29758,21 +29764,22 @@ function sxFsRow(i){
 }
 const sxColTokens = (l) => { const s = {}; l.forEach(i => String(i.col || '').split(/[,\/\-+&]|\band\b/i).forEach(t => { t = t.trim().toUpperCase(); if(t.length > 1) s[t] = 1; })); return Object.keys(s).sort(); };
 function sxFstHtml(){
-  const g = SX.fsub, q = (SX.fq || '').toLowerCase(), F = sxFget('fst'), two = (g === 'cr' || g === 'vip');
-  const base = SK.items.filter(i => i.g === g && i.on !== false && (skBal(i) !== 0 || sxFl(i) > 0));
-  const kinds = g === 'cr' ? [['carpet', 'Carpet'], ['mat', 'Prayer mat']] : g === 'q2' ? [['carpet', 'Carpet'], ['mat', 'Prayer mat'], ['up', 'Upholstery']] : null;
+  if(SX.fsub === 'q2'){ SX.fsub = 'cr'; SK.grp = 'cr'; SX.fqual = '2'; }
+  const g = SX.fsub, q = (SX.fq || '').toLowerCase(), F = sxFget('fst'), QQ = sxQual(), two = (g === 'cr' || g === 'vip') && QQ !== '2';
+  const base = SK.items.filter(i => i.on !== false && (QQ === '2' ? sxQCat(i) === g && sxQB(i, '2') !== 0 : i.g === g && (skBal(i) !== 0 || sxFl(i) > 0)));
+  const kinds = g === 'cr' ? [['carpet', 'Carpet'], ['mat', 'Prayer mat']] : null;
   const sizes = g === 'vip' ? (SX.cfg.sizesM || []) : sxAllSizes();
-  const flds = (kinds ? [['kind', 'Type', kinds]] : []).concat(g === 'up' ? [] : [['size', 'Size (cm)', sizes.map(s => [s, sxFmtSize(s)])]]).concat([['col', 'Colour', sxColTokens(base)], ['st', 'Stock', [['ok', 'Enough'], ['low', 'Low (below minimum)']]]]).concat(two ? [['fl', 'Unpacked on floor', [['yes', 'Has unpacked stock']]]] : []);
+  const flds = (kinds ? [['kind', 'Type', kinds]] : []).concat(g === 'up' ? [] : [['size', 'Size (cm)', sizes.map(s => [s, sxFmtSize(s)])]]).concat([['col', 'Colour', sxColTokens(base)], ['st', 'Stock', [['ok', 'Enough'], ['low', 'Low (below minimum)']]]]).concat(two ? [['fl', 'Unpacked on floor', [['yes', 'Has unpacked stock']]]] : []).concat([['ql', 'Quality', [['1', '1st quality'], ['2', '2nd quality']], 'Tab choice']]);
   let l = base.filter(i => (!q || (i.name + ' ' + (i.code || '') + ' ' + (i.col || '')).toLowerCase().includes(q)) && (!F.kind || sxKind(i) === F.kind) && (!F.size || sxSzKey(sxSizeOf(i)) === sxSzKey(F.size)) && (!F.col || String(i.col || '').toUpperCase().indexOf(F.col) >= 0) && (!F.st || sxLvl(i) === F.st) && (!F.fl || sxFl(i) > 0));
   l = l.slice().sort((a, b) => String(a.name).localeCompare(String(b.name)) || String(a.col || '').localeCompare(String(b.col || '')));
-  const fsm = ySortOf('fst'); if(fsm === 'big') l.sort((a, b) => skBal(b) - skBal(a)); else if(fsm === 'least') l.sort((a, b) => skBal(a) - skBal(b)); else if(fsm === 'size') l.sort((a, b) => String(sxFmtSize(sxSizeOf(a)) || '~').localeCompare(String(sxFmtSize(sxSizeOf(b)) || '~'), undefined, { numeric: true }) || String(a.name).localeCompare(String(b.name)));
+  const fsm = ySortOf('fst'); if(fsm === 'big') l.sort((a, b) => sxQB(b, QQ) - sxQB(a, QQ)); else if(fsm === 'least') l.sort((a, b) => sxQB(a, QQ) - sxQB(b, QQ)); else if(fsm === 'size') l.sort((a, b) => String(sxFmtSize(sxSizeOf(a)) || '~').localeCompare(String(sxFmtSize(sxSizeOf(b)) || '~'), undefined, { numeric: true }) || String(a.name).localeCompare(String(b.name)));
   SK.cur = l; SK.grp = g;
-  const bl = l.filter(i => sxUnit(i) === 'bundles'), rl = l.filter(i => sxUnit(i) === 'rolls');
-  const tot = bl.reduce((a, i) => a + skBal(i), 0), roll = rl.reduce((a, i) => a + skBal(i), 0), mtr = rl.reduce((a, i) => a + skBal(i) * sxRollM(i), 0), fl = l.reduce((a, i) => a + sxFl(i), 0), pcs = bl.reduce((a, i) => a + skBal(i) * (Number(i.per) || 0), 0), trk = bl.reduce((a, i) => a + skBal(i) / (sxTruck(i) || 1), 0);
-  let h = sxTop(sxSub('fsub', g, SX_FS) + sxSearch('sxFq2', SX.fq, 'Search name, code or colour…') + sxFilt('fst', flds) + ySortBtn('fst', ['name', 'big', 'least', 'size']) + '<span class="grow"></span>' + sxDlBtn('stock') + sxGear('fst') + (sxCan('fst') ? `<button type="button" class="pcBtnMain sm" data-sx="fsm" data-v="" data-k="in" title="Put stock in or take it out">${sxIc('plus', 14)}<span class="sxAddL">Update</span></button>` : '')) + sxFpop('fst', flds);
-  const kb = (k) => bl.filter(i => sxKind(i) === k).reduce((a, i) => a + skBal(i), 0);
-  const t1 = g === 'up' ? sxTile('Available stock', sxN(roll) + '<small> rolls</small>', sxN(mtr) + ' metres', '', 'pack', 'blue') : sxTile('Available stock', sxN(tot) + '<small> bundles</small>', g === 'cr' ? 'Carpets ' + sxN(kb('carpet')) + ' · Prayer mats ' + sxN(kb('mat')) : (trk ? 'About ' + sxN(Math.round(trk * 10) / 10) + ' trucks' : ''), '', 'pack', 'blue');
-  h += `<div class="card sxCard"><div class="sxGrid">${t1}${g === 'q2' && roll ? sxTile('Upholstery', sxN(roll) + '<small> rolls</small>', sxN(mtr) + ' metres', '', 'roll', 'cyan') : ''}${two ? sxTileF('fst', 'fl', 'yes', 'Unpacked on floor', sxN(fl) + '<small> bundles</small>', 'Finished, not packed yet', '', 'floor', 'amber') : ''}${g === 'cr' && trk ? sxTile('Trucks', sxN(Math.round(trk * 10) / 10), 'If all ready stock is loaded', '', 'floor', 'green') : ''}${sxTile('Items', l.length, base.length !== l.length ? 'of ' + base.length : '', '', 'raw', 'purple')}</div></div>`;
+  const bl = l.filter(i => sxUnit(i) === 'bundles'), rl = l.filter(i => sxUnit(i) === 'rolls'), FB = (i) => sxQB(i, QQ);
+  const tot = bl.reduce((a, i) => a + FB(i), 0), roll = rl.reduce((a, i) => a + FB(i), 0), mtr = rl.reduce((a, i) => a + FB(i) * sxRollM(i), 0), fl = QQ === '2' ? 0 : l.reduce((a, i) => a + sxFl(i), 0), pcs = bl.reduce((a, i) => a + FB(i) * (Number(i.per) || 0), 0), trk = bl.reduce((a, i) => a + FB(i) / (sxTruck(i) || 1), 0);
+  let h = sxTop(sxSub('fsub', g, SX_FS) + sxSub('fqual', QQ, [['1', '1st quality'], ['2', '2nd quality']]) + sxSearch('sxFq2', SX.fq, 'Search name, code or colour…') + sxFilt('fst', flds) + ySortBtn('fst', ['name', 'big', 'least', 'size']) + '<span class="grow"></span>' + sxDlBtn('stock') + sxGear('fst') + (sxCan('fst') ? `<button type="button" class="pcBtnMain sm" data-sx="fsm" data-v="" data-k="in" title="Put stock in or take it out">${sxIc('plus', 14)}<span class="sxAddL">Update</span></button>` : '')) + sxFpop('fst', flds);
+  const kb = (k) => bl.filter(i => sxKind(i) === k).reduce((a, i) => a + FB(i), 0);
+  const t1 = g === 'up' ? sxTile(QQ === '2' ? 'Available 2nd quality' : 'Available stock', sxN(roll) + '<small> rolls</small>', sxN(mtr) + ' metres', '', 'pack', 'blue') : sxTile(QQ === '2' ? 'Available 2nd quality' : 'Available stock', sxN(tot) + '<small> bundles</small>', g === 'cr' ? 'Carpets ' + sxN(kb('carpet')) + ' · Prayer mats ' + sxN(kb('mat')) : (trk ? 'About ' + sxN(Math.round(trk * 10) / 10) + ' trucks' : ''), '', 'pack', 'blue');
+  h += `<div class="card sxCard"><div class="sxGrid">${t1}${two ? sxTileF('fst', 'fl', 'yes', 'Unpacked on floor', sxN(fl) + '<small> bundles</small>', 'Finished, not packed yet', '', 'floor', 'amber') : ''}${g === 'cr' && trk ? sxTile('Trucks', sxN(Math.round(trk * 10) / 10), 'If all ready stock is loaded', '', 'floor', 'green') : ''}${sxTile('Items', l.length, base.length !== l.length ? 'of ' + base.length : '', '', 'raw', 'purple')}</div></div>`;
   const cols = sxFsCols(g).map(c => [c[0], '', c[1]]); let foot;
   if(g === 'cr') foot = ['', 'Total', '', '', '', '', '', skNum(tot), sxN(pcs), skNum(fl), ''];
   else if(g === 'vip') foot = ['', 'Total', '', '', '', '', '', '', skNum(tot), sxN(pcs), skNum(fl), ''];
@@ -29822,18 +29829,20 @@ function sxOpenForm(kind){
 }
 function sxMachFill(id){ const m = (state.machines || []).find(x => String(x.id) === String(id)); if(!m) return; const p = (SK.plan.m || {})[m.id] || {}, d = p.des ? skDesign(p.des) : null; const it = $('sxItem'); if(it && !it.value) it.value = d ? d.name + (p.col ? ' ' + p.col : '') : ''; const ty = $('sxType'); if(ty && !ty.value && machineCat(m)) ty.value = machineCat(m); const de = $('sxDept'); if(de && !de.value && m.department) de.value = m.department; }
 function sxFsModal(id, k){
-  const g = SX.fsub, i = id ? skItem(id) : null, two = (g === 'cr' || g === 'vip'); k = k || 'in'; SX.fsk = k; SX.fsid = i ? i.id : '';
+  if(SX.fsub === 'q2'){ SX.fsub = 'cr'; SX.fqual = '2'; }
+  const g = SX.fsub, QQ = sxQual(), i = id ? skItem(id) : null, two = (g === 'cr' || g === 'vip') && QQ !== '2'; k = k || 'in'; if(QQ === '2' && (k === 'fl' || k === 'pk')) k = 'in'; SX.fsk = k; SX.fsid = i ? i.id : '';
   const lab = { in: g === 'up' ? 'IN · received / produced' : 'PACKED IN · ready to sell', fl: 'FLOOR IN · finished, not packed yet', pk: 'PACK · floor stock to ready', out: 'OUT · sold / used' }[k];
-  const ks = two ? [['in', 'Packed in'], ['fl', 'Floor in'], ['pk', 'Pack'], ['out', 'Out']] : [['in', 'In'], ['out', 'Out']];
-  const items = SK.items.filter(x => x.g === g && x.on !== false).slice().sort((a, c) => String(a.name).localeCompare(String(c.name)) || String(a.col || '').localeCompare(String(c.col || '')));
+  const ks = two ? [['in', 'Packed in'], ['fl', 'Floor in'], ['pk', 'Pack'], ['out', 'Out']] : [['in', 'In'], ['out', 'Out']], qks = [['1', '1st quality'], ['2', '2nd quality']];
+  const items = SK.items.filter(x => x.on !== false && (QQ === '2' ? sxQCat(x) === g : x.g === g)).slice().sort((a, c) => String(a.name).localeCompare(String(c.name)) || String(a.col || '').localeCompare(String(c.col || '')));
   const opts = items.map(x => [x.id, [x.code, sxPk(x).name, x.col].filter(Boolean).join(' · ')]);
-  sxModal('Update stock · ' + skEsc((SX_FS.find(x => x[0] === g) || [0, ''])[1]), `<div class="hrTabs sxIO">${ks.map(x => `<button class="${k === x[0] ? 'active' : ''}" data-sx="fsk" data-k="${x[0]}">${x[1]}</button>`).join('')}</div><div class="sxF">${sxField('Item', `<select id="fsI">${sxOpt(opts, i ? i.id : '', 'Choose the item')}</select>`, 1)}</div><div class="sxNote" style="margin:12px 0;"><b>${lab}</b><br>${i ? 'Available ' + skNum(skBal(i)) + ' ' + sxUnit(i) + (two ? ' · unpacked on floor ' + skNum(sxFl(i)) : '') + (skIsAdmin() ? ` · <a href="#" data-sk="edititem" data-v="${skEsc(i.id)}" onclick="sxClose()">Edit item details</a>` : '') : 'Choose the item first.'}</div><div class="sxF">${sxField('Quantity (' + (i ? sxUnit(i) : skUnit(g)) + ')', '<input id="fsQ" type="number" inputmode="decimal" min="0" step="any" placeholder="0">')}${sxField('Date', `<input id="fsD" type="date" value="${skEsc(sxToday())}">`)}${sxField(k === 'out' ? 'Customer / order (optional)' : 'Note (optional)', '<input id="fsN" type="text">', 1)}</div>`, sxSave('fssave', 'Save'));
+  sxModal('Update stock · ' + skEsc((SX_FS.find(x => x[0] === g) || [0, ''])[1]), `<div class="hrTabs sxIO">${ks.map(x => `<button class="${k === x[0] ? 'active' : ''}" data-sx="fsk" data-k="${x[0]}">${x[1]}</button>`).join('')}</div><div class="hrTabs sxIO sxQl">${qks.map(x => `<button class="${QQ === x[0] ? 'active' : ''}" data-sx="fsql" data-v="${x[0]}">${x[1]}</button>`).join('')}</div><div class="sxF">${sxField('Item', `<select id="fsI">${sxOpt(opts, i ? i.id : '', 'Choose the item')}</select>`, 1)}</div><div class="sxNote" style="margin:12px 0;"><b>${lab}</b><br>${i ? 'Available ' + (QQ === '2' ? '2nd quality ' : '') + skNum(sxQB(i, QQ)) + ' ' + sxUnit(i) + (two ? ' · unpacked on floor ' + skNum(sxFl(i)) : '') + (skIsAdmin() ? ` · <a href="#" data-sk="edititem" data-v="${skEsc(i.id)}" onclick="sxClose()">Edit item details</a>` : '') : 'Choose the item first.'}</div><div class="sxF">${sxField('Quantity (' + (i ? sxUnit(i) : skUnit(g)) + ')', '<input id="fsQ" type="number" inputmode="decimal" min="0" step="any" placeholder="0">')}${sxField('Date', `<input id="fsD" type="date" value="${skEsc(sxToday())}">`)}${sxField(k === 'out' ? 'Customer / order (optional)' : 'Note (optional)', '<input id="fsN" type="text">', 1)}</div>`, sxSave('fssave', 'Save'));
   setTimeout(() => { const q = $(i ? 'fsQ' : 'fsI'); if(q) q.focus(); }, 60);
 }
 async function sxFsSave(id, k){
   const i = skItem(id), q = Number(sxVal('fsQ')), d = sxVal('fsD') || sxToday(), n = sxVal('fsN'); if(!i){ toast('Choose the item'); return; } if(!(q > 0)){ toast('Type a quantity'); return; }
   const base = { id: sxId(), t: Date.now(), d, by: sxMe(), u: String(state.user.loginId), n };
   try{
+    if(sxQual() === '2' && i.g !== 'q2'){ if(k !== 'in' && k !== 'out'){ toast('Floor and pack are for 1st quality only'); return; } if(k === 'out' && q > sxQ2B(i)){ toast('Only ' + skNum(sxQ2B(i)) + ' in 2nd quality'); return; } if(!await sxSaveMove('s', Object.assign({ s: 'q2', k, i: id, q, dl: { ['q2|' + id]: k === 'out' ? -q : q } }, base), k === 'out')) return; toast('Saved'); sxClose(); skRender(); return; }
     if(k === 'in' || k === 'out'){ const e = Object.assign({ i: id, k, q }, base); SK.bal[id] = await window.__db.invMove(e); SK.mvLoaded = false; }
     else if(k === 'fl'){ if(!await sxSaveMove('s', Object.assign({ s: 'fl', k: 'in', i: id, q, dl: { ['fl|' + id]: q } }, base), false)) return; }
     else if(k === 'pk'){ if(q > sxFl(i)){ toast('Only ' + skNum(sxFl(i)) + ' on the floor'); return; } if(!await sxSaveMove('s', Object.assign({ s: 'fl', k: 'pack', i: id, q, dl: { ['fl|' + id]: -q } }, base), true)) return; SK.bal[id] = await window.__db.invMove(Object.assign({ i: id, k: 'in', q }, base, { n: 'Packed from floor stock' })); }
@@ -29922,7 +29931,7 @@ document.addEventListener('click', async (ev) => {
   else if(a === 'pickcol'){ const i = $(el.dataset.t); if(i){ i.value = v; sxDotUpd(i); i.focus(); } }
   else if(a === 'gofs'){ SX.sfor = ''; SX.tab = 'fst'; SX.fsub = v; SK.tab = 'fst'; SK.grp = v; SX.fq = ''; window.scrollTo(0, 0); skRender(); } else if(a === 'upall'){ SX.upAll = !SX.upAll; skRender(); }
   else if(a === 'rawk'){ const s = sxSnap(); SX.rawk = v; sxOpenForm('raw'); sxRestore(s); } else if(a === 'rwk'){ const s = sxSnap(); SX.rwk = v; sxOpenForm('rw'); sxRestore(s); }
-  else if(a === 'rwsub'){ SX.rwsub = v; skRender(); } else if(a === 'editsel'){ const id = $('sxEdSel') ? $('sxEdSel').value : ''; if(!id){ toast('Choose an item first'); return; } skItemForm(id); } else if(a === 'isub'){ SX.isub = v; SX.open = SX.open || {}; SX.open.items = 1; skRender(); } else if(a === 'fsub'){ SX.fsub = v; SK.grp = v; SX.fq = ''; SX.ff.fst = {}; skRender(); } else if(a === 'dmsub'){ SX.dmsub = v; skRender(); }
+  else if(a === 'rwsub'){ SX.rwsub = v; skRender(); } else if(a === 'editsel'){ const id = $('sxEdSel') ? $('sxEdSel').value : ''; if(!id){ toast('Choose an item first'); return; } skItemForm(id); } else if(a === 'isub'){ SX.isub = v; SX.open = SX.open || {}; SX.open.items = 1; skRender(); } else if(a === 'fqual'){ SX.fqual = v; if(SX.ff.fst) SX.ff.fst.ql = ''; SX.fq = ''; skRender(); } else if(a === 'fsql'){ const sn = sxSnap(); SX.fqual = v; sxFsModal($('fsI') ? $('fsI').value : '', SX.fsk); sxRestore(sn); } else if(a === 'fsub'){ SX.fsub = v; SK.grp = v; SX.fq = ''; SX.ff.fst = {}; skRender(); } else if(a === 'dmsub'){ SX.dmsub = v; skRender(); }
   else if(a === 'saveraw') sxSaveRaw(); else if(a === 'saverw') sxSaveRw(); else if(a === 'savereq') sxSaveReq(); else if(a === 'reqdone') sxReqDone(v); else if(a === 'savefin') sxSaveFin();
   else if(a === 'undo') sxUndo(el.dataset.p, el.dataset.ym, v);
   else if(a === 'fsm') sxFsModal(v, el.dataset.k); else if(a === 'fssave') sxFsSave($('fsI') ? $('fsI').value : v, SX.fsk || 'in');
@@ -30487,8 +30496,8 @@ function sxFsHist(){
   if(!SX.mc['s_' + ym] && !SX.fsHL){ SX.fsHL = 1; sxMonth('s', ym).then(() => skRender()); }
   const nm = (id) => { const i = skItem(id); return i ? skEsc(i.name || '') + (i.col ? ' <span class="sxSm2">' + skEsc(i.col) + '</span>' : '') : skEsc(id || ''); };
   const a = (SK.mv || []).map(e => ({ e, ty: e.k === 'out' ? 'OUT' : 'IN', c: e.k === 'out' ? 'out' : 'in', i: e.i, q: e.q, n: e.n }));
-  const b = sxEnt('s', ym).map(e => ({ e, ty: e.k === 'pack' ? 'PACKED' : 'FLOOR', c: 'open', i: e.i, q: e.q, n: e.k === 'pack' ? 'Packed from floor stock' : 'Finished, not packed yet' }));
-  const g = SX.fsub, l = a.concat(b).filter(r => { const i = skItem(r.i); return i && i.g === g; }).sort((x, y) => (Number(y.e.t) || 0) - (Number(x.e.t) || 0)), pgi = sxPgInfo('fsh:' + g, l.length, 10);
+  const b = sxEnt('s', ym).map(e => e.s === 'q2' ? ({ e, ty: e.k === 'out' ? '2ND OUT' : '2ND IN', c: e.k === 'out' ? 'out' : 'in', i: e.i, q: e.q, n: e.n }) : ({ e, ty: e.k === 'pack' ? 'PACKED' : 'FLOOR', c: 'open', i: e.i, q: e.q, n: e.k === 'pack' ? 'Packed from floor stock' : 'Finished, not packed yet' }));
+  const g = SX.fsub, l = a.concat(b).filter(r => { const i = skItem(r.i); return i && sxQCat(i) === g; }).sort((x, y) => (Number(y.e.t) || 0) - (Number(x.e.t) || 0)), pgi = sxPgInfo('fsh:' + g, l.length, 10);
   const rows = l.slice(pgi.a, pgi.b).map(r => [sxWhen(r.e), `<span class="sxYc">${nm(r.i)}</span>`, `<span class="sxTag ${r.c}">${r.ty}</span>`, `<b>${skNum(r.q)}</b>`, `<span class="sxSm2 sxEll" title="${skEsc(r.n || '')}">${skEsc(r.n || '')}</span>`, sxByC(r.e)]);
   return sxHead('History', '') + '<div class="card sxCard sxLg sxHs">' + sxTbl([['When', ''], ['Item', '', 'k'], ['Type', '', 'a'], ['Qty', '', 'r'], ['Note', ''], ['By', '']], rows, null, 'No entries yet this month.') + pgi.html + '</div>';
 }
@@ -31065,7 +31074,7 @@ const CLR = {
   raw: { name: 'Raw Yarn', pre: ['yr|', 'raw|'], ent: ['yr', 'raw'], what: 'all stock, all yarn items and all entries and history of Raw Yarn', after: 'Rewound Yarn uses the yarn items, so clear it too if you start again.' },
   rew: { name: 'Rewound Yarn', pre: ['rew|', 'rewN|', 'rewR|', 'rewQ|', 'rewQN|', 'rewG|', 'rewT|', 'rewO|', 'rewI|', 'rewD|'], ent: ['rew'], what: 'all rewound stock and all entries and history of Rewound Yarn', after: '' },
   wp: { name: 'Warp Beams', pre: ['wp|', 'wpN|', 'wpI|', 'wpD|'], ent: ['wp'], what: 'all beam stock and all entries and history of Warp Beams', after: '' },
-  fst: { name: 'Finished Goods', pre: ['fl|'], ent: [], what: 'all finished goods stock, all items and all entries and history (designs stay)', after: '' }
+  fst: { name: 'Finished Goods', pre: ['fl|', 'q2|'], ent: [], what: 'all finished goods stock, all items and all entries and history (designs stay)', after: '' }
 };
 function clrSec(sec){
   const c = CLR[sec];
