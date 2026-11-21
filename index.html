@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261121-111155">
+<meta name="rvf-build" content="20261121-111228">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -30981,31 +30981,48 @@ function bkSec(sec, key){
 const _bkYSet = sxYSet; sxYSet = function(show){ let h = _bkYSet(show); if(show('bkrew')) h += bkSec('rew', 'bkrew'); if(show('bkwp')) h += bkSec('wp', 'bkwp'); if(show('bkfst')) h += bkSec('fst', 'bkfst'); if(show('bkraw')) h += bkSec('raw', 'bkraw'); return h; };
 Object.keys({ raw: 1, rew: 1, wp: 1, fst: 1 }).forEach(p => { SX_SM[p] = (SX_SM[p] || []).concat(['bk' + p]); });
 document.addEventListener('click', (ev) => { const el = ev.target.closest && ev.target.closest('[data-sx]'); if(!el) return; const a = el.dataset.sx, v = el.dataset.v; if(a === 'bkdl') bkDownload(v); else if(a === 'bkup') bkPick(v); else if(a === 'bkgo') bkGo(); });
-/* ---------- p262: one-time "clear everything" button in Settings (disappears after use) ---------- */
-function clrSec(){
-  return `<details class="acSec admD" ${sxSecAttr('clr')}><summary>Clear everything (one time)</summary><div class="acSecB"><p class="sub">Removes all stock, all yarn items, all Finished Goods items and the entries and history of Raw Yarn, Rewound Yarn, Warp Beams and Finished Goods, so you can start again from Excel. Designs, Unrolling, Material Requests and settings lists stay. A backup copy is kept. This button disappears after use.</p><button type="button" class="pcBtnSoft" data-sx="clrgo" style="color:#dc2626;">Clear everything</button></div></details>`;
+/* ---------- p262: one-time "clear" button in the Settings of each stock page (disappears after use) ---------- */
+const CLR = {
+  raw: { name: 'Raw Yarn', pre: ['yr|', 'raw|'], ent: ['yr', 'raw'], what: 'all stock, all yarn items and all entries and history of Raw Yarn', after: 'Rewound Yarn uses the yarn items, so clear it too if you start again.' },
+  rew: { name: 'Rewound Yarn', pre: ['rew|', 'rewN|', 'rewR|', 'rewQ|', 'rewQN|', 'rewG|', 'rewT|', 'rewO|', 'rewI|'], ent: ['rew'], what: 'all rewound stock and all entries and history of Rewound Yarn', after: '' },
+  wp: { name: 'Warp Beams', pre: ['wp|', 'wpN|'], ent: ['wp'], what: 'all beam stock and all entries and history of Warp Beams', after: '' },
+  fst: { name: 'Finished Goods', pre: ['fl|'], ent: [], what: 'all finished goods stock, all items and all entries and history (designs stay)', after: '' }
+};
+function clrSec(sec){
+  const c = CLR[sec];
+  return `<details class="acSec admD" ${sxSecAttr('clr' + sec)}><summary>Clear ${c.name} (one time)</summary><div class="acSecB"><p class="sub">Removes ${c.what}, so you can start again from Excel. A backup copy is kept. This button disappears after use.</p><button type="button" class="pcBtnSoft" data-sx="clrgo" data-v="${sec}" style="color:#dc2626;">Clear ${c.name}</button></div></details>`;
 }
-const _clrYSet = sxYSet; sxYSet = function(show){ let h = _clrYSet(show); if(!SX.sfor && sxAdmin() && !SX.cfg.stockCleared && show('clr')) h += clrSec(); return h; };
-async function clrGo(){
-  if(!sxAdmin() || SX.cfg.stockCleared || SX.clrBusy) return;
-  if(!confirm('Clear EVERYTHING in Raw Yarn, Rewound Yarn, Warp Beams and Finished Goods?\n\nAll stock, all item names, all entries and their history will be removed so you can load fresh data from Excel.\nDesigns, Unrolling, Material Requests and settings lists stay.\n\nThis button works one time and then disappears. A backup copy is kept.')) return;
+const _clrYSet = sxYSet; sxYSet = function(show){ let h = _clrYSet(show); if(sxAdmin() && CLR[SX.sfor] && !(SX.cfg.cleared || {})[SX.sfor]) h += clrSec(SX.sfor); return h; };
+async function clrGo(sec){
+  const c = CLR[sec]; if(!c || !sxAdmin() || (SX.cfg.cleared || {})[sec] || SX.clrBusy) return;
+  if(!confirm('Clear ' + c.name + '?\n\nThis removes ' + c.what + '.' + (c.after ? '\n' + c.after : '') + '\n\nThis button works one time and then disappears. A backup copy is kept.')) return;
   SX.clrBusy = true; toast('Clearing… please wait');
   try{
-    const db = window.__db, ts = Date.now(), bak = {}, put = [], d = new Date(), months = []; for(let y = 2025, m = 1; y < d.getFullYear() || (y === d.getFullYear() && m <= d.getMonth() + 2); ){ months.push(y + '-' + String(m).padStart(2, '0')); if(++m > 12){ m = 1; y++; } }
-    const [b, s, it] = await Promise.all([db.invGet('sxbal'), db.invGet('stock'), db.invGet('items')]);
-    bak.sxbal = b; bak.stock = s; bak.items = it; bak.cfgYarn = SX.cfg.yarn || null;
-    const docs = []; await Promise.all(months.map(async (m) => { for(const k of ['sx_w_', 'sx_s_', 'mv_']){ const v = await db.invGet(k + m); if(v) docs.push([k + m, v]); } const h = await db.invGet('sxh_' + m); if(h) docs.push(['sxh_' + m, h]); }));
-    docs.forEach(x => { bak['doc_' + x[0]] = x[1]; });
-    for(const k of Object.keys(bak)){ if(bak[k] != null) await db.invSet('bak' + ts + '_' + k, bak[k]); }
-    for(const x of docs){ if(x[0].indexOf('sxh_') === 0){ const keep = (x[1].list || []).filter(r => r.p !== 'w' && r.p !== 's'); await db.invSet(x[0], { list: keep }); } else if(x[0].indexOf('mv_') === 0) await db.invSet(x[0], { entries: [] }); else await db.invSet(x[0], { entries: [] }); }
-    await db.invSet('sxbal', { b: {}, upd: ts }); await db.invSet('stock', { bal: {}, upd: ts }); await db.invSet('items', { items: [] });
-    SX.bal = {}; SK.bal = {}; SK.items = []; SX.cfg.yarn = []; Object.keys(SX.mc).forEach(k => { if(k.indexOf('w_') === 0 || k.indexOf('s_') === 0) delete SX.mc[k]; }); SX.hl = {}; SK.mvLoaded = false; SX.cfg.stockCleared = ts;
-    if(!await sxPutCfg()) toast('Cleared, but the button could not be hidden. Do not press it again'); else toast('Everything cleared');
+    const db = window.__db, ts = Date.now(), bak = {}, d = new Date(), months = [], fst = sec === 'fst', match = (e) => c.ent.indexOf(e && e.s) >= 0;
+    for(let y = 2025, m = 1; y < d.getFullYear() || (y === d.getFullYear() && m <= d.getMonth() + 2); ){ months.push(y + '-' + String(m).padStart(2, '0')); if(++m > 12){ m = 1; y++; } }
+    const b = await db.invGet('sxbal'); bak.sxbal = b; if(sec === 'raw') bak.cfgYarn = { yarn: SX.cfg.yarn || [] };
+    if(fst){ bak.stock = await db.invGet('stock'); bak.items = await db.invGet('items'); }
+    const wl = [], hl = [], fl = [];
+    await Promise.all(months.map(async (m) => {
+      if(fst){ for(const k of ['mv_', 'sx_s_']){ const v = await db.invGet(k + m); if(v && (v.entries || []).length) fl.push([k + m, v]); } const h = await db.invGet('sxh_' + m); if(h && (h.list || []).some(r => r.p === 's')) hl.push(['sxh_' + m, h]); }
+      else { const v = await db.invGet('sx_w_' + m); if(v && (v.entries || []).some(match)) wl.push(['sx_w_' + m, v]); const h = await db.invGet('sxh_' + m); if(h && (h.list || []).some(r => r.p === 'w' && match(r.e))) hl.push(['sxh_' + m, h]); }
+    }));
+    wl.concat(fl, hl).forEach(x => { bak['doc_' + x[0]] = x[1]; });
+    for(const k of Object.keys(bak)){ if(bak[k] != null) await db.invSet('bak' + ts + '_' + sec + '_' + k, bak[k]); }
+    const nb = Object.assign({}, (b && b.b) || {}); Object.keys(nb).forEach(k => { if(c.pre.some(p => k.indexOf(p) === 0)) delete nb[k]; }); await db.invSet('sxbal', { b: nb, upd: ts });
+    for(const x of wl) await db.invSet(x[0], { entries: (x[1].entries || []).filter(e => !match(e)) });
+    for(const x of fl) await db.invSet(x[0], { entries: [] });
+    for(const x of hl) await db.invSet(x[0], { list: (x[1].list || []).filter(r => fst ? r.p !== 's' : !(r.p === 'w' && match(r.e))) });
+    if(fst){ await db.invSet('stock', { bal: {}, upd: ts }); await db.invSet('items', { items: [] }); SK.bal = {}; SK.items = []; SK.mvLoaded = false; }
+    if(sec === 'raw') SX.cfg.yarn = [];
+    SX.bal = nb; Object.keys(SX.mc).forEach(k => { if(k.indexOf('w_') === 0 || k.indexOf('s_') === 0) delete SX.mc[k]; }); SX.hl = {};
+    SX.cfg.cleared = Object.assign({}, SX.cfg.cleared || {}, { [sec]: ts });
+    if(!await sxPutCfg()) toast('Cleared, but the button could not be hidden. Do not press it again'); else toast(c.name + ' cleared');
     skRender();
-  }catch(err){ console.error(err); toast('Could not finish clearing. Check the connection and look at the stock pages'); }
+  }catch(err){ console.error(err); toast('Could not finish clearing. Check the connection and look at the page'); }
   finally{ SX.clrBusy = false; }
 }
-document.addEventListener('click', (ev) => { const el = ev.target.closest && ev.target.closest('[data-sx="clrgo"]'); if(el) clrGo(); });
+document.addEventListener('click', (ev) => { const el = ev.target.closest && ev.target.closest('[data-sx="clrgo"]'); if(el) clrGo(el.dataset.v); });
 
 /* ---- clicks ---- */
 document.addEventListener('click', (ev) => {
