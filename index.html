@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261121-142146">
+<meta name="rvf-build" content="20261121-145103">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -30120,16 +30120,28 @@ function yWpHtml(){
   h += sxHead('Beams available now') + '<div class="card sxCard">' + sxTbl(cols, body, ['<b>Total</b>', `<b>${sxN(T.n)}</b>`, '', `<b>${sxN(T.kg)}</b>`], 'No beam colours yet. Add them in Settings.') + '</div>';
   return h + yRecent(['wp'], 'Recent entries');
 }
+function yWpPer(col){
+  const c = yCfg(), w = Number((c.beamW || {})[col]) || 0; if(w > 0) return w;
+  const r = yWpRows().find(x => x.col.toLowerCase() === String(col || '').toLowerCase()); return r && r.n > 0 ? r.kg / r.n : 0;
+}
+function yWpCalc(){
+  if((SX.yk3 || 'in') !== 'out') return; const raw = sxVal('yWc'), r = yWpRows().find(x => x.col.toLowerCase() === String(raw || '').toLowerCase()), kgE = $('yWk'), inf = $('yWInfo'), n = Number(sxVal('yWn')), w = r ? yWpPer(r.col) : 0;
+  if(inf) inf.innerHTML = r ? `In store: <b>${sxN(r.n)}</b> beams${w > 0 ? ' &middot; ' + sxN(Math.round(w * 10) / 10) + ' kg each' : ''}` : 'Choose the colour to see the beams in store.';
+  if(kgE && kgE.dataset.m !== '1') kgE.value = (w > 0 && n > 0) ? Math.round(n * w * 100) / 100 : '';
+}
 function yOpenWp(){
-  const c = yCfg(), k = SX.yk3 || 'in', F = SX.last;
-  sxModal('Warp beams', sxInOut('yk3', k, 'IN · beams made', 'OUT · beams used') + `<div class="sxF">${sxField('Colour', `<input id="yWc" list="yWl" type="text" autocomplete="off" value="${skEsc(F.ywc || '')}" placeholder="Choose or type">`, 1)}
-    ${sxField('Number of beams', '<input id="yWn" type="number" inputmode="decimal" min="0" step="any" placeholder="0">')}${sxField('Total kg (auto from kg per beam)', '<input id="yWk" type="number" inputmode="decimal" min="0" step="any" placeholder="auto">')}
+  const c = yCfg(), k = SX.yk3 === 'out' ? 'out' : 'in', F = SX.last;
+  const tabs = `<div class="hrTabs sxIO">${[['in', 'IN'], ['out', 'OUT']].map(x => `<button class="${k === x[0] ? 'active' : ''}" data-sx="yk3" data-v="${x[0]}">${x[1]}</button>`).join('')}</div>`;
+  sxModal('Warp beams', tabs + `<div class="sxF yF">${sxField('Colour', `<input id="yWc" list="yWl" type="text" autocomplete="off" value="${skEsc(F.ywc || '')}" placeholder="Choose or type">`, 1)}
+    ${k === 'out' ? '<div class="field wide"><div id="yWInfo" class="sxNote" style="margin:0;">Choose the colour to see the beams in store.</div></div>' : ''}
+    ${sxField('Number of beams', '<input id="yWn" type="number" inputmode="decimal" min="0" step="any" placeholder="0">')}${sxField(k === 'out' ? 'Total kg (auto)' : 'Total kg', `<input id="yWk" type="number" inputmode="decimal" min="0" step="any" placeholder="${k === 'out' ? 'auto' : '0'}">`)}
     ${sxField('Date', `<input id="sxD" type="date" value="${skEsc(sxToday())}">`)}${sxField('Note (optional)', '<input id="sxN" type="text">')}</div><datalist id="yWl">${yWpRows().map(r => `<option value="${skEsc(r.col)}">`).join('')}</datalist>`, sxSave('ysavewp', k === 'out' ? 'Save OUT' : 'Save IN'));
+  yWpCalc();
 }
 async function ySaveWp(){
   if(!sxCan('wp')) return; const k = SX.yk3 || 'in', c = yCfg(), r0 = yWpRows(), raw = sxVal('yWc'), col = (r0.find(r => r.col.toLowerCase() === raw.toLowerCase()) || { col: sxColFix(raw) }).col, n = Number(sxVal('yWn')), d = sxVal('sxD') || sxToday();
   if(!col){ toast('Choose the colour'); return; } if(!(n > 0)){ toast('Type the number of beams'); return; }
-  const w = Number(c.beamW[col]) || 0; let kg = Number(sxVal('yWk')); if(!(kg > 0)) kg = Math.round(n * w * 100) / 100; if(!(kg > 0)){ toast('Type the total kg (no kg per beam is set for this colour)'); return; }
+  const w = yWpPer(col); let kg = Number(sxVal('yWk')); if(!(kg > 0)) kg = Math.round(n * w * 100) / 100; if(!(kg > 0)){ toast('Type the total kg (no kg per beam is set for this colour)'); return; }
   const dl = { ['wp|' + col]: k === 'out' ? -kg : kg, ['wpN|' + col]: k === 'out' ? -n : n };
   const e = { id: sxId(), t: Date.now(), s: 'wp', k, d, col, kg, bob: n, n: sxVal('sxN'), by: sxMe(), u: String(state.user.loginId), dl };
   if(await sxSaveMove('w', e, k === 'out')){ sxKeep({ ywc: col }); toast('Saved'); sxClose(); skRender(); }
@@ -30148,7 +30160,7 @@ Object.assign(SX_SM, { raw: ['yitems', 'ydaily', 'ydest', 'yrules', 'yopen'], re
 document.addEventListener('click', async (ev) => {
   if((SX.yso || SX.fo) && (!(ev.target.closest && ev.target.closest('.sxMw')) || (ev.target.classList && ev.target.classList.contains('sxFm') && ev.clientY < ev.target.getBoundingClientRect().top))){ SX.yso = ''; SX.fo = ''; skRender(); }
   const el = ev.target.closest && ev.target.closest('[data-sx]'); if(!el || el.tagName === 'SELECT') return; const a = el.dataset.sx, v = el.dataset.v;
-  if(a === 'yk'){ const s = sxSnap(); SX.yk = v; yOpenRaw(); sxRestore(s); yInfoUpd(); } else if(a === 'yk2'){ const s = sxSnap(); SX.yk2 = v; yOpenRew(); sxRestore(s); yInfoUpd(); } else if(a === 'yk3'){ const s = sxSnap(); SX.yk3 = v; yOpenWp(); sxRestore(s); }
+  if(a === 'yk'){ const s = sxSnap(); SX.yk = v; yOpenRaw(); sxRestore(s); yInfoUpd(); } else if(a === 'yk2'){ const s = sxSnap(); SX.yk2 = v; yOpenRew(); sxRestore(s); yInfoUpd(); } else if(a === 'yk3'){ const s = sxSnap(); SX.yk3 = v; yOpenWp(); sxRestore(s); yWpCalc(); }
   else if(a === 'ysm'){ SX.yso = SX.yso === v ? '' : v; SX.fo = ''; skRender(); } else if(a === 'ysort'){ const p = v.split(':'); SX.last['ys_' + p[0]] = p[1]; sxKeep({}); SX.yso = ''; skRender(); }
   else if(a === 'ysaveraw') ySaveRaw(); else if(a === 'ysaverew') ySaveRew(); else if(a === 'ysavewp') ySaveWp(); else if(a === 'ysaveopen') ySaveOpen(); else if(a === 'ysaveitem') ySaveItem(v);
   else if(a === 'yopen'){ SX.sfor = ''; SX.tab = 'raw'; SK.tab = 'raw'; skRender(); yOpenOpening(); } else if(a === 'ynew') yItemForm(''); else if(a === 'ynewraw'){ const t = sxVal('yI'); SX.yBack = 1; yItemForm(''); setTimeout(() => { const f = $('yfCol'); if(f && !f.value) f.value = t; }, 60); }
@@ -30162,6 +30174,8 @@ document.addEventListener('input', (ev) => {
   if(t.id === 'yI') yInfoUpd();
   else if(t.id === 'yBx'){ const i = yFind(sxVal('yI')), k = $('yKg'); if(i && i.kgb > 0 && k && k.dataset.m !== '1'){ const b = Number(t.value); k.value = b > 0 ? Math.round(b * i.kgb * 100) / 100 : ''; } }
   else if(t.id === 'yKg'){ t.dataset.m = t.value === '' ? '' : '1'; }
+  else if(t.id === 'yWc' || t.id === 'yWn') yWpCalc();
+  else if(t.id === 'yWk'){ t.dataset.m = t.value === '' ? '' : '1'; }
   else if(t.id === 'yOq'){ const q = t.value.trim().toLowerCase(); document.querySelectorAll('#sxModal tbody tr').forEach(r => { r.style.display = !q || (r.dataset.q || '').indexOf(q) >= 0 ? '' : 'none'; }); }
 });
 document.addEventListener('change', (ev) => { const t = ev.target; if(t && t.id === 'yI') yInfoUpd(); });
