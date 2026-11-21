@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261121-165332">
+<meta name="rvf-build" content="20261121-165529">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -29854,11 +29854,11 @@ function sxFsModal(id, k){
   const isC = g === 'cr' || g === 'vip', inC = isC && k === 'in', dlist = `<datalist id="fsCL">${sxColTokens(SK.items.filter(x => x.g === g)).map(t => `<option value="${skEsc(t)}">`).join('')}</datalist>`, addB = '<button type="button" class="pcBtnSoft sm" data-sx="fsaddc" style="margin:2px 0 8px;">+ Add another colour</button>';
   const numI = (id) => `<input id="${id}" type="number" inputmode="decimal" min="0" step="any" placeholder="0">`, colI = '<input id="fsC" list="fsCL" type="text" autocomplete="off" placeholder="e.g. BRN">' + dlist;
   const qBlock = inC ? `<div class="sxF">${sxField('Total bundles', numI('fsQ'))}${sxField('Bundle size (pcs)', `<select id="fsB">${sxOpt(sxBs().map(v => [v, v + ' pcs']), '', 'Choose')}</select>`)}${sxField('Total pieces', '<input id="fsT" type="text" readonly placeholder="0">')}</div><div class="sxF">${sxField('Colour', colI)}${sxField('Pieces', numI('fsP'))}</div><div id="fsMore"></div>${addB}<div id="fsRem" class="sxSm2" style="margin:0 0 10px;"></div><div class="sxF">` : isC ? `<div class="sxF">${sxField('Colour', colI)}${sxField('Quantity (bundles)', numI('fsQ'))}</div><div id="fsMore"></div>${addB}<div class="sxF">` : `<div class="sxF">${sxField('Quantity (' + (i ? sxUnit(i) : skUnit(g)) + ')', numI('fsQ'))}`;
-  sxModal('Update stock · ' + skEsc((SX_FS.find(x => x[0] === g) || [0, ''])[1]), `<div class="hrTabs sxIO">${ks.map(x => `<button class="${k === x[0] ? 'active' : ''}" data-sx="fsk" data-k="${x[0]}">${x[1]}</button>`).join('')}</div><div class="hrTabs sxIO sxQl">${qks.map(x => `<button class="${QQ === x[0] ? 'active' : ''}" data-sx="fsql" data-v="${x[0]}">${x[1]}</button>`).join('')}</div><div class="sxF">${sxField('Item', `<select id="fsI">${sxOpt(opts, i ? i.id : '', 'Choose the item')}</select>`, 1)}</div>${nw}<div class="sxNote" style="margin:12px 0;"><b>${lab}</b><br>${i ? 'Available ' + (QQ === '2' ? '2nd quality ' : '') + skNum(sxQB(i, QQ)) + ' ' + sxUnit(i) + (two ? ' · unpacked on floor ' + skNum(sxFl(i)) : '') + (skIsAdmin() ? ` · <a href="#" data-sk="edititem" data-v="${skEsc(i.id)}" onclick="sxClose()">Edit item details</a>` : '') : 'Choose the item first.'}</div>${qBlock}${sxField('Date', `<input id="fsD" type="date" value="${skEsc(sxToday())}">`)}${sxField(k === 'out' ? 'Customer / order (optional)' : 'Note (optional)', '<input id="fsN" type="text">', 1)}</div>`, sxSave('fssave', 'Save'));
+  sxModal('Update stock · ' + skEsc((SX_FS.find(x => x[0] === g) || [0, ''])[1]), `<div class="hrTabs sxIO">${ks.map(x => `<button class="${k === x[0] ? 'active' : ''}" data-sx="fsk" data-k="${x[0]}">${x[1]}</button>`).join('')}</div><div class="hrTabs sxIO sxQl">${qks.map(x => `<button class="${QQ === x[0] ? 'active' : ''}" data-sx="fsql" data-v="${x[0]}">${x[1]}</button>`).join('')}</div><div class="sxF">${sxField('Item', `<select id="fsI">${sxOpt(opts, i ? i.id : '', 'Choose the item')}</select>`, 1)}</div>${nw}<div class="sxNote" style="margin:12px 0;"><b>${lab}</b><br>${i ? 'Available ' + (QQ === '2' ? '2nd quality ' : '') + skNum(sxQB(i, QQ)) + ' ' + sxUnit(i) + (two ? ' · unpacked on floor ' + skNum(sxFl(i)) : '') + (skIsAdmin() ? ` · <a href="#" data-sk="edititem" data-v="${skEsc(i.id)}" onclick="sxClose()">Edit item details</a>` : '') : 'Choose the item first.'}</div>${qBlock}${sxField('Date', `<input id="fsD" type="date" value="${skEsc(sxToday())}">`)}${k === 'out' ? sxField('Order / Reference No', '<input id="fsR" type="text" autocomplete="off" placeholder="e.g. SO-1024">') + sxField('Customer (optional)', '<input id="fsN" type="text">') : sxField('Note (optional)', '<input id="fsN" type="text">', 1)}</div>`, sxSave('fssave', 'Save'));
   setTimeout(() => { const q = $(i ? 'fsQ' : 'fsI'); if(q) q.focus(); }, 60);
 }
 async function sxFsSave(id, k){
-  let i = skItem(id); const d = sxVal('fsD') || sxToday(), n = sxVal('fsN');
+  let i = skItem(id); const d = sxVal('fsD') || sxToday(), n = sxVal('fsN'), ref = $('fsR') ? sxVal('fsR').trim() : '';
   const lines = [], addL = (c, qv) => { qv = Number(qv); c = String(c || '').trim().toUpperCase(); if(qv > 0){ const f = lines.find(x => x.col === c); if(f) f.q += qv; else lines.push({ col: c, q: qv }); } };
   let q = 0;
   if($('fsP')){
@@ -29878,7 +29878,7 @@ async function sxFsSave(id, k){
     if(k === 'out'){ if(l.q > cb){ bad = cb > 0 ? 'Only ' + skNum(cb) + ' bundles of ' + l.col : 'No stock of ' + l.col; return; } const dp = Math.round((Number(SX.bal[ppk]) || 0) / cb * l.q); cdl[cpk] = -l.q; cdl[ppk] = -dp; } else { cdl[cpk] = l.q; cdl[ppk] = l.p != null ? l.p : l.q * bs; } });
   if(bad){ toast(bad); return; }
   const hasC = Object.keys(cdl).length > 0, cn = lines.filter(l => l.col).map(l => l.col + ' ' + (l.p != null ? sxN(l.p) + ' pcs' : l.q)).join(', ');
-  const base = { id: sxId(), t: Date.now(), d, by: sxMe(), u: String(state.user.loginId), n: [cn, bs ? bs + ' pcs bundle' : '', n].filter(Boolean).join(' \u00b7 ') };
+  const base = { id: sxId(), t: Date.now(), d, by: sxMe(), u: String(state.user.loginId), ref, n: [ref ? 'Ref ' + ref : '', cn, bs ? bs + ' pcs bundle' : '', n].filter(Boolean).join(' \u00b7 ') };
   try{
     if(QQ === '2' && i.g !== 'q2'){ if(k !== 'in' && k !== 'out'){ toast('Floor and pack are for 1st quality only'); return; } if(k === 'out' && q > sxQ2B(i)){ toast('Only ' + skNum(sxQ2B(i)) + ' in 2nd quality'); return; } if(!await sxSaveMove('s', Object.assign({ s: 'q2', k, i: id, q, dl: Object.assign({ ['q2|' + id]: k === 'out' ? -q : q }, cdl), bs }, base), k === 'out')) return; toast('Saved'); sxClose(); skRender(); return; }
     if(k === 'in' || k === 'out'){ const e = Object.assign({ i: id, k, q }, base); SK.bal[id] = await window.__db.invMove(e); SK.mvLoaded = false; if(hasC && !await sxSaveMove('s', Object.assign({ s: 'fc', k, i: id, q, bs, dl: cdl }, base), k === 'out')) return; }
