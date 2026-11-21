@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261121-120354">
+<meta name="rvf-build" content="20261121-120631">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -31098,9 +31098,10 @@ function cmpEditHtml(){
   const sumRows = `<tr class="cmpFoot cmpSum"><td class="cmpN"></td><td class="cmpP">Items total</td><td></td>${c.sups.map((s, k) => `<td data-it="${k}"></td>`).join('')}</tr>`;
   const discRow = `<tr class="cmpShip"><td class="cmpN"></td><td class="cmpP">Discount<div class="cmpPc">on the total · amount or %</div></td><td></td>${c.sups.map((s, k) => `<td><input class="cmpIn" data-cmp="dsc" data-k="${k}" placeholder="—" value="${pcEsc(c.ship[k].d)}"><div class="cmpD" data-dd="${k}"></div></td>`).join('')}</tr>`;
   const grandRow = `<tr class="cmpFoot cmpGrand"><td class="cmpN"></td><td class="cmpP">Grand total<div class="cmpPc">items − discount + shipping</div></td><td></td>${c.sups.map((s, k) => `<td data-gr="${k}"></td>`).join('')}</tr>`;
+  const advRow = `<tr class="cmpShip"><td class="cmpN"></td><td class="cmpP">Advance asked<div class="cmpPc">% of grand total</div></td><td></td>${c.sups.map((s, k) => `<td><input class="cmpIn" inputmode="decimal" data-cmp="adv" data-k="${k}" placeholder="%" value="${pcEsc(c.ship[k].p)}"><div class="cmpD" data-ad="${k}"></div></td>`).join('')}</tr>`;
   const foot = `<tr class="cmpFoot"><td class="cmpN"></td><td class="cmpP">Lowest on</td><td></td>${c.sups.map((s, k) => `<td data-w="${k}"></td>`).join('')}</tr>`;
   return bar + `<div class="card cmpCardBox">${picker}<div class="cmpTop"><div class="cmpSeg"><button class="${tot ? '' : 'on'}" data-cmp="mode" data-v="unit">Per piece</button><button class="${tot ? 'on' : ''}" data-cmp="mode" data-v="total">Total</button></div><span class="hrNote">${pcEsc(cur)} · ${tot ? 'Quantity × price' : 'Type the price per piece'} · lowest is green</span></div>
-    <div class="cmpWrap"><table class="cmpT"><thead><tr><th class="cmpN">#</th><th class="cmpP">Product</th><th class="cmpO">Old price</th>${th}</tr></thead><tbody>${body}${sumRows}${shipRow}${discRow}${grandRow}${foot}</tbody></table>
+    <div class="cmpWrap"><table class="cmpT"><thead><tr><th class="cmpN">#</th><th class="cmpP">Product</th><th class="cmpO">Old price</th>${th}</tr></thead><tbody>${body}${sumRows}${shipRow}${discRow}${grandRow}${advRow}${foot}</tbody></table>
     ${c.sups.length < 6 ? `<button class="pcBtnSoft sm cmpAdd" data-cmp="supadd">${pcSvg('plus', 13)}Supplier</button>` : ''}</div></div>`;
 }
 function cmpPhotos(c, r){
@@ -31130,11 +31131,12 @@ function cmpMark(){
     if(it) it.innerHTML = sums[k] ? cmpFmt(sums[k]) + (miss[k] ? `<div class="cmpD">${miss[k]} not priced</div>` : '') : '';
     if(g){ g.textContent = grand[k] ? cmpFmt(grand[k]) : ''; g.classList.toggle('cmpLow', grand[k] > 0 && grand[k] === gl && !miss[k]); }
     const dd = document.querySelector('[data-dd="' + k + '"]'); if(dd){ const dv = sums[k] ? cmpDisc(c, k, sums[k]) : 0; dd.textContent = dv ? '− ' + cmpFmt(dv) : ''; }
+    const ad = document.querySelector('[data-ad="' + k + '"]'); if(ad){ const pc2 = cmpNum((c.ship[k] || {}).p); ad.textContent = grand[k] && pc2 ? cmpFmt(grand[k] * pc2 / 100) : ''; }
     if(w) w.textContent = wins[k] || '';
   });
 }
 function cmpDisc(c, k, sum){ const v = String((c.ship[k] || {}).d || '').trim(); if(!v) return 0; return v.slice(-1) === '%' ? sum * (cmpNum(v.slice(0, -1)) / 100) : cmpNum(v); }
-function cmpShip(c){ c.ship = c.sups.map((x, k) => (c.ship && c.ship[k]) || { a: '', n: '', d: '' }); }
+function cmpShip(c){ c.ship = c.sups.map((x, k) => (c.ship && c.ship[k]) || { a: '', n: '', d: '', p: '' }); }
 function cmpFromOrder(c, o){
   c.oid = o.id; c.label = o.id + (o.dept ? ' · ' + o.dept : ''); c.cur = pcCur(o);
   c.rows = (o.items || []).map((it, i) => ({ oi: i, n: it.n || '', cd: it.cd || '', d: it.d || '', q: it.q || '', u: it.u || '', old: cmpNum(it.p) ? String(it.p) : (cmpNum(it.lp) ? String(it.lp) : ''), pr: c.sups.map(() => '') }));
@@ -31145,7 +31147,7 @@ async function cmpSave(){
   if(!c.rows.length){ toast('Choose an order first'); return; }
   CMP.busy = true;
   try{
-    const rec = { id: c.id, t: Date.now(), by: pcMe(), oid: c.oid, label: c.label, cur: c.cur, sups: c.sups.slice(), ship: (c.ship || []).map(x => ({ a: x.a || '', n: x.n || '', d: x.d || '' })), rows: c.rows.map(r => ({ oi: r.oi, n: r.n, cd: r.cd, d: r.d, q: r.q, u: r.u, old: r.old || '', pr: r.pr.slice() })) };
+    const rec = { id: c.id, t: Date.now(), by: pcMe(), oid: c.oid, label: c.label, cur: c.cur, sups: c.sups.slice(), ship: (c.ship || []).map(x => ({ a: x.a || '', n: x.n || '', d: x.d || '', p: x.p || '' })), rows: c.rows.map(r => ({ oi: r.oi, n: r.n, cd: r.cd, d: r.d, q: r.q, u: r.u, old: r.old || '', pr: r.pr.slice() })) };
     const k = CMP.list.findIndex(x => x.id === c.id);
     if(k >= 0) CMP.list[k] = rec; else CMP.list.push(rec);
     await cmpPersist(); c.isNew = false; toast('Comparison saved');
@@ -31158,6 +31160,7 @@ document.addEventListener('input', (e) => {
   if(a === 'sup'){ c.sups[+el.dataset.k] = el.value; }
   else if(a === 'old'){ c.rows[+el.dataset.i].old = el.value; cmpMark(); }
   else if(a === 'sha'){ c.ship[+el.dataset.k].a = el.value; cmpMark(); }
+  else if(a === 'adv'){ c.ship[+el.dataset.k].p = el.value; cmpMark(); }
   else if(a === 'dsc'){ c.ship[+el.dataset.k].d = el.value; cmpMark(); }
   else if(a === 'shn'){ c.ship[+el.dataset.k].n = el.value; }
   else if(a === 'pr'){ c.rows[+el.dataset.i].pr[+el.dataset.k] = el.value; cmpMark(); }
@@ -31169,7 +31172,7 @@ document.addEventListener('change', (e) => {
 document.addEventListener('click', (e) => {
   const el = e.target.closest && e.target.closest('[data-cmp]'); if(!el || el.tagName === 'INPUT' || el.tagName === 'SELECT') return;
   const a = el.dataset.cmp, c = CMP.cur;
-  if(a === 'new'){ CMP.cur = { id: 'c' + Date.now().toString(36), isNew: true, oid: '', label: '', cur: 'SAR', sups: ['', '', ''], ship: [{ a: '', n: '', d: '' }, { a: '', n: '', d: '' }, { a: '', n: '', d: '' }], rows: [] }; pcRender(); }
+  if(a === 'new'){ CMP.cur = { id: 'c' + Date.now().toString(36), isNew: true, oid: '', label: '', cur: 'SAR', sups: ['', '', ''], ship: [{ a: '', n: '', d: '', p: '' }, { a: '', n: '', d: '', p: '' }, { a: '', n: '', d: '', p: '' }], rows: [] }; pcRender(); }
   else if(a === 'open'){ const r = CMP.list.find(x => x.id === el.dataset.id); if(r){ CMP.cur = JSON.parse(JSON.stringify(r)); cmpShip(CMP.cur); pcRender(); } }
   else if(a === 'back'){ CMP.cur = null; pcRender(); }
   else if(a === 'save') cmpSave();
@@ -31199,6 +31202,8 @@ function cmpDl(c){
   rows.push(['', 'Items total', '', '', ''].concat(sm.map(v => v || '')));
   rows.push(['', 'Discount', '', '', ''].concat(c.ship.map((x, k) => x.d || '')));
   rows.push(['', 'Grand total (items - discount + shipping)', '', '', ''].concat(sm.map((v, k) => v ? v - cmpDisc(c, k, v) + cmpNum(c.ship[k].a) : '')));
+  rows.push(['', 'Advance asked (%)', '', '', ''].concat(c.ship.map(x => x.p ? x.p + '%' : '')));
+  rows.push(['', 'Advance amount', '', '', ''].concat(sm.map((v, k) => { const g = v ? v - cmpDisc(c, k, v) + cmpNum(c.ship[k].a) : 0; return g && cmpNum(c.ship[k].p) ? Math.round(g * cmpNum(c.ship[k].p)) / 100 : ''; })));
   rows.push(['', 'Lowest on (items)', '', '', ''].concat(lows));
   skDlXlsx('comparison-' + (c.oid || 'quotes'), 'Comparison', rows);
 }
