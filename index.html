@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261121-153808">
+<meta name="rvf-build" content="20261121-154142">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -29968,7 +29968,7 @@ async function sxSaveFin(){
 async function sxSaveReq(){
   const to = sxVal('sxRTo'), col = sxVal('sxRCol'); if(!col){ toast('Type the colour or item'); return; }
   const r = { id: sxId(), t: Date.now(), d: sxToday(), to, col, qty: sxVal('sxRQty'), n: sxVal('sxRN'), by: sxMe(), st: 'open' }; const next = [r].concat(SX.q).slice(0, 300);
-  try{ await window.__db.invSet('sxq', { list: next }); SX.q = next; sxKeep({ rto: to }); toast('Saved'); sxClose(); skRender(); }catch(err){ console.error(err); toast('Could not save'); }
+  try{ await window.__db.invSet('sxq', { list: next }); SX.q = next; sxKeep({ rto: to, sksz: sxVal('ySkSz') }); toast('Saved'); sxClose(); skRender(); }catch(err){ console.error(err); toast('Could not save'); }
 }
 async function sxReqDone(id){
   const next = SX.q.map(r => r.id === id ? Object.assign({}, r, { st: 'done', doneBy: sxMe(), doneD: sxToday(), doneT: Date.now() }) : r);
@@ -30639,7 +30639,7 @@ function yCfg(){
   if(!c.ydest) c.ydest = ['Weaving', 'Rewinding', 'Warping', 'Finishing', 'VIP', 'Dornier', 'Other'];
   else if(!c.ydestV){ c.ydestV = 1; c.ydest = c.ydest.map(x => x === 'Fringing' ? 'Finishing' : x); const k = () => c.ydest.indexOf('Other') >= 0 ? c.ydest.indexOf('Other') : c.ydest.length; ['Finishing', 'VIP', 'Dornier'].forEach(x => { if(c.ydest.indexOf(x) < 0) c.ydest.splice(k(), 0, x); }); }
   if(!c.beamCols) c.beamCols = ['White', 'Yellow', 'Black']; if(!c.beamW) c.beamW = {}; if(!c.yOrder) c.yOrder = 30;
-  if(!c.ysups) c.ysups = []; if(!c.bobSz) c.bobSz = ['450 g', '500 g', '1 kg', '2 kg', '4 kg']; if(!c.rdest) c.rdest = ['Weaving', 'Warping', 'Other'];
+  if(!c.ysups) c.ysups = []; if(!c.bobSz) c.bobSz = ['450 g', '500 g', '1 kg', '2 kg', '4 kg']; if(!c.rdest) c.rdest = ['Weaving', 'Warping', 'Other']; if(!c.sackSz) c.sackSz = [String(Number(c.rwSack) || 5) + ' kg'];
   if(!(c.rwTare > 0)) c.rwTare = 350; if(!(c.rwSack > 0)) c.rwSack = 5; return c;
 }
 function yRows(){
@@ -30713,8 +30713,9 @@ async function ySaveItem(id){
   SX.open = SX.open || {}; SX.open.yitems = 1; if(await sxPutCfg()){ toast('Saved'); const back = !id && SX.yBack; SX.yBack = 0; sxClose(); skRender(); if(back){ const ni = yItems()[yItems().length - 1]; yOpenRaw(); const e = $('yI'); if(e && ni){ e.value = yLbl(ni); yInfoUpd(); const b = $('yBx'); if(b) b.focus(); } } }
 }
 /* ---------- Rewound Yarn ---------- */
-function yRwCalc(gross, size, sacks, bobs, manual){
-  const sw = Number(SX.cfg.rwSack) || 0, tw = (Number(SX.cfg.rwTare) || 0) / 1000, sk = Math.max(0, sacks || 0) * sw, body = Math.max(0, gross - sk);
+function ySackKg(){ const e = $('ySkSz'); return e ? (Number(e.value) || 0) : 0; }
+function yRwCalc(gross, size, sacks, bobs, manual, swArg){
+  const sw = swArg > 0 ? swArg : (Number(SX.cfg.rwSack) || 0), tw = (Number(SX.cfg.rwTare) || 0) / 1000, sk = Math.max(0, sacks || 0) * sw, body = Math.max(0, gross - sk);
   let n = Math.max(0, Math.round(bobs || 0)); if(!manual && size > 0) n = Math.max(0, Math.round(body / (size + tw)));
   const tare = Math.min(gross, sk + n * tw); return { n, sack: sk, bob: n * tw, tare, net: Math.max(0, gross - tare) };
 }
@@ -30733,11 +30734,12 @@ function yOpenRew(){
     <div class="field wide"><div id="yInfo" class="sxNote" style="margin:0;">Choose the item.</div></div>
     ${k === 'ret' ? sxField('Return type', `<select id="yRt">${sxOpt([['full', 'Full bobbins'], ['run', 'Run-out bobbins']], 'full')}</select>`) + qual : ''}
     ${sxField('Gross weight kg', '<input id="yGross" type="number" inputmode="decimal" min="0" step="any" placeholder="0">')}<div class="field" id="ySzW"><label>Bobbin size</label><select id="ySz">${sxOpt(szs, '', 'Choose')}</select></div>
-    ${sxField('Number of sacks', '<input id="ySack" type="number" inputmode="decimal" min="0" step="any" placeholder="0">')}${sxField('Number of bobbins', '<input id="yBob" type="number" inputmode="decimal" min="0" step="1" placeholder="auto">')}
-    ${k === 'in' ? qual + sxField('Note (optional)', '<input id="sxN" type="text">') : k === 'out' ? qual + sxField('Goes to', `<select id="yTo">${sxOpt(c.rdest, F.rto, 'Choose')}</select>`) : ''}
+    ${sxField('Number of sacks', '<input id="ySack" type="number" inputmode="decimal" min="0" step="any" placeholder="0">')}${sxField('Sack size', `<select id="ySkSz">${sxOpt((c.sackSz || []).map(t => [String(yR3(ySizeKg(t))), t]).filter(x => Number(x[0]) > 0), F.sksz || '')}</select>`)}
+    ${sxField('Number of bobbins', '<input id="yBob" type="number" inputmode="decimal" min="0" step="1" placeholder="auto">')}${k === 'ret' ? sxField('Note (optional)', '<input id="sxN" type="text">') : qual}
+    ${k === 'in' ? sxField('Note (optional)', '<input id="sxN" type="text">', 1) : k === 'out' ? sxField('Goes to', `<select id="yTo">${sxOpt(c.rdest, F.rto, 'Choose')}</select>`) + sxField('Note (optional)', '<input id="sxN" type="text">') : ''}
     ${k === 'out' ? `<div class="field wide" id="yFromW" style="display:none;"><label>Take from</label><select id="yFrom">${sxOpt([['rew', 'Rewound yarn'], ['rc', 'Recovered yarn']], 'rew')}</select></div>` : ''}
     <div class="field wide"><div id="yCalc" class="sxNote" style="margin:0;">Net yarn is worked out after taking off the sack and empty bobbin weight.</div></div>
-    ${k === 'in' ? '' : sxField('Note (optional)', '<input id="sxN" type="text">', 1)}</div>` + yDL(pick), sxSave('ysaverew', k === 'out' ? 'Save OUT' : k === 'ret' ? 'Save RETURN' : 'Save IN'));
+</div>` + yDL(pick), sxSave('ysaverew', k === 'out' ? 'Save OUT' : k === 'ret' ? 'Save RETURN' : 'Save IN'));
   setTimeout(() => { const e = $('yI'); if(e) e.focus(); }, 60);
 }
 function yRewInfo(){
@@ -30750,7 +30752,7 @@ function yRewInfo(){
   }
   if(!cb) return; const gross = yNum('yGross'), size = Number(sxVal('ySz')) || 0, bobEl = $('yBob'), manual = run || (bobEl && bobEl.dataset.m === '1');
   if(!(gross > 0)){ cb.innerHTML = 'Net yarn is worked out after taking off the sack and empty bobbin weight.'; if(bobEl && bobEl.dataset.m !== '1') bobEl.value = ''; return; }
-  const c = yRwCalc(gross, size, yNum('ySack'), yNum('yBob'), manual); if(bobEl && !manual) bobEl.value = size > 0 ? c.n : '';
+  const c = yRwCalc(gross, size, yNum('ySack'), yNum('yBob'), manual, ySackKg()); if(bobEl && !manual) bobEl.value = size > 0 ? c.n : '';
   cb.innerHTML = (size > 0 || run ? `Bobbins <b>${sxN(c.n)}</b> · ` : '') + `Sacks ${sxN(yR1(c.sack))} kg · Empty bobbins ${sxN(yR1(c.bob))} kg · Net yarn <b>${sxN(yR2(c.net))} kg</b>`;
 }
 async function ySaveRew(){
@@ -30758,7 +30760,7 @@ async function ySaveRew(){
   if(!i || !yRewPick(k).some(x => x.id === i.id)){ toast('Choose the item from the list'); return; }
   const run = k === 'ret' && sxVal('yRt') === 'run', q2 = sxVal('yQ') === '2', gross = yNum('yGross'), size = Number(sxVal('ySz')) || 0, sacks = yNum('ySack'), bobEl = $('yBob'), manual = run || (bobEl && bobEl.dataset.m === '1');
   if(!(gross > 0)){ toast('Type the gross weight'); return; } if(!run && !(size > 0)){ toast('Choose the bobbin size'); return; }
-  const c = yRwCalc(gross, size, sacks, yNum('yBob'), manual); if(run && !(c.n > 0)){ toast('Type the number of bobbins'); return; }
+  const c = yRwCalc(gross, size, sacks, yNum('yBob'), manual, ySackKg()); if(run && !(c.n > 0)){ toast('Type the number of bobbins'); return; }
   const net = yR3(c.net), tare = yR3(c.tare), id = i.id, b = yRwBal(id), dl = {}; if(!(net > 0)){ toast('The net weight is zero. Check the weights'); return; }
   const to = sxVal('yTo'), from = sxVal('yFrom') || 'rew', kq = q2 ? 'rewQ|' : 'rew|', nq = q2 ? 'rewQN|' : 'rewN|';
   if(k === 'in'){ dl[kq + id] = net; dl[nq + id] = c.n; dl['rewG|' + id] = gross; dl['rewT|' + id] = tare; dl['rewD|' + id] = net; }
@@ -30772,7 +30774,7 @@ async function ySaveRew(){
     if(run){ dl['rewR|' + id] = net; } else { dl[kq + id] = net; dl[nq + id] = c.n; dl['rewG|' + id] = gross; dl['rewT|' + id] = tare; }
     dl['rewO|' + id] = -Math.min(net, Math.max(0, b.out));
   }
-  const e = { id: sxId(), t: Date.now(), s: 'rew', k, src: k === 'out' && from === 'rc' ? 'rc' : '', d: sxToday(), y: id, col: i.col, kg: net, gross, tare, bob: run || from !== 'rc' ? c.n : 0, sz: run ? 0 : size, sk: sacks, q: q2 ? 2 : 0, rt: run ? 'run' : '', to: k === 'out' ? to : '', n: sxVal('sxN'), by: sxMe(), u: String(state.user.loginId), dl };
+  const e = { id: sxId(), t: Date.now(), s: 'rew', k, src: k === 'out' && from === 'rc' ? 'rc' : '', d: sxToday(), y: id, col: i.col, kg: net, gross, tare, bob: run || from !== 'rc' ? c.n : 0, sz: run ? 0 : size, sk: sacks, sw: ySackKg(), q: q2 ? 2 : 0, rt: run ? 'run' : '', to: k === 'out' ? to : '', n: sxVal('sxN'), by: sxMe(), u: String(state.user.loginId), dl };
   if(await sxSaveMove('w', e, false)){ sxKeep({ rto: to }); toast('Saved'); sxClose(); skRender(); }
 }
 function yRewRows(){
@@ -30831,8 +30833,9 @@ function sxYSet(show){
   if(show('ydest')) h += sxListSec('ydest', 'Yarn goes to', 'Shown when yarn goes OUT of the store.', 'e.g. Weaving');
   if(show('yrules')) h += `<details class="acSec admD" ${sxSecAttr('yrules')}><summary>Low stock reminder</summary><div class="acSecB"><p class="sub">An item shows "Order now" when the stock will last fewer days than this. Each yarn can have its own days in Yarn items.</p><div class="sxF yF">${sxField('Order when days left is below', `<input id="yOrd" type="number" inputmode="decimal" value="${SX.cfg.yOrder || 30}" placeholder="30">`)}</div><button type="button" class="btn btn-primary btn-sm" data-sx="ysaverules" style="margin-top:10px;">Save</button></div></details>`;
   if(show('yopen')) h += `<details class="acSec admD" ${sxSecAttr('yopen')}><summary>Opening stock</summary><div class="acSecB"><p class="sub">Enter what you have in each store today, for all yarns at once. Do this one time when you start.</p><button type="button" class="pcBtnSoft" data-sx="yopen">Enter opening stock</button></div></details>`;
-  if(show('rwt')) h += `<details class="acSec admD" ${sxSecAttr('rwt')}><summary>Sack and bobbin weight</summary><div class="acSecB"><p class="sub">Used to work out the net yarn from the gross weight.</p><div class="sxF yF">${sxField('Empty bobbin (grams)', `<input id="yTw" type="number" inputmode="decimal" value="${SX.cfg.rwTare || 350}" placeholder="350">`)}${sxField('1 sack (kg)', `<input id="ySw" type="number" inputmode="decimal" value="${SX.cfg.rwSack || 5}" placeholder="5">`)}</div><button type="button" class="btn btn-primary btn-sm" data-sx="ysaverw" style="margin-top:10px;">Save</button></div></details>`;
+  if(show('rwt')) h += `<details class="acSec admD" ${sxSecAttr('rwt')}><summary>Empty bobbin weight</summary><div class="acSecB"><p class="sub">Used to work out the net yarn from the gross weight.</p><div class="sxF yF">${sxField('Empty bobbin (grams)', `<input id="yTw" type="number" inputmode="decimal" value="${SX.cfg.rwTare || 350}" placeholder="350">`)}</div><button type="button" class="btn btn-primary btn-sm" data-sx="ysaverw" style="margin-top:10px;">Save</button></div></details>`;
   if(show('bobSz')) h += sxListSec('bobSz', 'Bobbin sizes', 'The yarn weight on one bobbin, for example 450 g or 2 kg.', 'e.g. 450 g');
+  if(show('sackSz')) h += sxListSec('sackSz', 'Sack sizes', 'The weight of one empty sack, for example 5 kg or 3 kg. Shown when you enter the number of sacks.', 'e.g. 5 kg');
   if(show('rdest')) h += sxListSec('rdest', 'Rewound yarn goes to', 'Shown when rewound yarn goes OUT.', 'e.g. Weaving');
   if(show('beamCols')) h += sxListSec('beamCols', 'Beam colours', 'The colours of warping beams.', 'e.g. White');
   if(show('beamW')) h += `<details class="acSec admD" ${sxSecAttr('beamW')}><summary>Kg in 1 beam</summary><div class="acSecB"><p class="sub">The standard weight of one beam for each colour. The kg is worked out from this when you enter beams.</p><div class="sxF">${SX.cfg.beamCols.map(c => sxField(skEsc(c), `<input class="yBw" data-c="${skEsc(c)}" type="number" inputmode="decimal" value="${SX.cfg.beamW[c] || ''}" placeholder="kg">`)).join('') || '<span style="font-size:12px;color:var(--muted);">Add a beam colour first.</span>'}</div>${SX.cfg.beamCols.length ? '<button type="button" class="btn btn-primary btn-sm" data-sx="ysavebw" style="margin-top:10px;">Save</button>' : ''}</div></details>`;
@@ -30843,17 +30846,17 @@ function yLowTile(){
   return sxTile('Low stock', n, n ? 'Yarns to order' : 'Nothing to order', 'raw', 'warn', n ? 'amber' : 'green');
 }
 const _ySum = sxSum; sxSum = function(pre, kg){ const r = _ySum(pre, kg); if(pre === 'rew'){ Object.keys(SX.bal).forEach(k => { if(k.indexOf('rewQ|') === 0 && SX.bal[k] > 0) r.kg += SX.bal[k]; if(kg !== false && k.indexOf('rewQN|') === 0 && SX.bal[k] > 0) r.n += SX.bal[k]; }); } return r; };
-Object.assign(SX_SM, { raw: ['yitems', 'ydaily', 'ysups', 'ydest', 'yrules', 'yopen'], rew: ['rwt', 'bobSz', 'rdest'] });
+Object.assign(SX_SM, { raw: ['yitems', 'ydaily', 'ysups', 'ydest', 'yrules', 'yopen'], rew: ['rwt', 'bobSz', 'sackSz', 'rdest'] });
 Y_SORT.bob = 'Most bobbins';
 document.addEventListener('click', async (ev) => {
   const el = ev.target.closest && ev.target.closest('[data-sx]'); if(!el) return; const a = el.dataset.sx, v = el.dataset.v;
   if(a === 'ynm'){ const i = yItem(v); if(!i || !sxCan('raw')) return; i.nm = !i.nm; if(await sxPutCfg()){ toast(i.nm ? 'Marked as not moving' : 'Back to normal'); skRender(); } else { i.nm = !i.nm; } }
-  else if(a === 'ysaverw'){ const t = Number(sxVal('yTw')), s = Number(sxVal('ySw')); if(!(t > 0) || !(s > 0)){ toast('Type both weights'); return; } SX.cfg.rwTare = t; SX.cfg.rwSack = s; if(await sxPutCfg()) toast('Saved'); }
+  else if(a === 'ysaverw'){ const t = Number(sxVal('yTw')); if(!(t > 0)){ toast('Type the weight'); return; } SX.cfg.rwTare = t; if(await sxPutCfg()) toast('Saved'); }
 });
 document.addEventListener('input', (ev) => {
   const t = ev.target; if(!t) return;
   if(t.id === 'yBob'){ t.dataset.m = t.value === '' ? '' : '1'; }
-  if(t.id === 'yI' || t.id === 'yBx' || t.id === 'yKg' || t.id === 'yGross' || t.id === 'ySack' || t.id === 'yBob') setTimeout(yInfoUpd, 0);
+  if(t.id === 'yI' || t.id === 'yBx' || t.id === 'yKg' || t.id === 'yGross' || t.id === 'ySack' || t.id === 'ySkSz' || t.id === 'yBob') setTimeout(yInfoUpd, 0);
 });
 document.addEventListener('change', (ev) => {
   const t = ev.target; if(!t) return;
@@ -30885,7 +30888,7 @@ function yEditOpen(id, ym){
     const ss = $('ySup'); if(ss && e.sup){ ss.dataset.t = '1'; if(Array.prototype.some.call(ss.options, o => o.value === e.sup)) ss.value = e.sup; else { ss.value = '__new'; const w = $('ySupNW'); if(w) w.style.display = ''; set('ySupN', e.sup); } }
     yInfoUpd();
   } else if(e.s === 'rew'){
-    SX.yk2 = e.k === 'out' ? 'out' : (e.k === 'ret' || e.src === 'rc') ? 'ret' : 'in'; SX.edit = { id, ym, e }; yOpenRew(); set('yI', i ? yLbl(i) : ''); set('yGross', e.gross || ''); set('ySz', e.sz ? String(yR3(e.sz)) : ''); set('ySack', e.sk || ''); set('yBob', e.bob || ''); const b = $('yBob'); if(b) b.dataset.m = e.bob ? '1' : ''; set('yQ', e.q ? '2' : '1'); set('yTo', e.to); set('yRt', e.rt === 'run' ? 'run' : 'full'); set('sxN', e.n); yInfoUpd(); if(e.src === 'rc' && e.k === 'out') set('yFrom', 'rc');
+    SX.yk2 = e.k === 'out' ? 'out' : (e.k === 'ret' || e.src === 'rc') ? 'ret' : 'in'; SX.edit = { id, ym, e }; yOpenRew(); set('yI', i ? yLbl(i) : ''); set('yGross', e.gross || ''); set('ySz', e.sz ? String(yR3(e.sz)) : ''); set('ySack', e.sk || ''); set('ySkSz', e.sw ? String(yR3(e.sw)) : ''); set('yBob', e.bob || ''); const b = $('yBob'); if(b) b.dataset.m = e.bob ? '1' : ''; set('yQ', e.q ? '2' : '1'); set('yTo', e.to); set('yRt', e.rt === 'run' ? 'run' : 'full'); set('sxN', e.n); yInfoUpd(); if(e.src === 'rc' && e.k === 'out') set('yFrom', 'rc');
   } else if(e.s === 'wp'){
     SX.yk3 = e.k === 'out' ? 'out' : 'in'; yOpenWp(); set('yWc', e.col); set('yWn', e.bob); set('yWk', e.kg); set('sxD', e.d); set('sxN', e.n);
   } else return;
