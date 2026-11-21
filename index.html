@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261121-121255">
+<meta name="rvf-build" content="20261121-133055">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -31088,6 +31088,7 @@ function cmpListHtml(){
 }
 function cmpEditHtml(){
   const c = CMP.cur, o = cmpOrder(c.oid);
+  if(o && c.rows.length) cmpSync(c, o);
   const ords = (pc.open || []).filter(x => x.items && x.items.length);
   const picker = c.isNew ? `<div class="cmpPick"><select data-cmp="order"><option value="">Choose an order…</option>${ords.map(x => `<option value="${pcEsc(x.id)}" ${x.id === c.oid ? 'selected' : ''}>${pcEsc(x.id)}${x.dept ? ' · ' + pcEsc(x.dept) : ''} · ${x.items.length} items</option>`).join('')}</select></div>` : '';
   const cur = c.cur || 'SAR';
@@ -31145,6 +31146,20 @@ function cmpMark(){
   });
 }
 function cmpDisc(c, k, sum){ const v = String((c.ship[k] || {}).d || '').trim(); if(!v) return 0; return v.slice(-1) === '%' ? sum * (cmpNum(v.slice(0, -1)) / 100) : cmpNum(v); }
+function cmpSync(c, o){
+  if(!o || !o.items) return false;
+  const old = c.rows.slice(), used = new Set(), n = (x) => String(x || '').trim().toLowerCase();
+  const take = (fn) => { const k = old.findIndex((r, j) => !used.has(j) && fn(r)); if(k >= 0){ used.add(k); return old[k]; } return null; };
+  const rows = o.items.map((it, i) => {
+    const r = take(x => n(x.cd) && n(x.cd) === n(it.cd) && n(x.n) === n(it.n)) || take(x => n(x.n) && n(x.n) === n(it.n)) || take(x => n(x.cd) && n(x.cd) === n(it.cd)) || take(x => x.oi === i);
+    const op = cmpNum(it.p) ? String(it.p) : (cmpNum(it.lp) ? String(it.lp) : '');
+    if(r) return { oi: i, n: it.n || '', cd: it.cd || '', d: it.d || '', q: it.q || '', u: it.u || '', old: r.old || op, pr: r.pr };
+    return { oi: i, n: it.n || '', cd: it.cd || '', d: it.d || '', q: it.q || '', u: it.u || '', old: op, pr: c.sups.map(() => '') };
+  });
+  const sig = (a) => JSON.stringify(a.map(r => [r.n, r.cd, r.q, r.u, r.oi]));
+  const changed = sig(rows) !== sig(old);
+  c.rows = rows; return changed;
+}
 function cmpShip(c){ c.ship = c.sups.map((x, k) => (c.ship && c.ship[k]) || { a: '', n: '', d: '', p: '' }); }
 function cmpFromOrder(c, o){
   c.oid = o.id; c.label = o.id + (o.dept ? ' · ' + o.dept : ''); c.cur = pcCur(o);
@@ -31182,7 +31197,7 @@ document.addEventListener('click', (e) => {
   const el = e.target.closest && e.target.closest('[data-cmp]'); if(!el || el.tagName === 'INPUT' || el.tagName === 'SELECT') return;
   const a = el.dataset.cmp, c = CMP.cur;
   if(a === 'new'){ CMP.cur = { id: 'c' + Date.now().toString(36), isNew: true, oid: '', label: '', cur: 'SAR', sups: ['', '', ''], ship: [{ a: '', n: '', d: '', p: '' }, { a: '', n: '', d: '', p: '' }, { a: '', n: '', d: '', p: '' }], rows: [] }; pcRender(); }
-  else if(a === 'open'){ const r = CMP.list.find(x => x.id === el.dataset.id); if(r){ CMP.cur = JSON.parse(JSON.stringify(r)); cmpShip(CMP.cur); pcRender(); } }
+  else if(a === 'open'){ const r = CMP.list.find(x => x.id === el.dataset.id); if(r){ CMP.cur = JSON.parse(JSON.stringify(r)); cmpShip(CMP.cur); const oo = cmpOrder(CMP.cur.oid); if(oo && cmpSync(CMP.cur, oo)) toast('Updated from the order — press Save to keep'); pcRender(); } }
   else if(a === 'back'){ CMP.cur = null; pcRender(); }
   else if(a === 'save') cmpSave();
   else if(a === 'mode'){ CMP.mode = el.dataset.v; pcRender(); }
