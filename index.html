@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261121-095133">
+<meta name="rvf-build" content="20261121-105333">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -1189,6 +1189,19 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
         tx.set(mref, { entries: entries.filter(x => x.id !== id) });
         if (Object.keys(dl).length) tx.set(bref, { b, upd: Date.now() });
         return b;
+      });
+    },
+    async invMoveMany(list) {
+      if (!dbReady) throw new Error('NOT_CONFIGURED');
+      const mref = doc(db, 'config', 'inv_mv_' + String(list[0].d).slice(0, 7)), sref = doc(db, 'config', 'inv_stock');
+      return runTransaction(db, async (tx) => {
+        const ms = await tx.get(mref), ss = await tx.get(sref);
+        const entries = ms.exists() ? (ms.data().entries || []) : [];
+        const bal = ss.exists() ? Object.assign({}, ss.data().bal || {}) : {};
+        list.forEach(e => { bal[e.i] = Math.round(((Number(bal[e.i]) || 0) + e.q) * 1000) / 1000; entries.push(e); });
+        tx.set(mref, { entries });
+        tx.set(sref, { bal, upd: Date.now() });
+        return bal;
       });
     },
     async invUndo(monthKey, id) {
@@ -30821,6 +30834,153 @@ const _srwEdit = ySaveRew; ySaveRew = function(){ return yEditWrap(_srwEdit); };
 const _swEdit = ySaveWp; ySaveWp = function(){ return yEditWrap(_swEdit); };
 const _yrpEdit = yRewPick; yRewPick = function(k){ const r = _yrpEdit(k), X = SX.edit; if(X && X.e.s === 'rew'){ const i = yItem(X.e.y); if(i && !r.some(x => x.id === i.id)) r.push(i); } return r; };
 document.addEventListener('click', (ev) => { const el = ev.target.closest && ev.target.closest('[data-sx="fixedit"]'); if(el){ ev.preventDefault(); yEditOpen(el.dataset.v, el.dataset.ym); } });
+/* ---------- p261: opening stock from Excel (Settings of every stock page) ---------- */
+const BK_KEY = (s) => String(s == null ? '' : s).toLowerCase().replace(/[^a-z0-9؀-ۿ]+/g, '');
+const BK = {
+  raw: { name: 'Raw Yarn', file: 'raw-yarn-opening-stock', fields: [
+    ['sec', 'Section', ['section']], ['code', 'Code', ['code', 'itemcode']], ['col', 'Colour', ['colour', 'color', 'colourdescription', 'name', 'item']], ['sup', 'Supplier', ['supplier']], ['sz', 'Yarn size', ['yarnsize', 'size']],
+    ['kgb', 'Kg in 1 box', ['kginbox', 'kginabox', 'kgin1box', 'kgperbox', 'boxkg']], ['use', 'Used per day kg', ['usedperdaykg', 'usedperday', 'dailyuse']], ['ord', 'Low stock days', ['lowstockdays', 'lowstockreminderdays', 'reminderdays']],
+    ['store', 'Store', ['store']], ['bx', 'Boxes', ['boxes', 'boxessacks']], ['kg', 'Opening kg', ['openingkg', 'kg', 'availablekg', 'stockkg', 'openingstock', 'stock', 'qty']] ] },
+  rew: { name: 'Rewound Yarn', file: 'rewound-yarn-opening-stock', fields: [
+    ['code', 'Code', ['code']], ['col', 'Colour', ['colour', 'color', 'name']], ['sup', 'Supplier', ['supplier']], ['kg', 'Net kg', ['netkg', 'netkg1stquality', 'kg', 'net']], ['n', 'Bobbins', ['bobbins', 'bobbins1stquality']],
+    ['kq', 'Net kg 2nd quality', ['netkg2ndquality', 'kg2ndquality', '2ndqualitykg']], ['nq', 'Bobbins 2nd quality', ['bobbins2ndquality', '2ndqualitybobbins']], ['rc', 'Recovered kg', ['recoveredkg', 'recoveredfromweavingkg', 'recovered']], ['g', 'Gross kg', ['grosskg', 'gross']], ['t', 'Tare kg', ['tarekg', 'tare']] ] },
+  wp: { name: 'Warp Beams', file: 'warp-beams-opening-stock', fields: [
+    ['col', 'Colour', ['colour', 'color']], ['n', 'Beams', ['beams', 'numberofbeams']], ['kg', 'Total kg', ['totalkg', 'kg']], ['kgb', 'Kg per beam', ['kgperbeam', 'kginbeam', 'kgin1beam']] ] },
+  fst: { name: 'Finished Goods', file: 'finished-goods-opening-stock', fields: [
+    ['g', 'Group', ['group', 'type']], ['name', 'Name', ['name', 'item', 'itemname']], ['ar', 'Arabic name', ['arabicname', 'arabic']], ['code', 'Code', ['code', 'erpcode', 'fgcode']], ['col', 'Colour', ['colour', 'color']], ['des', 'Design', ['design']],
+    ['size', 'Size (cm)', ['sizecm', 'size']], ['per', 'Pieces per bundle', ['piecesperbundle', 'piecesperbundlebox', 'pieces']], ['truck', 'Truck capacity (bundles)', ['truckcapacitybundles', 'truckcapacity', 'truck']], ['mpr', 'Metres in 1 roll', ['metresin1roll', 'metersin1roll', 'metresperroll']],
+    ['q', 'Quality', ['quality']], ['model', 'Model', ['model']], ['cat', 'Category', ['category']], ['thk', 'Thickness', ['thickness']], ['stock', 'Opening stock', ['openingstock', 'stock', 'qty', 'quantity']] ] }
+};
+function bkNum(v){ if(typeof v === 'number') return isFinite(v) ? v : null; const s = String(v == null ? '' : v).replace(/[,\s]/g, ''); if(s === '') return 0; const n = Number(s); return isFinite(n) ? n : null; }
+const bkS = (v) => String(v == null ? '' : v).trim();
+function bkTemplateRows(sec){
+  const hd = BK[sec].fields.map(f => f[1]), rows = [hd];
+  if(sec === 'raw') yItems().filter(i => i.on !== false).forEach(i => rows.push([i.sec || '', i.code || '', i.col || '', i.sup || '', i.sz || '', i.kgb || '', i.use || '', i.ord || '', '', '', '']));
+  else if(sec === 'rew') yRewRows().filter(r => r.i).forEach(r => rows.push([r.i.code || '', r.i.col || '', r.i.sup || '', '', '', '', '', '', '', '']));
+  else if(sec === 'wp') yWpRows().forEach(r => rows.push([r.col, '', '', r.w || '']));
+  else if(sec === 'fst') { const gn = (g) => (SK_GROUPS.find(x => x[0] === g) || [0, g])[1]; SK.items.filter(i => i.on !== false && i.g !== 'rm').forEach(i => { const x = i.x || {}; rows.push([gn(i.g), i.name || '', i.ar || '', i.code || '', i.col || '', (skDesign(i.des) || {}).name || '', x.size || '', i.per || '', i.truck || '', x.mpr || '', x.q || '', x.model || '', x.cat || '', x.thk || '', '']); }); }
+  return rows;
+}
+function bkDownload(sec){ const rows = bkTemplateRows(sec); skDlXlsx(BK[sec].file, 'Opening stock', rows); }
+function bkPick(sec){
+  if(!window.XLSX){ toast('The Excel tool did not load'); return; }
+  const inp = document.createElement('input'); inp.type = 'file'; inp.accept = '.xlsx,.xls,.csv'; inp.style.display = 'none';
+  inp.onchange = () => { const f = inp.files && inp.files[0]; inp.remove(); if(!f) return; const r = new FileReader(); r.onload = () => { try{ bkRead(sec, r.result); }catch(err){ console.error(err); toast('Could not read this file'); } }; r.readAsArrayBuffer(f); };
+  document.body.appendChild(inp); inp.click();
+}
+function bkRead(sec, buf){
+  const wb = XLSX.read(buf, { type: 'array' }), ws = wb.Sheets[wb.SheetNames[0]], aoa = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '', raw: true }), F = BK[sec].fields;
+  const idx = (cell) => { const k = BK_KEY(cell); if(!k) return -1; return F.findIndex(f => f[2].indexOf(k) >= 0 || BK_KEY(f[1]) === k); };
+  let hr = -1, map = {}; for(let r = 0; r < Math.min(aoa.length, 15) && hr < 0; r++){ const m = {}; let n = 0; aoa[r].forEach((c, ci) => { const fi = idx(c); if(fi >= 0 && !(F[fi][0] in m)){ m[F[fi][0]] = ci; n++; } }); if(n >= 2){ hr = r; map = m; } }
+  if(hr < 0){ toast('The columns were not found. Download the Excel format and use it'); return; }
+  const rows = []; for(let r = hr + 1; r < aoa.length; r++){ const o = { _r: r + 1 }; let any = false; Object.keys(map).forEach(k => { o[k] = aoa[r][map[k]]; if(bkS(o[k]) !== '') any = true; }); if(any) rows.push(o); }
+  if(!rows.length){ toast('No rows found in this file'); return; }
+  const P = bkParse[sec](rows); BK.cur = { sec, P }; bkPreview();
+}
+const bkNorm = (s) => bkS(s).toLowerCase().replace(/\s+/g, ' ');
+const bkParse = {
+  raw(rows){
+    yCfg(); const items = yItems(), P = { lines: [], newItems: [], upd: 0, bad: [], kg: 0 }, stores = SX.cfg.ystores;
+    rows.forEach(o => {
+      const col = bkS(o.col), code = bkS(o.code), sup = bkS(o.sup); if(!col){ P.bad.push('Row ' + o._r + ': the colour is missing'); return; }
+      const nums = {}; let ok = true; ['kgb', 'use', 'ord', 'bx', 'kg'].forEach(k => { const n = bkNum(o[k]); if(n == null || n < 0){ P.bad.push('Row ' + o._r + ': "' + o[k] + '" is not a number (' + k + ')'); ok = false; } else nums[k] = n; }); if(!ok) return;
+      let it = items.find(i => bkNorm(i.code) === bkNorm(code) && bkNorm(i.col) === bkNorm(col) && (!sup || bkNorm(i.sup) === bkNorm(sup))) || P.newItems.find(i => bkNorm(i.code) === bkNorm(code) && bkNorm(i.col) === bkNorm(col) && (!sup || bkNorm(i.sup) === bkNorm(sup)));
+      const fresh = !it; if(!it){ it = { id: '', sec: bkS(o.sec) || 'Other', code, col, sup, sz: bkS(o.sz), kgb: nums.kgb, use: nums.use, ord: nums.ord, on: true }; P.newItems.push(it); }
+      else if(!P.newItems.includes(it)){ let ch = false; [['kgb', nums.kgb], ['use', nums.use], ['ord', nums.ord]].forEach(a => { if(a[1] > 0 && Number(it[a[0]]) !== a[1]){ it['_n' + a[0]] = a[1]; ch = true; } }); if(bkS(o.sz) && bkS(o.sz) !== it.sz){ it._nsz = bkS(o.sz); ch = true; } if(bkS(o.sec) && bkS(o.sec) !== it.sec){ it._nsec = bkS(o.sec); ch = true; } if(ch) P.upd++; }
+      const kgb = nums.kgb > 0 ? nums.kgb : (Number(it.kgb) || 0); let kg = nums.kg; if(!(kg > 0) && nums.bx > 0 && kgb > 0) kg = Math.round(nums.bx * kgb * 100) / 100;
+      const st = stores.find(s => bkNorm(s) === bkNorm(o.store)) || stores[0];
+      if(kg > 0){ P.lines.push({ it, s: st, kg }); P.kg += kg; }
+    });
+    return P;
+  },
+  rew(rows){
+    yCfg(); const items = yItems(), P = { lines: [], bad: [], kg: 0, bob: 0 };
+    rows.forEach(o => {
+      const code = bkS(o.code), col = bkS(o.col), sup = bkS(o.sup), v = {}; let ok = true; ['kg', 'n', 'kq', 'nq', 'rc', 'g', 't'].forEach(k => { const n = bkNum(o[k]); if(n == null || n < 0){ P.bad.push('Row ' + o._r + ': "' + o[k] + '" is not a number'); ok = false; } else v[k] = n; }); if(!ok) return;
+      const m = items.filter(i => bkNorm(i.code) === bkNorm(code) && bkNorm(i.col) === bkNorm(col) && (!sup || bkNorm(i.sup) === bkNorm(sup))); if(!m.length){ P.bad.push('Row ' + o._r + ': ' + (col || code) + ' is not in the Raw Yarn list'); return; }
+      if(!(v.kg > 0 || v.kq > 0 || v.rc > 0)) return; P.lines.push({ it: m[0], v }); P.kg += v.kg + v.kq + v.rc; P.bob += v.n + v.nq;
+    });
+    return P;
+  },
+  wp(rows){
+    yCfg(); const c = SX.cfg, P = { lines: [], bad: [], kg: 0, n: 0, newCols: [] };
+    rows.forEach(o => {
+      const col = sxColFix(bkS(o.col)); if(!col){ P.bad.push('Row ' + o._r + ': the colour is missing'); return; } const v = {}; let ok = true; ['n', 'kg', 'kgb'].forEach(k => { const n = bkNum(o[k]); if(n == null || n < 0){ P.bad.push('Row ' + o._r + ': "' + o[k] + '" is not a number'); ok = false; } else v[k] = n; }); if(!ok) return;
+      const w = v.kgb > 0 ? v.kgb : (Number(c.beamW[col]) || 0); let kg = v.kg; if(!(kg > 0) && v.n > 0 && w > 0) kg = Math.round(v.n * w * 100) / 100;
+      if(!(v.n > 0 || kg > 0)){ if(v.kgb > 0) P.lines.push({ col, n: 0, kg: 0, w: v.kgb }); return; } if(!(v.n > 0)){ P.bad.push('Row ' + o._r + ': type the number of beams'); return; } if(!(kg > 0)){ P.bad.push('Row ' + o._r + ': type the total kg or the kg per beam'); return; }
+      P.lines.push({ col, n: v.n, kg, w: v.kgb }); P.kg += kg; P.n += v.n;
+    });
+    return P;
+  },
+  fst(rows){
+    const P = { lines: [], newItems: [], upd: 0, bad: [], kg: 0, newDes: 0 }, gmap = (t) => { const k = BK_KEY(t); const f = SK_GROUPS.find(g => g[0] !== 'rm' && (BK_KEY(g[1]) === k || g[0] === k)); if(f) return f[0]; if(/vip|prayer|mat/.test(k)) return 'vip'; if(/carpet|rug/.test(k)) return 'cr'; if(/uphol/.test(k)) return 'up'; if(/2nd|second/.test(k)) return 'q2'; return ''; };
+    rows.forEach(o => {
+      const g = gmap(o.g), name = bkS(o.name); if(!g){ P.bad.push('Row ' + o._r + ': the group "' + bkS(o.g) + '" is not known'); return; } if(!name){ P.bad.push('Row ' + o._r + ': the name is missing'); return; }
+      const v = {}; let ok = true; ['per', 'truck', 'mpr', 'stock'].forEach(k => { const n = bkNum(o[k]); if(n == null || n < 0){ P.bad.push('Row ' + o._r + ': "' + o[k] + '" is not a number'); ok = false; } else v[k] = n; }); if(!ok) return;
+      const col = bkS(o.col); let it = SK.items.find(i => i.g === g && bkNorm(i.name) === bkNorm(name) && bkNorm(i.col) === bkNorm(col)) || P.newItems.find(i => i.g === g && bkNorm(i.name) === bkNorm(name) && bkNorm(i.col) === bkNorm(col));
+      if(!it){ const x = {}; [['size', o.size], ['q', o.q], ['model', o.model], ['cat', o.cat], ['thk', o.thk]].forEach(a => { if(bkS(a[1])) x[a[0]] = bkS(a[1]); }); if(v.mpr > 0) x.mpr = String(v.mpr); it = { g, name, ar: bkS(o.ar), code: bkS(o.code), col, desN: bkS(o.des), safe: 0, per: v.per, truck: v.truck, on: true, x }; P.newItems.push(it); }
+      if(v.stock > 0){ P.lines.push({ it, q: v.stock }); P.kg += v.stock; }
+    });
+    return P;
+  }
+};
+function bkPreview(){
+  const { sec, P } = BK.cur, N = BK[sec].name, un = sec === 'fst' ? 'bundles / rolls' : 'kg', tot = sec === 'fst' ? P.kg : P.kg;
+  const chips = [`<b>${sxN(P.lines.length)}</b> stock lines`, `<b>${sxN(Math.round(tot * 10) / 10)}</b> ${un === 'kg' ? 'kg' : 'in total'}`].concat(P.newItems && P.newItems.length ? [`<b>${P.newItems.length}</b> new items`] : [], P.upd ? [`<b>${P.upd}</b> items changed`] : [], sec === 'wp' && P.lines.some(l => !SX.cfg.beamCols.some(c => c.toLowerCase() === l.col.toLowerCase())) ? ['new colours'] : []);
+  const bad = P.bad.length ? `<div class="sxNote" style="margin:10px 0 0;color:#b45309;background:#fffbeb;"><b>${P.bad.length} row${P.bad.length === 1 ? '' : 's'} will be skipped</b><br>${P.bad.slice(0, 8).map(skEsc).join('<br>')}${P.bad.length > 8 ? '<br>and ' + (P.bad.length - 8) + ' more' : ''}</div>` : '';
+  const can = P.lines.length || (P.newItems && P.newItems.length) || (sec === 'wp' && P.lines.length);
+  sxModal('Opening stock · ' + N, `<div class="sxNote" style="margin:0;">${chips.join(' · ')}</div>${bad}`, can ? sxSave('bkgo', 'Add to stock') : '');
+}
+async function bkGo(){
+  const X = BK.cur; if(!X || BK.busy) return; BK.busy = true; const { sec, P } = X;
+  try{
+    let ok = false;
+    if(sec === 'raw') ok = await bkSaveRaw(P); else if(sec === 'rew') ok = await bkSaveRew(P); else if(sec === 'wp') ok = await bkSaveWp(P); else if(sec === 'fst') ok = await bkSaveFst(P);
+    if(ok){ toast('Opening stock added'); BK.cur = null; sxClose(); skRender(); }
+  }catch(err){ console.error(err); toast('Could not save. Check your connection'); }
+  finally{ BK.busy = false; }
+}
+async function bkSaveRaw(P){
+  const items = yItems(); let n = items.reduce((a, x) => Math.max(a, Number(String(x.id).slice(1)) || 0), 0);
+  P.newItems.forEach(i => { n++; i.id = 'y' + n; items.push(i); });
+  items.forEach(i => { if('_nkgb' in i){ i.kgb = i._nkgb; delete i._nkgb; } if('_nuse' in i){ i.use = i._nuse; delete i._nuse; } if('_nord' in i){ i.ord = i._nord; delete i._nord; } if('_nsz' in i){ i.sz = i._nsz; delete i._nsz; } if('_nsec' in i){ i.sec = i._nsec; delete i._nsec; } });
+  if(P.newItems.length || P.upd){ if(!await sxPutCfg()){ return false; } }
+  if(!P.lines.length) return true;
+  const dl = {}, rows = P.lines.map(l => { const k = 'yr|' + l.it.id + '|' + l.s; dl[k] = Math.round(((dl[k] || 0) + l.kg) * 1000) / 1000; return { y: l.it.id, s: l.s, kg: l.kg }; });
+  const e = { id: sxId(), t: Date.now(), s: 'yr', k: 'in', open: 1, d: sxToday(), rows, kg: P.kg, n: 'Opening stock from Excel', by: sxMe(), u: String(state.user.loginId), dl };
+  return await sxSaveMove('w', e, false);
+}
+async function bkSaveRew(P){
+  const dl = {}, add = (k, v) => { if(v > 0) dl[k] = Math.round(((dl[k] || 0) + v) * 1000) / 1000; }, rows = [];
+  P.lines.forEach(l => { const id = l.it.id; add('rew|' + id, l.v.kg); add('rewN|' + id, l.v.n); add('rewQ|' + id, l.v.kq); add('rewQN|' + id, l.v.nq); add('rewR|' + id, l.v.rc); add('rewG|' + id, l.v.g); add('rewT|' + id, l.v.t); rows.push({ y: id, kg: l.v.kg + l.v.kq + l.v.rc, bob: l.v.n + l.v.nq }); });
+  const e = { id: sxId(), t: Date.now(), s: 'rew', k: 'in', open: 1, d: sxToday(), rows, kg: P.kg, bob: P.bob, n: 'Opening stock from Excel', by: sxMe(), u: String(state.user.loginId), dl };
+  return await sxSaveMove('w', e, false);
+}
+async function bkSaveWp(P){
+  const c = yCfg(); let cfgCh = false;
+  P.lines.forEach(l => { const ex = c.beamCols.find(x => x.toLowerCase() === l.col.toLowerCase()); if(!ex){ c.beamCols.push(l.col); cfgCh = true; } if(l.w > 0 && Number(c.beamW[ex || l.col]) !== l.w){ c.beamW[ex || l.col] = l.w; cfgCh = true; } });
+  if(cfgCh && !await sxPutCfg()) return false;
+  const lines = P.lines.filter(l => l.n > 0 && l.kg > 0); if(!lines.length) return true;
+  const dl = {}, rows = lines.map(l => { dl['wp|' + l.col] = (dl['wp|' + l.col] || 0) + l.kg; dl['wpN|' + l.col] = (dl['wpN|' + l.col] || 0) + l.n; return { c: l.col, n: l.n, kg: l.kg }; });
+  const e = { id: sxId(), t: Date.now(), s: 'wp', k: 'in', open: 1, d: sxToday(), rows, kg: P.kg, bob: P.n, n: 'Opening stock from Excel', by: sxMe(), u: String(state.user.loginId), dl };
+  return await sxSaveMove('w', e, false);
+}
+async function bkSaveFst(P){
+  const now = Date.now(); let k = 0;
+  P.newItems.forEach(it => { const d = it.desN ? skDesignId(it.desN) : ''; delete it.desN; it.des = d; it.id = 'i' + (now + (k++)).toString(36) + Math.random().toString(36).slice(2, 4); Object.assign(it, skStamp(true)); SK.items.push(it); });
+  if(SK._nd){ await window.__db.invSet('designs', { designs: SK.designs }); SK._nd = false; }
+  if(P.newItems.length) await window.__db.invSet('items', { items: SK.items });
+  if(!P.lines.length) return true;
+  const list = P.lines.map((l, i) => ({ id: 'e' + (now + i).toString(36) + 'o', t: now + i, d: dateToStr(new Date()), i: l.it.id, k: 'in', q: l.q, by: state.user.name || '', u: state.user.loginId, n: 'Opening stock from Excel', open: 1 }));
+  SK.bal = await window.__db.invMoveMany(list); SK.mvLoaded = false; return true;
+}
+/* Settings: a small section on every stock page */
+function bkSec(sec, key){
+  return `<details class="acSec admD" ${sxSecAttr(key)}><summary>Opening stock from Excel</summary><div class="acSecB"><div style="display:flex;gap:8px;flex-wrap:wrap;"><button type="button" class="pcBtnSoft" data-sx="bkdl" data-v="${sec}">Download Excel format</button><button type="button" class="pcBtnMain" data-sx="bkup" data-v="${sec}">Upload Excel</button></div></div></details>`;
+}
+const _bkYSet = sxYSet; sxYSet = function(show){ let h = _bkYSet(show); if(show('bkrew')) h += bkSec('rew', 'bkrew'); if(show('bkwp')) h += bkSec('wp', 'bkwp'); if(show('bkfst')) h += bkSec('fst', 'bkfst'); if(show('bkraw')) h += bkSec('raw', 'bkraw'); return h; };
+Object.keys({ raw: 1, rew: 1, wp: 1, fst: 1 }).forEach(p => { SX_SM[p] = (SX_SM[p] || []).concat(['bk' + p]); });
+document.addEventListener('click', (ev) => { const el = ev.target.closest && ev.target.closest('[data-sx]'); if(!el) return; const a = el.dataset.sx, v = el.dataset.v; if(a === 'bkdl') bkDownload(v); else if(a === 'bkup') bkPick(v); else if(a === 'bkgo') bkGo(); });
 
 /* ---- clicks ---- */
 document.addEventListener('click', (ev) => {
