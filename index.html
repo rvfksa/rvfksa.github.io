@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261121-105333">
+<meta name="rvf-build" content="20261121-110151">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -30981,6 +30981,27 @@ function bkSec(sec, key){
 const _bkYSet = sxYSet; sxYSet = function(show){ let h = _bkYSet(show); if(show('bkrew')) h += bkSec('rew', 'bkrew'); if(show('bkwp')) h += bkSec('wp', 'bkwp'); if(show('bkfst')) h += bkSec('fst', 'bkfst'); if(show('bkraw')) h += bkSec('raw', 'bkraw'); return h; };
 Object.keys({ raw: 1, rew: 1, wp: 1, fst: 1 }).forEach(p => { SX_SM[p] = (SX_SM[p] || []).concat(['bk' + p]); });
 document.addEventListener('click', (ev) => { const el = ev.target.closest && ev.target.closest('[data-sx]'); if(!el) return; const a = el.dataset.sx, v = el.dataset.v; if(a === 'bkdl') bkDownload(v); else if(a === 'bkup') bkPick(v); else if(a === 'bkgo') bkGo(); });
+/* ---------- p262: one-time "clear current stock" button in Settings (disappears after use) ---------- */
+function clrSec(){
+  return `<details class="acSec admD" ${sxSecAttr('clr')}><summary>Clear current stock</summary><div class="acSecB"><p class="sub">One time only. Sets the stock of Raw Yarn, Rewound Yarn, Warp Beams and Finished Goods to zero so you can start again from Excel. Items, designs and history stay. A backup copy of the old stock is kept.</p><button type="button" class="pcBtnSoft" data-sx="clrgo" style="color:#dc2626;">Clear all current stock</button></div></details>`;
+}
+const _clrYSet = sxYSet; sxYSet = function(show){ let h = _clrYSet(show); if(!SX.sfor && sxAdmin() && !SX.cfg.stockCleared && show('clr')) h += clrSec(); return h; };
+async function clrGo(){
+  if(!sxAdmin() || SX.cfg.stockCleared || SX.clrBusy) return;
+  if(!confirm('Clear ALL current stock (Raw Yarn, Rewound Yarn, Warp Beams, Finished Goods) to zero?\n\nThis button is used one time and then disappears. History and items stay, and a backup copy is kept.')) return;
+  SX.clrBusy = true;
+  try{
+    const ts = Date.now(), b = await window.__db.invGet('sxbal'), s = await window.__db.invGet('stock');
+    await window.__db.invSet('sxbal_bak_' + ts, b || { b: {} }); await window.__db.invSet('stock_bak_' + ts, s || { bal: {} });
+    await window.__db.invSet('sxbal', { b: {}, upd: ts }); await window.__db.invSet('stock', { bal: {}, upd: ts });
+    SX.bal = {}; SK.bal = {}; SX.cfg.stockCleared = ts;
+    if(!await sxPutCfg()){ toast('Stock cleared, but the button could not be hidden. Do not press it again'); }
+    else toast('All stock cleared');
+    skRender();
+  }catch(err){ console.error(err); toast('Could not clear. Nothing was changed'); }
+  finally{ SX.clrBusy = false; }
+}
+document.addEventListener('click', (ev) => { const el = ev.target.closest && ev.target.closest('[data-sx="clrgo"]'); if(el) clrGo(); });
 
 /* ---- clicks ---- */
 document.addEventListener('click', (ev) => {
