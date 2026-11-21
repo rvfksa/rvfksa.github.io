@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261121-150206">
+<meta name="rvf-build" content="20261121-153808">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -28848,6 +28848,13 @@ td.cmpOldBest .cmpD{ color:#b45309; text-transform:uppercase; letter-spacing:.04
 .cmpBh{ min-width:96px; color:#3730a3 !important; } .cmpBc{ min-width:96px; background:#f5f6ff !important; border-left:1px solid #dfe2fb; }
 .cmpBv{ height:34px; line-height:34px; font:700 14px Inter,system-ui,sans-serif; color:#3730a3; } .cmpBc .cmpD{ color:#6366a8; overflow:hidden; text-overflow:ellipsis; max-width:100px; margin:2px auto 0; }
 .cmpT tr.cmpB td.cmpBc, .cmpT tr.cmpGrand td.cmpBc{ background:#eceefe !important; } .cmpT tr.cmpGrand td.cmpBc{ color:#3730a3; }
+.sxWait{ margin:0 0 10px; border:1px solid #f0e2c4; background:#fffaf0; border-radius:12px; padding:0 12px; }
+.sxWait summary{ display:flex; align-items:center; gap:8px; min-height:38px; cursor:pointer; list-style:none; font:600 13px Inter,system-ui,sans-serif; color:#7a4b06; } .sxWait summary::-webkit-details-marker{ display:none; }
+.sxWait summary svg{ color:#d97706; } .sxWait .sxWk{ font:700 13px Inter,system-ui,sans-serif; color:#7a4b06; }
+.sxWb{ border-top:1px solid #f0e2c4; padding:2px 0 6px; } .sxWr{ display:flex; align-items:center; gap:8px; padding:6px 0; border-bottom:1px dashed #f0e2c4; font-size:12.5px; color:#334155; } .sxWr:last-child{ border-bottom:0; }
+.sxWc{ flex:0 0 70px; font:600 11px ui-monospace,Menlo,Consolas,monospace; color:#64748b; } .sxWn{ flex:1 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; } .sxWs{ font-size:11px; color:#94a3b8; white-space:nowrap; }
+.sxWbtn{ border:1px solid #e3e7ef; background:#fff; color:#4f46e5; border-radius:999px; height:24px; padding:0 12px; font:600 11px Inter,system-ui,sans-serif; cursor:pointer; } .sxWbtn:hover{ background:#f7f7ff; border-color:#c7cbf5; }
+@media (max-width:640px){ .sxWs{ display:none; } .sxWc{ flex-basis:58px; } }
 </style>
 <div id="rvfBusy"><i></i><span id="rvfBusyTxt">Loading data…</span></div>
 <script>
@@ -30146,7 +30153,7 @@ async function ySaveWp(){
   if(!sxCan('wp')) return; const k = SX.yk3 || 'in', c = yCfg(), r0 = yWpRows(), raw = sxVal('yWc'), col = (r0.find(r => r.col.toLowerCase() === raw.toLowerCase()) || { col: sxColFix(raw) }).col, n = Number(sxVal('yWn')), d = sxVal('sxD') || sxToday();
   if(!col){ toast('Choose the colour'); return; } if(!(n > 0)){ toast('Type the number of beams'); return; }
   const w = Number(sxVal('yWs')) || yWpPer(col); let kg = Number(sxVal('yWk')); if(!(kg > 0)) kg = Math.round(n * w * 100) / 100; if(!(kg > 0)){ toast('Type the beam size (net kg per beam)'); return; }
-  const dl = { ['wp|' + col]: k === 'out' ? -kg : kg, ['wpN|' + col]: k === 'out' ? -n : n };
+  const dl = { ['wp|' + col]: k === 'out' ? -kg : kg, ['wpN|' + col]: k === 'out' ? -n : n }; if(k === 'in') dl['wpD|all'] = kg;
   const e = { id: sxId(), t: Date.now(), s: 'wp', k, d, col, kg, bob: n, n: sxVal('sxN'), by: sxMe(), u: String(state.user.loginId), dl };
   if(await sxSaveMove('w', e, k === 'out')){ sxKeep({ ywc: col }); toast('Saved'); sxClose(); skRender(); }
 }
@@ -30684,7 +30691,7 @@ async function ySaveRaw(){
   else {
     const x = yIdx()[i.id] || { tot: 0, st: {} }; if(kg > x.tot + 0.0005){ toast('Not enough in stock (only ' + sxN(x.tot) + ' kg available)'); return; }
     let left = kg; const used = []; Object.keys(x.st).sort((a, b) => x.st[b] - x.st[a]).forEach(s => { if(left <= 0.0004) return; const t = Math.min(left, x.st[s]); dl['yr|' + i.id + '|' + s] = -Math.round(t * 1000) / 1000; left -= t; used.push(s); }); store = used.join(' + ');
-    if(to === 'Rewinding') dl['rewI|' + i.id] = kg;
+    if(to === 'Rewinding') dl['rewI|' + i.id] = kg; else if(to === 'Warping') dl['wpI|' + i.id] = kg;
   }
   const e = { id: sxId(), t: Date.now(), s: 'yr', k, d, y: i.id, col: i.col, store, to: k === 'out' ? to : '', sup: k === 'in' ? sup : '', kg, bx: i.kgb > 0 ? bx : 0, n: sxVal('sxN'), by: sxMe(), u: String(state.user.loginId), dl };
   if(await sxSaveMove('w', e, k === 'out')){ if(newSup){ SX.cfg.ysups = (SX.cfg.ysups || []).concat([sup]); try{ await sxPutCfg(); }catch(err){ console.error(err); } } sxKeep({ yto: to }); toast('Saved'); sxClose(); skRender(); }
@@ -30754,12 +30761,12 @@ async function ySaveRew(){
   const c = yRwCalc(gross, size, sacks, yNum('yBob'), manual); if(run && !(c.n > 0)){ toast('Type the number of bobbins'); return; }
   const net = yR3(c.net), tare = yR3(c.tare), id = i.id, b = yRwBal(id), dl = {}; if(!(net > 0)){ toast('The net weight is zero. Check the weights'); return; }
   const to = sxVal('yTo'), from = sxVal('yFrom') || 'rew', kq = q2 ? 'rewQ|' : 'rew|', nq = q2 ? 'rewQN|' : 'rewN|';
-  if(k === 'in'){ dl[kq + id] = net; dl[nq + id] = c.n; dl['rewG|' + id] = gross; dl['rewT|' + id] = tare; }
+  if(k === 'in'){ dl[kq + id] = net; dl[nq + id] = c.n; dl['rewG|' + id] = gross; dl['rewT|' + id] = tare; dl['rewD|' + id] = net; }
   else if(k === 'out'){
     if(!to){ toast('Choose where it goes'); return; }
     if(from === 'rc'){ if(net > b.rc + 0.0005){ toast('Not enough recovered yarn (only ' + sxN(yR1(b.rc)) + ' kg)'); return; } dl['rewR|' + id] = -net; }
     else { const av = q2 ? b.kq : b.kg; if(net > av + 0.0005){ toast('Not enough in stock (only ' + sxN(yR1(Math.max(0, av))) + ' kg net)'); return; } dl[kq + id] = -net; dl[nq + id] = -c.n; dl['rewG|' + id] = -gross; dl['rewT|' + id] = -tare; }
-    dl['rewO|' + id] = net;
+    dl['rewO|' + id] = net; if(to === 'Warping') dl['wpI|' + id] = net;
   } else {
     if(net > b.out + 0.05){ toast('Only ' + sxN(yR1(Math.max(0, b.out))) + ' kg was given out to weaving'); return; }
     if(run){ dl['rewR|' + id] = net; } else { dl[kq + id] = net; dl[nq + id] = c.n; dl['rewG|' + id] = gross; dl['rewT|' + id] = tare; }
@@ -30901,10 +30908,11 @@ document.addEventListener('click', (ev) => { const el = ev.target.closest && ev.
 /* ---------- p261: opening stock from Excel (Settings of every stock page) ---------- */
 const BK_KEY = (s) => String(s == null ? '' : s).toLowerCase().replace(/[^a-z0-9؀-ۿ]+/g, '');
 const BK = {
-  raw: { name: 'Raw Yarn', file: 'raw-yarn-opening-stock', fields: [
-    ['sec', 'Section', ['section']], ['code', 'Code', ['code', 'itemcode']], ['col', 'Colour', ['colour', 'color', 'colourdescription', 'name', 'item']], ['sup', 'Supplier', ['supplier']], ['sz', 'Yarn size', ['yarnsize', 'size']],
-    ['kgb', 'Kg in 1 box', ['kginbox', 'kginabox', 'kgin1box', 'kgperbox', 'boxkg']], ['use', 'Used per day kg', ['usedperdaykg', 'usedperday', 'dailyuse']], ['ord', 'Low stock days', ['lowstockdays', 'lowstockreminderdays', 'reminderdays']],
-    ['store', 'Store', ['store']], ['bx', 'Boxes', ['boxes', 'boxessacks']], ['kg', 'Opening kg', ['openingkg', 'kg', 'availablekg', 'stockkg', 'openingstock', 'stock', 'qty']] ] },
+  raw: { name: 'Raw Yarn', file: 'raw-yarn-items-and-opening-stock', fields: [
+    ['code', 'Code', ['code', 'itemcode']], ['col', 'Colour description', ['colour', 'color', 'colourdescription', 'name', 'item']], ['sup', 'Supplier', ['supplier']], ['sz', 'Yarn size', ['yarnsize', 'size']],
+    ['sec', 'Section', ['section']], ['kgb', 'Kg in 1 box (0 = kg only)', ['kginbox', 'kginabox', 'kgin1box', 'kgin1box0kgonly', 'kgperbox', 'boxkg']], ['use', 'Used per day kg (optional)', ['usedperdaykg', 'usedperday', 'usedperdaykgoptional', 'dailyuse']],
+    ['ord', 'Low stock reminder (days)', ['lowstockdays', 'lowstockreminderdays', 'reminderdays']], ['on', 'Show in lists', ['showinlists', 'show']], ['nm', 'Moving', ['moving', 'notmoving']],
+    ['store', 'Store (stock only)', ['store', 'storestockonly']], ['bx', 'Boxes (stock only)', ['boxes', 'boxessacks', 'boxesstockonly']], ['kg', 'Opening kg (stock only)', ['openingkg', 'kg', 'availablekg', 'stockkg', 'openingstock', 'stock', 'qty', 'openingkgstockonly']] ] },
   rew: { name: 'Rewound Yarn', file: 'rewound-yarn-opening-stock', fields: [
     ['code', 'Code', ['code']], ['col', 'Colour', ['colour', 'color', 'name']], ['sup', 'Supplier', ['supplier']], ['kg', 'Net kg', ['netkg', 'netkg1stquality', 'kg', 'net']], ['n', 'Bobbins', ['bobbins', 'bobbins1stquality']],
     ['kq', 'Net kg 2nd quality', ['netkg2ndquality', 'kg2ndquality', '2ndqualitykg']], ['nq', 'Bobbins 2nd quality', ['bobbins2ndquality', '2ndqualitybobbins']], ['rc', 'Recovered kg', ['recoveredkg', 'recoveredfromweavingkg', 'recovered']], ['g', 'Gross kg', ['grosskg', 'gross']], ['t', 'Tare kg', ['tarekg', 'tare']] ] },
@@ -30919,7 +30927,7 @@ function bkNum(v){ if(typeof v === 'number') return isFinite(v) ? v : null; cons
 const bkS = (v) => String(v == null ? '' : v).trim();
 function bkTemplateRows(sec){
   const hd = BK[sec].fields.map(f => f[1]), rows = [hd];
-  if(sec === 'raw') yItems().filter(i => i.on !== false).forEach(i => rows.push([i.sec || '', i.code || '', i.col || '', i.sup || '', i.sz || '', i.kgb || '', i.use || '', i.ord || '', '', '', '']));
+  if(sec === 'raw') yItems().forEach(i => rows.push([i.code || '', i.col || '', i.sup || '', i.sz || '', i.sec || '', i.kgb || '', i.use || '', i.ord || '', i.on === false ? 'No' : 'Yes', i.nm ? 'Not moving' : 'Normal', '', '', '']));
   else if(sec === 'rew') yRewRows().filter(r => r.i).forEach(r => rows.push([r.i.code || '', r.i.col || '', r.i.sup || '', '', '', '', '', '', '', '']));
   else if(sec === 'wp') yWpRows().forEach(r => rows.push([r.col, '', '', r.w || '']));
   else if(sec === 'fst') { const gn = (g) => (SK_GROUPS.find(x => x[0] === g) || [0, g])[1]; SK.items.filter(i => i.on !== false && i.g !== 'rm').forEach(i => { const x = i.x || {}; rows.push([gn(i.g), i.name || '', i.ar || '', i.code || '', i.col || '', (skDesign(i.des) || {}).name || '', x.size || '', i.per || '', i.truck || '', x.mpr || '', x.q || '', x.model || '', x.cat || '', x.thk || '', '']); }); }
@@ -30949,8 +30957,8 @@ const bkParse = {
       const col = bkS(o.col), code = bkS(o.code), sup = bkS(o.sup); if(!col){ P.bad.push('Row ' + o._r + ': the colour is missing'); return; }
       const nums = {}; let ok = true; ['kgb', 'use', 'ord', 'bx', 'kg'].forEach(k => { const n = bkNum(o[k]); if(n == null || n < 0){ P.bad.push('Row ' + o._r + ': "' + o[k] + '" is not a number (' + k + ')'); ok = false; } else nums[k] = n; }); if(!ok) return;
       let it = items.find(i => bkNorm(i.code) === bkNorm(code) && bkNorm(i.col) === bkNorm(col) && (!sup || bkNorm(i.sup) === bkNorm(sup))) || P.newItems.find(i => bkNorm(i.code) === bkNorm(code) && bkNorm(i.col) === bkNorm(col) && (!sup || bkNorm(i.sup) === bkNorm(sup)));
-      const fresh = !it; if(!it){ it = { id: '', sec: bkS(o.sec) || 'Other', code, col, sup, sz: bkS(o.sz), kgb: nums.kgb, use: nums.use, ord: nums.ord, on: true }; P.newItems.push(it); }
-      else if(!P.newItems.includes(it)){ let ch = false; [['kgb', nums.kgb], ['use', nums.use], ['ord', nums.ord]].forEach(a => { if(a[1] > 0 && Number(it[a[0]]) !== a[1]){ it['_n' + a[0]] = a[1]; ch = true; } }); if(bkS(o.sz) && bkS(o.sz) !== it.sz){ it._nsz = bkS(o.sz); ch = true; } if(bkS(o.sec) && bkS(o.sec) !== it.sec){ it._nsec = bkS(o.sec); ch = true; } if(ch) P.upd++; }
+      const onV = !/^(no|n|0|hide|hidden)/i.test(bkS(o.on)), nmV = /not|^y|^1|slow/i.test(bkS(o.nm)), fresh = !it; if(!it){ it = { id: '', sec: bkS(o.sec) || 'Other', code, col, sup, sz: bkS(o.sz), kgb: nums.kgb, use: nums.use, ord: nums.ord, on: onV, nm: nmV }; P.newItems.push(it); }
+      else if(!P.newItems.includes(it)){ let ch = false; [['kgb', nums.kgb], ['use', nums.use], ['ord', nums.ord]].forEach(a => { if(a[1] > 0 && Number(it[a[0]]) !== a[1]){ it['_n' + a[0]] = a[1]; ch = true; } }); if(bkS(o.sz) && bkS(o.sz) !== it.sz){ it._nsz = bkS(o.sz); ch = true; } if(bkS(o.sec) && bkS(o.sec) !== it.sec){ it._nsec = bkS(o.sec); ch = true; } if(bkS(o.on) && onV !== (it.on !== false)){ it._non = onV; ch = true; } if(bkS(o.nm) && nmV !== !!it.nm){ it._nnm = nmV; ch = true; } if(ch) P.upd++; }
       const kgb = nums.kgb > 0 ? nums.kgb : (Number(it.kgb) || 0); let kg = nums.kg; if(!(kg > 0) && nums.bx > 0 && kgb > 0) kg = Math.round(nums.bx * kgb * 100) / 100;
       const st = stores.find(s => bkNorm(s) === bkNorm(o.store)) || stores[0];
       if(kg > 0){ P.lines.push({ it, s: st, kg }); P.kg += kg; }
@@ -31007,7 +31015,7 @@ async function bkGo(){
 async function bkSaveRaw(P){
   const items = yItems(); let n = items.reduce((a, x) => Math.max(a, Number(String(x.id).slice(1)) || 0), 0);
   P.newItems.forEach(i => { n++; i.id = 'y' + n; items.push(i); });
-  items.forEach(i => { if('_nkgb' in i){ i.kgb = i._nkgb; delete i._nkgb; } if('_nuse' in i){ i.use = i._nuse; delete i._nuse; } if('_nord' in i){ i.ord = i._nord; delete i._nord; } if('_nsz' in i){ i.sz = i._nsz; delete i._nsz; } if('_nsec' in i){ i.sec = i._nsec; delete i._nsec; } });
+  items.forEach(i => { if('_nkgb' in i){ i.kgb = i._nkgb; delete i._nkgb; } if('_nuse' in i){ i.use = i._nuse; delete i._nuse; } if('_nord' in i){ i.ord = i._nord; delete i._nord; } if('_nsz' in i){ i.sz = i._nsz; delete i._nsz; } if('_nsec' in i){ i.sec = i._nsec; delete i._nsec; } if('_non' in i){ i.on = i._non; delete i._non; } if('_nnm' in i){ i.nm = i._nnm; delete i._nnm; } });
   if(P.newItems.length || P.upd){ if(!await sxPutCfg()){ return false; } }
   if(!P.lines.length) return true;
   const dl = {}, rows = P.lines.map(l => { const k = 'yr|' + l.it.id + '|' + l.s; dl[k] = Math.round(((dl[k] || 0) + l.kg) * 1000) / 1000; return { y: l.it.id, s: l.s, kg: l.kg }; });
@@ -31048,8 +31056,8 @@ document.addEventListener('click', (ev) => { const el = ev.target.closest && ev.
 /* ---------- p262: one-time "clear" button in the Settings of each stock page (disappears after use) ---------- */
 const CLR = {
   raw: { name: 'Raw Yarn', pre: ['yr|', 'raw|'], ent: ['yr', 'raw'], what: 'all stock, all yarn items and all entries and history of Raw Yarn', after: 'Rewound Yarn uses the yarn items, so clear it too if you start again.' },
-  rew: { name: 'Rewound Yarn', pre: ['rew|', 'rewN|', 'rewR|', 'rewQ|', 'rewQN|', 'rewG|', 'rewT|', 'rewO|', 'rewI|'], ent: ['rew'], what: 'all rewound stock and all entries and history of Rewound Yarn', after: '' },
-  wp: { name: 'Warp Beams', pre: ['wp|', 'wpN|'], ent: ['wp'], what: 'all beam stock and all entries and history of Warp Beams', after: '' },
+  rew: { name: 'Rewound Yarn', pre: ['rew|', 'rewN|', 'rewR|', 'rewQ|', 'rewQN|', 'rewG|', 'rewT|', 'rewO|', 'rewI|', 'rewD|'], ent: ['rew'], what: 'all rewound stock and all entries and history of Rewound Yarn', after: '' },
+  wp: { name: 'Warp Beams', pre: ['wp|', 'wpN|', 'wpI|', 'wpD|'], ent: ['wp'], what: 'all beam stock and all entries and history of Warp Beams', after: '' },
   fst: { name: 'Finished Goods', pre: ['fl|'], ent: [], what: 'all finished goods stock, all items and all entries and history (designs stay)', after: '' }
 };
 function clrSec(sec){
@@ -31328,6 +31336,40 @@ async function cmpPdf(c){
   toast('Making the PDF…');
   await rvfMakePdf(blocks, 'comparison-' + (c.oid || 'quotes') + '.pdf', { landscape: false, format: 'a4' });
 }
+
+/* ---------- p264 waiting lists: what another store sent to this department and is not entered yet ---------- */
+function yWaitRew(){
+  return yItems().map(i => { const b = yRwBal(i.id), dn = Number(SX.bal['rewD|' + i.id]) || 0; return { i, sent: b.iss, dn, pend: b.iss - dn }; })
+    .filter(r => r.sent > 0.0004 && r.pend > Math.max(1, r.sent * 0.03)).sort((a, b) => b.pend - a.pend);
+}
+function yWaitWp(){
+  const rows = yItems().map(i => ({ i, sent: Number(SX.bal['wpI|' + i.id]) || 0 })).filter(r => r.sent > 0.0004).sort((a, b) => b.sent - a.sent);
+  const sent = rows.reduce((a, r) => a + r.sent, 0), made = Number(SX.bal['wpD|all']) || 0;
+  return { rows, sent, made, pend: sent - made };
+}
+function yWaitBox(key, title, n, kg, body){
+  return `<details class="sxWait"><summary>${sxIc('clock', 15)}<b>${title}</b><span class="sxCnt">${n}</span><span class="grow"></span><span class="sxWk">${sxN(yR1(kg))} kg</span></summary><div class="sxWb">${body}</div></details>`;
+}
+const _yRewHtml2 = yRewHtml;
+yRewHtml = function(){
+  let h = _yRewHtml2(); const w = yWaitRew(); if(!w.length || !sxCan('rew')) return h;
+  const body = w.map(r => `<div class="sxWr"><span class="sxWc">${skEsc(r.i.code || '')}</span><span class="sxWn">${skEsc(r.i.col)}</span><span class="sxWs">${sxN(yR1(r.sent))} sent${r.dn > 0 ? ' · ' + sxN(yR1(r.dn)) + ' entered' : ''}</span><b class="sxWk">${sxN(yR1(r.pend))} kg</b><button type="button" class="sxWbtn" data-sx="ywait" data-v="${r.i.id}">Enter</button></div>`).join('');
+  const box = yWaitBox('rew', 'Waiting to be rewound', w.length, w.reduce((a, r) => a + r.pend, 0), body), m = '<div class="card sxCard"><div class="sxGrid">', k = h.indexOf(m);
+  return k < 0 ? h : h.slice(0, k) + box + h.slice(k);
+};
+const _yWpHtml2 = yWpHtml;
+yWpHtml = function(){
+  let h = _yWpHtml2(); const w = yWaitWp(); if(!w.rows.length || !sxCan('wp')) return h;
+  const body = `<div class="sxWr sxWsum"><span class="sxWn">Received ${sxN(yR1(w.sent))} kg &middot; Made into beams ${sxN(yR1(w.made))} kg</span><b class="sxWk">${w.pend > 0 ? sxN(yR1(w.pend)) + ' kg to make' : 'All made'}</b><button type="button" class="sxWbtn" data-sx="ywaitwp">Enter beams</button></div>` +
+    w.rows.map(r => `<div class="sxWr"><span class="sxWc">${skEsc(r.i.code || '')}</span><span class="sxWn">${skEsc(r.i.col)}</span><b class="sxWk">${sxN(yR1(r.sent))} kg</b></div>`).join('');
+  const box = yWaitBox('wp', 'Received for warping', w.rows.length, Math.max(0, w.pend), body), m = '<div class="card sxCard"><div class="sxGrid">', k = h.indexOf(m);
+  return k < 0 ? h : h.slice(0, k) + box + h.slice(k);
+};
+document.addEventListener('click', (ev) => {
+  const el = ev.target.closest && ev.target.closest('[data-sx="ywait"],[data-sx="ywaitwp"]'); if(!el) return;
+  if(el.dataset.sx === 'ywaitwp'){ SX.yk3 = 'in'; yOpenWp(); return; }
+  const i = yItem(el.dataset.v); if(!i) return; SX.yk2 = 'in'; yOpenRew(); const e = $('yI'); if(e){ e.value = yLbl(i); yRewInfo(); const g = $('yGross'); if(g) g.focus(); }
+});
 
 /* ---- clicks ---- */
 document.addEventListener('click', (ev) => {
