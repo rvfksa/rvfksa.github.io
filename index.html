@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261121-150149">
+<meta name="rvf-build" content="20261121-150206">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -30112,8 +30112,8 @@ function yWpHtml(){
   SX.rwsub = 'wp'; let rows = yWpRows(), T = { n: rows.reduce((a, r) => a + r.n, 0), kg: rows.reduce((a, r) => a + r.kg, 0) };
   let h = sxTop('<span class="grow"></span>' + ySortBtn('wp', ['name', 'beams']) + sxDlBtn('wp') + sxGear('wp') + (sxCan('wp') ? sxAddBtn('ywp', 'Update') : ''));
   if(!sxCan('wp')) h += sxNoRight('warping');
-  h += `<div class="card sxCard"><div class="sxGrid">${sxTileF('wp', 'has', 'yes', 'Beams in stock', sxN(T.n) + '<small> beams</small>', '', '', 'wp', 'cyan')}${sxTile('Total weight', sxN(T.kg) + '<small> kg</small>', '', '', 'pack', 'blue')}</div></div>`;
-  const cols = [['Colour', '', 'k'], ['Beams available', '', 'r'], ['Kg per beam', '', 'r'], ['Total kg', '', 'r']];
+  h += `<div class="card sxCard"><div class="sxGrid">${sxTileF('wp', 'has', 'yes', 'Beams in stock', sxN(T.n) + '<small> beams</small>', '', '', 'wp', 'cyan')}${sxTile('Net weight', sxN(T.kg) + '<small> kg</small>', '', '', 'pack', 'blue')}</div></div>`;
+  const cols = [['Colour', '', 'k'], ['Beams available', '', 'r'], ['Net kg per beam', '', 'r'], ['Net weight (kg)', '', 'r']];
   const FW = sxFget('wp'); if(FW.has) rows = rows.filter(r => r.n > 0);
   if(ySortOf('wp') === 'beams') rows.sort((a, b) => b.n - a.n); else rows.sort((a, b) => String(a.col).localeCompare(String(b.col)));
   const body = rows.map(r => [sxColT(r.col), `<b>${sxN(r.n)}</b>`, r.n > 0 ? sxN(Math.round(r.kg / r.n * 10) / 10) : '<span class="sxSm2">-</span>', `<b>${sxN(r.kg)}</b>`]);
@@ -30137,15 +30137,15 @@ function yOpenWp(){
   const tabs = `<div class="hrTabs sxIO">${[['in', 'IN'], ['out', 'OUT']].map(x => `<button class="${k === x[0] ? 'active' : ''}" data-sx="yk3" data-v="${x[0]}">${x[1]}</button>`).join('')}</div>`;
   sxModal('Warp beams', tabs + `<div class="sxF yF">${sxField('Colour', `<input id="yWc" list="yWl" type="text" autocomplete="off" value="${skEsc(F.ywc || '')}" placeholder="Choose or type">`, 1)}
     ${k === 'out' ? '<div class="field wide"><div id="yWInfo" class="sxNote" style="margin:0;">Choose the colour to see the beams in store.</div></div>' : ''}
-    ${sxField('Beam size (kg per beam)', '<input id="yWs" type="number" inputmode="decimal" min="0" step="any" placeholder="0">')}${sxField('Number of beams', '<input id="yWn" type="number" inputmode="decimal" min="0" step="any" placeholder="0">')}
-    ${sxField('Total kg (auto)', '<input id="yWk" type="number" inputmode="decimal" min="0" step="any" placeholder="auto">')}${sxField('Date', `<input id="sxD" type="date" value="${skEsc(sxToday())}">`)}
+    ${sxField('Beam size (net kg per beam)', '<input id="yWs" type="number" inputmode="decimal" min="0" step="any" placeholder="0">')}${sxField('Number of beams', '<input id="yWn" type="number" inputmode="decimal" min="0" step="any" placeholder="0">')}
+    ${sxField('Net weight (auto)', '<input id="yWk" type="number" inputmode="decimal" min="0" step="any" placeholder="auto">')}${sxField('Date', `<input id="sxD" type="date" value="${skEsc(sxToday())}">`)}
     ${sxField('Note (optional)', '<input id="sxN" type="text">', 1)}</div><datalist id="yWl">${yWpRows().map(r => `<option value="${skEsc(r.col)}">`).join('')}</datalist>`, sxSave('ysavewp', k === 'out' ? 'Save OUT' : 'Save IN'));
   yWpCalc();
 }
 async function ySaveWp(){
   if(!sxCan('wp')) return; const k = SX.yk3 || 'in', c = yCfg(), r0 = yWpRows(), raw = sxVal('yWc'), col = (r0.find(r => r.col.toLowerCase() === raw.toLowerCase()) || { col: sxColFix(raw) }).col, n = Number(sxVal('yWn')), d = sxVal('sxD') || sxToday();
   if(!col){ toast('Choose the colour'); return; } if(!(n > 0)){ toast('Type the number of beams'); return; }
-  const w = Number(sxVal('yWs')) || yWpPer(col); let kg = Number(sxVal('yWk')); if(!(kg > 0)) kg = Math.round(n * w * 100) / 100; if(!(kg > 0)){ toast('Type the beam size (kg per beam)'); return; }
+  const w = Number(sxVal('yWs')) || yWpPer(col); let kg = Number(sxVal('yWk')); if(!(kg > 0)) kg = Math.round(n * w * 100) / 100; if(!(kg > 0)){ toast('Type the beam size (net kg per beam)'); return; }
   const dl = { ['wp|' + col]: k === 'out' ? -kg : kg, ['wpN|' + col]: k === 'out' ? -n : n };
   const e = { id: sxId(), t: Date.now(), s: 'wp', k, d, col, kg, bob: n, n: sxVal('sxN'), by: sxMe(), u: String(state.user.loginId), dl };
   if(await sxSaveMove('w', e, k === 'out')){ sxKeep({ ywc: col }); toast('Saved'); sxClose(); skRender(); }
@@ -30813,7 +30813,7 @@ function yRewHtml(){
 function yDl(kind){
   if(kind === 'raw'){ const rows = [['Section', 'Code', 'Colour', 'Supplier', 'Yarn size', 'Boxes', 'Available kg', 'Used per day kg', 'Days left', 'Status']]; ySortRows(yRows().filter(r => r.kg > 0.0004 || r.s === 'out'), 'col').forEach(r => rows.push([r.i.sec, r.i.code, r.i.col, r.i.sup, r.i.sz, r.bx != null ? Math.round(r.bx * 10) / 10 : '', Math.round(r.kg * 10) / 10, Math.round(r.per * 10) / 10, r.days != null ? Math.round(r.days) : '', Y_ST[r.s][0]])); skDlXlsx('raw-material-stock', 'Raw material', rows); }
   else if(kind === 'rew'){ const rows = [['Code', 'Colour', 'From raw store kg', 'Bobbins', 'Net kg 1st quality', 'Bobbins 2nd quality', 'Net kg 2nd quality', 'Recovered from weaving kg', 'Total net kg', 'Gross kg', 'Tare kg']]; yRewRows().forEach(r => rows.push([r.i ? r.i.code : '', r.label, yR1(r.iss), Math.max(0, r.n), yR1(Math.max(0, r.kg)), Math.max(0, r.nq), yR1(Math.max(0, r.kq)), yR1(Math.max(0, r.rc)), yR1(r.tot), yR1(Math.max(0, r.g)), yR1(Math.max(0, r.t))])); skDlXlsx('rewound-yarn-stock', 'Rewound yarn', rows); }
-  else if(kind === 'wp'){ const rows = [['Colour', 'Kg per beam', 'Start of month', 'Made', 'Used', 'Closing beams', 'Total kg']]; yWpRows().forEach(r => rows.push([r.col, r.w, r.op, r.mo, r.us, r.n, Math.round(r.kg * 10) / 10])); skDlXlsx('warping-beams', 'Warping', rows); }
+  else if(kind === 'wp'){ const rows = [['Colour', 'Net kg per beam', 'Start of month', 'Made', 'Used', 'Closing beams', 'Net weight (kg)']]; yWpRows().forEach(r => rows.push([r.col, r.w, r.op, r.mo, r.us, r.n, Math.round(r.kg * 10) / 10])); skDlXlsx('warping-beams', 'Warping', rows); }
 }
 /* ---------- Settings ---------- */
 function sxYSet(show){
