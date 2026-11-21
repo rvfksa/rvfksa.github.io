@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261121-140733">
+<meta name="rvf-build" content="20261121-141045">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -31296,11 +31296,11 @@ async function cmpPdf(c){
   const tbl = (rows) => `<table style="width:100%; border-collapse:collapse; font-family:Inter,Arial,sans-serif;">${thead}<tbody>${rows}</tbody></table>`;
   const head = rvfPdfHeader('Quotation comparison', [c.label || '', (c.cur || 'SAR') + ' · ' + (tot ? 'Quantity × price' : 'Price per piece') + ' · ' + fmtDate(pcDateStr(Date.now()))]);
   const blocks = []; let i = 0, first = true;
-  while(i < body.length){ const n = first ? 10 : 13; blocks.push((first ? head : '') + tbl(body.slice(i, i + n).join(''))); i += n; first = false; }
+  while(i < body.length){ const n = first ? 17 : 20; blocks.push((first ? head : '') + tbl(body.slice(i, i + n).join(''))); i += n; first = false; }
   if(!blocks.length) blocks.push(head);
   blocks.push(tbl(sumTr + shipTr + discTr + grTr + advTr + lowTr));
   toast('Making the PDF…');
-  await rvfMakePdf(blocks, 'comparison-' + (c.oid || 'quotes') + '.pdf', { landscape: true, format: 'a4' });
+  await rvfMakePdf(blocks, 'comparison-' + (c.oid || 'quotes') + '.pdf', { landscape: false, format: 'a4' });
 }
 
 /* ---- clicks ---- */
