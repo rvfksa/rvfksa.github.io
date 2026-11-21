@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261121-135342">
+<meta name="rvf-build" content="20261121-135508">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -31108,7 +31108,7 @@ function cmpEditHtml(){
   const bar = `<div class="cmpBar"><button class="pcBtnSoft sm" data-cmp="back">‹ Back</button><b class="cmpTitle">${pcEsc(c.label || 'New comparison')}</b><span class="grow"></span>${c.isNew ? '' : `<button class="pcBtnSoft sm danger" data-cmp="del">${pcSvg('trash', 13)}Delete</button>`}<button class="pcBtnSoft sm" data-cmp="dl" title="Download a copy (Excel)">${pcSvg('down', 13)}Download</button><button class="pcBtnMain sm" data-cmp="save">Save</button></div>`;
   if(!c.rows.length) return bar + '<div class="card cmpCardBox">' + picker + '<div class="hrEmpty">Choose an order to start.</div></div>';
   const th = c.sups.map((s, k) => `<th class="cmpS"><div class="cmpSH"><input type="text" list="cmpSupL" autocomplete="off" data-cmp="sup" data-k="${k}" placeholder="Supplier ${k + 1}" value="${pcEsc(s)}">${c.sups.length > 1 ? `<button class="cmpX" data-cmp="supdel" data-k="${k}" title="Remove supplier">×</button>` : ''}</div></th>`).join('');
-  if(window.pp && !pp.sups && !pp.supLoading) pcpLoadSups().then(() => { const dl = document.getElementById('cmpSupL'); if(dl) dl.innerHTML = cmpSupOpts(); }).catch(() => {});
+  if(typeof pp !== 'undefined' && !pp.sups && !pp.supLoading) pcpLoadSups().then(() => { const dl = document.getElementById('cmpSupL'); if(dl) dl.innerHTML = cmpSupOpts(); }).catch(() => {});
   const tot = CMP.mode === 'total';
   const body = c.rows.map((r, i) => {
     const ph = cmpPhotos(c, r).length;
@@ -31173,7 +31173,7 @@ function cmpMark(){
   if(bi) bi.innerHTML = bsum ? cmpFmt(bsum) + (bmiss ? `<div class="cmpD">${bmiss} not priced</div>` : '') : '';
   if(bg) bg.textContent = bsum ? cmpFmt(bsum) : '';
 }
-function cmpSupOpts(){ return ((window.pp && pp.sups) || []).filter(s => !s.off).map(s => `<option value="${pcEsc(s.n)}">`).join(''); }
+function cmpSupOpts(){ return ((typeof pp !== 'undefined' && pp.sups) || []).filter(s => !s.off).map(s => `<option value="${pcEsc(s.n)}">`).join(''); }
 function cmpDisc(c, k, sum){ const v = String((c.ship[k] || {}).d || '').trim(); if(!v) return 0; return v.slice(-1) === '%' ? sum * (cmpNum(v.slice(0, -1)) / 100) : cmpNum(v); }
 function cmpSync(c, o){
   if(!o || !o.items) return false;
