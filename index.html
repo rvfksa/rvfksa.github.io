@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261121-165529">
+<meta name="rvf-build" content="20261122-083353">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -31461,6 +31461,24 @@ document.addEventListener('change', (ev) => { if(ev.target && ev.target.id === '
 function sxFsCalc(){ const t = $('fsT'); if(!t) return; const Q = Number(sxVal('fsQ')) || 0, b = Number(sxVal('fsB')) || 0, P = Q * b; t.value = P ? sxN(P) : ''; let sm = Number(sxVal('fsP')) || 0; document.querySelectorAll('#sxModal .fsPx').forEach(e => { sm += Number(e.value) || 0; }); const r = $('fsRem'); if(r) r.innerHTML = sm > 0 ? 'Colours ' + sxN(sm) + ' of ' + sxN(P) + ' pcs' + (P - sm > 0.5 ? ' \u00b7 <b>' + sxN(P - sm) + ' left</b>' : P - sm < -0.5 ? ' \u00b7 <b class="sxBad">' + sxN(sm - P) + ' too many</b>' : ' \u00b7 <b>matches</b>') : ''; }
 document.addEventListener('input', (ev) => { const t = ev.target; if(t && (t.id === 'fsQ' || t.id === 'fsP' || (t.classList && t.classList.contains('fsPx')))) sxFsCalc(); });
 document.addEventListener('change', (ev) => { if(ev.target && ev.target.id === 'fsB') sxFsCalc(); });
+
+/* ---------- p267 Floor page (supervisors + admin) ---------- */
+PAGE_DEFS.floor = { label: 'Floor' };
+(function(){
+  const _up = userPages;
+  userPages = function(u){ const p = _up(u).slice(); if(u && (u.role === 'supervisor' || u.role === 'admin') && p.indexOf('floor') < 0) p.push('floor'); return p; };
+  const _g = goTo;
+  goTo = function(key){
+    if(key === 'floor'){ clearCaptureDraft(); markNavActive('floor'); floorMount(); showScreen('screen-floor'); return; }
+    return _g.apply(this, arguments);
+  };
+})();
+function floorMount(){
+  if($('screen-floor')) return;
+  const s = document.createElement('section'); s.className = 'screen'; s.id = 'screen-floor';
+  s.innerHTML = '<div class="eyebrow">Supervisor</div><h1>Floor</h1><div id="floorBody"><div class="empty-state">Nothing here yet.</div></div>';
+  const ref = $('screen-mystatus'); (ref && ref.parentNode ? ref.parentNode : document.body).appendChild(s);
+}
 
 /* ---- clicks ---- */
 document.addEventListener('click', (ev) => {
