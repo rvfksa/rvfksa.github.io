@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261122-092311">
+<meta name="rvf-build" content="20261122-092526">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -15681,6 +15681,7 @@ async function renderMachineProductionBox(ev){
   if(ev && ev.type === 'change') state.prodShown = true;   // choosing a period counts as asking for the data
   const range = computeDashboardRange();
   const PS = await prodShiftLoadRange(range);
+  state.lastPS = PS;
   if(state.prodShown) await ensureSummariesCover(range.fromDate, range.toDate);
   const summaries = state.prodShown ? (state.cachedSummaries || []) : [];
 
@@ -15705,7 +15706,7 @@ async function renderMachineProductionBox(ev){
     let drillErr = '';
     try{ await rvfEnsureDrillRecords(range); }catch(err){ console.error(err); drillErr = 'The readings for these dates could not be loaded (' + ((err && (err.code || err.message)) || 'unknown error') + '), so Picks and Stop hours show 0. Press the filter and choose the dates again to retry.'; }
     renderMachineDrillList(scopedMachines, range);
-    if(!drillErr && !(state.cachedRecords || []).length) drillErr = 'No readings were found for these dates, so Picks and Stop hours show 0.';
+    if(!drillErr && !state.drillPM && !(state.cachedRecords || []).length) drillErr = 'No readings were found for these dates, so Picks and Stop hours show 0.';
     const dl = $('machDrillList'); if(drillErr && dl && state.user && state.user.role === 'admin') dl.insertAdjacentHTML('afterbegin', '<div class="hint" style="color:#b45309;margin:0 0 8px;">' + drillErr.replace(/</g, '&lt;') + '</div>');
   }
   renderStoppedDetail(machDrillKind === 'stopped', range, stoppedList);
@@ -21638,14 +21639,14 @@ function mpInfo(){
 }
 function mpMonths(){ const box = document.getElementById('prod12Month'); if(!box) return []; return Array.from(box.querySelectorAll('.row')).map(x => { const k = x.querySelector('.k'), b = x.querySelector('b'); return k && b ? [k.textContent.trim(), parseFloat(b.textContent.replace(/,/g, '')) || 0] : null; }).filter(Boolean); }
 function mpDownload(kind){
-  if(!state.prodShown){ state.prodShown = true; toast('Loading the production figures\u2026'); renderMachineProductionBox().then(() => mpDownload(kind)); return; }   // the report needs the daily totals
+  if(!state.prodShown && !state.lastPS){ state.prodShown = true; toast('Loading the production figures\u2026'); renderMachineProductionBox().then(() => mpDownload(kind)); return; }   // the report needs the daily totals
   const I = mpInfo(), r = I.r;
   const scoped = state.machines.filter(m => (!r.department || m.department === r.department) && (!r.machine || String(m.id) === String(r.machine)));
   const months = mpMonths();
   if(kind === 'xlsx'){
     if(typeof XLSX === 'undefined'){ toast('Excel tool not loaded — check your connection'); return; }
     const dayM = scoped.filter(m => machineRunsShift(m, 'Day')), nightM = scoped.filter(m => machineRunsShift(m, 'Night')), n = (a, f) => a.filter(f).length;
-    const P = computeProductionForRangeFromSummaries(state.cachedSummaries || [], r.fromDate, r.toDate, r.department, r.machine);
+    const P = state.lastPS ? prodShiftCompute(state.lastPS, r) : computeProductionForRangeFromSummaries(state.cachedSummaries || [], r.fromDate, r.toDate, r.department, r.machine);
     const wb = XLSX.utils.book_new();
     const ws1 = XLSX.utils.aoa_to_sheet([['Machine & Production'], ['Created', rvfNowText()], ['Period', r.label + ' (' + I.dates + ')'], ['Department', I.dept], ['Machine', I.mach], [],
       ['Total machines', scoped.length], ['Running (Day / Night)', n(dayM, m => m.status !== 'stopped') + ' / ' + n(nightM, m => m.status !== 'stopped')], ['Stopped (Day / Night)', n(dayM, m => m.status === 'stopped') + ' / ' + n(nightM, m => m.status === 'stopped')],
@@ -28977,6 +28978,22 @@ td.cmpOldBest .cmpD{ color:#b45309; text-transform:uppercase; letter-spacing:.04
 .psDept td{text-align:right;padding:8px 4px;border-top:1px solid var(--line);font-variant-numeric:tabular-nums}
 .psDept td:first-child,.psDept th:first-child{text-align:left;font-weight:600}
 .psDept .psTot td{border-top:2px solid var(--line)}
+table.mdT{width:100%;border-collapse:collapse;font-size:12.5px}
+table.mdT th{font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:600;text-align:right;padding:8px 8px;white-space:nowrap;background:transparent;position:static}
+table.mdT td{padding:10px 8px;border-top:1px solid var(--line);text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;background:transparent;color:var(--text)}
+table.mdT .l{text-align:left}
+table.mdT .mdS{border-left:1px solid var(--line)}
+table.mdT td.mdV{color:var(--text-strong);font-weight:600}
+table.mdT tr.mdG th{text-align:center;color:var(--text-strong);font-size:10.5px;letter-spacing:.08em;padding:8px 8px 6px;border-bottom:0}
+table.mdT tr.mdG th.mdD{box-shadow:inset 0 -2px 0 var(--amber)}
+table.mdT tr.mdG th.mdN{box-shadow:inset 0 -2px 0 #3b82f6}
+table.mdT tr.mdG th svg{vertical-align:-1.5px;margin-right:5px}
+table.mdT tr.mdTot td{font-weight:700;background:var(--panel-2);border-top:0;color:var(--text-strong)}
+table.mdT tbody tr:hover td{background:rgba(79,70,229,.05)}
+.mdSt{font-size:11.5px;font-weight:600}
+.mdSt:before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px;background:var(--muted)}
+.mdSt.run{color:#15803d}.mdSt.run:before{background:#22c55e}
+.mdSt.stp{color:#b91c1c}.mdSt.stp:before{background:#ef4444}
 </style>
 <div id="rvfBusy"><i></i><span id="rvfBusyTxt">Loading data…</span></div>
 <script>
@@ -31699,6 +31716,76 @@ function prodDeptTable(pr){
     finally{ db.listUsersOnce = orig; }
   };
 })();
+
+/* ===== Machine list (Total / Running): clean layout, from the saved totals ===== */
+(function(){
+  const _e = rvfEnsureDrillRecords;
+  rvfEnsureDrillRecords = async function(range){
+    const rows = await prodShiftRows(range.fromDate, range.toDate, true);
+    if(rows){ state.drillPM = psPerMachine(rows, range.fromDate, range.toDate); return; }
+    state.drillPM = null; return _e.apply(this, arguments);
+  };
+})();
+function renderMachineDrillList(scopedMachines, range){
+  const box = $('machDrillList');
+  const list = machDrillKind === 'running' ? scopedMachines.filter(m => m.status !== 'stopped') : scopedMachines;
+  if(!list.length){ box.innerHTML = '<div class="empty-state">No machines match.</div>'; return; }
+  const dayOp = {}, nightOp = {};
+  (state.users || []).filter(u => u.role === 'operator').forEach(u => {
+    (u.assignedMachines || []).forEach(mid => {
+      if(u.assignedShift === 'Night'){ if(!nightOp[mid]) nightOp[mid] = u.name; }
+      else if(u.assignedShift === 'Day'){ if(!dayOp[mid]) dayOp[mid] = u.name; }
+      else if(!dayOp[mid]) dayOp[mid] = u.name;
+      else if(!nightOp[mid]) nightOp[mid] = u.name;
+    });
+  });
+  const pm = state.drillPM || dashPerMachine(state.cachedRecords || [], range.fromDate, range.toDate);
+  const Z = { dayPicks: 0, nightPicks: 0, dayStop: 0, nightStop: 0 };
+  const days = countWorkingDays(range.fromDate, range.toDate), hD = sumShiftHoursForRange(range.fromDate, range.toDate, 'Day'), hN = sumShiftHoursForRange(range.fromDate, range.toDate, 'Night');
+  const t = { dp: 0, np: 0, ds: 0, ns: 0 };
+  list.forEach(m => { const b = pm[m.id] || Z; t.dp += b.dayPicks; t.np += b.nightPicks; t.ds += b.dayStop; t.ns += b.nightStop; });
+  const n0 = v => Math.round(v).toLocaleString(), n1 = v => Number(v).toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  const dash = '<span style="color:var(--muted);">—</span>';
+  const box3 = (title, a, b, c, f, cl) => `<div class="mpSumB"><div class="mpSumT">${title}</div><div class="mpSumR"><div><span>${MP_SUN}Day</span><b>${f(a)}</b></div><div><span>${MP_MOON}Night</span><b>${f(b)}</b></div><div class="mpBoth"><span>${cl}</span><b>${c}</b></div></div></div>`;
+  const sum = `<div class="mpSum">${box3('Picks', t.dp, t.np, n0(t.dp + t.np), n0, 'Total')}${box3('Stop hours', t.ds, t.ns, n1(t.ds + t.ns), n1, 'Total')}${box3('Scheduled hours', hD, hN, days + (days === 1 ? ' day' : ' days'), n1, 'Working')}</div>`;
+  const fn = s => s ? String(s).split(' ')[0] : '';
+  const rows = list.map(m => {
+    const b = pm[m.id] || Z, stopped = m.status === 'stopped';
+    const st = stopped ? (m.stopType === 'permanent' ? 'Perm. stopped' : 'Stopped') : 'Running';
+    const showD = machineRunsShift(m, 'Day') || b.dayPicks > 0 || b.dayStop > 0, showN = machineRunsShift(m, 'Night') || b.nightPicks > 0 || b.nightStop > 0;
+    const clash = [];
+    if(!machineRunsShift(m, 'Night') && (nightOp[m.id] || b.nightPicks > 0 || b.nightStop > 0)) clash.push('Night is used, but this machine is set to ' + (m.shiftRun || 'Both') + ' only in Admin > Machines');
+    if(!machineRunsShift(m, 'Day') && (dayOp[m.id] || b.dayPicks > 0 || b.dayStop > 0)) clash.push('Day is used, but this machine is set to ' + (m.shiftRun || 'Both') + ' only in Admin > Machines');
+    const op = (nm, on) => on ? (nm ? `<span title="${String(nm).replace(/"/g, '&quot;')}">${fn(nm)}</span>` : dash) : dash;
+    return `<tr><td class="l"${clash.length ? ' title="' + clash.join(' · ').replace(/"/g, '&quot;') + '"' : ''}><b>${m.name}</b>${clash.length ? ' <span style="color:var(--warn);font-weight:800;">⚠</span>' : ''}</td>
+      <td class="l"><span class="mdSt ${stopped ? 'stp' : 'run'}">${st}</span></td>
+      <td class="l mdS">${op(dayOp[m.id], showD)}</td><td class="mdV">${showD ? n0(b.dayPicks) : dash}</td><td>${showD ? n1(b.dayStop) : dash}</td>
+      <td class="l mdS">${op(nightOp[m.id], showN)}</td><td class="mdV">${showN ? n0(b.nightPicks) : dash}</td><td>${showN ? n1(b.nightStop) : dash}</td></tr>`;
+  }).join('');
+  const tot = `<tr class="mdTot"><td class="l">Total · ${list.length} machine${list.length === 1 ? '' : 's'}</td><td></td><td class="mdS"></td><td class="mdV">${n0(t.dp)}</td><td>${n1(t.ds)}</td><td class="mdS"></td><td class="mdV">${n0(t.np)}</td><td>${n1(t.ns)}</td></tr>`;
+  box.innerHTML = sum + `<div class="card" style="padding:4px 10px;"><div class="table-scroll"><table class="report-table mpTbl mdT"><thead>
+    <tr class="mdG"><th colspan="2"></th><th colspan="3" class="mdD">${MP_SUN}Day shift</th><th colspan="3" class="mdN">${MP_MOON}Night shift</th></tr>
+    <tr><th class="l">Machine</th><th class="l">Status</th><th class="l mdS">Operator</th><th>Picks</th><th>Stop hrs</th><th class="l mdS">Operator</th><th>Picks</th><th>Stop hrs</th></tr>
+    </thead><tbody>${tot}${rows}</tbody></table></div></div>`;
+}
+mpExtraSheets = function(wb){
+  const dl = document.getElementById('machDrillList'), tb = dl && dl.style.display !== 'none' && dl.querySelector('table.mdT');
+  const num = (t) => { t = String(t).trim(); if(t === '—') return ''; const u = t.replace(/,/g, ''); return /^-?\d*\.?\d+$/.test(u) ? Number(u) : t; };
+  if(tb){
+    const rows = Array.from(tb.querySelectorAll('tbody tr')).map(tr => Array.from(tr.cells).map(c => num(c.textContent)));
+    const ws = XLSX.utils.aoa_to_sheet([['Machine', 'Status', 'Day operator', 'Day picks', 'Day stop hrs', 'Night operator', 'Night picks', 'Night stop hrs']].concat(rows));
+    ws['!cols'] = [{ wch: 22 }, { wch: 14 }, { wch: 16 }, { wch: 11 }, { wch: 12 }, { wch: 16 }, { wch: 11 }, { wch: 12 }];
+    XLSX.utils.book_append_sheet(wb, ws, 'Machine report');
+  }
+  mpcSheets(wb);
+};
+dsFoldDept = function(kind){
+  const trs = Array.from(document.querySelectorAll('#prodByDept .psDept tbody tr')).filter(r => !r.classList.contains('psTot'));
+  const num = (c) => parseFloat(String(c.textContent).replace(/,/g, '')) || 0;
+  const rows = trs.map(r => [r.cells[0].textContent.trim(), num(r.cells[1]), num(r.cells[2]), num(r.cells[3])]);
+  dsGo(kind, 'production-by-department', 'Production by Department', dsMpHead(), () => rows.length ? [mpBox(dsClone(document.getElementById('prodByDept')))] : [],
+    (wb) => { if(rows.length) dsSheet(wb, 'By Department', rvfNumRows([['Department', 'Day (m²)', 'Night (m²)', 'Total (m²)']].concat(rows)), [5, 26, 14, 14, 14]); });
+};
 
 /* ---- clicks ---- */
 document.addEventListener('click', (ev) => {
