@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261122-092526">
+<meta name="rvf-build" content="20261122-093013">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -529,7 +529,7 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
     pfRead(id, x) { const b = x.b || []; return { _id: id, operatorId: x.o, date: x.d, machine: x.m, picks: x.p, shifts: x.s || [], stopBreakdown: b.map(y => ({ reason: y.r, hours: y.h })) }; },
     async pfFrom() {
       if (!dbReady) throw new Error('NOT_CONFIGURED');
-      if (this._pfFrom === undefined) { const s = await getDoc(doc(db, 'config', 'pfReady')); this._pfFrom = s.exists() ? (s.data().from || '') : ''; }
+      if (this._pfFrom === undefined) { const s = await getDoc(doc(db, 'config', 'pfReady')); this._pfFrom = s.exists() ? (s.data().from || (s.data().data && s.data().data.from) || '') : ''; }
       return this._pfFrom;
     },
     async pfBuild(fromMonth) {
@@ -548,7 +548,7 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
     },
     async pfCheck(fromMonth) {
       if (!dbReady) throw new Error('NOT_CONFIGURED');
-      const raw = await this.loadSummariesRaw(fromMonth + '-01', '9999-12-31'), pk = await this.loadSummariesPacked(fromMonth + '-01', '9999-12-31');
+      const raw = await this.loadSummariesRaw(fromMonth + '-01', '2099-12-31'), pk = await this.loadSummariesPacked(fromMonth + '-01', '2099-12-31');
       const a = {}; raw.forEach(x => { a[x._id] = x; });
       let bad = 0, missing = 0; const seen = new Set();
       pk.forEach(x => { seen.add(x._id); const o = a[x._id]; if (!o) { bad++; return; } const sb = (v) => JSON.stringify((v || []).map(z => [z.reason, Number(z.hours)])); if (Number(o.picks) !== x.picks || sb(o.stopBreakdown) !== sb(x.stopBreakdown) || JSON.stringify((o.shifts || []).slice().sort()) !== JSON.stringify((x.shifts || []).slice().sort())) bad++; });
