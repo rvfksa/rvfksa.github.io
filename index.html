@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261122-182427">
+<meta name="rvf-build" content="20261122-182753">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -32000,7 +32000,9 @@ async function assignSupSyncApply(supIds){
     if(SLIM.indexOf(id) < 0 && _su && _su.__slim) _su = [];
     return r;
   };
-  async function empGet(){
+  let _fl = null;
+  const empGet = () => _fl || (_fl = empGet0().finally(() => { _fl = null; }));   // two screens asking at once share one read
+  async function empGet0(){
     const db = window.__db, now = Date.now(), admin = !!(state.user && state.user.role === 'admin');
     const c = state.empSnap;
     if(c && c.ver === db.empVer && now - c.t < 300000) return c.rows;
