@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261122-153816">
+<meta name="rvf-build" content="20261122-160901">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -31872,6 +31872,48 @@ async function floorLoad(){
   };
   const _l = loadCeoDashboard;
   loadCeoDashboard = async function(){ mpToDash(); return _l.apply(this, arguments); };
+})();
+
+/* ===== Team (Assign page): keep supervisors' machines and department in step with their operators ===== */
+function assignSupSyncChanges(supIds){
+  const U = state.users || [], out = [], depOf = {}; (state.machines || []).forEach(m => { depOf[m.id] = m.department; });
+  Array.from(supIds).forEach(id => {
+    const s = assignUserById(id); if(!s || s.role !== 'supervisor') return;
+    const ops = U.filter(o => o.role === 'operator' && !o.spare && o.profile && o.profile.directSupervisor && o.profile.directSupervisor.loginId === id);
+    const keep = new Set(); ops.forEach(o => (o.assignedMachines || []).forEach(m => keep.add(m)));
+    const mach = (state.machines || []).filter(m => keep.has(m.id)).map(m => m.id);
+    const fields = {};
+    const cur = (s.assignedMachines || []).slice().sort().join('|');
+    if(cur !== mach.slice().sort().join('|')) fields.assignedMachines = mach;
+    if(ops.length){
+      const cnt = {}; ops.forEach(o => { if(o.department) cnt[o.department] = (cnt[o.department] || 0) + 1; });
+      const best = Object.keys(cnt).sort((a, b) => cnt[b] - cnt[a])[0];
+      if(best && cnt[best] > (cnt[s.department] || 0) && s.department !== best) fields.department = best;
+    }
+    if(Object.keys(fields).length) out.push({ loginId: id, fields });
+  });
+  return out;
+}
+async function assignSupSyncApply(supIds){
+  const ch = assignSupSyncChanges(supIds); if(!ch.length) return 0;
+  await window.__db.updateUsersBatch(ch);
+  ch.forEach(c => { const u = assignUserById(c.loginId); if(!u) return; Object.assign(u, c.fields); delete u._machinePicks; });
+  return ch.length;
+}
+(function(){
+  const _s = saveAssignChanges;
+  saveAssignChanges = async function(){
+    const sup = new Set(), changes = assignBuildChanges();
+    changes.forEach(c => {
+      const u = assignUserById(c.loginId); if(!u) return;
+      const was = assignOriginalApprover(u); if(was) sup.add(was.loginId);
+      if(c.approver) sup.add(c.approver.loginId);
+      const now = assignApproverOf(u); if(now) sup.add(now.loginId);
+    });
+    await _s.apply(this, arguments);
+    if(!changes.length || assignBuildChanges().length) return;   // nothing saved
+    try{ const n = await assignSupSyncApply(sup); if(n){ toast('Supervisor machines and department updated'); if($('usersBody')) renderUsersList(); } }catch(err){ console.error(err); }
+  };
 })();
 
 /* ---- clicks ---- */
