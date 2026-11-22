@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261122-161630">
+<meta name="rvf-build" content="20261122-182427">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -41,7 +41,7 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
   import {
     getFirestore,
-    doc, getDoc as _fbGetDoc, setDoc, updateDoc, deleteDoc, writeBatch, runTransaction, increment, deleteField,
+    doc, getDoc as _fbGetDoc, setDoc, updateDoc, deleteDoc, writeBatch, runTransaction, increment, deleteField, FieldPath,
     collection, addDoc, getDocs as _fbGetDocs, getDocsFromServer as _fbGetDocsFromServer, query, where, orderBy, onSnapshot as _fbOnSnapshot, getCountFromServer
   } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
   import {
@@ -380,8 +380,59 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
     return e;
   }
 
+  /* People list kept as 6 small documents (config/emp_0 .. emp_5): { r: { loginId: person } }, emp_0 also holds
+     { v, at, n } (version, built-at, number of people). Everything except the password and login keys; very large old
+     photos are replaced by a blank pixel (photoBig) and fetched one by one only when a download needs them. */
+  const EMP_B = 6;
+  const empBucketOf = (id) => { let s = 0; const t = String(id); for (let i = 0; i < t.length; i++) s = (s * 31 + t.charCodeAt(i)) >>> 0; return 'emp_' + (s % EMP_B); };
+  const EMP_PIX = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+  function empSlimRow(u) {
+    const o = JSON.parse(JSON.stringify(u)); delete o.password; delete o.authUid; delete o.authEmail;
+    const p = o.profile; if (p && typeof p.photoDataUrl === 'string' && p.photoDataUrl.length > 60000) { p.photoDataUrl = EMP_PIX; p.photoBig = true; }
+    return o;
+  }
+  const empIdle = (updates) => Object.keys(updates || {}).every(k => k === 'authUid' || k === 'lastLoginAt');
   window.__db = {
     ready: () => dbReady,
+    empVer: 0,
+    async empLoad() {
+      if (!dbReady) throw new Error('NOT_CONFIGURED');
+      const snaps = await Promise.all(Array.from({ length: EMP_B }, (_, i) => getDoc(doc(db, 'config', 'emp_' + i))));
+      if (snaps.some(s => !s.exists())) return null;
+      const m = snaps[0].data(); if (m.v !== 1) return null;
+      const rows = []; snaps.forEach(s => { const r = s.data().r || {}; Object.keys(r).forEach(k => rows.push(r[k])); });
+      return { rows, at: m.at || 0, n: m.n };
+    },
+    async empBuild(users) {
+      if (!dbReady) throw new Error('NOT_CONFIGURED');
+      const by = []; for (let i = 0; i < EMP_B; i++) by.push({});
+      users.forEach(u => { if (!u || !u.loginId || u.hiddenAccount) return; by[Number(empBucketOf(u.loginId).slice(4))][String(u.loginId)] = empSlimRow(u); });
+      let n = users.length; try { n = (await getCountFromServer(collection(db, 'users'))).data().count; } catch (e) {}
+      const at = Date.now(), bodies = by.map((r, i) => i === 0 ? { r, v: 1, at, n } : { r });
+      if (bodies.some(b => JSON.stringify(b).length > 950000)) return null;
+      for (let i = EMP_B - 1; i >= 0; i--) await setDoc(doc(db, 'config', 'emp_' + i), bodies[i]);
+      const rows = []; by.forEach(b => Object.keys(b).forEach(k => rows.push(b[k])));
+      return { rows, at, n };
+    },
+    // after a write to a person: copy that one person into the saved list (never throws)
+    async empTouch(loginId, mode) {
+      try {
+        const id = String(loginId), bref = doc(db, 'config', empBucketOf(id));
+        if (mode === 'gone') {
+          await updateDoc(bref, new FieldPath('r', id), deleteField());
+          await updateDoc(doc(db, 'config', 'emp_0'), 'n', increment(-1));
+          return;
+        }
+        const snap = await getDoc(doc(db, 'users', id));
+        if (!snap.exists() || (snap.data() || {}).hiddenAccount) await updateDoc(bref, new FieldPath('r', id), deleteField());
+        else await updateDoc(bref, new FieldPath('r', id), empSlimRow(snap.data()));
+        if (mode === 'new') await updateDoc(doc(db, 'config', 'emp_0'), 'n', increment(1));
+      } catch (e) {
+        if (e && e.code === 'not-found') return;   // nothing saved yet: the first visit builds it
+        console.error('people list copy', e);
+        try { await updateDoc(doc(db, 'config', 'emp_0'), 'at', 0); } catch (e2) {}   // marks it out of date: the next admin visit rebuilds it
+      }
+    },
     encodeHistoryEntry, decodeHistoryEntry,
     readingsVersion: () => readingsVersion,
     recentCacheDay: () => recentStartedOn,
@@ -398,11 +449,13 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
       if (!dbReady) throw new Error('NOT_CONFIGURED');
       await setDoc(doc(db, "users", user.loginId), user);
       usersOnceCache.invalidate();
+      window.__db.empVer++; await window.__db.empTouch(user.loginId, 'new');
     },
     async updateUser(loginId, updates) {
       if (!dbReady) throw new Error('NOT_CONFIGURED');
       await updateDoc(doc(db, "users", loginId), updates);
       usersOnceCache.invalidate();
+      if (!empIdle(updates)) { window.__db.empVer++; await window.__db.empTouch(loginId, 'set'); }
     },
     // Same write, but the cached people list is NOT thrown away (the caller has already updated that person in
     // memory). Used by the HR Assistant so ticking a step or saving one HR detail never makes the next visit
@@ -410,6 +463,7 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
     async updateUserQuiet(loginId, updates) {
       if (!dbReady) throw new Error('NOT_CONFIGURED');
       await updateDoc(doc(db, "users", loginId), updates);
+      if (!empIdle(updates)) await window.__db.empTouch(loginId, 'set');
     },
     // Several people changed in ONE commit (the Admin > Assign tab): one write per person, only the fields given.
     // fields may use a dotted path such as 'profile.directSupervisor', so the rest of a profile is never rewritten.
@@ -419,11 +473,13 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
       changes.forEach(c => batch.update(doc(db, "users", c.loginId), c.fields));
       await batch.commit();
       usersOnceCache.invalidate();
+      window.__db.empVer++; for (const c of changes) await window.__db.empTouch(c.loginId, 'set');
     },
     async deleteUser(loginId) {
       if (!dbReady) throw new Error('NOT_CONFIGURED');
       await deleteDoc(doc(db, "users", loginId));
       usersOnceCache.invalidate();
+      window.__db.empVer++; await window.__db.empTouch(loginId, 'gone');
     },
     async listUsers() {
       return usersCache.get();
@@ -31927,6 +31983,63 @@ async function assignSupSyncApply(supIds){
       if(d && assignUserById(loginId).role === 'operator'){ const n = await assignSupSyncApply([d]); if(n && $('usersBody')) renderUsersList(); }
     }catch(err){ console.error(err); }
     return r;
+  };
+})();
+
+/* ===== The people list, saved as a few small documents: Dashboard, Employees and Floor read these instead of every person ===== */
+(function(){
+  const SLIM = ['screen-ceo', 'screen-employees', 'screen-floor'];
+  const onSlim = () => { const a = document.querySelector('.screen.active'); return !!a && SLIM.indexOf(a.id) >= 0; };
+  let _su = state.users;
+  Object.defineProperty(state, 'users', { configurable: true, enumerable: true,
+    get(){ return _su; },
+    set(v){ _su = (v && v.__slim && !onSlim()) ? [] : v; } });   // the shorter list never reaches another page
+  const _ss = showScreen;
+  showScreen = function(id){
+    const r = _ss.apply(this, arguments);
+    if(SLIM.indexOf(id) < 0 && _su && _su.__slim) _su = [];
+    return r;
+  };
+  async function empGet(){
+    const db = window.__db, now = Date.now(), admin = !!(state.user && state.user.role === 'admin');
+    const c = state.empSnap;
+    if(c && c.ver === db.empVer && now - c.t < 300000) return c.rows;
+    let s = await db.empLoad();
+    if(s && admin){
+      let stale = !s.at || now - s.at > 86400000;
+      if(!stale){ try{ stale = (await db.countUsersDirectly()) !== s.n; }catch(e){} }
+      if(stale) s = null;
+    }
+    if(!s){
+      if(!admin) return null;
+      s = await db.empBuild(await db.listUsersFull());
+      if(!s) return null;
+    }
+    const rows = s.rows; Object.defineProperty(rows, '__slim', { value: true, enumerable: false });
+    state.empSnap = { rows, ver: db.empVer, t: now };
+    return rows;
+  }
+  function install(){
+    const db = window.__db; if(!db || !db.empLoad) return false;
+    if(db.__empOn) return true; db.__empOn = true;
+    const orig = db.listUsersOnce.bind(db); db.listUsersFull = orig;
+    db.listUsersOnce = async function(){
+      if(onSlim()){ try{ const r = await empGet(); if(r) return r; }catch(e){ console.error(e); } }
+      return orig();
+    };
+    return true;
+  }
+  let tries = 0; const tm = setInterval(() => { if(install() || ++tries > 100) clearInterval(tm); }, 200);
+  // a download with photos: the few very large old photos are fetched one by one, only now
+  const _od = ovDownload;
+  ovDownload = async function(){
+    try{
+      if(ovSelCols().some(c => c.k === 'photo')){
+        const big = (state.users || []).filter(u => u.profile && u.profile.photoBig);
+        for(const u of big){ const f = await window.__db.getUser(u.loginId); if(f && f.profile && f.profile.photoDataUrl){ u.profile.photoDataUrl = f.profile.photoDataUrl; delete u.profile.photoBig; } }
+      }
+    }catch(err){ console.error(err); }
+    return _od.apply(this, arguments);
   };
 })();
 
