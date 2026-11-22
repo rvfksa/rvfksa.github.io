@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261122-142323">
+<meta name="rvf-build" content="20261122-150922">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -31830,18 +31830,23 @@ function mpcOut(){
 document.addEventListener('click', (e) => { const t = e.target.closest && e.target.closest('[data-mpcs]'); if(t){ MPC.sh = t.dataset.mpcs; mpcOut(); } });
 
 /* ===== Floor page: the Machine & Production section lives here too ===== */
+function mpNodes(){
+  const card = $('machCard'); if(!card) return null;
+  const h2 = state.mpH2 || (state.mpH2 = Array.from(document.querySelectorAll('h2')).find(h => /Machine\s*&\s*Production/.test(h.textContent)));
+  const pop = $('dashFilterPopover');
+  return [h2, pop && !card.contains(pop) ? pop : null, card].filter(Boolean);
+}
 function mpToFloor(){
-  const h2 = $('dashFilterToggle') && $('dashFilterToggle').closest('h2'), pop = $('dashFilterPopover'), card = $('machCard'), fb = $('floorBody');
-  if(!h2 || !pop || !card || !fb) return false;
+  const nodes = mpNodes(), fb = $('floorBody'), card = $('machCard');
+  if(!nodes || !fb) return false;
   if(card.parentNode === fb) return true;
   if(!state.mpHome) state.mpHome = { parent: card.parentNode, next: card.nextElementSibling };
-  fb.innerHTML = ''; fb.appendChild(h2); fb.appendChild(pop); fb.appendChild(card);
+  fb.innerHTML = ''; nodes.forEach(n => fb.appendChild(n));
   return true;
 }
 function mpToDash(){
   const h = state.mpHome, card = $('machCard'); if(!h || !card || card.parentNode === h.parent) return;
-  const h2 = $('dashFilterToggle').closest('h2'), pop = $('dashFilterPopover');
-  h.parent.insertBefore(h2, h.next); h.parent.insertBefore(pop, h.next); h.parent.insertBefore(card, h.next);
+  mpNodes().forEach(n => h.parent.insertBefore(n, h.next));
 }
 async function floorLoad(){
   try{
