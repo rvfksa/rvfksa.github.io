@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261122-085043">
+<meta name="rvf-build" content="20261122-090106">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -31546,7 +31546,7 @@ async function prodShiftLoadRange(range){
     const ey = Number(range.toDate.slice(0, 4)), em = Number(range.toDate.slice(5, 7));
     while((y < ey || (y === ey && mo <= em)) && months.length < 24){ months.push(y + '-' + pad(mo)); mo++; if(mo > 12){ mo = 1; y++; } }
     const c = state.psCache || (state.psCache = {}), now = Date.now();
-    const need = months.filter(k => !c[k] || now - c[k].at > 120000);
+    const need = months.filter(k => !c[k] || now - c[k].at > 300000);
     if(need.length){ const got = await window.__db.psLoad(need); need.forEach(k => { c[k] = { at: now, m: got[k] || {} }; }); }
     const rows = [];
     months.forEach(k => { const m = c[k].m; Object.keys(m).forEach(mid => { const days = m[mid]; Object.keys(days).forEach(dt => { ['D', 'N'].forEach(s => { const v = Number(days[dt][s]) || 0; if(v) rows.push({ machine: mid, date: dt, shift: s, picks: v }); }); }); }); });
@@ -31582,7 +31582,14 @@ function prodDeptTable(pr){
 }
 (function(){
   const _l = loadCeoDashboard;
-  loadCeoDashboard = async function(){ state.psCache = {}; return _l.apply(this, arguments); };
+  loadCeoDashboard = async function(){
+    const forced = pcDashForce;
+    if(forced) state.psCache = {};
+    const db = window.__db, orig = db.listUsersOnce, fresh = !forced && state.users && state.users.length && state.dashUsersAt && Date.now() - state.dashUsersAt < 300000;
+    if(fresh) db.listUsersOnce = async () => state.users;
+    try{ const r = await _l.apply(this, arguments); if(!fresh) state.dashUsersAt = Date.now(); return r; }
+    finally{ db.listUsersOnce = orig; }
+  };
 })();
 
 /* ---- clicks ---- */
