@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261122-090747">
+<meta name="rvf-build" content="20261122-092149">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -41,7 +41,7 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
   import {
     getFirestore,
-    doc, getDoc as _fbGetDoc, setDoc, updateDoc, deleteDoc, writeBatch, runTransaction, increment,
+    doc, getDoc as _fbGetDoc, setDoc, updateDoc, deleteDoc, writeBatch, runTransaction, increment, deleteField,
     collection, addDoc, getDocs as _fbGetDocs, getDocsFromServer as _fbGetDocsFromServer, query, where, orderBy, onSnapshot as _fbOnSnapshot, getCountFromServer
   } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
   import {
@@ -522,7 +522,59 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
     // operator — used by Dashboard's Production and Performance sections,
     // which need everyone's totals for a period, not one person's history.
     // A pure range filter on 'date' alone, so no composite index needed.
+    // Packed copy of the daily summaries: config/pf_YYYY-MM_N (N = 0: days 1-10, 1: 11-20, 2: 21-31),
+    // { r: { summaryId: { o, d, m, p, s, b } } }. A month is 3 reads instead of thousands.
+    pfBucket(date) { const d = String(date); return 'pf_' + d.slice(0, 7) + '_' + Math.min(2, Math.floor((Number(d.slice(8, 10)) - 1) / 10)); },
+    pfRow(c) { return { o: c.operatorId, d: c.date, m: String(c.machine), p: Number(c.picks) || 0, s: c.shifts || [], b: (c.stopBreakdown || []).map(x => [String(x.reason), Number(x.hours) || 0]) }; },
+    pfRead(id, x) { const b = x.b || []; return { _id: id, operatorId: x.o, date: x.d, machine: x.m, picks: x.p, shifts: x.s || [], stopBreakdown: b.map(y => ({ reason: y[0], hours: y[1] })) }; },
+    async pfFrom() {
+      if (!dbReady) throw new Error('NOT_CONFIGURED');
+      if (this._pfFrom === undefined) { const s = await getDoc(doc(db, 'config', 'pfReady')); this._pfFrom = s.exists() ? (s.data().from || '') : ''; }
+      return this._pfFrom;
+    },
+    async pfBuild(fromMonth) {
+      if (!dbReady) throw new Error('NOT_CONFIGURED');
+      const t = new Date(); let y = Number(fromMonth.slice(0, 4)), mo = Number(fromMonth.slice(5, 7)), n = 0, docs = 0;
+      const endKey = t.getFullYear() * 12 + t.getMonth();
+      while (y * 12 + mo - 1 <= endKey) {
+        const mk = y + '-' + String(mo).padStart(2, '0');
+        const snap = await getDocs(query(collection(db, 'operatorMachineDaySummaries'), where('date', '>=', mk + '-01'), where('date', '<=', mk + '-31')));
+        const by = {};
+        snap.forEach(d => { const x = d.data(), b = this.pfBucket(x.date); (by[b] = by[b] || {})[d.id] = this.pfRow(x); n++; });
+        for (const b of Object.keys(by)) { await setDoc(doc(db, 'config', b), { r: by[b] }); docs++; }
+        mo++; if (mo > 12) { mo = 1; y++; }
+      }
+      return { rows: n, docs };
+    },
+    async pfCheck(fromMonth) {
+      if (!dbReady) throw new Error('NOT_CONFIGURED');
+      const raw = await this.loadSummariesRaw(fromMonth + '-01', '9999-12-31'), pk = await this.loadSummariesPacked(fromMonth + '-01', '9999-12-31');
+      const a = {}; raw.forEach(x => { a[x._id] = x; });
+      let bad = 0, missing = 0; const seen = new Set();
+      pk.forEach(x => { seen.add(x._id); const o = a[x._id]; if (!o) { bad++; return; } const sb = (v) => JSON.stringify((v || []).map(z => [z.reason, Number(z.hours)])); if (Number(o.picks) !== x.picks || sb(o.stopBreakdown) !== sb(x.stopBreakdown) || JSON.stringify((o.shifts || []).slice().sort()) !== JSON.stringify((x.shifts || []).slice().sort())) bad++; });
+      raw.forEach(x => { if (!seen.has(x._id)) missing++; });
+      return { raw: raw.length, packed: pk.length, bad, missing };
+    },
+    async loadSummariesPacked(fromStr, toStr) {
+      const ids = []; let y = Number(fromStr.slice(0, 4)), mo = Number(fromStr.slice(5, 7)); const ey = Number(toStr.slice(0, 4)), em = Number(toStr.slice(5, 7));
+      while (y * 12 + mo <= ey * 12 + em) {
+        const mk = y + '-' + String(mo).padStart(2, '0');
+        for (let b = 0; b < 3; b++) { const s = mk + '-' + String(b * 10 + 1).padStart(2, '0'), e = mk + '-' + (b === 2 ? '31' : String(b * 10 + 10)); if (e >= fromStr && s <= toStr) ids.push('pf_' + mk + '_' + b); }
+        mo++; if (mo > 12) { mo = 1; y++; }
+      }
+      const out = [];
+      for (const id of ids) { const s = await getDoc(doc(db, 'config', id)); if (!s.exists()) continue; const r = s.data().r || {}; Object.keys(r).forEach(k => { const x = r[k]; if (x.d >= fromStr && x.d <= toStr) out.push(this.pfRead(k, x)); }); }
+      return out;
+    },
     async loadSummariesInRange(fromStr, toStr) {
+      if (!dbReady) throw new Error('NOT_CONFIGURED');
+      try {
+        const pf = await this.pfFrom();
+        if (pf && fromStr >= pf && toStr.slice(0, 4) < '9999' && (Number(toStr.slice(0, 4)) - Number(fromStr.slice(0, 4))) * 12 + Number(toStr.slice(5, 7)) - Number(fromStr.slice(5, 7)) < 24) return await this.loadSummariesPacked(fromStr, toStr);
+      } catch (err) { console.error('Packed summaries not available, reading the daily totals instead:', err); }
+      return this.loadSummariesRaw(fromStr, toStr);
+    },
+    async loadSummariesRaw(fromStr, toStr) {
       if (!dbReady) throw new Error('NOT_CONFIGURED');
       const q = query(collection(db, 'operatorMachineDaySummaries'), where('date', '>=', fromStr), where('date', '<=', toStr));
       const snap = await getDocs(q);
@@ -577,7 +629,18 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
         });
         await batch.commit();
       }
-      return { written, deleted, unchanged };
+      let pfFailed = false;
+      try {
+        if (ops.length) {
+          const by = {};
+          ops.forEach(op => {
+            if (op.type === 'set') { const b = this.pfBucket(op.data.date); (by[b] = by[b] || {})[op.id] = this.pfRow(op.data); }
+            else { const date = op.id.split('_').slice(-2)[0], b = this.pfBucket(date); (by[b] = by[b] || {})[op.id] = deleteField(); }
+          });
+          for (const b of Object.keys(by)) await setDoc(doc(db, 'config', b), { r: by[b] }, { merge: true });
+        }
+      } catch (err) { pfFailed = true; console.error('Packed summaries update failed:', err); }
+      return { written, deleted, unchanged, pfFailed };
     },
     // A tiny, single-document pointer to the chronologically last APPROVED
     // reading for one machine — this is what lets a normal approval skip
@@ -820,6 +883,8 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
               });
             }
             tx.set(monthlyRef, { months: { [monthKey]: curMonth + delta } }, { merge: true });
+            { const _c = existing.exists() ? existing.data() : {}, _s = Array.isArray(_c.shifts) ? _c.shifts.slice() : []; if(!_s.includes(reading.shift)) _s.push(reading.shift);
+              tx.set(doc(db, 'config', window.__db.pfBucket(reading.date)), { r: { [summaryId]: window.__db.pfRow({ operatorId: reading.operatorId, date: reading.date, machine: mid, picks: (Number(_c.picks) || 0) + diff, stopBreakdown: (Array.isArray(_c.stopBreakdown) ? _c.stopBreakdown : []).concat(breakdown), shifts: _s }) } }, { merge: true }); }
           });
         }
         await window.__db.psAdd(mid, reading.date, reading.shift, reading.operatorId ? diff : 0, reading.stopTime);
@@ -6066,6 +6131,7 @@ async function recalculateMachineDiffs(machineId, stats){
     }));
     const syncRes = await window.__db.syncMachineSummaries(machineId, computed);
     if(stats && syncRes) stats.summariesFixed += syncRes.written + syncRes.deleted;
+    if(syncRes && syncRes.pfFailed) ok = false;
 
     try{ await prodShiftRebuild(machineId, chain, aloneStarts); }catch(err){ ok = false; console.error('Day/Night total update failed for machine', machineId, '(non-fatal):', err); }
     // Monthly totals for the Dashboard's 12-month chart — rebuilt from
@@ -31624,6 +31690,7 @@ function prodDeptTable(pr){
   document.addEventListener('change', (e) => { if((e.target.id === 'mpcA' || e.target.id === 'mpcB') && state.psVer >= 2) setTimeout(mpcGo, 0); });
   const _l = loadCeoDashboard;
   loadCeoDashboard = async function(){
+    try{ if(state.psVer !== undefined || true){ const pf = await window.__db.pfFrom(); if(pf && !state.perfShown) state.perfShown = true; } }catch(e){}
     const forced = pcDashForce;
     if(forced) state.psCache = {};
     const db = window.__db, orig = db.listUsersOnce, fresh = !forced && state.users && state.users.length && state.dashUsersAt && Date.now() - state.dashUsersAt < 300000;
