@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261122-150922">
+<meta name="rvf-build" content="20261122-153816">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -31836,22 +31836,30 @@ function mpNodes(){
   const pop = $('dashFilterPopover');
   return [h2, pop && !card.contains(pop) ? pop : null, card].filter(Boolean);
 }
+function lyNodes(){
+  const box = $('flrBox'); if(!box) return null;
+  const card = box.closest('.card'), h2 = state.lyH2 || (state.lyH2 = Array.from(document.querySelectorAll('h2')).find(h => /^\s*Machine Layout\s*$/.test(h.textContent)));
+  return [h2, card].filter(Boolean);
+}
 function mpToFloor(){
   const nodes = mpNodes(), fb = $('floorBody'), card = $('machCard');
   if(!nodes || !fb) return false;
   if(card.parentNode === fb) return true;
   if(!state.mpHome) state.mpHome = { parent: card.parentNode, next: card.nextElementSibling };
-  fb.innerHTML = ''; nodes.forEach(n => fb.appendChild(n));
+  const ly = lyNodes(); if(ly && ly.length && !state.lyHome){ const c = ly[ly.length - 1]; state.lyHome = { parent: c.parentNode, next: c.nextElementSibling }; }
+  fb.innerHTML = ''; nodes.forEach(n => fb.appendChild(n)); if(ly) ly.forEach(n => fb.appendChild(n));
   return true;
 }
 function mpToDash(){
   const h = state.mpHome, card = $('machCard'); if(!h || !card || card.parentNode === h.parent) return;
   mpNodes().forEach(n => h.parent.insertBefore(n, h.next));
+  const l = state.lyHome, ly = lyNodes(); if(l && ly) ly.forEach(n => l.parent.insertBefore(n, l.next));
 }
 async function floorLoad(){
   try{
     if(!state.users || !state.users.length) state.users = await window.__db.listUsersOnce();
     await renderMachineProductionBox();
+    try{ flrRender(); }catch(e){ console.error(e); }
     if(state.psVer >= 2 && !MPC.busy){ mpcDraw(); await mpcGo(); }
   }catch(err){ console.error(err); toast('Could not load the floor figures'); }
 }
