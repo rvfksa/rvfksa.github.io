@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261122-125215">
+<meta name="rvf-build" content="20261122-142323">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -31828,6 +31828,38 @@ function mpcOut(){
     <div class="hint" style="text-align:left; margin-left:0; margin-top:6px;">Green is better, red is worse.${hidden > 0 ? ' ' + hidden + ' machine' + (hidden === 1 ? '' : 's') + ' with no activity hidden.' : ''}</div>`;
 }
 document.addEventListener('click', (e) => { const t = e.target.closest && e.target.closest('[data-mpcs]'); if(t){ MPC.sh = t.dataset.mpcs; mpcOut(); } });
+
+/* ===== Floor page: the Machine & Production section lives here too ===== */
+function mpToFloor(){
+  const h2 = $('dashFilterToggle') && $('dashFilterToggle').closest('h2'), pop = $('dashFilterPopover'), card = $('machCard'), fb = $('floorBody');
+  if(!h2 || !pop || !card || !fb) return false;
+  if(card.parentNode === fb) return true;
+  if(!state.mpHome) state.mpHome = { parent: card.parentNode, next: card.nextElementSibling };
+  fb.innerHTML = ''; fb.appendChild(h2); fb.appendChild(pop); fb.appendChild(card);
+  return true;
+}
+function mpToDash(){
+  const h = state.mpHome, card = $('machCard'); if(!h || !card || card.parentNode === h.parent) return;
+  const h2 = $('dashFilterToggle').closest('h2'), pop = $('dashFilterPopover');
+  h.parent.insertBefore(h2, h.next); h.parent.insertBefore(pop, h.next); h.parent.insertBefore(card, h.next);
+}
+async function floorLoad(){
+  try{
+    if(!state.users || !state.users.length) state.users = await window.__db.listUsersOnce();
+    await renderMachineProductionBox();
+    if(state.psVer >= 2 && !MPC.busy){ mpcDraw(); await mpcGo(); }
+  }catch(err){ console.error(err); toast('Could not load the floor figures'); }
+}
+(function(){
+  const _g = goTo;
+  goTo = function(key){
+    if(key === 'floor'){ floorMount(); if(mpToFloor()){ const r = _g.apply(this, arguments); floorLoad(); return r; } }
+    else mpToDash();
+    return _g.apply(this, arguments);
+  };
+  const _l = loadCeoDashboard;
+  loadCeoDashboard = async function(){ mpToDash(); return _l.apply(this, arguments); };
+})();
 
 /* ---- clicks ---- */
 document.addEventListener('click', (ev) => {
