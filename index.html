@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261122-093013">
+<meta name="rvf-build" content="20261122-123633">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -15701,7 +15701,7 @@ async function renderMachineProductionBox(ev){
   const nightMachines = scopedMachines.filter(m => machineRunsShift(m, 'Night'));
   $('kpiTotalMachine').textContent = scopedMachines.length;
   $('ceoRunningCount').textContent = `${dayMachines.filter(m => m.status !== 'stopped').length}/${nightMachines.filter(m => m.status !== 'stopped').length}`;
-  $('ceoStoppedCount').textContent = `${dayMachines.filter(m => m.status === 'stopped').length}/${nightMachines.filter(m => m.status === 'stopped').length}`;
+  $('ceoStoppedCount').textContent = `${scopedMachines.length - dayMachines.filter(m => m.status !== 'stopped').length}/${scopedMachines.length - nightMachines.filter(m => m.status !== 'stopped').length}`;
   if(machDrillKind && machDrillKind !== 'stopped'){
     let drillErr = '';
     try{ await rvfEnsureDrillRecords(range); }catch(err){ console.error(err); drillErr = 'The readings for these dates could not be loaded (' + ((err && (err.code || err.message)) || 'unknown error') + '), so Picks and Stop hours show 0. Press the filter and choose the dates again to retry.'; }
