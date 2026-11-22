@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261122-160901">
+<meta name="rvf-build" content="20261122-161630">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -7057,6 +7057,7 @@ async function saveUserEdits(loginId){
       });
     }
     // Only the profile fields this panel owns are written (by path), so nothing else on the profile can be overwritten from a stale copy
+    if(isExit && (role === 'operator' || role === 'supervisor') && !(existing.profile && (existing.profile.employmentStatus === 'terminated' || existing.profile.employmentStatus === 'final_exit'))) assignedMachines = [];   // leaving: the machines are released
     const update = { role, assignedMachines, assignedShift, pages, 'profile.employmentStatus': employmentStatus };
     update['profile.shiftPref'] = profile.shiftPref;
     if(isExit && exitDate !== ((existing.profile || {}).endDate || '')){ update['profile.endDate'] = exitDate; profile.endDate = exitDate; }   // same single write, only when the date changed
@@ -31878,8 +31879,8 @@ async function floorLoad(){
 function assignSupSyncChanges(supIds){
   const U = state.users || [], out = [], depOf = {}; (state.machines || []).forEach(m => { depOf[m.id] = m.department; });
   Array.from(supIds).forEach(id => {
-    const s = assignUserById(id); if(!s || s.role !== 'supervisor') return;
-    const ops = U.filter(o => o.role === 'operator' && !o.spare && o.profile && o.profile.directSupervisor && o.profile.directSupervisor.loginId === id);
+    const s = assignUserById(id); if(!s || s.role !== 'supervisor' || isExitedEmployee(s)) return;
+    const ops = U.filter(o => o.role === 'operator' && !o.spare && !isExitedEmployee(o) && o.profile && o.profile.directSupervisor && o.profile.directSupervisor.loginId === id);
     const keep = new Set(); ops.forEach(o => (o.assignedMachines || []).forEach(m => keep.add(m)));
     const mach = (state.machines || []).filter(m => keep.has(m.id)).map(m => m.id);
     const fields = {};
@@ -31913,6 +31914,19 @@ async function assignSupSyncApply(supIds){
     await _s.apply(this, arguments);
     if(!changes.length || assignBuildChanges().length) return;   // nothing saved
     try{ const n = await assignSupSyncApply(sup); if(n){ toast('Supervisor machines and department updated'); if($('usersBody')) renderUsersList(); } }catch(err){ console.error(err); }
+  };
+})();
+
+// after any change to a person (exit, role, department...), the supervisor they report to is brought in step too
+(function(){
+  const _u = saveUserEdits;
+  saveUserEdits = async function(loginId){
+    const r = await _u.apply(this, arguments);
+    try{
+      const u = assignUserById(loginId), d = u && u.profile && u.profile.directSupervisor && u.profile.directSupervisor.loginId;
+      if(d && assignUserById(loginId).role === 'operator'){ const n = await assignSupSyncApply([d]); if(n && $('usersBody')) renderUsersList(); }
+    }catch(err){ console.error(err); }
+    return r;
   };
 })();
 
