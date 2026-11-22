@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261122-083353">
+<meta name="rvf-build" content="20261122-085043">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -41,7 +41,7 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
   import {
     getFirestore,
-    doc, getDoc as _fbGetDoc, setDoc, updateDoc, deleteDoc, writeBatch, runTransaction,
+    doc, getDoc as _fbGetDoc, setDoc, updateDoc, deleteDoc, writeBatch, runTransaction, increment,
     collection, addDoc, getDocs as _fbGetDocs, getDocsFromServer as _fbGetDocsFromServer, query, where, orderBy, onSnapshot as _fbOnSnapshot, getCountFromServer
   } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
   import {
@@ -584,6 +584,40 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
     // fetching that machine's entire history just to compute one new
     // diff. Kept up to date by both the fast path below and the full
     // recalculation (recalculateMachineDiffs), so the two never disagree.
+    // Saved Day / Night production totals (in picks), one small document per month:
+    // config/ps_YYYY-MM = { m: { machineId: { 'YYYY-MM-DD': { D: picks, N: picks } } } }
+    // Added to by each approval, rewritten per machine by the full recalculation.
+    async psAdd(mid, date, shift, diff) {
+      if (!dbReady) throw new Error('NOT_CONFIGURED');
+      if (!diff) return;
+      await setDoc(doc(db, 'config', 'ps_' + String(date).slice(0, 7)), { m: { [String(mid)]: { [date]: { [shift === 'Night' ? 'N' : 'D']: increment(diff) } } } }, { merge: true });
+    },
+    async psSetMachine(mid, byMonth) {
+      if (!dbReady) throw new Error('NOT_CONFIGURED');
+      mid = String(mid);
+      const old = await getDoc(doc(db, 'machineMonthly', mid));
+      const months = new Set(Object.keys(byMonth));
+      if (old.exists()) Object.keys(old.data().months || {}).forEach(k => months.add(k));
+      for (const mo of months) {
+        const ref = doc(db, 'config', 'ps_' + mo), val = byMonth[mo] || {};
+        try { await updateDoc(ref, { ['m.' + mid]: val }); }
+        catch (err) { if (err && err.code === 'not-found') await setDoc(ref, { m: { [mid]: val } }, { merge: true }); else throw err; }
+      }
+    },
+    async psLoad(months) {
+      if (!dbReady) throw new Error('NOT_CONFIGURED');
+      const out = {};
+      for (const mo of months) { const s = await getDoc(doc(db, 'config', 'ps_' + mo)); out[mo] = s.exists() ? (s.data().m || {}) : {}; }
+      return out;
+    },
+    async psReady() {
+      if (!dbReady) throw new Error('NOT_CONFIGURED');
+      return (await getDoc(doc(db, 'config', 'psReady'))).exists();
+    },
+    async psSetReady() {
+      if (!dbReady) throw new Error('NOT_CONFIGURED');
+      await setDoc(doc(db, 'config', 'psReady'), { at: Date.now() });
+    },
     async getMachineLastApproved(machineId) {
       if (!dbReady) throw new Error('NOT_CONFIGURED');
       const snap = await getDoc(doc(db, 'machineLastApproved', String(machineId)));
@@ -782,6 +816,7 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
             }
             tx.set(monthlyRef, { months: { [monthKey]: curMonth + delta } }, { merge: true });
           });
+          await window.__db.psAdd(mid, reading.date, reading.shift, diff);
         }
         await setDoc(doc(db, 'machineLastApproved', mid), {
           reading: reading.reading, date: reading.date, shift: reading.shift,
@@ -6027,6 +6062,7 @@ async function recalculateMachineDiffs(machineId, stats){
     const syncRes = await window.__db.syncMachineSummaries(machineId, computed);
     if(stats && syncRes) stats.summariesFixed += syncRes.written + syncRes.deleted;
 
+    try{ await prodShiftRebuild(machineId, chain, aloneStarts); }catch(err){ ok = false; console.error('Day/Night total update failed for machine', machineId, '(non-fatal):', err); }
     // Monthly totals for the Dashboard's 12-month chart — rebuilt from
     // scratch each time, so a stale month can never survive a recalculation.
     // In its own protected step: a problem here must never stop the
@@ -15573,6 +15609,7 @@ async function ensureSummariesCover(fromDate, toDate){
 async function renderMachineProductionBox(ev){
   if(ev && ev.type === 'change') state.prodShown = true;   // choosing a period counts as asking for the data
   const range = computeDashboardRange();
+  const PS = await prodShiftLoadRange(range);
   if(state.prodShown) await ensureSummariesCover(range.fromDate, range.toDate);
   const summaries = state.prodShown ? (state.cachedSummaries || []) : [];
 
@@ -15602,9 +15639,10 @@ async function renderMachineProductionBox(ev){
   }
   renderStoppedDetail(machDrillKind === 'stopped', range, stoppedList);
 
-  $('prodShowBtn').style.display = state.prodShown ? 'none' : 'inline-flex';
-  if(!state.prodShown){ $('kpiProduction').textContent = '\u2014'; $('prodByDept').innerHTML = '<div class="empty-state">Press Show data to load the production for ' + range.label + '.</div>'; $('prodSkipNote').style.display = 'none'; return; }
-  const { overallSqm, byDept, skippedNoSpec, skippedBy } = computeProductionForRangeFromSummaries(summaries, range.fromDate, range.toDate, range.department, range.machine);
+  $('prodShowBtn').style.display = (state.prodShown || PS) ? 'none' : 'inline-flex';
+  if(!state.prodShown && !PS){ $('kpiProduction').textContent = '\u2014'; $('prodByDept').innerHTML = '<div class="empty-state">Press Show data to load the production for ' + range.label + '.</div>'; $('prodSkipNote').style.display = 'none'; return; }
+  const _pr = PS ? prodShiftCompute(PS, range) : computeProductionForRangeFromSummaries(summaries, range.fromDate, range.toDate, range.department, range.machine);
+  const { overallSqm, byDept, skippedNoSpec, skippedBy } = _pr;
   $('kpiProduction').textContent = overallSqm.toLocaleString(undefined,{maximumFractionDigits:1}) + ' m\u00B2';
   const skipNote = $('prodSkipNote');
   if(skippedNoSpec && state.user && state.user.role === 'admin'){ skipNote.style.display = 'block'; skipNote.textContent = `${skippedNoSpec} entr${skippedNoSpec===1?'y':'ies'} skipped, no Width / Picks per cm set on: ` + Object.keys(skippedBy).sort().map(k => k + ' (' + skippedBy[k] + ')').join(', ') + '. Set them in Admin > Machines.'; }
@@ -15618,6 +15656,7 @@ async function renderMachineProductionBox(ev){
       <div style="height:8px; border-radius:8px; background:var(--panel-2); overflow:hidden;"><div style="height:100%; width:${Math.max(4, (sqm/maxDept*100))}%; background:var(--lcd); border-radius:8px;"></div></div>
     </div>`).join('') : '<div class="empty-state">Nothing to break down yet.</div>';
 
+  if(_pr.byDeptShift) $('prodByDept').innerHTML = prodDeptTable(_pr);
   render12MonthProduction();
 }
 
@@ -28862,6 +28901,11 @@ td.cmpOldBest .cmpD{ color:#b45309; text-transform:uppercase; letter-spacing:.04
 .sxMoreB{padding-bottom:10px;}
 .sxRT tr.sxSub td{background:rgba(120,120,160,.06);font-size:12px;border-top:0;}
 .sxXp{border:0;background:none;cursor:pointer;color:var(--muted);padding:0 5px 0 0;font-size:11px;}
+.psDept{width:100%;border-collapse:collapse;font-size:12.5px}
+.psDept th{font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:600;text-align:right;padding:6px 4px}
+.psDept td{text-align:right;padding:8px 4px;border-top:1px solid var(--line);font-variant-numeric:tabular-nums}
+.psDept td:first-child,.psDept th:first-child{text-align:left;font-weight:600}
+.psDept .psTot td{border-top:2px solid var(--line)}
 </style>
 <div id="rvfBusy"><i></i><span id="rvfBusyTxt">Loading data…</span></div>
 <script>
@@ -31479,6 +31523,67 @@ function floorMount(){
   s.innerHTML = '<div class="eyebrow">Supervisor</div><h1>Floor</h1><div id="floorBody"><div class="empty-state">Nothing here yet.</div></div>';
   const ref = $('screen-mystatus'); (ref && ref.parentNode ? ref.parentNode : document.body).appendChild(s);
 }
+
+/* ===== Saved Day / Night production totals ===== */
+async function prodShiftRebuild(mid, chain, alone){
+  const by = {};
+  const add = (r, v) => {
+    if(!r.operatorId || !v) return;
+    const mo = String(r.date).slice(0, 7), k = r.shift === 'Night' ? 'N' : 'D';
+    const d = (by[mo] = by[mo] || {}); const x = (d[r.date] = d[r.date] || {});
+    x[k] = (x[k] || 0) + v;
+  };
+  (chain || []).forEach(r => add(r, r._diff));
+  (alone || []).forEach(r => add(r, r._startPicks || 0));
+  await window.__db.psSetMachine(mid, by);
+}
+async function prodShiftLoadRange(range){
+  try{
+    if(state.psReady === undefined) state.psReady = await window.__db.psReady();
+    if(!state.psReady) return null;
+    const months = [];
+    let y = Number(range.fromDate.slice(0, 4)), mo = Number(range.fromDate.slice(5, 7));
+    const ey = Number(range.toDate.slice(0, 4)), em = Number(range.toDate.slice(5, 7));
+    while((y < ey || (y === ey && mo <= em)) && months.length < 24){ months.push(y + '-' + pad(mo)); mo++; if(mo > 12){ mo = 1; y++; } }
+    const c = state.psCache || (state.psCache = {}), now = Date.now();
+    const need = months.filter(k => !c[k] || now - c[k].at > 120000);
+    if(need.length){ const got = await window.__db.psLoad(need); need.forEach(k => { c[k] = { at: now, m: got[k] || {} }; }); }
+    const rows = [];
+    months.forEach(k => { const m = c[k].m; Object.keys(m).forEach(mid => { const days = m[mid]; Object.keys(days).forEach(dt => { ['D', 'N'].forEach(s => { const v = Number(days[dt][s]) || 0; if(v) rows.push({ machine: mid, date: dt, shift: s, picks: v }); }); }); }); });
+    return rows;
+  }catch(err){ console.error('Saved production totals not available:', err); return null; }
+}
+function prodShiftCompute(rows, range){
+  let overallSqm = 0, skippedNoSpec = 0;
+  const byDept = {}, byDeptShift = {}, byMachine = {}, skippedBy = {};
+  rows.forEach(r => {
+    if(r.date < range.fromDate || r.date > range.toDate) return;
+    if(range.machine && String(r.machine) !== String(range.machine)) return;
+    const m = state.machines.find(x => String(x.id) === String(r.machine));
+    if(range.department && (!m || m.department !== range.department)) return;
+    const sqm = machineSqm(r.picks, m);
+    if(sqm <= 0 && r.picks > 0 && (!m || !m.widthCm || !m.picksPerCm)){ skippedNoSpec++; const nm = m ? m.name : ('machine ' + r.machine + ' (not in the machine list)'); skippedBy[nm] = (skippedBy[nm] || 0) + 1; }
+    overallSqm += sqm;
+    const dept = (m && m.department) || 'Unassigned';
+    byDept[dept] = (byDept[dept] || 0) + sqm;
+    const x = byDeptShift[dept] || (byDeptShift[dept] = { D: 0, N: 0 });
+    x[r.shift] += sqm;
+    if(r.picks > 0) byMachine[r.machine] = (byMachine[r.machine] || 0) + r.picks;
+  });
+  return { overallSqm, byDept, byDeptShift, byMachine, skippedNoSpec, skippedBy };
+}
+function prodDeptTable(pr){
+  const f = n => n.toLocaleString(undefined, { maximumFractionDigits: 1 });
+  const ents = Object.entries(pr.byDeptShift).sort((a, b) => (b[1].D + b[1].N) - (a[1].D + a[1].N));
+  if(!ents.length) return '<div class="empty-state">Nothing to break down yet.</div>';
+  let td = 0, tn = 0;
+  const rows = ents.map(([d, v]) => { td += v.D; tn += v.N; return '<tr><td>' + d + '</td><td>' + f(v.D) + '</td><td>' + f(v.N) + '</td><td><b>' + f(v.D + v.N) + '</b></td></tr>'; }).join('');
+  return '<div class="card" style="padding:6px 10px;"><table class="psDept"><thead><tr><th></th><th>Day</th><th>Night</th><th>Total</th></tr></thead><tbody>' + rows + (ents.length > 1 ? '<tr class="psTot"><td>Total</td><td>' + f(td) + '</td><td>' + f(tn) + '</td><td><b>' + f(td + tn) + '</b></td></tr>' : '') + '</tbody></table><div class="hint" style="margin:4px 0 2px;text-align:right;">m²</div></div>';
+}
+(function(){
+  const _l = loadCeoDashboard;
+  loadCeoDashboard = async function(){ state.psCache = {}; return _l.apply(this, arguments); };
+})();
 
 /* ---- clicks ---- */
 document.addEventListener('click', (ev) => {
