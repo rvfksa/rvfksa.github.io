@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261122-123633">
+<meta name="rvf-build" content="20261122-125215">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -28994,6 +28994,16 @@ table.mdT tbody tr:hover td{background:rgba(79,70,229,.05)}
 .mdSt:before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px;background:var(--muted)}
 .mdSt.run{color:#15803d}.mdSt.run:before{background:#22c55e}
 .mdSt.stp{color:#b91c1c}.mdSt.stp:before{background:#ef4444}
+.cmpBox{background:transparent;padding:0}
+.cmpTiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0 6px}
+.cmpTile{border:1px solid var(--line);background:var(--panel-2);border-radius:16px;padding:10px 12px;text-align:left;cursor:pointer;font:inherit;color:inherit;min-width:0}
+.cmpTile.active{background:#fff;border-color:var(--text-strong);box-shadow:0 1px 4px rgba(15,23,42,.10)}
+.cmpL{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600}
+.cmpL svg{vertical-align:-1.5px;margin-right:4px}
+.cmpV{font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:500;color:var(--text-strong);margin:4px 0 2px}
+.cmpC{font-size:12px;font-weight:600}
+.cmpW{font-size:10.5px;color:var(--muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cmpHd{font-size:12px;font-weight:600;color:var(--text-strong);margin:12px 2px 6px}
 </style>
 <div id="rvfBusy"><i></i><span id="rvfBusyTxt">Loading data…</span></div>
 <script>
@@ -31786,6 +31796,38 @@ dsFoldDept = function(kind){
   dsGo(kind, 'production-by-department', 'Production by Department', dsMpHead(), () => rows.length ? [mpBox(dsClone(document.getElementById('prodByDept')))] : [],
     (wb) => { if(rows.length) dsSheet(wb, 'By Department', rvfNumRows([['Department', 'Day (m²)', 'Night (m²)', 'Total (m²)']].concat(rows)), [5, 26, 14, 14, 14]); });
 };
+
+/* ===== Compare months: clean layout ===== */
+MPC.sh = 'both';
+function mpcDraw(){
+  const box = document.getElementById('mpc'); if(!box) return;
+  const opts = (sel) => Array.from({ length: 12 }, (_, i) => { const c = rvfCycleAt(i); return `<option value="${i}"${i === sel ? ' selected' : ''}>${c.label}${c.sub ? ' (' + c.sub + ')' : ''}${i === 0 ? ' · now' : ''}</option>`; }).join('');
+  const P = mpcPlan(MPC.a, MPC.b), auto = state.psVer >= 2;
+  box.innerHTML = `<div class="mpcBox cmpBox">
+    <div class="mpcSel"><div class="field"><label>Month</label><select id="mpcA">${opts(MPC.a)}</select></div>
+    <div class="field"><label>Compare with</label><select id="mpcB">${opts(MPC.b)}</select></div></div>
+    <div class="mpcNote" id="mpcPlan">${mpcPlanText(P)}</div>
+    <button type="button" class="pillBtn" id="mpcGo" style="${auto ? 'display:none;' : ''}"${MPC.a === MPC.b ? ' disabled' : ''}>${MPC.res ? 'Refresh' : 'Show comparison'}</button>
+    <div id="mpcOut"></div></div>`;
+  mpcOut();
+}
+function mpcOut(){
+  const out = document.getElementById('mpcOut'); if(!out) return;
+  if(MPC.busy){ out.innerHTML = '<div class="empty-state">Loading…</div>'; return; }
+  if(!MPC.res){ out.innerHTML = ''; return; }
+  const res = MPC.res, D = mpcData(res, MPC.view), nm = res.P.names, sh = MPC.sh || 'both', key = sh === 'd' ? 'd' : sh === 'n' ? 'n' : 't';
+  const tile = (k, lab, v) => `<button type="button" class="cmpTile${sh === (k === 't' ? 'both' : k) ? ' active' : ''}" data-mpcs="${k === 't' ? 'both' : k}"><div class="cmpL">${lab}</div><div class="cmpV">${mpcFmt(v[0], D.dec)}</div><div class="cmpC">${mpcDelta(v[0], v[1], D.dec, D.goodUp, true)}</div><div class="cmpW">${nm[1]}: ${mpcFmt(v[1], D.dec)}</div></button>`;
+  const shown = D.rows.filter(r => (key === 'd' ? r.showD : key === 'n' ? r.showN : true) && (r[key][0] || r[key][1]));
+  const hidden = D.rows.length - shown.length;
+  const rows = shown.map(r => `<tr><td class="l"><b>${r.m.name}</b></td><td class="mdV">${mpcFmt(r[key][0], D.dec)}</td><td>${mpcFmt(r[key][1], D.dec)}</td><td>${mpcDelta(r[key][0], r[key][1], D.dec, D.goodUp)}</td></tr>`).join('');
+  const lab = key === 'd' ? 'Day shift' : key === 'n' ? 'Night shift' : 'Both shifts';
+  out.innerHTML = `<div class="mpcTop"><div class="seg" style="margin:0;"><button type="button" data-mpcv="picks" class="${MPC.view === 'picks' ? 'active' : ''}">Picks</button><button type="button" data-mpcv="stop" class="${MPC.view === 'stop' ? 'active' : ''}">Stop hours</button></div></div>
+    <div class="cmpTiles">${tile('d', MP_SUN + 'Day', D.tot.d)}${tile('n', MP_MOON + 'Night', D.tot.n)}${tile('t', 'Both', D.tot.t)}</div>
+    <div class="cmpHd">${lab} · by machine</div>
+    <div class="card" style="padding:4px 10px;"><div class="table-scroll"><table class="report-table mdT"><thead><tr><th class="l">Machine</th><th>${nm[0]}</th><th>${nm[1]}</th><th>Change</th></tr></thead><tbody>${rows || '<tr><td class="l" colspan="4">Nothing to show.</td></tr>'}</tbody></table></div></div>
+    <div class="hint" style="text-align:left; margin-left:0; margin-top:6px;">Green is better, red is worse.${hidden > 0 ? ' ' + hidden + ' machine' + (hidden === 1 ? '' : 's') + ' with no activity hidden.' : ''}</div>`;
+}
+document.addEventListener('click', (e) => { const t = e.target.closest && e.target.closest('[data-mpcs]'); if(t){ MPC.sh = t.dataset.mpcs; mpcOut(); } });
 
 /* ---- clicks ---- */
 document.addEventListener('click', (ev) => {
