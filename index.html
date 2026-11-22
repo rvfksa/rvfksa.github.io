@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261122-092149">
+<meta name="rvf-build" content="20261122-092311">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -525,8 +525,8 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
     // Packed copy of the daily summaries: config/pf_YYYY-MM_N (N = 0: days 1-10, 1: 11-20, 2: 21-31),
     // { r: { summaryId: { o, d, m, p, s, b } } }. A month is 3 reads instead of thousands.
     pfBucket(date) { const d = String(date); return 'pf_' + d.slice(0, 7) + '_' + Math.min(2, Math.floor((Number(d.slice(8, 10)) - 1) / 10)); },
-    pfRow(c) { return { o: c.operatorId, d: c.date, m: String(c.machine), p: Number(c.picks) || 0, s: c.shifts || [], b: (c.stopBreakdown || []).map(x => [String(x.reason), Number(x.hours) || 0]) }; },
-    pfRead(id, x) { const b = x.b || []; return { _id: id, operatorId: x.o, date: x.d, machine: x.m, picks: x.p, shifts: x.s || [], stopBreakdown: b.map(y => ({ reason: y[0], hours: y[1] })) }; },
+    pfRow(c) { return { o: c.operatorId, d: c.date, m: String(c.machine), p: Number(c.picks) || 0, s: c.shifts || [], b: (c.stopBreakdown || []).map(x => ({ r: String(x.reason), h: Number(x.hours) || 0 })) }; },
+    pfRead(id, x) { const b = x.b || []; return { _id: id, operatorId: x.o, date: x.d, machine: x.m, picks: x.p, shifts: x.s || [], stopBreakdown: b.map(y => ({ reason: y.r, hours: y.h })) }; },
     async pfFrom() {
       if (!dbReady) throw new Error('NOT_CONFIGURED');
       if (this._pfFrom === undefined) { const s = await getDoc(doc(db, 'config', 'pfReady')); this._pfFrom = s.exists() ? (s.data().from || '') : ''; }
