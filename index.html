@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261123-132402">
+<meta name="rvf-build" content="20261123-133108">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -28324,6 +28324,7 @@ function smPages(title, sub, th, rows, o){
     while(rem.length){
       if(fits(rem, true)){ chunks.push(rem); rem = []; break; }
       let k = 1; while(k < rem.length && fits(rem.slice(0, k + 1), false)) k++;
+      if(k === rem.length && rem.length > 1){ k = Math.max(1, rem.length - Math.min(3, rem.length - 1)); }
       chunks.push(rem.slice(0, k)); rem = rem.slice(k);
     }
   } finally { box.remove(); }
