@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261123-093217">
+<meta name="rvf-build" content="20261123-093852">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -27423,7 +27423,7 @@ function acuList(){
     && (!q || ((u.name || '') + ' ' + u.loginId + ' ' + (u.department || '') + ' ' + a2PosOf(u)).toLowerCase().includes(q))).sort((a, b) => a2Num(a.loginId, b.loginId));
 }
 function acuRows(){
-  const l = acuList(), show = l.slice(0, 80);
+  const l = acuList(), show = l;
   if(!l.length) return '<div class="a2Empty"><div class="hrNote">No one matches.</div></div>';
   return `<div class="hrNote" style="margin-bottom:6px;">${l.length} ${l.length === 1 ? 'person' : 'people'}</div><div class="table-scroll"><table class="report-table ovTbl a2T"><thead><tr><th>ID</th><th>Name</th><th>Department</th><th>Position</th><th>Salary sheet</th><th>Status</th><th></th></tr></thead><tbody>${show.map(u => `<tr><td>${acEsc(u.loginId)}</td><td>${acEsc(u.name)}</td><td>${acEsc(u.department || '')}</td><td>${acEsc(a2PosOf(u))}</td><td>${acEsc(acuSheetName(acuSheetOf(u)))}</td><td>${acEsc(String((u.profile || {}).employmentStatus || '').replace(/_/g, ' '))}</td><td><button type="button" class="pillBtn ok" data-acu="open" data-id="${acEsc(u.loginId)}">Edit profile</button></td></tr>`).join('')}</tbody></table></div>${l.length > show.length ? `<div class="hrNote" style="margin-top:6px;">Showing ${show.length} of ${l.length}. Use the filters or type a name or ID to narrow the list.</div>` : ''}`;
 }
