@@ -1,12 +1,12 @@
 /* Emergency alerts: asks once, on the phone itself. Loaded from the app a few seconds after sign-in. Does nothing else. */
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 const VAPID = 'BLhT6usaFwf08QY1YCpyWiVKOTB9KEoPvWCn7drhvd4tGXBjrHKiEeVuTPRS3xVCncb-KToH9qwoc6bO6ePu9go';
 const ls = { get(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }, set(k, v){ try{ localStorage.setItem(k, v); }catch(e){} } };
 (async () => {
   if(!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window) || Notification.permission === 'denied') return;
-  const app = initializeApp({ apiKey:"AIzaSyA-IRsoL3cy92qw6QC8_q4dThg7ydMXo-w", authDomain:"mechine-reader-test.firebaseapp.com", projectId:"mechine-reader-test", appId:"1:526829266334:web:8c5ad1d3dd4ed4ea2ee28f" }, 'alertEnable');
+  const app = getApps().length ? getApp() : initializeApp({ apiKey:"AIzaSyA-IRsoL3cy92qw6QC8_q4dThg7ydMXo-w", authDomain:"mechine-reader-test.firebaseapp.com", projectId:"mechine-reader-test", storageBucket:"mechine-reader-test.firebasestorage.app", messagingSenderId:"526829266334", appId:"1:526829266334:web:8c5ad1d3dd4ed4ea2ee28f" });
   const auth = getAuth(app), db = getFirestore(app); await auth.authStateReady(); const u = auth.currentUser; if(!u) return;
   let id = ls.get('rvfAlertId:' + u.uid);
   if(!id){ try{ const s = await getDoc(doc(db, 'uidIndex', u.uid)); id = s.exists() ? s.data().loginId : ''; }catch(e){} if(id) ls.set('rvfAlertId:' + u.uid, id); }
