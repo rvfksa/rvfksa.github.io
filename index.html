@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261123-115723">
+<meta name="rvf-build" content="20261123-130652">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -1122,6 +1122,7 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
       if (authStateResolved || !auth) return Promise.resolve();
       return new Promise(resolve => authStateResolvers.push(resolve));
     },
+    getCurrentEmail() { try { return (auth.currentUser && auth.currentUser.email) || ''; } catch (e) { return ''; } },
     getCurrentUid() {
       return (auth && auth.currentUser) ? auth.currentUser.uid : null;
     },
@@ -6626,6 +6627,7 @@ async function doLogin(){
       if(idx.authEmail){
         // An Employee ID that was changed: the account still lives under the email it was created with
         signIn = await window.__db.authSignIn(idx.authEmail, password);
+        if(!signIn.ok && Array.isArray(idx.authEmails)){ for(const em of idx.authEmails){ if(em === idx.authEmail) continue; signIn = await window.__db.authSignIn(em, password); if(signIn.ok) break; } }
       } else if(idx.authEmailVersion){
         signIn = await window.__db.authSignIn(syntheticEmailFor(id, idx.authEmailVersion), password);
       }
@@ -12828,10 +12830,13 @@ $('coreEditSaveBtn').addEventListener('click', async () => {
       // password, so for them nothing but that is carried. If the note can't be saved, nothing is changed.
       try{
         const oldIdx = await window.__db.getAuthIndex(oldId);
-        const realEmail = oldIdx.tempPassword ? null : (profileCache.user.authEmail || syntheticEmailFor(oldId, oldIdx.authEmailVersion || 0));
+        // Where the real login account is: the account you are signed in with (own ID), else the note left by an earlier ID change,
+        // else the reset number (a password reset moves the account to a new email), and only then the email saved when the profile was made
+        const realEmail = oldIdx.tempPassword ? null : ((state.user && state.user.loginId === oldId && window.__db.getCurrentEmail && window.__db.getCurrentEmail()) || oldIdx.authEmail || (oldIdx.authEmailVersion ? syntheticEmailFor(oldId, oldIdx.authEmailVersion) : '') || profileCache.user.authEmail || syntheticEmailFor(oldId, 0));
         const note = { tempPassword: oldIdx.tempPassword || null, authEmailVersion: oldIdx.authEmailVersion || 0 };
         if(realEmail) note.authEmail = realEmail;
-        await window.__db.saveAuthIndex(newId, note);
+        if(realEmail) note.authEmails = Array.from(new Set([realEmail, oldIdx.authEmail, oldIdx.authEmailVersion ? syntheticEmailFor(oldId, oldIdx.authEmailVersion) : '', profileCache.user.authEmail, syntheticEmailFor(oldId, 0)].filter(Boolean))).slice(0, 5);
+        try{ await window.__db.saveAuthIndex(newId, note); }catch(e0){ delete note.authEmails; await window.__db.saveAuthIndex(newId, note); }
       }catch(err){ console.error(err); toast('Could not change the ID — check your connection and try again'); return; }
       await window.__db.createUser(fullUser);
       await window.__db.deleteUser(oldId);
