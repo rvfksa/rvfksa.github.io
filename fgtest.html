@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261123-100212">
+<meta name="rvf-build" content="20261123-100337">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -458,19 +458,20 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
       }
       out.requests = Object.keys(seen).length;
       vacationsCache.invalidate(); violationsCache.invalidate(); leaveRequestsCache.invalidate();
-      const idxS = await getDoc(doc(db, 'config', 'salaryIndex')), items = (idxS.exists() && (idxS.data() || {}).items) || {}, months = {};
+      const cg = async (k) => { const s = await getDoc(doc(db, 'config', k)); return s.exists() ? ((s.data() || {}).data || null) : null; }, cs = (k, o) => setDoc(doc(db, 'config', k), { data: o });
+      const idx = await cg('salaryIndex'), items = (idx && idx.items) || {}, months = {};
       for (const k of Object.keys(items)) {
         if (items[k] && items[k].ym) months[items[k].ym] = 1;
-        const s = await getDoc(doc(db, 'config', 'salary_' + k)); if (!s.exists()) continue;
-        const o = s.data(); let ch = false;
+        const o = await cg('salary_' + k); if (!o) continue;
+        let ch = false;
         (o.rows || []).forEach(r => { if (String(r.id) === oldId) { r.id = newId; if (newName) r.name = newName; ch = true; } });
-        if (ch) { await setDoc(doc(db, 'config', 'salary_' + k), o); out.sheets++; }
+        if (ch) { await cs('salary_' + k, o); out.sheets++; }
       }
       for (const ym of Object.keys(months)) {
-        const s = await getDoc(doc(db, 'config', 'payDesk_' + ym)); if (!s.exists()) continue;
-        const o = s.data(); let ch = false;
+        const o = await cg('payDesk_' + ym); if (!o) continue;
+        let ch = false;
         Object.keys(o).forEach(pk => { const m = o[pk]; if (m && typeof m === 'object' && !Array.isArray(m) && Object.prototype.hasOwnProperty.call(m, oldId)) { m[newId] = m[oldId]; delete m[oldId]; ch = true; } });
-        if (ch) { await setDoc(doc(db, 'config', 'payDesk_' + ym), o); out.payDesk++; }
+        if (ch) { await cs('payDesk_' + ym, o); out.payDesk++; }
       }
       return out;
     },
