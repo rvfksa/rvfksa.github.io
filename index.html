@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261123-082058">
+<meta name="rvf-build" content="20261123-082348">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -32265,6 +32265,44 @@ document.addEventListener('mousedown', (ev) => {
   if(o){ ev.preventDefault(); const f = $('fsI'); if(f){ f.value = o.dataset.fgv; f.dispatchEvent(new Event('change', { bubbles: true })); } return; }
   const b = $('fgPick'); if(b && !(ev.target.closest && ev.target.closest('.fgBox'))) b.style.display = 'none';
 });
+
+/* ===== Profile > General Info (opened from Accounts > Users > Edit profile): Employment Status, the same choice as in Admin ===== */
+{ const _r = renderGeneralTab;
+  renderGeneralTab = function(){
+    const r = _r.apply(this, arguments);
+    try{
+      const u = profileCache.user, endIn = $('pf-endDate'); if(!state.profileEditMode || !u || !endIn || $('pf-empStatus')) return r;
+      const p = u.profile || {}, st = p.employmentStatus === 'final_exit' ? 'terminated' : (p.employmentStatus || 'running');
+      endIn.closest('.field').insertAdjacentHTML('beforebegin', `<div class="field"><label>Employment Status</label><select id="pf-empStatus">${[['running', 'On The Job'], ['vacation', 'Vacation'], ['leave', 'On Leave'], ['terminated', 'Exit / Terminated']].map(o => `<option value="${o[0]}" ${st === o[0] ? 'selected' : ''}>${o[1]}</option>`).join('')}</select></div><div class="field" id="pf-wsBox" style="display:none;"><label>Work start date <span style="text-transform:none;color:var(--muted);">(first day back at work after vacation)</span></label><input type="date" id="pf-workStart"></div>`);
+      $('pf-empStatus').addEventListener('change', () => { $('pf-wsBox').style.display = (st === 'vacation' && $('pf-empStatus').value === 'running') ? '' : 'none'; });
+    }catch(e){ console.error(e); }
+    return r;
+  };
+}
+{ const _s = saveGeneralTab;
+  saveGeneralTab = async function(){
+    const sel = $('pf-empStatus'); if(!sel) return _s.apply(this, arguments);
+    const u = profileCache.user, id = u.loginId, p0 = u.profile || {}, old = p0.employmentStatus === 'final_exit' ? 'terminated' : (p0.employmentStatus || 'running'), ns = sel.value;
+    const isExit = ns === 'terminated', changed = ns !== old, back = old === 'vacation' && ns === 'running', ws = $('pf-workStart') ? $('pf-workStart').value : '';
+    if(isExit && !$('pf-endDate').value && $('pf-employmentType').value === 'Sponsor'){ toast('Please choose the exit date - it is required for a Sponsor employee'); $('pf-endDate').focus(); return; }
+    if(back && !ws){ toast('Please choose the work start date (the first day back at work after vacation)'); $('pf-workStart').focus(); return; }
+    await _s.apply(this, arguments);
+    if(!changed) return;
+    try{
+      await saveProfileFields(id, { employmentStatus: ns });
+      if(isExit){
+        if(p0.passport) await saveProfileFields(id, { 'passport.location': 'employee', 'passport.locationReason': 'Employment ended', 'passport.locationChangedAt': new Date().toISOString().slice(0, 10), 'passport.drawer': '', 'passport.box': '', 'passport.section': '', 'passport.pendingLocationChange': null });
+        if((u.role === 'operator' || u.role === 'supervisor') && (u.assignedMachines || []).length){
+          await window.__db.updateUser(id, { assignedMachines: [] }); u.assignedMachines = [];
+          const su = (state.users || []).find(x => x.loginId === id); if(su) su.assignedMachines = [];
+          const d = p0.directSupervisor; if(u.role === 'operator' && d && d.loginId && (state.users || []).length && typeof assignSupSyncApply === 'function') await assignSupSyncApply([d.loginId]);
+        }
+      }
+      if(back && ws){ const vl = await window.__db.listVacations(id), v = (vl || []).slice().sort((a, b) => (b.from || '').localeCompare(a.from || ''))[0]; if(v) await window.__db.updateVacation(v._id, { workStart: ws }); }
+      toast('Saved'); renderGeneralTab();
+    }catch(err){ console.error(err); toast('Could not save the status — check your connection'); }
+  };
+}
 
 </script>
 </body>
