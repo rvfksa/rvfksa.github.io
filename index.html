@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261123-100904">
+<meta name="rvf-build" content="20261123-115723">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -30538,7 +30538,7 @@ document.addEventListener('click', async (ev) => {
   if(a === 'yk'){ const s = sxSnap(); SX.yk = v; yOpenRaw(); sxRestore(s); yInfoUpd(); } else if(a === 'yk2'){ const s = sxSnap(); SX.yk2 = v; yOpenRew(); sxRestore(s); yInfoUpd(); } else if(a === 'yk3'){ const s = sxSnap(); SX.yk3 = v; yOpenWp(); sxRestore(s); yWpCalc(); }
   else if(a === 'ysm'){ SX.yso = SX.yso === v ? '' : v; SX.fo = ''; skRender(); } else if(a === 'ysort'){ const p = v.split(':'); SX.last['ys_' + p[0]] = p[1]; sxKeep({}); SX.yso = ''; skRender(); }
   else if(a === 'ysaveraw') ySaveRaw(); else if(a === 'ysaverew') ySaveRew(); else if(a === 'ysavewp') ySaveWp(); else if(a === 'ysaveopen') ySaveOpen(); else if(a === 'ysaveitem') ySaveItem(v);
-  else if(a === 'yopen'){ SX.sfor = ''; SX.tab = 'raw'; SK.tab = 'raw'; skRender(); yOpenOpening(); } else if(a === 'ynew') yItemForm(''); else if(a === 'ynewraw'){ const t = sxVal('yI'); SX.yBack = 1; yItemForm(''); setTimeout(() => { const f = $('yfCol'); if(f && !f.value) f.value = t; }, 60); }
+  else if(a === 'yopen'){ SX.sfor = ''; SX.tab = 'raw'; SK.tab = 'raw'; skRender(); yOpenOpening(); } else if(a === 'ynew') yItemForm(''); else if(a === 'ynewraw'){ const tc = sxVal('yC'), tn = sxVal('yN'); SX.yBack = $('yGross') ? 2 : 1; yItemForm(''); setTimeout(() => { const f = $('yfCol'), g = $('yfCode'); if(f && !f.value) f.value = tn; if(g && !g.value) g.value = tc; }, 60); }
   else if(a === 'yedit'){ const id = $('yEdSel') ? $('yEdSel').value : ''; if(!id){ toast('Choose a yarn first'); return; } yItemForm(id); }
   else if(a === 'ysaverules'){ SX.cfg.yOrder = Number(sxVal('yOrd')) || 30; if(await sxPutCfg()) toast('Saved'); }
   else if(a === 'ysavebw'){ SX.cfg.beamW = {}; document.querySelectorAll('.yBw').forEach(i => { const n = Number(i.value); if(n > 0) SX.cfg.beamW[i.dataset.c] = n; }); if(await sxPutCfg()) toast('Saved'); }
@@ -30547,6 +30547,7 @@ document.addEventListener('click', async (ev) => {
 document.addEventListener('input', (ev) => {
   const t = ev.target; if(!t) return;
   if(t.id === 'yI') yInfoUpd();
+  else if(t.id === 'yC' || t.id === 'yN') ySyncItem(t.id === 'yC' ? 'c' : 'n');
   else if(t.id === 'yBx'){ const i = yFind(sxVal('yI')), k = $('yKg'); if(i && i.kgb > 0 && k && k.dataset.m !== '1'){ const b = Number(t.value); k.value = b > 0 ? Math.round(b * i.kgb * 100) / 100 : ''; } }
   else if(t.id === 'yKg'){ t.dataset.m = t.value === '' ? '' : '1'; }
   else if(t.id === 'yWc' || t.id === 'yWn'){ if(t.id === 'yWc') ['yWs', 'yWk'].forEach(i => { const e = $(i); if(e) e.dataset.m = ''; }); yWpCalc(); }
@@ -30554,7 +30555,7 @@ document.addEventListener('input', (ev) => {
   else if(t.id === 'yWk'){ t.dataset.m = t.value === '' ? '' : '1'; }
   else if(t.id === 'yOq'){ const q = t.value.trim().toLowerCase(); document.querySelectorAll('#sxModal tbody tr').forEach(r => { r.style.display = !q || (r.dataset.q || '').indexOf(q) >= 0 ? '' : 'none'; }); }
 });
-document.addEventListener('change', (ev) => { const t = ev.target; if(t && t.id === 'yI') yInfoUpd(); });
+document.addEventListener('change', (ev) => { const t = ev.target; if(t && t.id === 'yI') yInfoUpd(); else if(t && (t.id === 'yC' || t.id === 'yN')) ySyncItem(t.id === 'yC' ? 'c' : 'n'); });
 
 /* ---------- Box size and daily use (Settings, one small save) ---------- */
 function yOpenDaily(){
@@ -31017,25 +31018,25 @@ function yRows(){
   return rows;
 }
 /* ---------- Raw Yarn: Update form (IN / OUT) ---------- */
-const yDL = (list) => `<datalist id="yIL">${(list || yItems().filter(i => i.on !== false)).map(i => `<option value="${skEsc(yLbl(i))}">`).join('')}</datalist>`;
+const yDL = (list) => { const L = list || yItems().filter(i => i.on !== false); return `<datalist id="yIL">${L.map(i => `<option value="${skEsc(yLbl(i))}">`).join('')}</datalist><datalist id="yCL">${L.filter(i => i.code).map(i => `<option value="${skEsc(i.code)}" label="${skEsc(i.col)}">`).join('')}</datalist><datalist id="yNL">${L.map(i => `<option value="${skEsc(i.col)}" label="${skEsc(i.code)}">`).join('')}</datalist>`; };
 function yOpenRaw(){
   yCfg(); const c = SX.cfg, F = SX.last, k = SX.yk === 'out' ? 'out' : 'in';
   const tabs = `<div class="hrTabs sxIO">${[['in', 'IN'], ['out', 'OUT']].map(x => `<button class="${k === x[0] ? 'active' : ''}" data-sx="yk" data-v="${x[0]}">${x[1]}</button>`).join('')}</div>`;
   const sup = k === 'in' ? sxField('Supplier', `<select id="ySup">${sxOpt(ySups().concat([['__new', '+ New supplier…']]), '', 'Choose')}</select>`) : sxField('Goes to', `<select id="yTo">${sxOpt(c.ydest, F.yto, 'Choose')}</select>`);
   sxModal('Raw yarn', tabs + `<div class="sxF yF">
-    ${sxField('Item (code, name or colour)', '<input id="yI" list="yIL" type="text" autocomplete="off" placeholder="e.g. RM625 or SOFT SKY GREY">', 1)}
+    ${yCN()}
     <div class="field wide"><div id="yInfo" class="sxNote" style="margin:0;">Choose the item to see what is in the store.</div></div>
     <div class="field" id="yBxW"><label>Boxes / sacks</label><input id="yBx" type="number" inputmode="decimal" min="0" step="any" placeholder="0"></div>
     ${sxField('Kg', '<input id="yKg" type="number" inputmode="decimal" min="0" step="any" placeholder="0">')}
     ${sxField('Date', `<input id="sxD" type="date" value="${skEsc(sxToday())}">`)}${sup}
     ${k === 'in' ? '<div class="field wide" id="ySupNW" style="display:none;"><label>New supplier name</label><input id="ySupN" type="text" autocomplete="off" placeholder="e.g. HUAYUAN, CHINA"></div>' : ''}
     ${sxField('Note (optional)', '<input id="sxN" type="text" placeholder="e.g. invoice, machine">', 1)}</div>` + yDL(), sxSave('ysaveraw', k === 'out' ? 'Save OUT' : 'Save IN'));
-  setTimeout(() => { const e = $('yI'); if(e) e.focus(); }, 60);
+  setTimeout(() => { const e = $('yC'); if(e) e.focus(); }, 60);
 }
 function yInfoUpd(){
   if($('yGross')) return yRewInfo();
   const e = $('yI'), box = $('yInfo'); if(!e || !box) return; const i = yFind(e.value), bw = $('yBxW'), out = SX.yk === 'out';
-  if(!i){ const t = (e.value || '').trim(); box.innerHTML = t.length > 1 ? (sxAdmin() ? `This yarn is not in the list yet. <button type="button" class="pcBtnSoft sm" data-sx="ynewraw">Add it as a new yarn</button>` : 'This yarn is not in the list. Ask the administrator to add it.') : 'Choose the item to see what is in the store.'; if(bw) bw.style.display = ''; return; }
+  if(!i){ box.innerHTML = yNotFound('Choose the item to see what is in the store.'); if(bw) bw.style.display = ''; return; }
   const b = (yIdx()[i.id] || { tot: 0 }), kg = yNum('yKg'), after = b.tot + (out ? -kg : kg), neg = out && after < -0.0005;
   box.innerHTML = `<b>${skEsc(i.col)}</b> · ${skEsc(i.sup)}${i.sz ? ' · ' + skEsc(i.sz) : ''}${i.kgb > 0 ? ' · ' + sxN(i.kgb) + ' kg in 1 box' : ''}<br>In store now: <b>${sxN(b.tot)} kg</b>${i.kgb > 0 ? ' (' + sxN(yR1(b.tot / i.kgb)) + ' boxes)' : ''}${kg > 0 ? ` · After this: <b style="${neg ? 'color:#dc2626;' : ''}">${neg ? 'not enough' : sxN(yR1(after)) + ' kg'}</b>` : ''}`;
   if(bw) bw.style.display = i.kgb > 0 ? '' : 'none';
@@ -31063,7 +31064,7 @@ async function ySaveRaw(){
 /* ---------- Yarn item form (adds low-stock days and not-moving) ---------- */
 function yItemForm(id){
   const i = id ? yItem(id) : { id: '', sec: '', code: '', col: '', sup: '', sz: '', kgb: 0, on: true };
-  sxModal(id ? 'Change yarn item' : 'New yarn item', `<div class="sxF yF">${sxField('Code', `<input id="yfCode" type="text" value="${skEsc(i.code)}" placeholder="e.g. RM625">`)}${sxField('Colour description', `<input id="yfCol" type="text" value="${skEsc(i.col)}" placeholder="e.g. SOFT SKY GREY-SF87">`)}
+  sxModal(id ? 'Change yarn item' : 'New yarn item', `<div class="sxF yF">${sxField('Code', `<input id="yfCode" type="text" value="${skEsc(i.code)}" placeholder="e.g. RM625">`)}${sxField('Name (colour)', `<input id="yfCol" type="text" value="${skEsc(i.col)}" placeholder="e.g. SOFT SKY GREY-SF87">`)}
     ${sxField('Supplier', `<input id="yfSup" list="yfSups" type="text" value="${skEsc(i.sup)}" placeholder="e.g. HUAYUAN, CHINA">`)}${sxField('Yarn size', `<input id="yfSz" type="text" value="${skEsc(i.sz)}" placeholder="e.g. 450D/192F">`)}
     ${sxField('Section', `<input id="yfSec" list="yfSecs" type="text" value="${skEsc(i.sec)}" placeholder="e.g. Pile">`)}${sxField('Kg in 1 box (0 = kg only)', `<input id="yfKgb" type="number" inputmode="decimal" min="0" step="any" value="${i.kgb || ''}" placeholder="25">`)}
     ${sxField('Used per day kg (optional)', `<input id="yfUse" type="number" inputmode="decimal" min="0" step="any" value="${i.use || ''}" placeholder="e.g. 200">`)}${sxField('Low stock reminder (days)', `<input id="yfOrd" type="number" inputmode="decimal" min="0" step="any" value="${i.ord || ''}" placeholder="${SX.cfg.yOrder || 30}">`)}
@@ -31071,10 +31072,11 @@ function yItemForm(id){
 }
 async function ySaveItem(id){
   const o = { code: sxVal('yfCode'), col: sxVal('yfCol'), sup: sxVal('yfSup'), sz: sxVal('yfSz'), sec: sxVal('yfSec') || 'Other', kgb: Number(sxVal('yfKgb')) || 0, use: Number(sxVal('yfUse')) || 0, ord: Number(sxVal('yfOrd')) || 0, nm: sxVal('yfNm') === '1', on: sxVal('yfOn') !== '0' };
-  if(!o.col){ toast('Type the colour description'); return; }
+  if(!id && !o.code){ toast('Type the code'); return; }
+  if(!o.col){ toast('Type the name (colour description)'); return; }
   const L = yItems(); if(L.some(x => x.id !== id && x.code === o.code && x.col.toLowerCase() === o.col.toLowerCase() && x.sup.toLowerCase() === o.sup.toLowerCase())){ toast('This item is already in the list'); return; }
   if(id){ Object.assign(yItem(id), o); } else { const n = L.reduce((a, x) => Math.max(a, Number(String(x.id).slice(1)) || 0), 0) + 1; L.push(Object.assign({ id: 'y' + n }, o)); }
-  SX.open = SX.open || {}; SX.open.yitems = 1; if(await sxPutCfg()){ toast('Saved'); const back = !id && SX.yBack; SX.yBack = 0; sxClose(); skRender(); if(back){ const ni = yItems()[yItems().length - 1]; yOpenRaw(); const e = $('yI'); if(e && ni){ e.value = yLbl(ni); yInfoUpd(); const b = $('yBx'); if(b) b.focus(); } } }
+  SX.open = SX.open || {}; SX.open.yitems = 1; if(await sxPutCfg()){ toast('Saved'); const back = !id && SX.yBack; SX.yBack = 0; sxClose(); skRender(); if(back){ const ni = yItems()[yItems().length - 1]; if(back === 2) yOpenRew(); else yOpenRaw(); if(ni){ ySetItem(ni); const b = $(back === 2 ? 'yGross' : 'yBx'); if(b) b.focus(); } } }
 }
 /* ---------- Rewound Yarn ---------- */
 function ySackKg(){ const e = $('ySkSz'); return e ? (Number(e.value) || 0) : 0; }
@@ -31092,9 +31094,9 @@ function yOpenRew(){
   yCfg(); const c = SX.cfg, F = SX.last, k = SX.yk2 === 'out' ? 'out' : SX.yk2 === 'ret' ? 'ret' : 'in';
   const tabs = `<div class="hrTabs sxIO">${[['in', 'IN'], ['out', 'OUT'], ['ret', 'RETURN']].map(x => `<button class="${k === x[0] ? 'active' : ''}" data-sx="yk2" data-v="${x[0]}">${x[1]}</button>`).join('')}</div>`;
   const szs = (c.bobSz || []).map(t => [String(yR3(ySizeKg(t))), t]).filter(x => Number(x[0]) > 0), qual = sxField('Quality', `<select id="yQ">${sxOpt([['1', '1st quality'], ['2', '2nd quality']], '1')}</select>`);
-  const pick = yRewPick(k), none = !pick.length ? `<div class="field wide"><div class="sxNote" style="margin:0;">${k === 'in' ? 'No yarn has been given from the Raw Yarn store yet.' : k === 'out' ? 'There is no rewound yarn in stock.' : 'Nothing was given out to weaving, so there is nothing to return.'}</div></div>` : '';
+  const pick = k === 'in' ? yItems().filter(i => i.on !== false) : yRewPick(k), none = !pick.length ? `<div class="field wide"><div class="sxNote" style="margin:0;">${k === 'in' ? 'No yarn has been given from the Raw Yarn store yet.' : k === 'out' ? 'There is no rewound yarn in stock.' : 'Nothing was given out to weaving, so there is nothing to return.'}</div></div>` : '';
   sxModal('Rewound yarn', tabs + `<div class="sxF yF">
-    ${sxField('Item (code, name or colour)', '<input id="yI" list="yIL" type="text" autocomplete="off" placeholder="e.g. RM625 or SOFT SKY GREY">', 1)}${none}
+    ${yCN()}${none}
     <div class="field wide"><div id="yInfo" class="sxNote" style="margin:0;">Choose the item.</div></div>
     ${k === 'ret' ? sxField('Return type', `<select id="yRt">${sxOpt([['full', 'Full bobbins'], ['run', 'Run-out bobbins']], 'full')}</select>`) + qual : ''}
     ${sxField('Gross weight kg', '<input id="yGross" type="number" inputmode="decimal" min="0" step="any" placeholder="0">')}<div class="field" id="ySzW"><label>Bobbin size</label><select id="ySz">${sxOpt(szs, '', 'Choose')}</select></div>
@@ -31104,12 +31106,12 @@ function yOpenRew(){
     ${k === 'out' ? `<div class="field wide" id="yFromW" style="display:none;"><label>Take from</label><select id="yFrom">${sxOpt([['rew', 'Rewound yarn'], ['rc', 'Recovered yarn']], 'rew')}</select></div>` : ''}
     <div class="field wide"><div id="yCalc" class="sxNote" style="margin:0;">Net yarn is worked out after taking off the sack and empty bobbin weight.</div></div>
 </div>` + yDL(pick), sxSave('ysaverew', k === 'out' ? 'Save OUT' : k === 'ret' ? 'Save RETURN' : 'Save IN'));
-  setTimeout(() => { const e = $('yI'); if(e) e.focus(); }, 60);
+  setTimeout(() => { const e = $('yC'); if(e) e.focus(); }, 60);
 }
 function yRewInfo(){
   const e = $('yI'), box = $('yInfo'), cb = $('yCalc'); if(!e || !box) return; const i = yFind(e.value), k = SX.yk2 === 'out' ? 'out' : SX.yk2 === 'ret' ? 'ret' : 'in', run = k === 'ret' && sxVal('yRt') === 'run';
   const sw = $('ySzW'); if(sw) sw.style.visibility = run ? 'hidden' : '';
-  const fw = $('yFromW'); if(!i){ box.innerHTML = 'Choose the item.'; if(fw) fw.style.display = 'none'; }
+  const fw = $('yFromW'); if(!i){ box.innerHTML = yNotFound('Choose the item.'); if(fw) fw.style.display = 'none'; }
   else {
     const b = yRwBal(i.id), q2 = sxVal('yQ') === '2'; if(fw) fw.style.display = b.rc > 0.0004 ? '' : 'none';
     box.innerHTML = `<b>${skEsc(i.col)}</b> · ${skEsc(i.code)}<br>` + (k === 'in' ? `Given from the Raw Yarn store: <b>${sxN(yR1(b.iss))} kg</b> · Rewound in hand: <b>${sxN(yR1(Math.max(0, b.kg) + Math.max(0, b.kq)))} kg</b>` : k === 'out' ? `In hand: <b>${sxN(yR1(Math.max(0, q2 ? b.kq : b.kg)))} kg</b> net, ${sxN(Math.max(0, q2 ? b.nq : b.n))} bobbins${b.rc > 0.0004 ? ' · Recovered: <b>' + sxN(yR1(b.rc)) + ' kg</b>' : ''}` : `Given out to weaving: <b>${sxN(yR1(Math.max(0, b.out)))} kg</b>`);
@@ -31121,7 +31123,7 @@ function yRewInfo(){
 }
 async function ySaveRew(){
   if(!sxCan('rew')) return; const k = SX.yk2 === 'out' ? 'out' : SX.yk2 === 'ret' ? 'ret' : 'in', i = yFind(sxVal('yI'));
-  if(!i || !yRewPick(k).some(x => x.id === i.id)){ toast('Choose the item from the list'); return; }
+  if(!i || (k !== 'in' && !yRewPick(k).some(x => x.id === i.id))){ toast('Choose the item from the list'); return; }
   const run = k === 'ret' && sxVal('yRt') === 'run', q2 = sxVal('yQ') === '2', gross = yNum('yGross'), size = Number(sxVal('ySz')) || 0, sacks = yNum('ySack'), bobEl = $('yBob'), manual = run || (bobEl && bobEl.dataset.m === '1');
   if(!(gross > 0)){ toast('Type the gross weight'); return; } if(!run && !(size > 0)){ toast('Choose the bobbin size'); return; }
   const c = yRwCalc(gross, size, sacks, yNum('yBob'), manual, ySackKg()); if(run && !(c.n > 0)){ toast('Type the number of bobbins'); return; }
@@ -32510,6 +32512,24 @@ async function accRefreshPeople(){
 }
 { const f = a2DrawUsers; a2DrawUsers = function(){ f.apply(this, arguments); accRefreshPeople().then(ch => { if(ch && A2.view === 'users') f.call(this); }).catch(() => {}); }; }
 { const f = a2LoadDoc; a2LoadDoc = async function(){ try{ await accRefreshPeople(); }catch(e){} return f.apply(this, arguments); }; }
+
+
+/* ===== Yarn forms: Code and Name in two boxes, and a new yarn can be added right there by anyone who can enter stock ===== */
+const yCN = () => sxField('Code', '<input id="yC" list="yCL" type="text" autocomplete="off" placeholder="e.g. RM625">') + sxField('Name', '<input id="yN" list="yNL" type="text" autocomplete="off" placeholder="e.g. SOFT SKY GREY">') + '<input id="yI" type="hidden">';
+function ySetItem(i){ const c = $('yC'), n = $('yN'), h = $('yI'); if(c) c.value = i ? (i.code || '') : ''; if(n) n.value = i ? (i.col || '') : ''; if(h) h.value = i ? yLbl(i) : ''; yInfoUpd(); }
+function ySyncItem(from){
+  const c = (($('yC') || {}).value || '').trim().toLowerCase(), n = (($('yN') || {}).value || '').trim().toLowerCase(), h = $('yI'); if(!h) return;
+  const L = yItems().filter(i => i.on !== false), cv = (i) => String(i.code || '').toLowerCase(), nv = (i) => String(i.col || '').toLowerCase();
+  let m = (c || n) ? L.filter(i => (!c || cv(i) === c) && (!n || nv(i) === n)) : [];
+  if(!m.length && from){ const t = from === 'c' ? c : n; if(t) m = L.filter(i => (from === 'c' ? cv(i) : nv(i)) === t); }
+  const i = m.length ? m[0] : null;
+  if(i){ const ce = $('yC'), ne = $('yN'); if(ce && cv(i) !== (ce.value || '').trim().toLowerCase()) ce.value = i.code || ''; if(ne && nv(i) !== (ne.value || '').trim().toLowerCase()) ne.value = i.col || ''; h.value = yLbl(i); } else h.value = '';
+  yInfoUpd();
+}
+function yNotFound(def){
+  const t = ((($('yC') || {}).value || '') + ' ' + (($('yN') || {}).value || '')).trim();
+  return t.length > 1 ? 'This yarn is not in the list yet. <button type="button" class="pcBtnSoft sm" data-sx="ynewraw">Add it as a new yarn</button>' : def;
+}
 
 </script>
 </body>
