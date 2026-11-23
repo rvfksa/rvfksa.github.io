@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261123-130652">
+<meta name="rvf-build" content="20261123-132114">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -28380,10 +28380,10 @@ async function bnkGo(kind){
     const c = smComp(), pu = smUser(BNK.prep), cu = smUser(BNK.chk), s2 = XLSX.utils.aoa_to_sheet([[title], ['Month', acYmLabel(ym)], ['Bank', 'Alinma Bank'], ['People', list.length], ['Total deduction', tded], ['Total net payable', tot], [], ['Prepared by', pu.name || ''], ['Checked by', cu.name || ''], ['Approved by', c.gm || '']]); s2['!cols'] = [{ wch: 22 }, { wch: 34 }];
     const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Bank transfer'); XLSX.utils.book_append_sheet(wb, s2, 'Summary'); XLSX.writeFile(wb, file + '.xlsx'); toast('Excel file downloaded'); return;
   }
-  const th = '<th>#</th><th>ID</th><th>Name</th>' + (BNK.ids ? `<th>${sec === 'saudi' ? 'Saudi ID' : 'Iqama'}</th>` : '') + '<th>IBAN</th><th style="text-align:right">Deduction</th><th style="text-align:right">Net payable</th>';
-  const rows = list.map((r, i) => `<tr><td>${i + 1}</td><td class="nw">${acEsc(r.id)}</td><td>${acEsc(r.name)}</td>${BNK.ids ? `<td class="nw">${acEsc(r.idn)}</td>` : ''}<td class="nw">${acEsc(r.iban || 'CASH')}</td><td style="text-align:right">${r.ded ? acMoney(r.ded) : ''}</td><td style="text-align:right"><b>${acMoney(r.net) || '0'}</b></td></tr>`);
-  rows.push(`<tr style="background:#f1f5f9;font-weight:700;"><td colspan="${3 + (BNK.ids ? 1 : 0) + 1}">Total (${list.length})</td><td style="text-align:right">${acMoney(tded) || '0'}</td><td style="text-align:right">${acMoney(tot) || '0'}</td></tr>`);
-  toast('Making the PDF...'); const blocks = smPages(title.toUpperCase(), sub, th, rows, { sign: smSignHtml(BNK.prep, BNK.chk), cols: BNK.ids ? [6, 7, 22, 13, 29, 12, 11] : [6, 8, 34, 29, 12, 11] });
+  const th = '<th>#</th><th>ID</th><th>Name</th>' + (BNK.ids ? `<th>${sec === 'saudi' ? 'Saudi ID' : 'Iqama'}</th>` : '') + '<th>Account no.</th><th>IBAN</th><th style="text-align:right">Deduction</th><th style="text-align:right">Net payable</th>';
+  const rows = list.map((r, i) => `<tr><td>${i + 1}</td><td class="nw">${acEsc(r.id)}</td><td>${acEsc(r.name)}</td>${BNK.ids ? `<td class="nw">${acEsc(r.idn)}</td>` : ''}<td class="nw">${acEsc(r.acc || '')}</td><td class="nw">${acEsc(r.iban || 'CASH')}</td><td style="text-align:right">${r.ded ? acMoney(r.ded) : ''}</td><td style="text-align:right"><b>${acMoney(r.net) || '0'}</b></td></tr>`);
+  rows.push(`<tr style="background:#f1f5f9;font-weight:700;"><td colspan="${3 + (BNK.ids ? 1 : 0) + 2}">Total (${list.length})</td><td style="text-align:right">${acMoney(tded) || '0'}</td><td style="text-align:right">${acMoney(tot) || '0'}</td></tr>`);
+  toast('Making the PDF...'); const blocks = smPages(title.toUpperCase(), sub, th, rows, { sign: smSignHtml(BNK.prep, BNK.chk), cols: BNK.ids ? [5, 6, 18, 11, 15, 25, 10, 10] : [5, 7, 27, 14, 27, 10, 10] });
   await smPreload(blocks); await rvfMakePdf(blocks, file + '.pdf', smPdfOpt());
 }
 document.addEventListener('click', (e) => { const t = e.target.closest && e.target.closest('[data-bnk]'); if(!t || t.tagName === 'SELECT' || t.tagName === 'INPUT') return; const a = t.dataset.bnk; if(a === 'close'){ const o = document.getElementById('bnkOv'); if(o) o.remove(); } else if(a === 'pdf' || a === 'xlsx') bnkGo(a); });
