@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261123-082348">
+<meta name="rvf-build" content="20261123-092350">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -21760,11 +21760,11 @@ function acDefaults(){
   return { cols: ['basic', 'housing', 'transport', 'ot', 'picks', 'rate', 'premium', 'extra', 'present', 'absent', 'absentDed', 'gross'].map(id => ({ id }))
       .concat([{ id: 'c_gosi', name: 'GOSI', kind: 'deduct', calc: 'pct', pct: 9.75, of: 'basicHousing', scope: 'flag' }])
       .concat(['totded', 'net', 'remarks'].map(id => ({ id }))),
-    std: { basic: 65, housing: 25, transport: 10 }, absent: { base: 'basic', days: 30 }, round: { step: 100, from: 50 }, rules: [], next: 1 };
+    std: { basic: 65, housing: 25, transport: 10 }, absent: { base: 'basic', days: 30 }, part: { days: 30, by: 'absent' }, round: { step: 100, from: 50 }, rules: [], next: 1 };
 }
 function acNormSettings(s){
   const d = acDefaults(); s = Object.assign({}, d, s || {});
-  s.std = Object.assign({}, d.std, s.std || {}); s.absent = Object.assign({}, d.absent, s.absent || {}); s.round = Object.assign({}, d.round, s.round || {});
+  s.std = Object.assign({}, d.std, s.std || {}); s.absent = Object.assign({}, d.absent, s.absent || {}); s.part = Object.assign({}, d.part, s.part || {}); if(s.part.by !== 'worked') s.part.by = 'absent'; s.round = Object.assign({}, d.round, s.round || {});
   s.cols = Array.isArray(s.cols) ? s.cols.slice() : d.cols; s.rules = (Array.isArray(s.rules) ? s.rules : []).map(r => Object.assign({}, r, { depts: Array.isArray(r.depts) ? r.depts : (r.dept ? [r.dept] : []) }));
   s.ladders = Object.assign({ grace: 0, every: 500, groups: [], rows: [] }, s.ladders || {}); s.ladders.groups = Array.isArray(s.ladders.groups) ? s.ladders.groups : []; s.ladders.rows = Array.isArray(s.ladders.rows) ? s.ladders.rows : [];
   Object.keys(AC_BUILTIN).forEach(id => { if(!s.cols.some(c => c.id === id)) s.cols.push({ id }); });
@@ -22204,6 +22204,7 @@ function acDrawSettings(){
     <div class="hrNote">For people with the standard salary the typed Basic is this share of the total, and Housing and Transport are worked out from it. People marked <b>fixed</b> get only what is typed.</div>
     <div class="acGrid"><label>Absent day is paid from<select data-sk="abs_base"><option value="basic" ${S.absent.base === 'basic' ? 'selected' : ''}>Basic</option><option value="gross" ${S.absent.base === 'gross' ? 'selected' : ''}>Basic + Housing + Transport</option></select></label><label>Divided by days<input class="acNum" data-sk="abs_days" value="${S.absent.days}" inputmode="numeric"></label></div>
 `;
+  const partHtml = `<div class="acGrid"><label>Days in a month<input class="acNum" data-sk="part_days" value="${acNum(S.part && S.part.days)}" inputmode="numeric" placeholder="0 = real days"></label><label>Money is counted by<select data-sk="part_by"><option value="absent" ${!S.part || S.part.by !== 'worked' ? 'selected' : ''}>Days absent</option><option value="worked" ${S.part && S.part.by === 'worked' ? 'selected' : ''}>Days worked</option></select></label></div><div class="hrNote" style="margin-top:8px;">For a person who joined in the month or went on vacation: one day = pay / these days, the same every month. 0 = the real days of the month.</div>`;
   const posAll = Array.from(new Set((state.positions || []).concat((state.users || []).filter(u => u.role !== 'pending' && !u.spare).map(u => ((u.profile || {}).position) || '').filter(Boolean)))).sort(), opPos = Array.isArray(S.opPos) ? S.opPos : [];
   const whoHtml = `<div class="hrNote" style="margin-bottom:8px;">Tick the positions that are paid on the Operator sheet. People with other positions go to Sponsor or Non Sponsor, by their employment type. If nothing is ticked, every person with the operator role is listed. A ticked position is listed even without a machine.</div><div class="checkbox-grid">${posAll.map(x => `<label><input type="checkbox" data-sk="oppos" value="${acEsc(x)}" ${opPos.some(y => String(y).toLowerCase() === x.toLowerCase()) ? 'checked' : ''}> ${acEsc(x)}</label>`).join('') || '<div class="hrNote">No positions yet.</div>'}</div>`;
   const drs = Array.isArray(S.dedReasons) ? S.dedReasons : (S.dedReasons = []);
@@ -22269,7 +22270,7 @@ function acDrawSettings(){
   const tblHtml = `<div class="hrNote" style="margin-bottom:8px;">Premium is paid per pick. The person's total picks are rounded (see Rounding below) and the rate for that level is multiplied by the total picks. If a person works on machines from different tables, the average of their rates is used.</div>${tblList}${editor || '<button type="button" class="pillBtn" data-ac="s_addtbl" style="margin-top:8px;">Add a rate table</button>'}${test}`;
   const saveRow = `<div class="acRow2"><span class="hrNote" style="margin:0;">${AC.setSec === 'nonsponsor' ? 'One list of reasons is shared by every sheet (Operator, Sponsor, Non Sponsor).' : (AC.setSec || 'sponsor') === 'operator' ? 'Press Save settings after changing a value. Rate tables are saved with their own button.' : 'Deduction reasons are one shared list for every sheet. Press Save settings after changing a value.'}</span><span style="flex:1"></span><button type="button" class="pillBtn ok" data-ac="s_save">Save settings</button></div>`;
   const whHtml = `<div class="hrNote" style="margin-bottom:8px;">Used for overtime that is paid by the hour. His normal hours = total working hours - his overtime hours (set in his profile). One hour of overtime = basic salary / 30 days / his normal hours x 1.5.</div><div class="acRow2"><label style="display:flex;align-items:center;gap:8px;">Total working hours a day <input class="acNum" data-sk="wh_hours" value="${acEsc(S.workHours == null ? 11.5 : S.workHours)}" inputmode="decimal" style="width:80px;"></label></div>`;
-  $('acMain').innerHTML = (AC.setSec === 'nonsponsor' ? sec('wh', 'Working hours (overtime by the hour)', whHtml) + sec('ded', 'Deduction reasons', dedHtml) + sec('inst', 'Instalment deductions (Loan, Advance, Iqama Transfer)', instHtml) : AC.setSec === 'saudi' ? sec('ded', 'Deduction reasons', dedHtml) + sec('inst', 'Instalment deductions (Loan, Advance, Iqama Transfer)', instHtml) : AC.setSec === 'operator' ? sec('who', 'Who is an operator (positions)', whoHtml) + sec('tbl', 'Premium rate tables', tblHtml) + sec('rnd', 'Rounding (premium only)', rndHtml) + sec('cut', 'Deduction from premium (Operator only)', cutHtml) + sec('rules', 'Extra money (ladder)', ladHtml + (!LD.groups.length && S.rules.length ? ruleHtml : '')) + sec('ded', 'Deduction reasons', dedHtml) + sec('inst', 'Instalment deductions (Loan, Advance, Iqama Transfer)', instHtml) : sec('ty', 'Beaming / Tying commission', tyHtml) + sec('wh', 'Working hours (overtime by the hour)', whHtml) + sec('ded', 'Deduction reasons', dedHtml) + sec('inst', 'Instalment deductions (Loan, Advance, Iqama Transfer)', instHtml)) + saveRow;
+  $('acMain').innerHTML = (AC.setSec === 'nonsponsor' ? sec('wh', 'Working hours (overtime by the hour)', whHtml) + sec('part', 'Joined or on vacation', partHtml) + sec('ded', 'Deduction reasons', dedHtml) + sec('inst', 'Instalment deductions (Loan, Advance, Iqama Transfer)', instHtml) : AC.setSec === 'saudi' ? sec('ded', 'Deduction reasons', dedHtml) + sec('inst', 'Instalment deductions (Loan, Advance, Iqama Transfer)', instHtml) : AC.setSec === 'operator' ? sec('who', 'Who is an operator (positions)', whoHtml) + sec('tbl', 'Premium rate tables', tblHtml) + sec('rnd', 'Rounding (premium only)', rndHtml) + sec('cut', 'Deduction from premium (Operator only)', cutHtml) + sec('rules', 'Extra money (ladder)', ladHtml + (!LD.groups.length && S.rules.length ? ruleHtml : '')) + sec('part', 'Joined or on vacation', partHtml) + sec('ded', 'Deduction reasons', dedHtml) + sec('inst', 'Instalment deductions (Loan, Advance, Iqama Transfer)', instHtml) : sec('ty', 'Beaming / Tying commission', tyHtml) + sec('wh', 'Working hours (overtime by the hour)', whHtml) + sec('part', 'Joined or on vacation', partHtml) + sec('ded', 'Deduction reasons', dedHtml) + sec('inst', 'Instalment deductions (Loan, Advance, Iqama Transfer)', instHtml)) + saveRow;
   acTestRun();
 }
 function acTxInfo(p){ return p.rows.length ? `${p.rows.length} levels &middot; ${p.rows[0][0]} down to ${p.rows[p.rows.length - 1][0]} &middot; rate ${p.rows[0][1]} to ${p.rows[p.rows.length - 1][1]}${p.n > 1 ? ' &middot; only the first rate column is used' : ''}${p.bad ? ` &middot; <span style="color:var(--danger)">${p.bad} line(s) have a different number of columns</span>` : ''}` : 'Nothing read yet.'; }
@@ -22319,7 +22320,7 @@ function acTxSync(){ const tx = $('acTx'); if(!tx) return; const t = AC.te === '
 async function acSaveSettings(){
   const S = AC.sd; S.std.basic = acNum(S.std.basic); S.std.housing = acNum(S.std.housing); S.std.transport = acNum(S.std.transport);
   if(Math.abs(S.std.basic + S.std.housing + S.std.transport - 100) > 0.01 && !confirm('Basic + Housing + Transport shares add up to ' + (S.std.basic + S.std.housing + S.std.transport) + '%, not 100%. Save anyway?')) return;
-  S.absent.days = acNum(S.absent.days) || 30; S.round.step = acNum(S.round.step) || 100; S.round.from = acNum(S.round.from);
+  S.absent.days = acNum(S.absent.days) || 30; S.part = { days: Math.max(0, Math.round(acNum(S.part && S.part.days))), by: S.part && S.part.by === 'worked' ? 'worked' : 'absent' }; S.round.step = acNum(S.round.step) || 100; S.round.from = acNum(S.round.from);
   S.rules = S.rules.filter(r => acNum(r.min) > 0 && acNum(r.amount) > 0).map(r => ({ depts: r.depts || [], mc: acNum(r.mc), min: acNum(r.min), amount: acNum(r.amount) }));
   { const L = S.ladders; L.groups = L.groups.filter(g => String(g.name || '').trim()); const ids = new Set(L.groups.map(g => g.id));
     L.rows = L.rows.filter(r => acNum(r.p) > 0).map(r => { const v = {}; Object.keys(r.v || {}).forEach(k => { if(ids.has(k) && String(r.v[k]).trim() !== '') v[k] = acNum(r.v[k]); }); return { p: acNum(r.p), v }; }).sort((x, y) => x.p - y.p);
@@ -22358,6 +22359,7 @@ function acSkChange(t, isChange){
   else if(k === 'cpct'){ S.cols[i].pct = v; }
   else if(k.indexOf('std_') === 0){ S.std[k.slice(4)] = v; }
   else if(k === 'abs_base'){ S.absent.base = v; } else if(k === 'abs_days'){ S.absent.days = v; }
+  else if(k === 'part_days'){ (S.part = S.part || { by: 'absent' }).days = v; } else if(k === 'part_by'){ (S.part = S.part || { days: 30 }).by = v; }
   else if(k === 'prem_cut'){ S.premCut = v; }
   else if(k === 'lg_name'){ S.ladders.groups[i].name = v; if(isChange) acDrawSettings(); }
   else if(k === 'lg_mode'){ S.ladders.groups[i].mode = v; if(isChange) acDrawSettings(); }
@@ -24064,7 +24066,7 @@ function a2DrawTable(){
   const head = `<tr><th class="serial">#</th>${cols.map(c => `<th class="${c.num ? 'a2N' : ''}${c.dedCol ? ' a2D' : ''}">${acEsc(c.l)}</th>`).join('')}</tr>`;
   let n = 0; const trs = rows.map(r => a2TrsOf(cols, r, ++n, ed).join('')).join('');
   box.innerHTML = `<div class="table-scroll"><table class="report-table ovTbl a2T${cols.length > 13 ? ' a2Wide' : ''}"><thead>${head}</thead><tbody>${trs || `<tr><td colspan="${cols.length + 2}" class="a2Empty">No one matches.</td></tr>`}</tbody><tfoot>${a2FootHtml(cols, rows, ed)}</tfoot></table></div>
-    <div class="hrNote" style="margin-top:8px;">${A2.sec === 'operator' ? 'Picks are the approved daily totals plus stop-time picks. Click a number to see its days. If they look low, run Refresh All Calculations (Admin, Shift &amp; Timing) first.' : 'Changes here are for this month only. The salary on the profile is not changed.' + (a2Filtered().some(r => r.jd) ? ' In Remarks: days in the month - days before joining = W (days worked and paid).' : '')}</div>`;
+    <div class="hrNote" style="margin-top:8px;">${A2.sec === 'operator' ? 'Picks are the approved daily totals plus stop-time picks. Click a number to see its days. If they look low, run Refresh All Calculations (Admin, Shift &amp; Timing) first.' : 'Changes here are for this month only. The salary on the profile is not changed.' + (a2Filtered().some(r => r.jd) ? ' In Remarks: days in the month - days before joining = W (days worked and paid).' : '')}</div>${slgBox()}`;
 }
 function a2RefreshRow(r){
   a2RefreshRow0(r);
@@ -24928,16 +24930,23 @@ document.addEventListener('keydown', (e) => { const t = e.target; if(e.key === '
 document.addEventListener('focusin', (e) => { const el = e.target; if(el && el.classList && el.classList.contains('pcNote')){ el.style.height = 'auto'; el.style.height = Math.max(36, el.scrollHeight + 2) + 'px'; } });
 
 /* ---- joined inside the salary month: pay only from the joining date ---- */
+function a2PartCfg(){ const p = (AC.set && AC.set.part) || {}; return { days: Math.max(0, Math.round(acNum(p.days == null ? 30 : p.days))), by: p.by === 'worked' ? 'worked' : 'absent' }; }
+function a2PartCalc(base, absent, total){   // fixed day value: pay / fixed days; counted by days absent or days worked
+  const c = a2PartCfg(), D = c.days || total || 30; let a, w;
+  if(c.by === 'worked'){ w = Math.max(0, Math.min(total - absent, D)); a = D - w; } else { a = Math.max(0, Math.min(absent, D)); w = D - a; }
+  return { div: D, a, w, by: c.by, ded: acR2(acNum(base) * a / D) };
+}
 function a2JoinSet0(r, base){
-  r.jd = 0; r.jded = 0; r.jdt = ''; r.jdate = '';
+  r.jd = 0; r.jded = 0; r.jdt = ''; r.jdate = ''; r.jdv = 0;
   const ym = A2.jym || A2.ym, u = (state.users || []).find(x => x.loginId === r.id), j = String((u && u.profile && u.profile.joiningDate) || '').slice(0, 10);
   if(!ym || !/^\d{4}-\d{2}-\d{2}$/.test(j)) return;
   const rg = acDefaultRange(ym); if(j <= rg.from) return;
   const day = (x) => Date.UTC(+x.slice(0, 4), +x.slice(5, 7) - 1, +x.slice(8, 10)) / 864e5;
-  const div = (rg.to && /^\d{4}-\d{2}-\d{2}$/.test(rg.to)) ? Math.round(day(rg.to) - day(rg.from)) + 1 : (acNum(AC.set && AC.set.absent && AC.set.absent.days) || 30);   // real days of this salary month
-  const n = Math.min(Math.round(day(j) - day(rg.from)), div); if(!(n > 0)) return;
-  r.jd = n; r.jdate = j; r.jded = acR2(acNum(base) * n / div);
-  r.jdt = 'From ' + fmtDate(j).slice(0, 6).replace(/^0/, '') + ' \u00B7 ' + div + '-' + n + '=' + (div - n) + 'W'; r.jdl = 'Joined ' + fmtDate(j) + '. ' + div + ' days in the month - ' + n + ' days before joining = ' + (div - n) + ' days worked and paid (W)' + (r.jded ? ' (' + acMoney(r.jded) + ' deducted)' : '');
+  const tot = (rg.to && /^\d{4}-\d{2}-\d{2}$/.test(rg.to)) ? Math.round(day(rg.to) - day(rg.from)) + 1 : (a2PartCfg().days || 30);   // real days of this salary month
+  const n0 = Math.min(Math.round(day(j) - day(rg.from)), tot); if(!(n0 > 0)) return;
+  const pc = a2PartCalc(base, n0, tot), div = pc.div, n = pc.a; r.jdv = div; if(!(n > 0)) return;
+  r.jd = n; r.jdate = j; r.jded = pc.ded;
+  r.jdt = 'From ' + fmtDate(j).slice(0, 6).replace(/^0/, '') + ' \u00B7 ' + div + '-' + n + '=' + (div - n) + 'W'; r.jdl = 'Joined ' + fmtDate(j) + '. ' + (pc.by === 'worked' ? tot + ' days in the month - ' + n0 + ' days before joining = ' + (tot - n0) + ' days worked, counted out of ' + div : div + ' days counted - ' + n + ' days before joining') + ' = ' + (div - n) + ' days paid (W)' + (r.jded ? ' (' + acMoney(r.jded) + ' deducted)' : '');
 }
 function a2WorkDaysFor(r){   // overtime by hours: only the days he could work (from his joining date)
   a2JoinSet(r, 0); const d = a2Doc();
@@ -25069,7 +25078,7 @@ function a2ChgApply(){
 }
 document.addEventListener('click', (e) => { const t = e.target.closest && e.target.closest('[data-a2x="chgapply"]'); if(t) a2ChgApply(); });
 
-const a2Nj = (r) => !!(r.jd && r.jd >= (acNum(AC.set && AC.set.absent && AC.set.absent.days) || 30));   // joined after this salary month: nothing to pay
+const a2Nj = (r) => !!(r.jd && r.jd >= (r.jdv || a2PartCfg().days || 30));   // joined after this salary month: nothing to pay
 const a2NjCount = (rows) => (rows || []).filter(a2Nj).length;
 function a2Filtered(){ const l = a2Filtered0(); return A2.hideNj ? l.filter(r => !a2Nj(r)) : l; }
 
@@ -25183,10 +25192,10 @@ function a2JoinSet(r, base){
   { const ym = A2.jym || A2.ym, u = (state.users || []).find(x => x.loginId === r.id);
     if(OVV.loaded && ym && u){ const ab = a2VacAbs(u, ym);
       if(ab.days > 0 && ab.days < ab.total){
-        const fx = a2FixedBase(r), ded = acR2(fx * ab.days / ab.total), f = ab.list[0], sh = (x) => fmtDate(x).slice(0, 6).replace(/^0/, '');
-        r.vd = ab.days; r.vded = ded; r.jded = acR2(acNum(r.jded) + ded);
-        r.jdt = [r.jdt, 'Vacation from ' + sh(a2AddD(f.lw, 1)) + ' \u00B7 ' + ab.total + '-' + ab.days + '=' + (ab.total - ab.days) + 'W'].filter(Boolean).join(', ');
-        r.jdl = [r.jdl, 'Last working day ' + fmtDate(f.lw) + (a2D8(f.v.to) ? ', back ' + fmtDate(f.v.to) : '') + '. ' + ab.days + ' of the ' + ab.total + ' days of the salary month on vacation, not paid (' + acMoney(ded) + ' SAR out of ' + acMoney(fx) + ' fixed pay)'].filter(Boolean).join('. ');
+        const fx = a2FixedBase(r), pv = a2PartCalc(fx, ab.days, ab.total), ded = pv.ded, f = ab.list[0], sh = (x) => fmtDate(x).slice(0, 6).replace(/^0/, '');
+        r.vd = pv.a; r.vded = ded; r.jded = acR2(acNum(r.jded) + ded);
+        r.jdt = [r.jdt, 'Vacation from ' + sh(a2AddD(f.lw, 1)) + ' \u00B7 ' + pv.div + '-' + pv.a + '=' + pv.w + 'W'].filter(Boolean).join(', ');
+        r.jdl = [r.jdl, 'Last working day ' + fmtDate(f.lw) + (a2D8(f.v.to) ? ', back ' + fmtDate(f.v.to) : '') + '. ' + ab.days + ' of the ' + ab.total + ' days of the salary month on vacation, not paid. 1 day = ' + acMoney(fx) + ' / ' + pv.div + ' (' + acMoney(ded) + ' SAR deducted)'].filter(Boolean).join('. ');
       } } }
   const il = a2InstFor(r, A2.jym || A2.ym), sum = acR2(il.reduce((a, x) => a + x.a, 0));
   r.il = il; r.idd = sum; r.ilt = il.map(x => x.t + ' ' + acMoney(x.a) + ' (' + x.k + '/' + x.of + ')');
@@ -25203,7 +25212,7 @@ function a2ColsB(sec, all){
 }
 
 /* ---------- deduct pop-up: reasons that work in days of pay ---------- */
-function a2PeriodDays(){ const rg = acDefaultRange(A2.ym), day = (x) => Date.UTC(+x.slice(0, 4), +x.slice(5, 7) - 1, +x.slice(8, 10)) / 864e5; return Math.round(day(rg.to) - day(rg.from)) + 1; }
+function a2PeriodDays(){ const rg = acDefaultRange(A2.ym), day = (x) => Date.UTC(+x.slice(0, 4), +x.slice(5, 7) - 1, +x.slice(8, 10)) / 864e5; return a2PartCfg().days || Math.round(day(rg.to) - day(rg.from)) + 1; }
 function a2FixedBase(r){ if(r.fx !== undefined) return acNum(r.fx); if(r.basic !== undefined) return acNum(r.basic) + (r.othf ? 0 : acNum(r.ot)); return acNum(r.bs) + acNum(r.otm); }   // fixed pay only: basic + fixed overtime. Premium, hourly overtime, tying/beaming and extra money are not in it
 function a2DayVal(r){ return a2FixedBase(r) / a2PeriodDays(); }
 function a2RuleKey(r){ if(A2.sec !== 'operator') return A2.sec === 'sponsor' ? 'sp' : 'ns'; const u = (state.users || []).find(x => x.loginId === r.id); return (u && (u.profile || {}).employmentType) === 'Non-Sponsor' ? 'ns' : 'sp'; }   // an operator follows the days set for his own category
@@ -27268,6 +27277,8 @@ const ACG_LOG = [
   ['2026-11', 'Operator deductions work in days of pay like the Sponsor sheet.'],
   ['2026-11', 'Accounts staff can edit profiles from Accounts > Users. Every change is saved in Admin > People > Profile changes.']
 ];
+ACG_LOG.push(['2026-11', 'Every change to the salary settings, the salary sheets and the Pay desk is written to a small Change history (Accounts Settings and under the sheet). Only Admin and Accounts can see it.']);
+ACG_LOG.push(['2026-11', 'Joined or on vacation: the day value is fixed (days set in Settings) and the money is counted by days absent or days worked, as Accounts choose.']);
 const ACG = { open: null };
 const acgE = (x) => acEsc(x == null ? '' : x);
 function acgDays(ym){ const r = acDefaultRange(ym), d = (x) => Date.UTC(+x.slice(0, 4), +x.slice(5, 7) - 1, +x.slice(8, 10)) / 864e5; return { r, n: Math.round(d(r.to) - d(r.from)) + 1 }; }
@@ -27477,7 +27488,7 @@ function acgHtml(){
         1. Level: ${M(picks)} moves to <b>${M(lv)}</b>.<br>2. Rate for ${M(lv)} in table "${acgE(t.name)}": <b>${rate}</b>.<br>3. Premium: ${M(picks)} x ${rate} = <b>${M(prem)}</b>.<br>
         4. ${cut > 0 ? 'Cut ' + acgE(cut) + '%: ' + M(ct) + ' is taken, he keeps <b>' + M(np) + '</b>.' : 'No cut is set, he keeps <b>' + M(prem) + '</b>.'}${g0 ? '<br>5. Extra money (group "' + acgE(g0.name) + '", ' + M(picks) + ' real picks): <b>' + M(ax) + '</b>.' : ''}</div>`; } }
   const otD = 1.5, nh = wh - otD > 0 ? wh - otD : 8, rate1 = 1250 / 30 / nh * 1.5, wd = (() => { try{ return countWorkingDays(rg.from, rg.to) || per; }catch(e){ return per; } })();
-  const dayV = 1300 / per, dR = daysReasons[0];
+  const pdays = a2PartCfg().days || per, pby = a2PartCfg().by, dayV = 1300 / pdays, dR = daysReasons[0];
   const b = [];
   // 1
   b.push(acgSection(1, 'The big picture', `
@@ -27560,10 +27571,15 @@ function acgHtml(){
   b.push(acgSection(8, 'Deductions', `
     <p>Press the small minus button at the end of a person's row. Choose a <b>reason</b> from the list. There are two kinds:</p>
     <ul><li><b>Amount typed by hand.</b> You write the amount.</li><li><b>Days of pay.</b> You write the days. The app works out the money.</li></ul>
-    <div class="acgF">1 day of pay = fixed pay / days of the salary month<br>Deduction = days x (days of pay set for the reason) x 1 day of pay</div>
+    <div class="acgF">1 day of pay = fixed pay / days set in Settings (${pdays})<br>Deduction = days x (days of pay set for the reason) x 1 day of pay</div>
     <p><b>Fixed pay</b> = Basic + fixed overtime (Non Sponsor: the fixed salary). These are <b>never</b> cut: premium, overtime by the hour, tying commission, extra money.</p>
-    <div class="acgEx"><b>Example (sample numbers).</b> Basic 760 + fixed overtime 540 = 1,300. ${acgE(acYmLabel(ym))} has ${per} days, so 1 day of pay = 1,300 / ${per} = <b>${acMoney(dayV)}</b>.${dR ? ' One day of "' + acgE(dR.name) + '" (' + acgE(dR.sp) + ' day of pay for Sponsor) = <b>' + acMoney(acNum(dR.sp) * dayV) + '</b>.' : ''}</div>
+    <div class="acgEx"><b>Example (sample numbers).</b> Basic 760 + fixed overtime 540 = 1,300. ${acgE(acYmLabel(ym))} counts ${pdays} days, so 1 day of pay = 1,300 / ${pdays} = <b>${acMoney(dayV)}</b>.${dR ? ' One day of "' + acgE(dR.name) + '" (' + acgE(dR.sp) + ' day of pay for Sponsor) = <b>' + acMoney(acNum(dR.sp) * dayV) + '</b>.' : ''}</div>
     ${acgNow('Deduction reasons', rTab + '<p>An operator follows the column of his own employment type.</p>')}
+    <h4>Joined or on vacation in the month</h4>
+    <ul><li>The day value is <b>fixed</b>, so it is the same every month: pay / <b>${pdays ? pdays : 'real days of the month'}</b> days. It is set in <i>Settings</i> (Joined or on vacation: days in a month; 0 means the real days of the month).</li>
+    <li>Money is counted by <b>${pby === 'worked' ? 'days worked' : 'days absent'}</b>. <b>Days absent</b>: the days before joining (or on vacation) x 1 day are deducted. <b>Days worked</b>: the days worked x 1 day are paid (never more than the full month).</li></ul>
+    <div class="acgEx"><b>Example (sample numbers).</b> Pay 1,300, a ${per}-day month, joined after 9 days. ${pby === 'worked' ? 'Days worked = ' + (per - 9) + ', paid ' + acMoney(1300 * Math.min(per - 9, pdays || per) / (pdays || per)) : 'Days absent = 9, deducted ' + acMoney(1300 * 9 / (pdays || per)) + ', paid ' + acMoney(1300 - 1300 * 9 / (pdays || per))}. The same rule is used for vacation.</div>
+    ${acgNow('Joined or on vacation', '<p>Days in a month: <b>' + (pdays === per && !a2PartCfg().days ? 'real (' + per + ')' : pdays) + '</b> &middot; Counted by: <b>' + (pby === 'worked' ? 'Days worked' : 'Days absent') + '</b></p>')}
     <h4>Instalments (loan, advance, iqama transfer)</h4>
     <ul><li>Written once in the profile (Salary Info): total, number of months, first month.</li><li>The sheet takes one part every month by itself. The last month takes what is left.</li></ul>
     ${acgNow('Instalment types', inst.length ? '<p>' + inst.map(x => acgE(x.name)).join(' &middot; ') + '</p>' : '<p>No type is set.</p>')}
@@ -29067,6 +29083,7 @@ table.mdT tbody tr:hover td{background:rgba(79,70,229,.05)}
 .fgOpt:hover{ background:var(--panel-2); } .fgOpt small{ color:var(--muted); white-space:nowrap; font-size:11.5px; }
 .fgOpt.nw{ font-weight:700; color:var(--amber); }
 .fgNone{ padding:10px 12px; color:var(--muted); font-size:12.5px; }
+.slgBox{ margin:14px 0 0; border:1px solid var(--border,#e2e8f0); border-radius:10px; background:var(--card,#fff); font-size:12px; } .slgBox>summary{ cursor:pointer; padding:8px 12px; font-weight:600; color:var(--muted); } .slgBd{ max-height:260px; overflow:auto; padding:0 12px 8px; } .slgR{ padding:6px 0; border-top:1px solid var(--border,#e2e8f0); } .slgH{ display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap; } .slgH span,.slgL{ color:var(--muted); } .slgL{ margin-top:2px; line-height:1.45; } .slgE{ color:var(--muted); padding:6px 0; }
 </style>
 <div id="rvfBusy"><i></i><span id="rvfBusyTxt">Loading data…</span></div>
 <script>
@@ -32303,6 +32320,79 @@ document.addEventListener('mousedown', (ev) => {
     }catch(err){ console.error(err); toast('Could not save the status — check your connection'); }
   };
 }
+
+
+/* ===== Salary change history: a small list for Admin and Accounts only (config "salaryLog", last 300) ===== */
+const SLG = { list: null, p: null, snap: {} };
+async function slgLoad(){
+  if(SLG.list) return SLG.list;
+  if(!SLG.p) SLG.p = (async () => { try{ const o = await window.__db.getConfigObject('salaryLog', { list: [] }); SLG.list = Array.isArray(o && o.list) ? o.list : []; return SLG.list; }catch(e){ SLG.p = null; throw e; } })();
+  return SLG.p;
+}
+async function slgAdd(k, title, lines){
+  try{
+    if(!acCanEdit() || !window.__db) return;
+    const list = await slgLoad(), now = new Date().toISOString(), by = (state.user && (state.user.name || state.user.loginId)) || '', last = list[0];
+    const e = { k, t: now, by, w: title, l: (lines || []).slice(0, 12) };
+    if(last && last.k === k && last.by === by && Date.parse(now) - Date.parse(last.t) < 600000){ e.l = Array.from(new Set((last.l || []).concat(e.l))).slice(0, 12); list[0] = e; } else list.unshift(e);
+    if(list.length > 300) list.length = 300;
+    await window.__db.saveConfigObject('salaryLog', { list });
+    const b = document.getElementById('slgBody'); if(b && b.closest('details').open) b.innerHTML = slgRows();
+  }catch(err){ console.error(err); }
+}
+const SLG_LBL = { 'absent.base': 'Absent day paid from', 'absent.days': 'Absent day divided by', 'part.days': 'Joined / vacation days in a month', 'part.by': 'Joined / vacation counted by', 'std.basic': 'Basic share %', 'std.housing': 'Housing share %', 'std.transport': 'Transport share %', 'premCut': 'Premium cut %', 'otRate': 'Overtime hour rate', 'tyRate': 'Tying amount', 'round.step': 'Rounding step', 'round.from': 'Rounding from' };
+function slgDiff(a, b, path, out){
+  out = out || []; path = path || '';
+  const isO = (x) => x && typeof x === 'object' && !Array.isArray(x);
+  if(isO(a) && isO(b)){ new Set(Object.keys(a).concat(Object.keys(b))).forEach(k => slgDiff(a[k], b[k], path ? path + '.' + k : k, out)); return out; }
+  if(JSON.stringify(a) === JSON.stringify(b)) return out;
+  const nm = SLG_LBL[path] || path, sc = (x) => x == null || typeof x === 'object' ? '' : String(x);
+  out.push(typeof a === 'object' || typeof b === 'object' ? nm + ' changed' : nm + ': ' + (sc(a) || '-') + ' → ' + (sc(b) || '-'));
+  return out;
+}
+const slgCap = (l) => l.length > 8 ? l.slice(0, 8).concat('+' + (l.length - 8) + ' more') : l;
+function slgNets(sec, rows){ const m = {}; (rows || []).forEach(r => { m[r.id] = [sec2net(sec, r), r.name || r.id]; }); return m; }
+(function(){
+  const db = window.__db; if(!db || db.__slg || !db.saveConfigObject) return; db.__slg = 1;
+  const orig = db.saveConfigObject.bind(db);
+  db.saveConfigObject = async function(id, obj){
+    const res = await orig(id, obj);
+    try{
+      if(typeof id === 'string' && id.indexOf('salary_') === 0 && obj && Array.isArray(obj.rows)){
+        const nm = (obj.sec ? obj.sec.charAt(0).toUpperCase() + obj.sec.slice(1) : 'Sheet') + ' ' + acYmLabel(obj.ym), now = slgNets(obj.sec, obj.rows), was = SLG.snap[id];
+        if(!was) slgAdd(id, nm + ' sheet saved', [obj.rows.length + ' people']);
+        else { const l = []; Object.keys(now).forEach(i => { const o = was[i]; if(!o) l.push(now[i][1] + ': added, net ' + acMoney(now[i][0])); else if(Math.abs(o[0] - now[i][0]) > 0.004) l.push(now[i][1] + ': net ' + acMoney(o[0]) + ' → ' + acMoney(now[i][0])); }); Object.keys(was).forEach(i => { if(!now[i]) l.push(was[i][1] + ': removed'); }); if(l.length) slgAdd(id, nm + ' sheet changed', slgCap(l)); }
+        SLG.snap[id] = now;
+      } else if(id === 'acctTables') slgAdd(id, 'Rate tables saved', []);
+      else if(id === 'salaryCycle') slgAdd(id, 'Salary month start day', ['Day ' + ((obj && obj.startDay) || '')]);
+      else if(typeof id === 'string' && id.indexOf('payDesk_') === 0) slgAdd(id, 'Pay desk ' + acYmLabel(id.slice(8)) + ' updated', []);
+    }catch(e){ console.error(e); }
+    return res;
+  };
+})();
+const slgLoadDoc0 = a2LoadDoc0;
+a2LoadDoc0 = async function(sec, ym, force){
+  const d = await slgLoadDoc0(sec, ym, force);
+  try{ if(d && d.rows && d.savedAt){ const id = 'salary_' + a2Key(sec, ym); if(!SLG.snap[id] || force) SLG.snap[id] = slgNets(sec, d.rows); } }catch(e){}
+  return d;
+};
+const slgSaveSet = acSaveSettings;
+acSaveSettings = async function(){
+  const before = AC.set, was = JSON.parse(JSON.stringify(before || {}));
+  await slgSaveSet.apply(this, arguments);
+  try{ if(AC.set !== before){ const l = slgDiff(was, JSON.parse(JSON.stringify(AC.set))); slgAdd('set', 'Settings saved', slgCap(l.length ? l : ['No value changed'])); } }catch(e){ console.error(e); }
+};
+function slgRows(){
+  const l = SLG.list || []; if(!l.length) return '<div class="slgE">No changes yet.</div>';
+  return l.slice(0, 60).map(e => { const d = new Date(e.t); return `<div class="slgR"><div class="slgH"><b>${acEsc(e.w)}</b><span>${acEsc(d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) + ' ' + d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }))} &middot; ${acEsc(e.by || '')}</span></div>${(e.l || []).length ? '<div class="slgL">' + e.l.map(acEsc).join('<br>') + '</div>' : ''}</div>`; }).join('');
+}
+function slgBox(){ return acCanEdit() ? '<details class="slgBox" id="slgBox"><summary>Change history</summary><div id="slgBody" class="slgBd">Loading...</div></details>' : ''; }
+document.addEventListener('toggle', async (ev) => {
+  const t = ev.target; if(!t || t.id !== 'slgBox' || !t.open) return;
+  const b = t.querySelector('#slgBody'); try{ await slgLoad(); b.innerHTML = slgRows(); }catch(e){ b.textContent = 'Could not load. Try again.'; }
+}, true);
+const slgDrawSet = acDrawSettings;
+acDrawSettings = function(){ slgDrawSet.apply(this, arguments); try{ const m = $('acMain'); if(m && !m.querySelector('#slgBox')) m.insertAdjacentHTML('beforeend', slgBox()); }catch(e){} };
 
 </script>
 </body>
