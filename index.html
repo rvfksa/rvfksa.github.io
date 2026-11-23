@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261123-100536">
+<meta name="rvf-build" content="20261123-100904">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -460,14 +460,18 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
       vacationsCache.invalidate(); violationsCache.invalidate(); leaveRequestsCache.invalidate();
       const cg = async (k) => { const s = await getDoc(doc(db, 'config', k)); return s.exists() ? ((s.data() || {}).data || null) : null; }, cs = (k, o) => setDoc(doc(db, 'config', k), { data: o });
       const idx = await cg('salaryIndex'), items = (idx && idx.items) || {}, months = {};
+      for (const k of Object.keys(items)) if (items[k] && items[k].ym) months[items[k].ym] = 1;
+      const locked = {};   // a month where this person is already in the Pay desk (paid) is finished: it is never changed
+      for (const ym of Object.keys(months)) { const o = await cg('payDesk_' + ym); if (o && Object.keys(o).some(pk => o[pk] && typeof o[pk] === 'object' && !Array.isArray(o[pk]) && Object.prototype.hasOwnProperty.call(o[pk], oldId))) locked[ym] = 1; }
       for (const k of Object.keys(items)) {
-        if (items[k] && items[k].ym) months[items[k].ym] = 1;
+        if (!items[k] || locked[items[k].ym]) continue;
         const o = await cg('salary_' + k); if (!o) continue;
         let ch = false;
         (o.rows || []).forEach(r => { if (String(r.id) === oldId) { r.id = newId; if (newName) r.name = newName; ch = true; } });
         if (ch) { await cs('salary_' + k, o); out.sheets++; }
       }
       for (const ym of Object.keys(months)) {
+        if (locked[ym]) continue;
         const o = await cg('payDesk_' + ym); if (!o) continue;
         let ch = false;
         Object.keys(o).forEach(pk => { const m = o[pk]; if (m && typeof m === 'object' && !Array.isArray(m) && Object.prototype.hasOwnProperty.call(m, oldId)) { m[newId] = m[oldId]; delete m[oldId]; ch = true; } });
