@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261123-100337">
+<meta name="rvf-build" content="20261123-100536">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -32489,7 +32489,7 @@ async function accRefreshPeople(){
   try{
     const s = await window.__db.empLoad(); if(!s || !s.rows || !s.rows.length) return false;
     const cur = state.users || [], byId = {}; cur.forEach(u => { byId[u.loginId] = u; });
-    const strip = (u) => { const o = Object.assign({}, u); delete o.password; delete o.authUid; delete o.authEmail; delete o.lastLoginAt; if(o.profile){ o.profile = Object.assign({}, o.profile); delete o.profile.photoDataUrl; delete o.profile.photoBig; } return JSON.stringify(o); };
+    const strip = (u) => { const o = Object.assign({}, u); delete o.password; delete o.authUid; delete o.authEmail; delete o.lastLoginAt; if(o.profile){ o.profile = Object.assign({}, o.profile); delete o.profile.photoDataUrl; delete o.profile.photoBig; } return JSON.stringify(o, (k, v) => (v && typeof v === 'object' && !Array.isArray(v)) ? Object.keys(v).sort().reduce((a, x) => (a[x] = v[x], a), {}) : v); };
     const seen = new Set(), next = []; let ch = false;
     s.rows.forEach(r => {
       seen.add(r.loginId); const o = byId[r.loginId];
