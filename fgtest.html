@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261123-091936">
+<meta name="rvf-build" content="20261123-092158">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -24066,7 +24066,7 @@ function a2DrawTable(){
   const head = `<tr><th class="serial">#</th>${cols.map(c => `<th class="${c.num ? 'a2N' : ''}${c.dedCol ? ' a2D' : ''}">${acEsc(c.l)}</th>`).join('')}</tr>`;
   let n = 0; const trs = rows.map(r => a2TrsOf(cols, r, ++n, ed).join('')).join('');
   box.innerHTML = `<div class="table-scroll"><table class="report-table ovTbl a2T${cols.length > 13 ? ' a2Wide' : ''}"><thead>${head}</thead><tbody>${trs || `<tr><td colspan="${cols.length + 2}" class="a2Empty">No one matches.</td></tr>`}</tbody><tfoot>${a2FootHtml(cols, rows, ed)}</tfoot></table></div>
-    <div class="hrNote" style="margin-top:8px;">${A2.sec === 'operator' ? 'Picks are the approved daily totals plus stop-time picks. Click a number to see its days. If they look low, run Refresh All Calculations (Admin, Shift &amp; Timing) first.' : 'Changes here are for this month only. The salary on the profile is not changed.' + (a2Filtered().some(r => r.jd) ? ' In Remarks: days in the month - days before joining = W (days worked and paid).' : '')}</div>`;
+    <div class="hrNote" style="margin-top:8px;">${A2.sec === 'operator' ? 'Picks are the approved daily totals plus stop-time picks. Click a number to see its days. If they look low, run Refresh All Calculations (Admin, Shift &amp; Timing) first.' : 'Changes here are for this month only. The salary on the profile is not changed.' + (a2Filtered().some(r => r.jd) ? ' In Remarks: days in the month - days before joining = W (days worked and paid).' : '')}</div>${slgBox()}`;
 }
 function a2RefreshRow(r){
   a2RefreshRow0(r);
@@ -27277,6 +27277,7 @@ const ACG_LOG = [
   ['2026-11', 'Operator deductions work in days of pay like the Sponsor sheet.'],
   ['2026-11', 'Accounts staff can edit profiles from Accounts > Users. Every change is saved in Admin > People > Profile changes.']
 ];
+ACG_LOG.push(['2026-11', 'Every change to the salary settings, the salary sheets and the Pay desk is written to a small Change history (Accounts Settings and under the sheet). Only Admin and Accounts can see it.']);
 ACG_LOG.push(['2026-11', 'Joined or on vacation: the day value is fixed (days set in Settings) and the money is counted by days absent or days worked, as Accounts choose.']);
 const ACG = { open: null };
 const acgE = (x) => acEsc(x == null ? '' : x);
@@ -29082,6 +29083,7 @@ table.mdT tbody tr:hover td{background:rgba(79,70,229,.05)}
 .fgOpt:hover{ background:var(--panel-2); } .fgOpt small{ color:var(--muted); white-space:nowrap; font-size:11.5px; }
 .fgOpt.nw{ font-weight:700; color:var(--amber); }
 .fgNone{ padding:10px 12px; color:var(--muted); font-size:12.5px; }
+.slgBox{ margin:14px 0 0; border:1px solid var(--border,#e2e8f0); border-radius:10px; background:var(--card,#fff); font-size:12px; } .slgBox>summary{ cursor:pointer; padding:8px 12px; font-weight:600; color:var(--muted); } .slgBd{ max-height:260px; overflow:auto; padding:0 12px 8px; } .slgR{ padding:6px 0; border-top:1px solid var(--border,#e2e8f0); } .slgH{ display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap; } .slgH span,.slgL{ color:var(--muted); } .slgL{ margin-top:2px; line-height:1.45; } .slgE{ color:var(--muted); padding:6px 0; }
 </style>
 <div id="rvfBusy"><i></i><span id="rvfBusyTxt">Loading data…</span></div>
 <script>
@@ -32318,6 +32320,79 @@ document.addEventListener('mousedown', (ev) => {
     }catch(err){ console.error(err); toast('Could not save the status — check your connection'); }
   };
 }
+
+
+/* ===== Salary change history: a small list for Admin and Accounts only (config "salaryLog", last 300) ===== */
+const SLG = { list: null, p: null, snap: {} };
+async function slgLoad(){
+  if(SLG.list) return SLG.list;
+  if(!SLG.p) SLG.p = (async () => { try{ const o = await window.__db.getConfigObject('salaryLog', { list: [] }); SLG.list = Array.isArray(o && o.list) ? o.list : []; return SLG.list; }catch(e){ SLG.p = null; throw e; } })();
+  return SLG.p;
+}
+async function slgAdd(k, title, lines){
+  try{
+    if(!acCanEdit() || !window.__db) return;
+    const list = await slgLoad(), now = new Date().toISOString(), by = (state.user && (state.user.name || state.user.loginId)) || '', last = list[0];
+    const e = { k, t: now, by, w: title, l: (lines || []).slice(0, 12) };
+    if(last && last.k === k && last.by === by && Date.parse(now) - Date.parse(last.t) < 600000){ e.l = Array.from(new Set((last.l || []).concat(e.l))).slice(0, 12); list[0] = e; } else list.unshift(e);
+    if(list.length > 300) list.length = 300;
+    await window.__db.saveConfigObject('salaryLog', { list });
+    const b = document.getElementById('slgBody'); if(b && b.closest('details').open) b.innerHTML = slgRows();
+  }catch(err){ console.error(err); }
+}
+const SLG_LBL = { 'absent.base': 'Absent day paid from', 'absent.days': 'Absent day divided by', 'part.days': 'Joined / vacation days in a month', 'part.by': 'Joined / vacation counted by', 'std.basic': 'Basic share %', 'std.housing': 'Housing share %', 'std.transport': 'Transport share %', 'premCut': 'Premium cut %', 'otRate': 'Overtime hour rate', 'tyRate': 'Tying amount', 'round.step': 'Rounding step', 'round.from': 'Rounding from' };
+function slgDiff(a, b, path, out){
+  out = out || []; path = path || '';
+  const isO = (x) => x && typeof x === 'object' && !Array.isArray(x);
+  if(isO(a) && isO(b)){ new Set(Object.keys(a).concat(Object.keys(b))).forEach(k => slgDiff(a[k], b[k], path ? path + '.' + k : k, out)); return out; }
+  if(JSON.stringify(a) === JSON.stringify(b)) return out;
+  const nm = SLG_LBL[path] || path, sc = (x) => x == null || typeof x === 'object' ? '' : String(x);
+  out.push(typeof a === 'object' || typeof b === 'object' ? nm + ' changed' : nm + ': ' + (sc(a) || '-') + ' → ' + (sc(b) || '-'));
+  return out;
+}
+const slgCap = (l) => l.length > 8 ? l.slice(0, 8).concat('+' + (l.length - 8) + ' more') : l;
+function slgNets(sec, rows){ const m = {}; (rows || []).forEach(r => { m[r.id] = [sec2net(sec, r), r.name || r.id]; }); return m; }
+(function(){
+  const db = window.__db; if(!db || db.__slg || !db.saveConfigObject) return; db.__slg = 1;
+  const orig = db.saveConfigObject.bind(db);
+  db.saveConfigObject = async function(id, obj){
+    const res = await orig(id, obj);
+    try{
+      if(typeof id === 'string' && id.indexOf('salary_') === 0 && obj && Array.isArray(obj.rows)){
+        const nm = (obj.sec ? obj.sec.charAt(0).toUpperCase() + obj.sec.slice(1) : 'Sheet') + ' ' + acYmLabel(obj.ym), now = slgNets(obj.sec, obj.rows), was = SLG.snap[id];
+        if(!was) slgAdd(id, nm + ' sheet saved', [obj.rows.length + ' people']);
+        else { const l = []; Object.keys(now).forEach(i => { const o = was[i]; if(!o) l.push(now[i][1] + ': added, net ' + acMoney(now[i][0])); else if(Math.abs(o[0] - now[i][0]) > 0.004) l.push(now[i][1] + ': net ' + acMoney(o[0]) + ' → ' + acMoney(now[i][0])); }); Object.keys(was).forEach(i => { if(!now[i]) l.push(was[i][1] + ': removed'); }); if(l.length) slgAdd(id, nm + ' sheet changed', slgCap(l)); }
+        SLG.snap[id] = now;
+      } else if(id === 'acctTables') slgAdd(id, 'Rate tables saved', []);
+      else if(id === 'salaryCycle') slgAdd(id, 'Salary month start day', ['Day ' + ((obj && obj.startDay) || '')]);
+      else if(typeof id === 'string' && id.indexOf('payDesk_') === 0) slgAdd(id, 'Pay desk ' + acYmLabel(id.slice(8)) + ' updated', []);
+    }catch(e){ console.error(e); }
+    return res;
+  };
+})();
+const slgLoadDoc0 = a2LoadDoc0;
+a2LoadDoc0 = async function(sec, ym, force){
+  const d = await slgLoadDoc0(sec, ym, force);
+  try{ if(d && d.rows && d.savedAt){ const id = 'salary_' + a2Key(sec, ym); if(!SLG.snap[id] || force) SLG.snap[id] = slgNets(sec, d.rows); } }catch(e){}
+  return d;
+};
+const slgSaveSet = acSaveSettings;
+acSaveSettings = async function(){
+  const before = AC.set, was = JSON.parse(JSON.stringify(before || {}));
+  await slgSaveSet.apply(this, arguments);
+  try{ if(AC.set !== before){ const l = slgDiff(was, JSON.parse(JSON.stringify(AC.set))); slgAdd('set', 'Settings saved', slgCap(l.length ? l : ['No value changed'])); } }catch(e){ console.error(e); }
+};
+function slgRows(){
+  const l = SLG.list || []; if(!l.length) return '<div class="slgE">No changes yet.</div>';
+  return l.slice(0, 60).map(e => { const d = new Date(e.t); return `<div class="slgR"><div class="slgH"><b>${acEsc(e.w)}</b><span>${acEsc(d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) + ' ' + d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }))} &middot; ${acEsc(e.by || '')}</span></div>${(e.l || []).length ? '<div class="slgL">' + e.l.map(acEsc).join('<br>') + '</div>' : ''}</div>`; }).join('');
+}
+function slgBox(){ return acCanEdit() ? '<details class="slgBox" id="slgBox"><summary>Change history</summary><div id="slgBody" class="slgBd">Loading...</div></details>' : ''; }
+document.addEventListener('toggle', async (ev) => {
+  const t = ev.target; if(!t || t.id !== 'slgBox' || !t.open) return;
+  const b = t.querySelector('#slgBody'); try{ await slgLoad(); b.innerHTML = slgRows(); }catch(e){ b.textContent = 'Could not load. Try again.'; }
+}, true);
+const slgDrawSet = acDrawSettings;
+acDrawSettings = function(){ slgDrawSet.apply(this, arguments); try{ const m = $('acMain'); if(m && !m.querySelector('#slgBox')) m.insertAdjacentHTML('beforeend', slgBox()); }catch(e){} };
 
 </script>
 </body>
