@@ -79,6 +79,7 @@ import { getFirestore, doc, getDoc, setDoc, deleteDoc, collection, getDocs, quer
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 const app = initializeApp({ apiKey:"AIzaSyA-IRsoL3cy92qw6QC8_q4dThg7ydMXo-w", authDomain:"mechine-reader-test.firebaseapp.com", projectId:"mechine-reader-test", storageBucket:"mechine-reader-test.firebasestorage.app", messagingSenderId:"526829266334", appId:"1:526829266334:web:8c5ad1d3dd4ed4ea2ee28f" });
 const db = getFirestore(app), auth = getAuth(app);
+const FN = 'https://rvf-alert-526829266334.europe-west1.run.app';
 const VAPID = 'BLhT6usaFwf08QY1YCpyWiVKOTB9KEoPvWCn7drhvd4tGXBjrHKiEeVuTPRS3xVCncb-KToH9qwoc6bO6ePu9go';
 const $ = id => document.getElementById(id), esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]));
 const ME = { id:'', role:'', name:'' }; let SUBS = {}, USERS = [], SEL = new Set(), GSEL = new Set(), CUR = null, SEEN = new Set(), audio = null;
@@ -188,7 +189,10 @@ $('bSend').onclick = async () => {
   if(!confirm('Send this alert to ' + t.on.length + ' people now? Their phones will sound the alarm.')) return;
   const b = $('bSend'); b.disabled = true; b.textContent = 'Sending...';
   const at = Date.now(), id = 'alertMsg_' + String(at).padStart(15, '0');
-  try{ await setDoc(doc(db, 'config', id), { data:{ id, at, place, text, targets:t.on, by:ME.id, byName:ME.name } }); b.textContent = 'Sent'; setTimeout(() => { b.textContent = 'Send alert'; drawCount(); }, 2500); }
+  try{
+    await setDoc(doc(db, 'config', id), { data:{ id, at, place, text, targets:t.on, by:ME.id, byName:ME.name } });
+    let info = ''; try{ const tok = await auth.currentUser.getIdToken(); const r = await fetch(FN, { method:'POST', headers:{ 'Content-Type':'application/json', Authorization:'Bearer ' + tok }, body:JSON.stringify({ id }) }); const j = await r.json(); info = r.ok ? (' - ' + j.sent + ' phones reached' + (j.failed ? ', ' + j.failed + ' not' : '')) : ' - phone push failed'; }catch(e){ info = ' - phone push failed'; }
+    b.textContent = 'Sent' + info; findLast(); setTimeout(() => { b.textContent = 'Send alert'; drawCount(); }, 6000); }
   catch(e){ console.error(e); b.textContent = 'Could not send'; setTimeout(() => { b.textContent = 'Send alert'; drawCount(); }, 2500); }
 };
 let lastA = null;
