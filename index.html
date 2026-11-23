@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261123-093852">
+<meta name="rvf-build" content="20261123-094344">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -383,6 +383,52 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
   /* People list kept as 6 small documents (config/emp_0 .. emp_5): { r: { loginId: person } }, emp_0 also holds
      { v, at, n } (version, built-at, number of people). Everything except the password and login keys; very large old
      photos are replaced by a blank pixel (photoBig) and fetched one by one only when a download needs them. */
+  /* Vacations kept as 3 small documents (config/vac_0 .. vac_2): { r: { vacationId: record } }; vac_0 also holds { v, at, n }.
+     Opening a page reads these 3 (plus one count) instead of every vacation record. Every add / edit / delete in the app
+     updates the saved copy; if anything looks out of date the whole list is read once and saved again. */
+  const VAC_B = 3;
+  const vacBucketOf = (id) => { let s = 0; const t = String(id); for (let i = 0; i < t.length; i++) s = (s * 31 + t.charCodeAt(i)) >>> 0; return 'vac_' + (s % VAC_B); };
+  const VAC = { mem: null, pend: null };
+  async function vacReadPacked() {
+    const snaps = await Promise.all(Array.from({ length: VAC_B }, (_, i) => getDoc(doc(db, 'config', 'vac_' + i))));
+    if (snaps.some(s => !s.exists())) return null;
+    const m = snaps[0].data(); if (m.v !== 1 || !m.at) return null;
+    const rows = []; snaps.forEach(s => { const r = s.data().r || {}; Object.keys(r).forEach(k => rows.push({ _id: k, ...r[k] })); });
+    return { rows, n: m.n };
+  }
+  async function vacSavePacked(rows) {
+    const by = []; for (let i = 0; i < VAC_B; i++) by.push({});
+    rows.forEach(v => { const { _id, ...rest } = v; by[Number(vacBucketOf(_id).slice(4))][_id] = rest; });
+    const at = Date.now(), bodies = by.map((r, i) => i === 0 ? { r, v: 1, at, n: rows.length } : { r });
+    if (bodies.some(b => JSON.stringify(b).length > 950000)) return;
+    for (let i = VAC_B - 1; i >= 0; i--) await setDoc(doc(db, 'config', 'vac_' + i), bodies[i]);
+  }
+  function vacAll() {
+    if (VAC.mem) return Promise.resolve(VAC.mem);
+    if (VAC.pend) return VAC.pend;
+    VAC.pend = (async () => {
+      let p = null; try { p = await vacReadPacked(); } catch (e) { console.error(e); }
+      if (p) { let ok = true; try { ok = (await getCountFromServer(collection(db, 'vacations'))).data().count === p.n; } catch (e) {} if (ok) return p.rows; }
+      const snap = await getDocs(collection(db, 'vacations')), rows = []; snap.forEach(d => rows.push({ _id: d.id, ...d.data() }));
+      try { await vacSavePacked(rows); } catch (e) { console.error('vacations list save', e); }
+      return rows;
+    })().then(r => { VAC.mem = r; VAC.pend = null; return r; }, e => { VAC.pend = null; throw e; });
+    return VAC.pend;
+  }
+  // after a write: copy that vacation into the saved list (never throws)
+  async function vacTouch(items, delta) {
+    try {
+      const by = {}; items.forEach(x => { (by[vacBucketOf(x.id)] = by[vacBucketOf(x.id)] || []).push(x); });
+      for (const b of Object.keys(by)) { const args = []; by[b].forEach(x => { args.push(new FieldPath('r', x.id), x.rec === null ? deleteField() : x.rec); }); await updateDoc(doc(db, 'config', b), ...args); }
+      if (delta) await updateDoc(doc(db, 'config', 'vac_0'), 'n', increment(delta));
+      if (VAC.mem) items.forEach(x => { const i = VAC.mem.findIndex(v => v._id === x.id); if (x.rec === null) { if (i >= 0) VAC.mem.splice(i, 1); } else if (i >= 0) VAC.mem[i] = { _id: x.id, ...x.rec }; else VAC.mem.push({ _id: x.id, ...x.rec }); });
+    } catch (e) {
+      VAC.mem = null;
+      if (e && e.code === 'not-found') return;
+      console.error('vacations list copy', e);
+      try { await updateDoc(doc(db, 'config', 'vac_0'), 'at', 0); } catch (e2) {}   // marks it out of date: the next page rebuilds it
+    }
+  }
   const EMP_B = 6;
   const empBucketOf = (id) => { let s = 0; const t = String(id); for (let i = 0; i < t.length; i++) s = (s * 31 + t.charCodeAt(i)) >>> 0; return 'emp_' + (s % EMP_B); };
   const EMP_PIX = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
@@ -1429,31 +1475,33 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
     async saveVacation(record) {
       if (!dbReady) throw new Error('NOT_CONFIGURED');
       const ref = await addDoc(collection(db, "vacations"), record);
-      vacationsCache.invalidate();
+      vacationsCache.invalidate(); await vacTouch([{ id: ref.id, rec: record }], 1);
       return ref.id;
     },
     async saveVacationsBatch(records) {
       if (!dbReady) throw new Error('NOT_CONFIGURED');
+      const made = [];
       for (let i = 0; i < records.length; i += 400) {
         const batch = writeBatch(db);
-        records.slice(i, i + 400).forEach(r => batch.set(doc(collection(db, "vacations")), r));
+        records.slice(i, i + 400).forEach(r => { const rf = doc(collection(db, "vacations")); made.push({ id: rf.id, rec: r }); batch.set(rf, r); });
         await batch.commit();
       }
-      vacationsCache.invalidate();
+      vacationsCache.invalidate(); await vacTouch(made, made.length);
       return records.length;
     },
     async updateVacation(id, updates) {
       if (!dbReady) throw new Error('NOT_CONFIGURED');
       await updateDoc(doc(db, "vacations", id), updates);
       vacationsCache.invalidate();
+      try { const s = await getDoc(doc(db, "vacations", id)); if (s.exists()) await vacTouch([{ id, rec: s.data() }], 0); } catch (e) { VAC.mem = null; }
     },
     async deleteVacation(id) {
       if (!dbReady) throw new Error('NOT_CONFIGURED');
       await deleteDoc(doc(db, "vacations", id));
-      vacationsCache.invalidate();
+      vacationsCache.invalidate(); await vacTouch([{ id, rec: null }], -1);
     },
     async listVacations(employeeId) {
-      const out = await vacationsCache.get();
+      const out = await vacAll();
       return employeeId ? out.filter(v => v.employeeId === employeeId) : out;
     },
 
