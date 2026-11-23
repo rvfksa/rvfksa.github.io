@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261123-135650">
+<meta name="rvf-build" content="20261123-140033">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -32540,7 +32540,7 @@ function yNotFound(def){
 </script>
 <script>
 /* emergency alert banner: loads a small separate file after sign-in; touches nothing else */
-(function(){ try{ if(!('serviceWorker' in navigator) || !('PushManager' in window)) return; var n = 0; (function chk(){ n++; if(n > 40) return; try{ if(window.__db && window.__db.getCurrentUid && window.__db.getCurrentUid()){ setTimeout(function(){ import('/alert/enable.js').catch(function(){}); }, 6000); return; } }catch(e){} setTimeout(chk, 4000); })(); }catch(e){} })();
+(function(){ try{ if(!('serviceWorker' in navigator) || !('PushManager' in window)) return; var n = 0; (function chk(){ n++; if(n > 40) return; try{ if(window.__db && window.__db.getCurrentUid && window.__db.getCurrentUid()){ setTimeout(function(){ import('/alert/enable.js?v=2').catch(function(){}); }, 6000); return; } }catch(e){} setTimeout(chk, 4000); })(); }catch(e){} })();
 </script>
 </body>
 </html>
