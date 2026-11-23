@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261123-092350">
+<meta name="rvf-build" content="20261123-093217">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -13526,7 +13526,7 @@ function renderVacationTab(){
     html += `<div class="card card-with-actions">
       ${canEdit ? `<div class="mini-icon-row">
         <button class="mini-icon-btn editVacBtn" data-id="${v._id}" title="Edit">${MINI_EDIT_ICON}</button>
-        <button class="mini-icon-btn danger delVacBtn" data-id="${v._id}" title="Delete">${MINI_TRASH_ICON}</button>
+        ${state.user.role === 'admin' ? `<button class="mini-icon-btn danger delVacBtn" data-id="${v._id}" title="Delete">${MINI_TRASH_ICON}</button>` : ''}
       </div>` : ''}
       ${fieldRow('Dates', (v.from ? fmtDate(v.from) : '—') + ' \u2192 ' + (v.to ? fmtDate(v.to) : '—'))}
       ${vacN(v) > 1 ? fieldRow('Counts as', vacN(v) + ' vacations taken together') : ''}
@@ -13657,6 +13657,7 @@ async function saveVacationEdit(id){
 }
 
 async function deleteVacationEntry(id){
+  if(!(state.user && state.user.role === 'admin')){ toast('Only the administrator can delete this'); return; }
   if(!confirm('Delete this vacation record?')) return;
   try{
     await window.__db.deleteVacation(id);
@@ -13732,7 +13733,7 @@ function renderViolationsTab(){
     html += `<div class="card card-with-actions">
       ${canEdit ? `<div class="mini-icon-row">
         <button class="mini-icon-btn editinvolBtn" data-id="${v._id}" title="Edit">${MINI_EDIT_ICON}</button>
-        <button class="mini-icon-btn danger rmViolation" data-id="${v._id}" title="Delete">${MINI_TRASH_ICON}</button>
+        ${state.user.role === 'admin' ? `<button class="mini-icon-btn danger rmViolation" data-id="${v._id}" title="Delete">${MINI_TRASH_ICON}</button>` : ''}
       </div>` : ''}
       ${fieldRow('Date', fmtDate(v.date))}
       ${fieldRow('Reason', v.reason)}
@@ -13821,6 +13822,7 @@ async function addViolation(){
   }catch(err){ console.error(err); toast('Could not save — check your connection'); }
 }
 async function removeViolation(id){
+  if(!(state.user && state.user.role === 'admin')){ toast('Only the administrator can delete this'); return; }
   if(!confirm('Remove this violation record?')) return;
   try{
     await window.__db.deleteViolation(id);
@@ -25638,8 +25640,8 @@ function a2VioInner(){
   const it = a2VioItems(); if(!it.p.length && !it.a.length) return '';
   const row = (x, btns) => `<div class="a2VioR"><span><b>${acEsc(x.r.name)}</b> &middot; ${acEsc(a2VioShort(x.v.date))} &middot; ${acEsc(x.v.reason || 'Violation')} &middot; <b>${acMoney(viAmt(x.v))} SAR</b></span>${btns}</div>`;
   return `<div class="a2Chg a2Vio">
-    ${it.p.length ? `<div class="a2ChgH"><b>${it.p.length} violation deduction${it.p.length === 1 ? '' : 's'} waiting for your decision</b></div>${it.p.map(x => row(x, `<span class="a2VioB"><button type="button" class="pillBtn ok" data-a2v="add" data-id="${acEsc(x.v._id)}">Add to salary</button><button type="button" class="pillBtn" data-a2v="skip" data-id="${acEsc(x.v._id)}">Don't add</button></span>`)).join('')}` : ''}
-    ${it.a.length ? `<details class="a2VioD"><summary>${it.a.length} violation deduction${it.a.length === 1 ? '' : 's'} added in this sheet</summary>${it.a.map(x => row(x, `<span class="a2VioB"><button type="button" class="pillBtn" data-a2v="rem" data-id="${acEsc(x.v._id)}">Remove</button></span>`)).join('')}</details>` : ''}</div>`;
+    ${it.p.length ? `<div class="a2ChgH"><b>${it.p.length} violation deduction${it.p.length === 1 ? '' : 's'} waiting for your decision</b></div>${it.p.map(x => row(x, `<span class="a2VioB"><button type="button" class="pillBtn ok" data-a2v="add" data-id="${acEsc(x.v._id)}">Add to salary</button>${state.user && state.user.role === 'admin' ? `<button type="button" class="pillBtn" data-a2v="skip" data-id="${acEsc(x.v._id)}">Don't add</button>` : ''}</span>`)).join('')}` : ''}
+    ${it.a.length ? `<details class="a2VioD"><summary>${it.a.length} violation deduction${it.a.length === 1 ? '' : 's'} added in this sheet</summary>${it.a.map(x => row(x, `<span class="a2VioB">${state.user && state.user.role === 'admin' ? `<button type="button" class="pillBtn" data-a2v="rem" data-id="${acEsc(x.v._id)}">Remove</button>` : `<button type="button" class="pillBtn" data-a2v="ok" data-id="${acEsc(x.v._id)}">OK</button>`}</span>`)).join('')}</details>` : ''}</div>`;
 }
 function a2VioFill(){ const b = document.getElementById('a2VioBox'); if(b){ b.innerHTML = a2VioInner(); if(!(state.user && state.user.role === 'admin')) b.querySelectorAll('[data-a2v="rem"],[data-a2v="skip"]').forEach(x => x.remove()); } }
 function a2VacList(){
@@ -25681,6 +25683,7 @@ async function a2VioSet(id, st, ym, why){
   try{ await window.__db.updateViolation(id, why ? { sd: v.sd, log: v.log } : { sd: v.sd }); }catch(err){ console.error(err); toast('Done in the sheet, but the letter could not be marked. Check your connection.'); }
 }
 async function a2VioAct(a, id){
+  if(a === 'ok'){ const dt = document.querySelector('#a2VioBox details'); if(dt) dt.open = false; return; }
   const d = a2Doc(), v = (VI.list || []).find(x => x._id === id); if(!d || !v || !acCanEdit()) return;
   let why = '';
   if(a === 'rem' || a === 'skip'){
