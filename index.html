@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261123-140033">
+<meta name="rvf-build" content="20261123-150735">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -477,6 +477,7 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
         Object.keys(o).forEach(pk => { const m = o[pk]; if (m && typeof m === 'object' && !Array.isArray(m) && Object.prototype.hasOwnProperty.call(m, oldId)) { m[newId] = m[oldId]; delete m[oldId]; ch = true; } });
         if (ch) { await cs('payDesk_' + ym, o); out.payDesk++; }
       }
+      try { const tk = await cg('myTasks_' + oldId); if (tk && Array.isArray(tk.items) && tk.items.length) { const nt = await cg('myTasks_' + newId); if (!nt || !Array.isArray(nt.items) || !nt.items.length) await cs('myTasks_' + newId, tk); } } catch (e) { console.error(e); }   // personal task list follows the person to the new ID (the old copy stays)
       return out;
     },
     async empLoad() {
