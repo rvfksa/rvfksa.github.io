@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Emergency Alert</title>
+<link rel="icon" href="/alert/icon-192.png">
+<style>
+:root{ --bg:#eef2ff; --panel:#fff; --line:rgba(15,23,42,.08); --text:#0f172a; --muted:#64748b; --accent:#4f46e5; --accent-soft:#eef2ff; --danger:#dc2626; --danger-soft:#fee2e2; --ok:#16a34a; --ok-soft:#dcfce7; --warn:#92400e; --warn-soft:#fef3c7; --radius:20px; --shadow:0 1px 2px rgba(15,23,42,.04),0 8px 24px rgba(15,23,42,.06); }
+*{ box-sizing:border-box; } html,body{ margin:0; }
+body{ font-family:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif; background:var(--bg); color:var(--text); min-height:100vh; -webkit-text-size-adjust:100%; }
+.wrap{ max-width:620px; margin:0 auto; padding:16px 14px 40px; }
+.top{ display:flex; align-items:center; gap:10px; margin-bottom:14px; }
+.top h1{ font-size:19px; margin:0; font-weight:700; flex:1; } .tag{ font-size:10.5px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; background:var(--warn-soft); color:var(--warn); padding:3px 9px; border-radius:99px; }
+.back{ font-size:13px; color:var(--accent); text-decoration:none; font-weight:600; }
+.card{ background:var(--panel); border-radius:var(--radius); box-shadow:var(--shadow); padding:16px; margin-bottom:12px; }
+.card h2{ font-size:14px; margin:0 0 10px; font-weight:700; }
+.row{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.muted{ color:var(--muted); font-size:12.5px; }
+.stat{ display:inline-flex; align-items:center; gap:6px; font-size:13px; font-weight:600; padding:5px 11px; border-radius:99px; background:var(--accent-soft); color:var(--accent); }
+.stat.ok{ background:var(--ok-soft); color:var(--ok); } .stat.bad{ background:var(--danger-soft); color:var(--danger); }
+button{ font:inherit; cursor:pointer; border:0; border-radius:14px; padding:11px 16px; font-weight:600; font-size:14px; }
+.b1{ background:var(--accent); color:#fff; } .b2{ background:var(--accent-soft); color:var(--accent); } .bd{ background:var(--danger); color:#fff; } button:disabled{ opacity:.45; cursor:default; }
+label.f{ display:block; font-size:12px; color:var(--muted); font-weight:600; margin:10px 0 4px; }
+input[type=text],textarea,select{ width:100%; font:inherit; font-size:14px; border:1px solid var(--line); border-radius:12px; padding:10px 12px; background:#fff; color:var(--text); }
+textarea{ min-height:64px; resize:vertical; }
+.chips{ display:flex; flex-wrap:wrap; gap:7px; }
+.chip{ border:1px solid var(--line); background:#fff; border-radius:99px; padding:7px 13px; font-size:13px; font-weight:600; color:var(--text); cursor:pointer; user-select:none; }
+.chip.on{ background:var(--accent); border-color:var(--accent); color:#fff; } .chip small{ opacity:.7; font-weight:500; margin-left:4px; }
+.ppl{ max-height:240px; overflow:auto; border:1px solid var(--line); border-radius:12px; margin-top:8px; }
+.p{ display:flex; align-items:center; gap:10px; padding:8px 12px; border-bottom:1px solid var(--line); font-size:13px; cursor:pointer; } .p:last-child{ border-bottom:0; }
+.p input{ width:18px; height:18px; } .p span{ flex:1; min-width:0; } .p small{ color:var(--muted); display:block; font-size:11.5px; }
+.send{ width:100%; margin-top:14px; padding:15px; font-size:15px; }
+.res .r{ display:flex; gap:8px; padding:7px 0; border-bottom:1px solid var(--line); font-size:13px; } .res .r:last-child{ border:0; } .res .r b{ flex:1; font-weight:600; }
+.res .y{ color:var(--ok); font-weight:700; } .res .n{ color:var(--muted); }
+/* full-screen alarm */
+#alarm{ position:fixed; inset:0; z-index:99999; background:#b91c1c; color:#fff; display:none; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:24px; animation:flash 1s steps(2,jump-none) infinite; }
+#alarm.show{ display:flex; } @keyframes flash{ 0%{ background:#b91c1c; } 50%{ background:#7f1d1d; } 100%{ background:#b91c1c; } }
+#alarm h1{ font-size:clamp(34px,10vw,64px); margin:0 0 10px; letter-spacing:.02em; } #alarm .m{ font-size:clamp(20px,5.5vw,30px); font-weight:700; margin:6px 0 4px; max-width:560px; white-space:pre-wrap; } #alarm .w{ font-size:15px; opacity:.85; margin-bottom:26px; }
+#alarm button{ background:#fff; color:#b91c1c; font-size:18px; padding:16px 28px; margin:6px; } #alarm .sm{ background:transparent; color:#fff; border:1px solid rgba(255,255,255,.6); font-size:14px; padding:10px 18px; }
+.hide{ display:none !important; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><a class="back" href="/">&larr; App</a><h1>Emergency alert</h1><span class="tag">Trial</span></div>
+  <div id="msg" class="card hide"></div>
+
+  <div id="mine" class="card">
+    <h2>Alerts on this phone</h2>
+    <div class="row"><span id="mst" class="stat">Checking&hellip;</span><span style="flex:1"></span><button id="bOn" class="b1">Turn on</button><button id="bTest" class="b2">Test</button></div>
+    <div id="mhelp" class="muted" style="margin-top:10px"></div>
+  </div>
+
+  <div id="adm" class="hide">
+    <div class="card">
+      <h2>Send an alert</h2>
+      <label class="f">Where</label><input id="aPlace" type="text" placeholder="e.g. Weaving hall">
+      <label class="f">Message</label><textarea id="aText">FIRE. Leave the building now and go to the assembly point.</textarea>
+      <label class="f">Who</label>
+      <div id="grp" class="chips"></div>
+      <input id="aQ" type="text" placeholder="Search a name or ID" style="margin-top:10px">
+      <div id="ppl" class="ppl"></div>
+      <div id="cnt" class="muted" style="margin-top:10px"></div>
+      <button id="bSend" class="bd send">Send alert</button>
+    </div>
+    <div class="card res"><h2>Last alert</h2><div id="last" class="muted">Nothing sent yet.</div></div>
+  </div>
+</div>
+
+<div id="alarm">
+  <h1>EMERGENCY</h1><div id="alPlace" class="m"></div><div id="alText" class="m"></div><div id="alWho" class="w"></div>
+  <div><button id="alAck">I got it</button></div><div><button id="alMute" class="sm">Stop sound</button><button id="alClose" class="sm">Close</button></div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, doc, getDoc, setDoc, deleteDoc, collection, getDocs, query, where, documentId, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+const app = initializeApp({ apiKey:"AIzaSyA-IRsoL3cy92qw6QC8_q4dThg7ydMXo-w", authDomain:"mechine-reader-test.firebaseapp.com", projectId:"mechine-reader-test", storageBucket:"mechine-reader-test.firebasestorage.app", messagingSenderId:"526829266334", appId:"1:526829266334:web:8c5ad1d3dd4ed4ea2ee28f" });
+const db = getFirestore(app), auth = getAuth(app);
+const VAPID = 'BLhT6usaFwf08QY1YCpyWiVKOTB9KEoPvWCn7drhvd4tGXBjrHKiEeVuTPRS3xVCncb-KToH9qwoc6bO6ePu9go';
+const $ = id => document.getElementById(id), esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]));
+const ME = { id:'', role:'', name:'' }; let SUBS = {}, USERS = [], SEL = new Set(), GSEL = new Set(), CUR = null, SEEN = new Set(), audio = null;
+const SK = 'rvfAlertSeen'; try{ JSON.parse(localStorage.getItem(SK) || '[]').forEach(x => SEEN.add(x)); }catch(e){}
+const saveSeen = () => { try{ localStorage.setItem(SK, JSON.stringify([...SEEN].slice(-30))); }catch(e){} };
+const note = (t) => { const m = $('msg'); m.textContent = t; m.classList.toggle('hide', !t); };
+
+/* ---- who is this ---- */
+onAuthStateChanged(auth, async (u) => {
+  if(!u){ note('Open the RVF app once and sign in, then come back to this page.'); $('mine').classList.add('hide'); return; }
+  try{
+    const ix = await getDoc(doc(db, 'uidIndex', u.uid)); const d = ix.exists() ? ix.data() : {};
+    ME.id = d.loginId || ''; ME.role = d.role || '';
+    if(!ME.id){ note('Could not find your account. Open the RVF app and sign in again.'); return; }
+    const me = await getDoc(doc(db, 'users', ME.id)); ME.name = me.exists() ? (me.data().name || ME.id) : ME.id;
+  }catch(e){ note('Could not load your account.'); return; }
+  start();
+});
+
+/* ---- this phone ---- */
+const supported = () => ('serviceWorker' in navigator) && ('PushManager' in window) && ('Notification' in window);
+const b64 = (s) => { const p = '='.repeat((4 - s.length % 4) % 4), r = atob((s + p).replace(/-/g, '+').replace(/_/g, '/')); return Uint8Array.from([...r].map(c => c.charCodeAt(0))); };
+async function reg(){ return navigator.serviceWorker.register('/alert/sw.js', { scope:'/alert/' }).then(() => navigator.serviceWorker.ready); }
+async function phoneState(){
+  const st = $('mst'), help = $('mhelp'); help.textContent = '';
+  if(!supported()){ st.textContent = 'Not supported'; st.className = 'stat bad'; $('bOn').classList.add('hide'); $('bTest').classList.add('hide'); help.textContent = /iPhone|iPad/.test(navigator.userAgent) ? 'On iPhone, add the app to the Home Screen first, then open it from there.' : 'This browser cannot receive alerts.'; return; }
+  if(Notification.permission === 'denied'){ st.textContent = 'Blocked'; st.className = 'stat bad'; help.textContent = 'Notifications are blocked for this app. Allow them in the phone settings for this app, then open this page again.'; return; }
+  let on = false; try{ const r = await navigator.serviceWorker.getRegistration('/alert/'); on = !!(r && await r.pushManager.getSubscription() && Notification.permission === 'granted'); }catch(e){}
+  st.textContent = on ? 'On' : 'Off'; st.className = 'stat' + (on ? ' ok' : ''); $('bOn').textContent = on ? 'Refresh' : 'Turn on';
+}
+async function turnOn(){
+  const b = $('bOn'); b.disabled = true;
+  try{
+    const p = await Notification.requestPermission(); if(p !== 'granted'){ await phoneState(); return; }
+    const r = await reg(); let sub = await r.pushManager.getSubscription(); if(!sub) sub = await r.pushManager.subscribe({ userVisibleOnly:true, applicationServerKey:b64(VAPID) });
+    await setDoc(doc(db, 'config', 'alertSub_' + ME.id), { data:{ id:ME.id, name:ME.name, sub:JSON.parse(JSON.stringify(sub)), at:Date.now(), ua:navigator.userAgent.slice(0, 120) } });
+    SUBS[ME.id] = true; await phoneState(); if(ME.role === 'admin') loadSubs();
+  }catch(e){ console.error(e); $('mhelp').textContent = 'Could not turn on. Try again.'; }
+  finally{ b.disabled = false; }
+}
+async function testLocal(){
+  try{ const r = await reg(); await r.showNotification('TEST - Emergency alert', { body:'This is only a test on your phone.', tag:'rvf-test', icon:'/alert/icon-192.png', vibrate:[600, 200, 600] }); }catch(e){ $('mhelp').textContent = 'Test failed. Turn alerts on first.'; }
+}
+$('bOn').onclick = turnOn; $('bTest').onclick = testLocal;
+
+/* ---- alarm screen ---- */
+function siren(on){
+  try{
+    if(on){ if(audio) return; const C = window.AudioContext || window.webkitAudioContext; const ctx = new C(); const o = ctx.createOscillator(), g = ctx.createGain(); o.type = 'sawtooth'; g.gain.value = .5; o.connect(g); g.connect(ctx.destination); o.start();
+      let hi = false; const iv = setInterval(() => { hi = !hi; o.frequency.setValueAtTime(hi ? 960 : 640, ctx.currentTime); }, 450); o.frequency.value = 640; audio = { ctx, o, iv, vib: setInterval(() => { try{ navigator.vibrate && navigator.vibrate([700, 250, 700]); }catch(e){} }, 1900) }; }
+    else if(audio){ clearInterval(audio.iv); clearInterval(audio.vib); try{ audio.o.stop(); audio.ctx.close(); }catch(e){} audio = null; try{ navigator.vibrate && navigator.vibrate(0); }catch(e){} }
+  }catch(e){}
+}
+function showAlarm(a){
+  CUR = a; $('alPlace').textContent = a.place || ''; $('alText').textContent = a.text || ''; $('alWho').textContent = 'Sent by ' + (a.byName || '') + ' - ' + new Date(a.at).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
+  $('alAck').disabled = false; $('alAck').textContent = 'I got it'; $('alarm').classList.add('show'); siren(true); SEEN.add(a.id); saveSeen();
+}
+$('alMute').onclick = () => siren(false);
+$('alClose').onclick = () => { siren(false); $('alarm').classList.remove('show'); };
+$('alAck').onclick = async () => { if(!CUR) return; $('alAck').disabled = true; siren(false); try{ await setDoc(doc(db, 'config', 'alertAck_' + CUR.id + '_' + ME.id), { data:{ alert:CUR.id, id:ME.id, name:ME.name, at:Date.now() } }); $('alAck').textContent = 'Sent. Stay safe'; }catch(e){ $('alAck').disabled = false; } };
+async function openById(id){
+  if(!id) return; try{ const s = await getDoc(doc(db, 'config', id)); if(s.exists()){ const a = s.data().data; if(a && (a.targets || []).indexOf(ME.id) >= 0) showAlarm(a); } }catch(e){}
+}
+function listen(){   // while this page is open, an alert for me shows at once
+  const from = 'alertMsg_' + String(Date.now() - 20 * 60 * 1000).padStart(15, '0');
+  onSnapshot(query(collection(db, 'config'), where(documentId(), '>=', from), where(documentId(), '<', 'alertMsg_~')), snap => {
+    snap.docChanges().forEach(c => { if(c.type !== 'added') return; const a = (c.doc.data() || {}).data; if(!a) return; if(ME.role === 'admin') drawLast(a); if((a.targets || []).indexOf(ME.id) >= 0 && !SEEN.has(a.id)) showAlarm(a); });
+  }, () => {});
+}
+
+/* ---- admin ---- */
+async function loadSubs(){
+  try{ const s = await getDocs(query(collection(db, 'config'), where(documentId(), '>=', 'alertSub_'), where(documentId(), '<', 'alertSub`'))); SUBS = {}; s.forEach(d => { const x = (d.data() || {}).data; if(x && x.id) SUBS[x.id] = x; }); }catch(e){ console.error(e); }
+  drawPeople();
+}
+async function loadUsers(){
+  const k = 'rvfAlertUsers', now = Date.now();
+  try{ const c = JSON.parse(localStorage.getItem(k) || 'null'); if(c && now - c.t < 3600e3){ USERS = c.l; return; } }catch(e){}
+  const s = await getDocs(collection(db, 'users')); USERS = [];
+  s.forEach(d => { const u = d.data() || {}, p = u.profile || {}; const sh = (u.assignedShift === 'Day' || u.assignedShift === 'Night') ? u.assignedShift : ((p.shiftPref === 'Day' || p.shiftPref === 'Night') ? p.shiftPref : ''); USERS.push({ id:u.loginId || d.id, name:u.name || '', dept:u.department || '', shift:sh }); });
+  USERS.sort((a, b) => a.name.localeCompare(b.name)); try{ localStorage.setItem(k, JSON.stringify({ t:now, l:USERS })); }catch(e){}
+}
+function groups(){
+  const g = [{ k:'all', n:'Everyone', f:u => true }, { k:'sh:Day', n:'Day shift', f:u => u.shift === 'Day' }, { k:'sh:Night', n:'Night shift', f:u => u.shift === 'Night' }];
+  [...new Set(USERS.map(u => u.dept).filter(Boolean))].sort().forEach(d => g.push({ k:'d:' + d, n:d, f:u => u.dept === d }));
+  return g;
+}
+function targets(){
+  const set = new Set(SEL); groups().forEach(g => { if(GSEL.has(g.k)) USERS.filter(g.f).forEach(u => set.add(u.id)); });
+  const all = [...set]; return { all, on:all.filter(id => SUBS[id]) };
+}
+function drawGroups(){
+  $('grp').innerHTML = groups().map(g => { const n = USERS.filter(g.f).filter(u => SUBS[u.id]).length; return `<span class="chip${GSEL.has(g.k) ? ' on' : ''}" data-g="${esc(g.k)}">${esc(g.n)}<small>${n}</small></span>`; }).join('');
+  $('grp').querySelectorAll('.chip').forEach(c => c.onclick = () => { const k = c.dataset.g; GSEL.has(k) ? GSEL.delete(k) : GSEL.add(k); drawGroups(); drawCount(); });
+}
+function drawPeople(){
+  const q = $('aQ').value.trim().toLowerCase(); drawGroups();
+  const l = USERS.filter(u => !q || (u.name + ' ' + u.id + ' ' + u.dept).toLowerCase().indexOf(q) >= 0).slice(0, 80);
+  $('ppl').innerHTML = l.map(u => `<label class="p"><input type="checkbox" data-i="${esc(u.id)}" ${SEL.has(u.id) ? 'checked' : ''}><span>${esc(u.name)}<small>${esc(u.id)}${u.dept ? ' - ' + esc(u.dept) : ''}${u.shift ? ' - ' + u.shift : ''}</small></span><small style="color:${SUBS[u.id] ? 'var(--ok)' : 'var(--muted)'}">${SUBS[u.id] ? 'Alerts on' : 'Not set'}</small></label>`).join('') || '<div class="p muted">Nobody found.</div>';
+  $('ppl').querySelectorAll('input').forEach(i => i.onchange = () => { i.checked ? SEL.add(i.dataset.i) : SEL.delete(i.dataset.i); drawCount(); });
+  drawCount();
+}
+function drawCount(){ const t = targets(); $('cnt').innerHTML = t.all.length ? `<b>${t.on.length}</b> of ${t.all.length} will be alerted. ${t.all.length - t.on.length ? (t.all.length - t.on.length) + ' have not turned alerts on.' : ''}` : 'Choose a group or people.'; $('bSend').disabled = !t.on.length; }
+$('aQ').oninput = drawPeople;
+$('bSend').onclick = async () => {
+  const t = targets(); if(!t.on.length) return; const place = $('aPlace').value.trim(), text = $('aText').value.trim(); if(!text){ $('aText').focus(); return; }
+  if(!confirm('Send this alert to ' + t.on.length + ' people now? Their phones will sound the alarm.')) return;
+  const b = $('bSend'); b.disabled = true; b.textContent = 'Sending...';
+  const at = Date.now(), id = 'alertMsg_' + String(at).padStart(15, '0');
+  try{ await setDoc(doc(db, 'config', id), { data:{ id, at, place, text, targets:t.on, by:ME.id, byName:ME.name } }); b.textContent = 'Sent'; setTimeout(() => { b.textContent = 'Send alert'; drawCount(); }, 2500); }
+  catch(e){ console.error(e); b.textContent = 'Could not send'; setTimeout(() => { b.textContent = 'Send alert'; drawCount(); }, 2500); }
+};
+let lastA = null;
+async function drawLast(a){
+  lastA = a || lastA; if(!lastA) return; const box = $('last');
+  let acks = {}; try{ const p = 'alertAck_' + lastA.id + '_'; const s = await getDocs(query(collection(db, 'config'), where(documentId(), '>=', p), where(documentId(), '<', p + '~'))); s.forEach(d => { const x = (d.data() || {}).data; if(x) acks[x.id] = x; }); }catch(e){}
+  const nm = id => (USERS.find(u => u.id === id) || {}).name || id, got = lastA.targets.filter(id => acks[id]).length;
+  box.className = ''; box.innerHTML = `<div class="muted" style="margin-bottom:6px">${esc(lastA.place || '')} - ${new Date(lastA.at).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' })} - <b>${got}</b> of ${lastA.targets.length} confirmed</div>` + lastA.targets.map(id => `<div class="r"><b>${esc(nm(id))}</b><span class="${acks[id] ? 'y' : 'n'}">${acks[id] ? 'Got it' : 'Not yet'}</span></div>`).join('') + `<button class="b2" id="rf" style="margin-top:10px">Refresh</button>`;
+  $('rf').onclick = () => drawLast();
+}
+async function findLast(){
+  try{ const from = 'alertMsg_' + String(Date.now() - 24 * 3600e3).padStart(15, '0'); const s = await getDocs(query(collection(db, 'config'), where(documentId(), '>=', from), where(documentId(), '<', 'alertMsg_~'))); let a = null; s.forEach(d => { const x = (d.data() || {}).data; if(x && (!a || x.at > a.at)) a = x; }); if(a) drawLast(a); }catch(e){}
+}
+
+async function start(){
+  await phoneState(); listen();
+  const a = new URLSearchParams(location.search).get('a'); if(a) openById(a);
+  if(ME.role === 'admin'){ $('adm').classList.remove('hide'); try{ await loadUsers(); }catch(e){ note('Could not load the people list.'); } await loadSubs(); findLast(); }
+}
+</script>
+</body>
+</html>
