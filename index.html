@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261123-094344">
+<meta name="rvf-build" content="20261123-100536">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -441,6 +441,40 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
   window.__db = {
     ready: () => dbReady,
     empVer: 0,
+    /* A person's Employee ID was changed: everything kept under the old ID is moved to the new one (nothing is deleted):
+       vacations, violations, leave requests (as the person and as approver), saved salary sheets and the Pay desk. */
+    async migrateEmployeeId(oldId, newId, newName) {
+      if (!dbReady) throw new Error('NOT_CONFIGURED');
+      oldId = String(oldId); newId = String(newId); const out = { vacations: 0, violations: 0, requests: 0, sheets: 0, payDesk: 0 };
+      const vs = await getDocs(query(collection(db, 'vacations'), where('employeeId', '==', oldId))), vt = [];
+      for (const d of vs.docs) { await updateDoc(d.ref, { employeeId: newId }); vt.push({ id: d.id, rec: { ...d.data(), employeeId: newId } }); out.vacations++; }
+      if (vt.length) await vacTouch(vt, 0);
+      const ws = await getDocs(query(collection(db, 'violations'), where('employeeId', '==', oldId)));
+      for (const d of ws.docs) { await updateDoc(d.ref, { employeeId: newId }); out.violations++; }
+      const lc = collection(db, 'leaveRequests'), seen = {};
+      for (const [f, key] of [['employeeId', 'employeeId'], ['approver1.loginId', 'approver1.loginId'], ['approver2.loginId', 'approver2.loginId']]) {
+        const ls = await getDocs(query(lc, where(f, '==', oldId)));
+        for (const d of ls.docs) { const u = { [key]: newId }; if (key !== 'employeeId' && newName) u[f.split('.')[0] + '.name'] = newName; await updateDoc(d.ref, u); seen[d.id] = 1; }
+      }
+      out.requests = Object.keys(seen).length;
+      vacationsCache.invalidate(); violationsCache.invalidate(); leaveRequestsCache.invalidate();
+      const cg = async (k) => { const s = await getDoc(doc(db, 'config', k)); return s.exists() ? ((s.data() || {}).data || null) : null; }, cs = (k, o) => setDoc(doc(db, 'config', k), { data: o });
+      const idx = await cg('salaryIndex'), items = (idx && idx.items) || {}, months = {};
+      for (const k of Object.keys(items)) {
+        if (items[k] && items[k].ym) months[items[k].ym] = 1;
+        const o = await cg('salary_' + k); if (!o) continue;
+        let ch = false;
+        (o.rows || []).forEach(r => { if (String(r.id) === oldId) { r.id = newId; if (newName) r.name = newName; ch = true; } });
+        if (ch) { await cs('salary_' + k, o); out.sheets++; }
+      }
+      for (const ym of Object.keys(months)) {
+        const o = await cg('payDesk_' + ym); if (!o) continue;
+        let ch = false;
+        Object.keys(o).forEach(pk => { const m = o[pk]; if (m && typeof m === 'object' && !Array.isArray(m) && Object.prototype.hasOwnProperty.call(m, oldId)) { m[newId] = m[oldId]; delete m[oldId]; ch = true; } });
+        if (ch) { await cs('payDesk_' + ym, o); out.payDesk++; }
+      }
+      return out;
+    },
     async empLoad() {
       if (!dbReady) throw new Error('NOT_CONFIGURED');
       const snaps = await Promise.all(Array.from({ length: EMP_B }, (_, i) => getDoc(doc(db, 'config', 'emp_' + i))));
@@ -12805,6 +12839,7 @@ $('coreEditSaveBtn').addEventListener('click', async () => {
       // has to be updated too, or those references silently point at an
       // account that no longer exists.
       await cascadeEmployeeIdRename(oldId, newId, name);
+      try{ await window.__db.migrateEmployeeId(oldId, newId, name); }catch(err){ console.error(err); toast('The ID was changed, but some old records could not be moved'); }
       profileCache.user = fullUser;
       if(state.user.loginId === oldId){
         state.user = fullUser;
@@ -27459,7 +27494,7 @@ Object.assign(ACU, { st: 'running', sheet: '', pos: '', et: '', shift: '' });
 const acuSheetOf = (u) => a2Skip(u) ? 'left' : a2Group(u);
 const acuSheetName = (k) => ({ operator: 'Operator', sponsor: 'Sponsor', nonsponsor: 'Non Sponsor', saudi: 'Saudi', left: 'Left out of sheets' }[k] || '');
 const acuShiftOf = (u) => { const p = u.profile || {}, pf = (p.shiftPref === 'Day' || p.shiftPref === 'Night') ? p.shiftPref : ''; return (u.assignedShift === 'Day' || u.assignedShift === 'Night') ? u.assignedShift : pf; };
-function acuBase(){ const admin = state.user && state.user.role === 'admin'; return (state.users || []).filter(u => u.role !== 'pending' && !u.spare && (admin || u.role !== 'admin')); }
+function acuBase(){ const admin = state.user && state.user.role === 'admin'; return (state.users || []).filter(u => u.role !== 'pending' && !u.spare); }
 function acuList(){
   const q = ACU.q.trim().toLowerCase();
   return acuBase().filter(u => (isExitedEmployee(u) === (ACU.st === 'exited'))
@@ -32444,6 +32479,33 @@ document.addEventListener('toggle', async (ev) => {
 }, true);
 const slgDrawSet = acDrawSettings;
 acDrawSettings = function(){ slgDrawSet.apply(this, arguments); try{ const m = $('acMain'); if(m && !m.querySelector('#slgBox')) m.insertAdjacentHTML('beforeend', slgBox()); }catch(e){} };
+
+
+/* ===== Accounts: the people list is brought up to date from the saved list when a page opens (6 small reads, at most once a minute) ===== */
+const ACP = { t: 0 };
+async function accRefreshPeople(){
+  if(!window.__db || !window.__db.empLoad || Date.now() - ACP.t < 60000) return false;
+  ACP.t = Date.now();
+  try{
+    const s = await window.__db.empLoad(); if(!s || !s.rows || !s.rows.length) return false;
+    const cur = state.users || [], byId = {}; cur.forEach(u => { byId[u.loginId] = u; });
+    const strip = (u) => { const o = Object.assign({}, u); delete o.password; delete o.authUid; delete o.authEmail; delete o.lastLoginAt; if(o.profile){ o.profile = Object.assign({}, o.profile); delete o.profile.photoDataUrl; delete o.profile.photoBig; } return JSON.stringify(o, (k, v) => (v && typeof v === 'object' && !Array.isArray(v)) ? Object.keys(v).sort().reduce((a, x) => (a[x] = v[x], a), {}) : v); };
+    const seen = new Set(), next = []; let ch = false;
+    s.rows.forEach(r => {
+      seen.add(r.loginId); const o = byId[r.loginId];
+      if(!o){ ch = true; next.push(r); return; }
+      if(strip(o) === strip(r)){ next.push(o); return; }
+      ch = true; const n = Object.assign({}, r); ['password', 'authUid', 'authEmail'].forEach(k => { if(o[k] !== undefined) n[k] = o[k]; });
+      if(o.profile && o.profile.photoDataUrl && n.profile && (n.profile.photoBig || !n.profile.photoDataUrl)){ n.profile = Object.assign({}, n.profile, { photoDataUrl: o.profile.photoDataUrl }); delete n.profile.photoBig; }
+      next.push(n);
+    });
+    cur.forEach(u => { if(!seen.has(u.loginId) && !u.hiddenAccount) ch = true; });
+    if(ch && !(cur && cur.__slim)) state.users = next;
+    return ch;
+  }catch(e){ console.error(e); return false; }
+}
+{ const f = a2DrawUsers; a2DrawUsers = function(){ f.apply(this, arguments); accRefreshPeople().then(ch => { if(ch && A2.view === 'users') f.call(this); }).catch(() => {}); }; }
+{ const f = a2LoadDoc; a2LoadDoc = async function(){ try{ await accRefreshPeople(); }catch(e){} return f.apply(this, arguments); }; }
 
 </script>
 </body>
