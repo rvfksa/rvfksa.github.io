@@ -20,11 +20,11 @@ const ls = { get(k){ try{ return localStorage.getItem(k); }catch(e){ return null
     await setDoc(doc(db, 'config', 'alertSub_' + id), { data:{ id, name:'', sub:j, at:Date.now(), ua:navigator.userAgent.slice(0, 120) } }); ls.set('rvfAlertSaved', key);
   }
   if(Notification.permission === 'granted'){ try{ await register(); }catch(e){} return; }
-  const later = Number(ls.get('rvfAlertLater') || 0); if(Date.now() - later < 3 * 86400e3) return;
+  try{ if(sessionStorage.getItem('rvfAlertLater')) return; }catch(e){}
   const bar = document.createElement('div');
   bar.style.cssText = 'position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:99990;max-width:460px;margin:0 auto;background:#fff;border-radius:18px;box-shadow:0 8px 30px rgba(15,23,42,.25);padding:14px 16px;font:600 14px Inter,system-ui,sans-serif;color:#0f172a;display:flex;align-items:center;gap:10px;flex-wrap:wrap;';
   bar.innerHTML = '<span style="flex:1;min-width:180px">Turn on emergency alerts on this phone</span><button id="aeNo" style="border:0;background:#eef2ff;color:#4f46e5;border-radius:12px;padding:9px 14px;font:inherit;cursor:pointer">Later</button><button id="aeYes" style="border:0;background:#dc2626;color:#fff;border-radius:12px;padding:9px 16px;font:inherit;cursor:pointer">Turn on</button>';
   document.body.appendChild(bar);
-  bar.querySelector('#aeNo').onclick = () => { ls.set('rvfAlertLater', String(Date.now())); bar.remove(); };
-  bar.querySelector('#aeYes').onclick = async () => { try{ const p = await Notification.requestPermission(); bar.remove(); if(p === 'granted') await register(); else ls.set('rvfAlertLater', String(Date.now())); }catch(e){ bar.remove(); } };
+  bar.querySelector('#aeNo').onclick = () => { try{ sessionStorage.setItem('rvfAlertLater', '1'); }catch(e){} bar.remove(); };
+  bar.querySelector('#aeYes').onclick = async () => { try{ const p = await Notification.requestPermission(); bar.remove(); if(p === 'granted') await register(); else try{ sessionStorage.setItem('rvfAlertLater', '1'); }catch(e){} }catch(e){ bar.remove(); } };
 })();
