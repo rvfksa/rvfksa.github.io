@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261124-103031">
+<meta name="rvf-build" content="20261124-103531">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -6530,7 +6530,6 @@ function renderNav(){
     b.addEventListener('click', () => { state.execViewTarget = null; goTo(key); });
     nav.appendChild(b);
   });
-  if(state.user.role === 'admin'){ const ab = document.createElement('div'); ab.className = 'nav-btn'; ab.textContent = 'Alert'; ab.dataset.route = 'alertpage'; ab.addEventListener('click', () => { location.href = '/alert/'; }); nav.appendChild(ab); }   // opens the emergency alert page
   try{ if(typeof pcAfterNav === 'function') pcAfterNav(); }catch(e){}
 }
 
@@ -32543,6 +32542,25 @@ function yNotFound(def){
 <script>
 /* emergency alert banner: loads a small separate file after sign-in; touches nothing else */
 (function(){ try{ if(!('serviceWorker' in navigator) || !('PushManager' in window)) return; var n = 0; (function chk(){ n++; if(n > 40) return; try{ if(window.__db && window.__db.getCurrentUid && window.__db.getCurrentUid()){ setTimeout(function(){ import('/alert/enable.js?v=2').catch(function(){}); }, 6000); return; } }catch(e){} setTimeout(chk, 4000); })(); }catch(e){} })();
+</script>
+<script>
+/* Alert page inside the app (admins): same header and menu as other pages; the page itself is the separate /alert/ page shown in a frame */
+PAGE_DEFS.alert = { label: 'Alert' };
+(function(){
+  const _up = userPages;
+  userPages = function(u){ const p = _up(u).slice(); if(u && u.role === 'admin' && p.indexOf('alert') < 0) p.push('alert'); return p; };
+  const _g = goTo;
+  goTo = function(key){
+    if(key === 'alert'){ clearCaptureDraft(); markNavActive('alert'); alertMount(); showScreen('screen-alert'); return; }
+    return _g.apply(this, arguments);
+  };
+})();
+function alertMount(){
+  if(document.getElementById('screen-alert')){ return; }
+  const s = document.createElement('section'); s.className = 'screen'; s.id = 'screen-alert';
+  s.innerHTML = '<iframe id="alertFrame" src="/alert/?embed=1" title="Alert" style="width:100%;height:calc(100vh - 170px);min-height:560px;border:0;background:transparent;display:block"></iframe>';
+  const ref = document.getElementById('screen-mystatus'); (ref && ref.parentNode ? ref.parentNode : document.body).appendChild(s);
+}
 </script>
 </body>
 </html>
