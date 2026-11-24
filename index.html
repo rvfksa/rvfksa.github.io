@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261123-150735">
+<meta name="rvf-build" content="20261124-103031">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -6530,6 +6530,7 @@ function renderNav(){
     b.addEventListener('click', () => { state.execViewTarget = null; goTo(key); });
     nav.appendChild(b);
   });
+  if(state.user.role === 'admin'){ const ab = document.createElement('div'); ab.className = 'nav-btn'; ab.textContent = 'Alert'; ab.dataset.route = 'alertpage'; ab.addEventListener('click', () => { location.href = '/alert/'; }); nav.appendChild(ab); }   // opens the emergency alert page
   try{ if(typeof pcAfterNav === 'function') pcAfterNav(); }catch(e){}
 }
 
