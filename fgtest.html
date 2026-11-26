@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261126-093059">
+<meta name="rvf-build" content="20261126-093320">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -22684,7 +22684,7 @@ function pkxDraw(id){
   const n = (f.mach.length ? 1 : 0) + (f.q.trim() ? 1 : 0) + (f.stop ? 1 : 0);
   const mlabel = f.mach.length ? (f.mach.length <= 2 ? f.mach.map(machineName).join(', ') : f.mach.length + ' machines') : 'All machines';
   const adm = state.user && state.user.role === 'admin';
-  const bar = `<div class="pkxBar"><span style="flex:1;"></span><button type="button" class="iconBtn${n || f.open ? ' on' : ''}" data-pk="ftog" data-c="${id}" title="Filter">${AC_ICON.filter}${n ? `<span class="acBadge">${n}</span>` : ''}</button>${adm ? `<button type="button" class="pillBtn" data-pk="dlall" data-c="${id}">${DL_ICON}All operators</button><button type="button" class="pillBtn" data-pk="dl" data-c="${id}">${DL_ICON}Download</button>` : ''}</div>
+  const bar = `<div class="pkxBar"><span style="flex:1;"></span><button type="button" class="iconBtn${n || f.open ? ' on' : ''}" data-pk="ftog" data-c="${id}" title="Filter">${AC_ICON.filter}${n ? `<span class="acBadge">${n}</span>` : ''}</button>${adm ? `<button type="button" class="pillBtn" data-pk="dl" data-c="${id}">${DL_ICON}Download</button>` : ''}</div>
     ${f.open ? `<div class="acFilt"><details class="acMs" ${f.msOpen ? 'open' : ''} data-pkms="${id}"><summary>${acEsc(mlabel)}</summary><div class="acMsL">${machs.map(m => `<label><input type="checkbox" data-pk="mach" data-c="${id}" value="${acEsc(m)}" ${f.mach.indexOf(m) >= 0 ? 'checked' : ''}> ${acEsc(machineName(m))}</label>`).join('')}${f.mach.length ? `<button type="button" class="acMsC" data-pk="mclear" data-c="${id}">Clear</button>` : ''}</div></details>
       ${adm ? `<input type="text" class="acQ" data-pk="q" data-c="${id}" placeholder="Search date or machine" value="${acEsc(f.q)}"><label class="acChk"><input type="checkbox" data-pk="stop" data-c="${id}" ${f.stop ? 'checked' : ''}> Days with stop time only</label><button type="button" class="pillBtn" data-pk="fclear" data-c="${id}">Clear all</button>` : ''}</div>` : ''}`;
   let body = '', lastDate = '';
@@ -32707,6 +32707,16 @@ document.addEventListener('click', (e) => {
 </script>
 <script>
 /* Earned picks: "All operators" opens the download with every operator ticked and a month to choose; one PDF, a page for each operator */
+function pkAllBtn(){
+  try{
+    if(!(state.user && state.user.role === 'admin') || document.getElementById('pkAllBar')) return;
+    const m = document.getElementById('pkm_picks'); if(!m) return;
+    const w = document.createElement('div'); w.id = 'pkAllBar'; w.style.cssText = 'display:flex;justify-content:flex-end;margin:6px 0 2px;';
+    w.innerHTML = `<button type="button" class="pillBtn" data-pk="dlall" data-c="picksBody">${DL_ICON}All operators</button>`;
+    m.insertAdjacentElement('afterend', w);
+  }catch(e){}
+}
+{ const l0 = loadPicksForApprovals; loadPicksForApprovals = async function(){ try{ return await l0.apply(this, arguments); } finally { pkAllBtn(); } }; }
 document.addEventListener('click', (e) => {
   const t = e.target.closest && e.target.closest('[data-pk="dlall"]'); if(!t) return;
   if(state.user && state.user.role === 'admin'){ pkxOpenDl(t.dataset.c); const d = PKX.dl; if(d){ d.group = 'op'; d.ops = new Set(d.allowed.map(u => u.loginId)); d.cols = new Set(pkxDefCols('op')); d.sec = 'who'; pkxDlDraw(); } }
