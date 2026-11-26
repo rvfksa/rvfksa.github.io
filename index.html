@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261124-103531">
+<meta name="rvf-build" content="20261126-073348">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -27522,20 +27522,11 @@ function acuRows(){
 }
 function a2DrawUsers(){
   $('a2Top').innerHTML = ''; $('a2Head').innerHTML = '';
-  const base = acuBase(), uniq = (f) => Array.from(new Set(base.map(f).filter(Boolean))).sort();
-  const opt = (list, cur, all, unset) => `<option value="">${all}</option>` + list.map(v => { const val = Array.isArray(v) ? v[0] : v, lb = Array.isArray(v) ? v[1] : v; return `<option value="${acEsc(val)}" ${val === cur ? 'selected' : ''}>${acEsc(lb)}</option>`; }).join('') + (unset ? `<option value="__unset__" ${cur === '__unset__' ? 'selected' : ''}>Not set</option>` : '');
-  const n = [ACU.sheet, ACU.dept, ACU.pos, ACU.et, ACU.shift].filter(Boolean).length;
-  const panel = ACU.fOpen ? `<div class="a2FPanel">
-      <select id="acuSheet" title="Salary sheet">${opt([['operator', 'Operator'], ['sponsor', 'Sponsor'], ['nonsponsor', 'Non Sponsor'], ['saudi', 'Saudi'], ['left', 'Left out of sheets']], ACU.sheet, 'All salary sheets')}</select>
-      <select id="acuDept">${opt(uniq(u => u.department || ''), ACU.dept, 'All departments')}</select>
-      <select id="acuPos">${opt(uniq(a2PosOf), ACU.pos, 'All positions')}</select>
-      <select id="acuEt">${opt(['Sponsor', 'Non-Sponsor', 'Saudi'], ACU.et, 'Any employment type', 1)}</select>
-      <select id="acuShift">${opt(['Day', 'Night'], ACU.shift, 'Any shift', 1)}</select>${n ? '<button type="button" class="pillBtn" data-acu="clear">Clear</button>' : ''}</div>` : '';
-  $('acMain').innerHTML = `<div class="a2Tool">
-      <span class="pdSeg"><button type="button" data-acu="st" data-v="running" class="${ACU.st === 'running' ? 'on' : ''}">Running</button><button type="button" data-acu="st" data-v="exited" class="${ACU.st === 'exited' ? 'on' : ''}">Exit / Terminated</button></span>
-      <input type="text" id="acuQ" class="acQ a2Srch" placeholder="Search name, ID, department, position" value="${acEsc(ACU.q)}" autocomplete="off">
-      <div class="a2Fl"><button type="button" class="pillBtn${n ? ' ok' : ''}" data-acu="ftog">${a2Svg('filter', 13)}Filter${n ? ' ' + n : ''}</button>${panel}</div></div>
-    <div class="hrNote" style="margin-bottom:8px;">Open a person's profile to change anything in it. Every change you save is written to a history that the Admin can read.</div><div id="acuList">${acuRows()}</div>`;
+  a2OvPark();
+  $('acMain').innerHTML = '<div id="employeeOverviewMountAccounts"></div>';
+  mountEmployeeOverview('employeeOverviewMountAccounts');
+  try{ renderEmployeeOverviewBox(state.users || []); }catch(e){ console.error(e); }
+  a2OvEditBtns();
 }
 document.addEventListener('change', (e) => { const t = e.target; if(!t || !t.id) return; const m = { acuSheet: 'sheet', acuPos: 'pos', acuEt: 'et', acuShift: 'shift' }[t.id]; if(!m) return; ACU[m] = t.value; const l = $('acuList'); if(l) l.innerHTML = acuRows(); });
 document.addEventListener('click', (e) => {
@@ -32562,5 +32553,30 @@ function alertMount(){
   const ref = document.getElementById('screen-mystatus'); (ref && ref.parentNode ? ref.parentNode : document.body).appendChild(s);
 }
 </script>
+<script>
+/* Accounts > Users = the Employee Overview (one shared block, moved here while this tab is open and moved back home before the tab is redrawn) */
+function a2OvPark(){
+  const b = document.getElementById('employeeOverviewBlock'), home = document.getElementById('employeeOverviewMountEmployees');
+  if(b){ if(b.parentElement && b.parentElement.id === 'employeeOverviewMountAccounts' && home) home.appendChild(b); window.__ovNode = b; }
+  else if(window.__ovNode && home) home.appendChild(window.__ovNode);
+}
+function a2OvEditBtns(){
+  const m = document.getElementById('employeeOverviewMountAccounts'); if(!m || !profCanEdit()) return;
+  m.querySelectorAll('.viewDetailsBtn').forEach(v => {
+    if(v.parentNode.classList.contains('a2OvAct')) return;
+    const e = document.createElement('button'); e.type = 'button'; e.className = 'pillBtn ok a2OvEdit'; e.dataset.acu = 'open'; e.dataset.id = v.dataset.id; e.textContent = 'Edit profile';
+    const w = document.createElement('span'); w.className = 'a2OvAct'; w.style.cssText = 'display:inline-flex;gap:6px;align-items:center;white-space:nowrap;';
+    v.parentNode.insertBefore(w, v); w.appendChild(e); w.appendChild(v);
+  });
+}
+{ const f = empDrillPaint; empDrillPaint = function(){ const r = f.apply(this, arguments); try{ a2OvEditBtns(); }catch(e){} return r; }; }
+{ const f = a2Draw; a2Draw = function(){ a2OvPark(); return f.apply(this, arguments); }; }
+{ const f = loadAccountsPage; loadAccountsPage = function(){ a2OvPark(); return f.apply(this, arguments); }; }
+</script>
+<style>
+.a2OvEdit{ display:none; }
+#employeeOverviewMountAccounts .a2OvEdit{ display:inline-flex; }
+#employeeOverviewMountAccounts #employeeOverviewBlock > h2{ margin-top:4px; }
+</style>
 </body>
 </html>
