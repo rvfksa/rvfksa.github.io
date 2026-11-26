@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261126-092103">
+<meta name="rvf-build" content="20261126-093505">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -11647,6 +11647,7 @@ async function loadPicksForApprovals(){
       selectable = selectable.filter(u => u.loginId === state.user.loginId ||
         (u.role === 'operator' && u.profile && u.profile.directSupervisor && u.profile.directSupervisor.loginId === state.user.loginId));
     }
+    if(state.user.role === 'admin') selectable = selectable.filter(u => u.role === 'operator');
     const sel = $('picksEmployeeSelect');
     const prevVal = sel.value;
     sel.innerHTML = selectable.map(u => `<option value="${u.loginId}">${u.name} (${u.loginId})</option>`).join('');
@@ -22730,7 +22731,7 @@ document.addEventListener('toggle', (e) => { const d = e.target; if(d && d.datas
 /* ---------- download ---------- */
 function pkxAllowed(){
   const me = state.user, list = (state.users || []).filter(u => (u.role === 'operator' || u.role === 'supervisor') && !isExitedEmployee(u));
-  if(me.role === 'admin') return list;
+  if(me.role === 'admin') return list.filter(u => u.role === 'operator');
   if(me.role === 'supervisor') return list.filter(u => u.loginId === me.loginId || (u.role === 'operator' && u.profile && u.profile.directSupervisor && u.profile.directSupervisor.loginId === me.loginId));
   const id = state.execViewTarget || me.loginId; return [(state.users || []).find(u => u.loginId === id) || { loginId: me.loginId, name: me.name, role: me.role }];
 }
@@ -32703,6 +32704,38 @@ document.addEventListener('click', (e) => {
     }
   }, true);
 })();
+</script>
+<script>
+/* Earned picks: "All operators" opens the download with every operator ticked and a month to choose; one PDF, a page for each operator */
+function pkAllBtn(){
+  try{
+    if(!(state.user && state.user.role === 'admin') || document.getElementById('pkAllBar')) return;
+    const m = document.getElementById('pkm_picks'); if(!m) return;
+    const w = document.createElement('div'); w.id = 'pkAllBar'; w.style.cssText = 'display:flex;justify-content:flex-end;margin:6px 0 2px;';
+    w.innerHTML = `<button type="button" class="pillBtn" data-pk="dlall" data-c="picksBody">${DL_ICON}All operators</button>`;
+    m.insertAdjacentElement('afterend', w);
+  }catch(e){}
+}
+{ const l0 = loadPicksForApprovals; loadPicksForApprovals = async function(){ try{ return await l0.apply(this, arguments); } finally { pkAllBtn(); } }; }
+document.addEventListener('click', (e) => {
+  const t = e.target.closest && e.target.closest('[data-pk="dlall"]'); if(!t) return;
+  if(state.user && state.user.role === 'admin'){ pkxOpenDl(t.dataset.c); const d = PKX.dl; if(d){ d.group = 'op'; d.ops = new Set(d.allowed.map(u => u.loginId)); d.cols = new Set(pkxDefCols('op')); d.sec = 'who'; const c = (acYmOpen() < acYmNow()) ? rvfCycleAt(1) : rvfCycleAt(0); d.from = c.start; d.to = c.end; pkxDlDraw(); } }
+});
+{ const f0 = pkxDlDraw; pkxDlDraw = function(){
+    f0.apply(this, arguments);
+    try{
+      const d = PKX.dl, ov = document.getElementById('pkOv'); if(!d || !ov) return;
+      const bar = ov.querySelector('.acBar'); if(!bar || ov.querySelector('#pkdMon')) return;
+      const c0 = rvfCycleAt(0), c1 = rvfCycleAt(1), on = (c) => d.from === c.start && d.to === c.end ? ' on' : '';
+      const w = document.createElement('div'); w.id = 'pkdMon'; w.className = 'pkmBar'; w.style.margin = '4px 0 6px';
+      w.innerHTML = `<button type="button" class="pkmChip${on(c0)}" data-pkd="mon" data-k="0">${c0.label}<small>${c0.sub}</small></button><button type="button" class="pkmChip${on(c1)}" data-pkd="mon" data-k="1">${c1.label}<small>${c1.sub}</small></button>`;
+      bar.parentNode.insertBefore(w, bar);
+    }catch(err){ console.error(err); }
+  }; }
+document.addEventListener('click', (e) => {
+  const t = e.target.closest && e.target.closest('[data-pkd="mon"]'); if(!t || !PKX.dl) return;
+  const c = rvfCycleAt(Number(t.dataset.k)); PKX.dl.from = c.start; PKX.dl.to = c.end; PKX.dl.keepFocus = false; pkxDlDraw();
+});
 </script>
 </body>
 </html>
