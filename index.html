@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261126-085038">
+<meta name="rvf-build" content="20261126-090308">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -25723,7 +25723,7 @@ function a2VioItems(){
   const to = d.to || acDefaultRange(A2.ym).to, rows = {}; d.rows.forEach(r => { rows[r.id] = r; });
   VI.list.forEach(v => {
     if(!v.sd || !(viAmt(v) > 0)) return; const r = rows[v.employeeId]; if(!r) return;
-    if((r.dl || []).some(l => l.vid === v._id)){ out.a.push({ v, r }); return; }
+    if((r.dl || []).some(l => l.vid === v._id)){ if(!a2Hid('vio', v._id)) out.a.push({ v, r }); return; }
     if(v.sd.st === 'applied' ? v.sd.ym === A2.ym : (v.sd.st === 'pending' && (v.sd.target ? v.sd.target === A2.ym : true))){ if(v.sd.target || (v.date || '') <= to) out.p.push({ v, r }); }
   });
   out.p.sort((a, b) => (a.v.date || '').localeCompare(b.v.date || ''));
@@ -25777,7 +25777,7 @@ async function a2VioSet(id, st, ym, why){
   try{ await window.__db.updateViolation(id, why ? { sd: v.sd, log: v.log } : { sd: v.sd }); }catch(err){ console.error(err); toast('Done in the sheet, but the letter could not be marked. Check your connection.'); }
 }
 async function a2VioAct(a, id){
-  if(a === 'ok'){ const dt = document.querySelector('#a2VioBox details'); if(dt) dt.open = false; return; }
+  if(a === 'ok'){ const d0 = a2Doc(), v0 = (VI.list || []).find(x => x._id === id); if(d0 && v0 && acCanEdit()){ const r0 = d0.rows.find(x => x.id === v0.employeeId); d0.keep = d0.keep || {}; d0.keep['h|vio|' + id] = { t: 'Deduction added: ' + (r0 ? r0.name + ' \u00b7 ' : '') + (v0.reason || 'Violation') + ' \u00b7 ' + acMoney(viAmt(v0)) + ' SAR', at: Date.now(), by: (state.user && state.user.loginId) || '' }; a2Touch(); a2Draw(); } return; }
   const d = a2Doc(), v = (VI.list || []).find(x => x._id === id); if(!d || !v || !acCanEdit()) return;
   let why = '';
   if(a === 'rem' || a === 'skip'){
@@ -32657,5 +32657,12 @@ a2ChgHtml = function(){
 .a2Vio .a2VioB{flex:none;}
 @media(max-width:560px){.a2Vio .a2VioR > span:first-child{flex:1 1 100%;} .a2Vio .a2VioB{margin-left:auto;}}
 </style>
+<script>
+/* every notice button saves the sheet at once, so a notice never comes back after a refresh */
+document.addEventListener('click', (e) => {
+  const t = e.target.closest && e.target.closest('[data-a2x="takeout"],[data-a2x="keep2"],[data-a2x="keep"],[data-a2h],[data-a2v="ok"]'); if(!t) return;
+  setTimeout(() => { try{ const d = a2Doc(); if(d && d.dirty){ clearTimeout(A2.as); a2AutoSave(); } }catch(err){} }, 60);
+});
+</script>
 </body>
 </html>
