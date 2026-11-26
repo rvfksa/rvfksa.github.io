@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261126-081050">
+<meta name="rvf-build" content="20261126-082449">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -21894,7 +21894,7 @@ function acDefaultRange(ym){
 /* ---------- loading ---------- */
 async function acLoadAll(force){
   if(!requireDb()) return false;
-  if(!AC.ym) AC.ym = acYmNow();
+  if(!AC.ym) AC.ym = acYmOpen();
   const [set, tbl] = await Promise.all([
     (AC.set && !force) ? AC.set : window.__db.getConfigObject('acctSettings', {}).then(acNormSettings),
     (AC.tbl && !force) ? AC.tbl : window.__db.getConfigObject('acctTables', { tables: [], next: 1 })]);
@@ -23909,7 +23909,7 @@ function a2Touch(){
 }
 async function a2Boot(){
   if(!requireDb()) throw new Error('db');
-  if(!A2.ym) A2.ym = acYmNow();
+  if(!A2.ym) A2.ym = acYmOpen();
   if(!(AC.set && AC.tbl)){
     const [set, tbl] = await Promise.all([window.__db.getConfigObject('acctSettings', {}).then(acNormSettings), window.__db.getConfigObject('acctTables', { tables: [], next: 1 })]);
     AC.set = set; AC.tbl = tbl; if(!Array.isArray(AC.tbl.tables)) AC.tbl.tables = []; acTblNormalize();
@@ -25212,6 +25212,7 @@ async function render12MonthProduction(){
 
 // the current salary month (named after the month it ends in); with start day 1 it is the calendar month
 function acYmNow(){ const sd = Number(state.salaryCycleStartDay) || 1, n = new Date(); if(sd <= 1) return n.getFullYear() + '-' + String(n.getMonth() + 1).padStart(2, '0'); return computeSalaryCycle(n, sd).end.slice(0, 7); }
+function acYmOpen(){ const n = new Date(), t = n.getFullYear() + '-' + String(n.getMonth() + 1).padStart(2, '0') + '-' + String(n.getDate()).padStart(2, '0'), ym = acYmNow(); return t < ym + '-16' ? acYmShift(ym, -1) : ym; }
 // called right after the start day is saved: forget everything that was worked out with the old day
 function rvfCycleChanged(){
   state.pmTot = {}; state.pmMax = 3;
@@ -26897,7 +26898,7 @@ function pdFiltered(all){
     && (!PD.pay || pdPayOf(u) === PD.pay) && (PD.st === 'all' || (PD.st === 'paid' ? pdIsPaid(paid[u.loginId]) : PD.st === 'hold' ? (paid[u.loginId] && paid[u.loginId].h === 'hold') : !pdIsPaid(paid[u.loginId]))) && (!q || (u.loginId + ' ' + u.name + ' ' + (u.department || '') + ' ' + ((u.profile || {}).position || '')).toLowerCase().includes(q)));
 }
 async function pdLoad(force){
-  if(!PD.ym) PD.ym = A2.ym || acYmNow();
+  if(!PD.ym) PD.ym = A2.ym || acYmOpen();
   if(PD.docs[PD.ym] && !force) return;
   if(!requireDb()) throw new Error('db');
   const o = await window.__db.getConfigObject(pdKey(), { paid: {} });
@@ -26905,7 +26906,7 @@ async function pdLoad(force){
 }
 function pdDraw(){
   const host = document.getElementById('acMain'); if(!host) return;
-  if(!PD.ym) PD.ym = A2.ym || acYmNow();
+  if(!PD.ym) PD.ym = A2.ym || acYmOpen();
   if(!pdDoc()){
     host.innerHTML = '<div class="empty-state">Loading…</div>';
     if(!PD.loading){ PD.loading = true; pdLoad().then(() => { PD.loading = false; if(A2.view === 'pay') pdDraw(); }).catch(err => { PD.loading = false; console.error(err); host.innerHTML = '<div class="empty-state">Could not load. Check your connection and open the page again.</div>'; }); }
@@ -27380,7 +27381,7 @@ const acgE = (x) => acEsc(x == null ? '' : x);
 function acgDays(ym){ const r = acDefaultRange(ym), d = (x) => Date.UTC(+x.slice(0, 4), +x.slice(5, 7) - 1, +x.slice(8, 10)) / 864e5; return { r, n: Math.round(d(r.to) - d(r.from)) + 1 }; }
 function acgSec(n, title, body){ return `<details data-acg="${n}"${ACG.open === true || (ACG.open == null && n === 1) ? ' open' : ''}><summary>${n}. ${acgE(title)}</summary><div class="acgB">${body}</div></details>`; }
 function acgHtml(){
-  const S = AC.set || {}, ym = A2.ym || acYmNow(), dy = acgDays(ym), per = dy.n, fmt = (x) => acMoney(x);
+  const S = AC.set || {}, ym = A2.ym || acYmOpen(), dy = acgDays(ym), per = dy.n, fmt = (x) => acMoney(x);
   const step = Math.max(1, acNum((S.round || {}).step) || 100), from = acNum((S.round || {}).from) || step / 2, cut = acNum(S.premCut), wh = a2WorkHours(), tyr = a2TyRate();
   const reasons = Array.isArray(S.dedReasons) ? S.dedReasons : [], inst = Array.isArray(S.instTypes) ? S.instTypes : [], opPos = Array.isArray(S.opPos) ? S.opPos : [];
   const tables = (AC.tbl && AC.tbl.tables) || [], groups = (S.ladders && S.ladders.groups) || [];
@@ -27560,7 +27561,7 @@ const acgNow = (t, inner) => `<div class="acgNow"><div class="acgNowT">${t} &mid
 const acgNum = (x) => acMoney(x).replace(/\.00$/, '');
 function acgSection(n, title, body){ return `<details data-acg="${n}"${ACG.open === true || (ACG.open == null && n === 1) ? ' open' : ''}><summary><span class="acgN">${n}</span>${acgE(title)}</summary><div class="acgB">${body}</div></details>`; }
 function acgHtml(){
-  const S = AC.set || {}, ym = A2.jym || A2.ym || acYmNow(), dy = acgDays(ym), per = dy.n, rg = dy.r, M = acgNum;
+  const S = AC.set || {}, ym = A2.jym || A2.ym || acYmOpen(), dy = acgDays(ym), per = dy.n, rg = dy.r, M = acgNum;
   const rnd = S.round || {}, step = Math.max(1, acNum(rnd.step) || 100), from = acNum(rnd.from) || step / 2, cut = acNum(S.premCut), wh = a2WorkHours(), tyr = a2TyRate();
   const reasons = Array.isArray(S.dedReasons) ? S.dedReasons : [], inst = Array.isArray(S.instTypes) ? S.instTypes : [], opPos = Array.isArray(S.opPos) ? S.opPos : [];
   const tables = ((AC.tbl && AC.tbl.tables) || []), LD = S.ladders || { groups: [], rows: [], every: 0 }, groups = LD.groups || [], sd = Number(state.salaryCycleStartDay) || 1;
