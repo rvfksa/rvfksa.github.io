@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261126-074617">
+<meta name="rvf-build" content="20261126-081050">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -23947,7 +23947,7 @@ async function a2CalcPicks(){
     d.rows = d.rows.filter(r => keep.has(r.id)); Object.keys(have).forEach(k => { if(!keep.has(k)) delete have[k]; });
     (state.users || []).filter(a2IsOp).forEach(u => {
       const pk = S.ops[u.loginId];
-      if(a2Live() && a2Off(u)) return; if(isExitedEmployee(u) && !(pk && pk.total > 0) && !have[u.loginId]) return;
+      if(a2Gate(u) && a2Off(u)) return; if(isExitedEmployee(u) && !(pk && pk.total > 0) && !have[u.loginId]) return;
       let r = have[u.loginId]; if(!r){ r = a2NewOp(u); d.rows.push(r); }
       r.name = u.name; r.dept = u.department || ''; r.pos = a2PosOf(u); r.sh = a2Sh(u);
       r.mc = pk ? Object.keys(pk.bm).filter(m => pk.bm[m] > 0).sort(a2Num).map(m => ({ m, n: a2McName(m), p: acR2(pk.bm[m]) })) : [];
@@ -25126,7 +25126,7 @@ const a2Decide = (u) => !!(a2JoinWhy(u) || /^left after/.test(a2ExitWhy(u)));   
 const a2Kept = (u) => { const d = a2Doc(); return !!(d && d.keep && d.keep[u.loginId]); };
 const a2ExitOld = () => (A2.ym || '') < acYmShift(acYmNow(), -1);   // sheets older than last month are history: nobody is taken out of them
 const a2Gate = (u) => (isExitedEmployee(u) || a2JoinWhy(u) || a2OtherWhy(u)) ? !a2ExitOld() : a2Live();
-const a2OffWhy = (u) => a2OtherWhy(u) || ((a2Decide(u) && a2Kept(u)) ? '' : (a2JoinWhy(u) || a2ExitWhy(u) || (a2VacWhole(u) ? 'is on vacation the whole salary month' : '')));
+const a2OffWhy = (u) => a2OtherWhy(u) || ((a2Kept(u) && (a2Decide(u) || isExitedEmployee(u))) ? '' : (a2JoinWhy(u) || a2ExitWhy(u) || (a2VacWhole(u) ? 'is on vacation the whole salary month' : '')));
 const a2Off = (u) => !!a2OffWhy(u);
 function a2JoinRefresh(d){   // the joining date on the profile counts at once
   let ch = false; const sec = d.sec;
@@ -25155,17 +25155,17 @@ function a2ChangesRaw(){
 function a2ChgHtml0(){
   const c = a2Changes(), n = c.moved.length + c.idch.length + c.gone.length + c.fresh.length; if(!n) return '';
   const L = (x) => x ? (A2_SEC[x] || {}).n || x : '', li = [];
-  c.moved.forEach(x => li.push(a2HB2('m|' + x.r.id, x.r.name + ' (ID ' + x.r.id + ') change') + `<b>${acEsc(x.r.name)}</b> (ID ${acEsc(x.r.id)}) ${x.why ? x.why + '. He is taken out of the salary.' + (acCanEdit() && x.u && a2Decide(x.u) ? ` <button type="button" class="pillBtn" data-a2x="keep2" data-id="${acEsc(x.r.id)}">Keep him</button>` : '') : 'is now ' + (x.to ? 'in the ' + acEsc(L(x.to)) + ' sheet' : 'marked as no salary') + '. He leaves this sheet.'}`));
+  c.moved.forEach(x => li.push(x.why ? `<b>${acEsc(x.r.name)}</b> (ID ${acEsc(x.r.id)}) ${acEsc(x.why)}.${acCanEdit() ? ` <button type="button" class="pillBtn ok" data-a2x="takeout" data-id="${acEsc(x.r.id)}">Take out of this sheet</button> <button type="button" class="pillBtn" data-a2x="keep2" data-id="${acEsc(x.r.id)}">Keep him here</button>` : ''}` : a2HB2('m|' + x.r.id, x.r.name + ' (ID ' + x.r.id + ') change') + `<b>${acEsc(x.r.name)}</b> (ID ${acEsc(x.r.id)}) is now ${x.to ? 'in the ' + acEsc(L(x.to)) + ' sheet' : 'marked as no salary'}. He leaves this sheet.`));
   c.idch.forEach(x => li.push(a2HB2('i|' + x.r.id + '>' + x.u.loginId, x.r.name + ' ID change') + `<b>${acEsc(x.r.name)}</b>: ID ${acEsc(x.r.id)} is now ${acEsc(x.u.loginId)}${x.same ? '. The row will use the new ID.' : (x.why ? ', and he ' + x.why + '. He is taken out of the salary.' : (x.to ? ', and he is now in the ' + acEsc(L(x.to)) + ' sheet. He leaves this sheet.' : ', marked as no salary. He leaves this sheet.'))}`));
   c.gone.forEach(x => li.push(a2HB2('g|' + x.r.id, x.r.name + ' not in the people list') + `<b>${acEsc(x.r.name)}</b> (ID ${acEsc(x.r.id)}) is not in the people list any more. Nothing is changed for him. Check, then delete the row if it is not needed.`));
   c.fresh.forEach(u => li.push(a2HB2('f|' + u.loginId, u.name + ' is new for this sheet') + `<b>${acEsc(u.name)}</b> is new for this sheet. Added with salary and joining date.`));
   if(false) li.push(`${c.fresh.length} new ${c.fresh.length === 1 ? 'person' : 'people'} for this sheet: ${c.fresh.slice(0, 6).map(u => acEsc(u.name)).join(', ')}${c.fresh.length > 6 ? ' and ' + (c.fresh.length - 6) + ' more' : ''}. They are added with their salary and joining date.`);
-  const act = c.moved.length + c.idch.length + c.fresh.length;
+  const act = c.moved.filter(x => !x.why).length + c.idch.length + c.fresh.length;
   return `<div class="a2Chg"><div class="a2ChgH"><b>${n} ${n === 1 ? 'change' : 'changes'} since this sheet was made</b><span style="flex:1"></span>${act && acCanEdit() ? '<button type="button" class="pillBtn ok" data-a2x="chgapply">Apply changes</button>' : ''}</div><ul>${li.map(x => '<li>' + x + '</li>').join('')}</ul><div class="hrNote" style="margin:6px 0 0;">Nothing moves until you press Apply changes. Amounts you typed stay.</div></div>`;
 }
 function a2ChgApply(){
   const d = a2Doc(); if(!d || !acCanEdit()) return; const c = a2Changes(), sec = d.sec;
-  const drop = new Set(c.moved.map(x => x.r.id));
+  const drop = new Set(c.moved.filter(x => !x.why).map(x => x.r.id));
   c.idch.forEach(x => { if(x.same){ x.r.id = x.u.loginId; const u = x.u; if(sec === 'operator'){ x.r.name = u.name; x.r.dept = u.department || ''; x.r.pos = a2PosOf(u); x.r.sh = a2Sh(u); a2OpRates(x.r); } else if(sec === 'sponsor'){ a2SpFromProfile(x.r, u); a2SpCalc(x.r); } else if(sec === 'saudi'){ a2SaFromProfile(x.r, u); a2SaCalc(x.r); } else { x.r.name = u.name; x.r.dept = u.department || ''; x.r.pos = a2PosOf(u); x.r.fx = ((u.profile || {}).salary || {}).basicSalary || ''; a2NsCalc(x.r); } } else drop.add(x.r.id); });
   d.rows = d.rows.filter(r => !drop.has(r.id));
   c.fresh.forEach(u => d.rows.push(a2NewRow(sec, u)));
@@ -32614,5 +32614,26 @@ OV_COLS.push({ k: 'sheet', l: 'Salary sheet', g: 'Work', acc: true, get: u => { 
   #ceoEmpDrillList table.ovTbl td[style*="font-weight:600"]{ min-width:120px; }
 }
 </style>
+<script>
+/* Salary sheet: someone who left gets a notice with two clear buttons (Take out of this sheet / Keep him here); someone who left and is already marked paid gets a notice that says why he stays */
+document.addEventListener('click', (e) => {
+  const t = e.target.closest && e.target.closest('[data-a2x="takeout"]'); if(!t || !acCanEdit()) return;
+  const d = a2Doc(); if(!d) return; const id = t.dataset.id, n = d.rows.length;
+  d.rows = d.rows.filter(r => r.id !== id);
+  if(d.rows.length !== n){ if(d.keep) delete d.keep[id]; a2Touch(); toast('Taken out of this sheet'); }
+  a2Draw();
+});
+{ const f = a2NtRows; a2NtRows = function(){
+    const rows = f.apply(this, arguments);
+    try{
+      const d = a2Doc(); if(d && !a2ExitOld()) d.rows.forEach(r => {
+        const u = (state.users || []).find(x => x.loginId === r.id); if(!u || !isExitedEmployee(u)) return;
+        const m = a2PaidMap(A2.ym)[u.loginId]; if(!m || m.h === 'hold' || m.h === 'other' || a2Hid('exitpaid', u.loginId)) return;
+        rows.push(`<div class="ntRow"><span class="ntTag c">Left</span><span class="ntTx"><b>${acEsc(u.name)}</b> (ID ${acEsc(u.loginId)}) has left and is marked paid in the Pay desk, so he stays in this sheet. To take him out, first undo his payment in the Pay desk (tap his green Paid button).</span><span class="ntAct"><button type="button" class="ntAdd" data-a2="pay">Open Pay desk</button>${a2HBtn('exitpaid', u.loginId, 'Left and paid: ' + u.name)}</span></div>`);
+      });
+    }catch(err){ console.error(err); }
+    return rows;
+  }; }
+</script>
 </body>
 </html>
