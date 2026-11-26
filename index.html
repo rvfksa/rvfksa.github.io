@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261126-103528">
+<meta name="rvf-build" content="20261126-104956">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -707,6 +707,37 @@ const usersCache = makeCachedCollection('users', { includeId: false, rowFilter: 
       const snaps = await Promise.all(ids.map(id => getDoc(doc(db, 'config', id))));
       snaps.forEach(s => { if (!s.exists()) return; const r = s.data().r || {}; Object.keys(r).forEach(k => { const x = r[k]; if (x.d >= fromStr && x.d <= toStr) out.push(this.pfRead(k, x)); }); });
       return out;
+    },
+    watchPacked(fromStr, toStr) {
+      const ids = []; let y = Number(fromStr.slice(0, 4)), mo = Number(fromStr.slice(5, 7)); const ey = Number(toStr.slice(0, 4)), em = Number(toStr.slice(5, 7));
+      while (y * 12 + mo <= ey * 12 + em) {
+        const mk = y + '-' + String(mo).padStart(2, '0');
+        for (let b = 0; b < 3; b++) { const s = mk + '-' + String(b * 10 + 1).padStart(2, '0'), e = mk + '-' + (b === 2 ? '31' : String(b * 10 + 10)); if (e >= fromStr && s <= toStr) ids.push('pf_' + mk + '_' + b); }
+        mo++; if (mo > 12) { mo = 1; y++; }
+      }
+      const self = this, data = {}, got = {}; let ready = false, stopped = false, onChange = null; const unsubs = [];
+      return new Promise((resolve) => {
+        const finish = () => { if (ready) return; ready = true; resolve(h); };
+        const h = {
+          dirty: false,
+          list() { const out = []; ids.forEach(id => { const r = data[id] || {}; Object.keys(r).forEach(k => { const x = r[k]; if (x.d >= fromStr && x.d <= toStr) out.push(self.pfRead(k, x)); }); }); return out; },
+          stop() { if (stopped) return; stopped = true; unsubs.forEach(u => { try { u(); } catch (e) {} }); },
+          set onchange(f) { onChange = f; }
+        };
+        ids.forEach(id => {
+          unsubs.push(onSnapshot(doc(db, 'config', id), { includeMetadataChanges: true }, (s) => {
+            if (stopped) return;
+            if (s.metadata && s.metadata.fromCache && !got[id] && !s.exists()) return;
+            const r = s.exists() ? (s.data().r || {}) : {}; const had = !!got[id];
+            if (s.metadata && s.metadata.fromCache && had) return;
+            data[id] = r; got[id] = 1;
+            if (ready) { h.dirty = true; if (onChange) onChange(); }
+            else if (ids.every(i => got[i])) finish();
+          }, () => { got[id] = 1; if (ids.every(i => got[i])) finish(); }));
+        });
+        if (!ids.length) finish();
+        setTimeout(finish, 6000);
+      });
     },
     async loadSummariesInRange(fromStr, toStr) {
       if (!dbReady) throw new Error('NOT_CONFIGURED');
@@ -32711,9 +32742,9 @@ function pkAllBtn(){
   try{
     if(!(state.user && state.user.role === 'admin') || document.getElementById('pkAllBar')) return;
     const m = document.getElementById('pkm_picks'); if(!m) return;
-    const w = document.createElement('div'); w.id = 'pkAllBar'; w.style.cssText = 'display:flex;justify-content:flex-end;margin:6px 0 2px;';
+    const w = document.createElement('span'); w.id = 'pkAllBar'; w.style.cssText = 'margin-left:auto;display:inline-flex;align-items:center;';
     w.innerHTML = `<button type="button" class="pillBtn" data-pk="dlall" data-c="picksBody">${DL_ICON}All operators</button>`;
-    m.insertAdjacentElement('afterend', w);
+    m.appendChild(w);
   }catch(e){}
 }
 { const l0 = loadPicksForApprovals; loadPicksForApprovals = async function(){ try{ return await l0.apply(this, arguments); } finally { pkAllBtn(); } }; }
@@ -32816,19 +32847,24 @@ table.pkSum .mStar{ margin-left:3px; vertical-align:-1px; }
 </style>
 <script>
 /* Fewer reads: everybody's daily totals for a date range are read once from the packed months (a few documents), kept until something changes, and every person's list is cut from it */
-const RVF_RNG = {};
+let RVF_W = null, RVF_WT = null;
+function rvfWatchIdle(){ clearTimeout(RVF_WT); RVF_WT = setTimeout(() => { if(RVF_W){ try{ RVF_W.h.stop(); }catch(e){} RVF_W = null; } }, 600000); }
 async function rvfRangeSums(from, to){
   try{
-    if(!window.__db || !/^\d{4}-\d{2}-\d{2}$/.test(from || '') || !/^\d{4}-\d{2}-\d{2}$/.test(to || '') || to < from) return null;
+    if(!window.__db || !window.__db.watchPacked || !/^\d{4}-\d{2}-\d{2}$/.test(from || '') || !/^\d{4}-\d{2}-\d{2}$/.test(to || '') || to < from) return null;
     const mm = (Number(to.slice(0, 4)) - Number(from.slice(0, 4))) * 12 + Number(to.slice(5, 7)) - Number(from.slice(5, 7));
     if(mm > 4) return null;                                   // a long range: the old way
     const pf = await window.__db.pfFrom(); if(!pf || from < pf) return null;   // packed months not available for these dates
-    const v = window.__db.readingsVersion ? window.__db.readingsVersion() : 0, key = from + '|' + to, c = RVF_RNG[key];
-    if(c && c.v === v && Date.now() - c.at < 300000) return c;
-    const list = await window.__db.loadSummariesPacked(from, to), by = {};
-    list.forEach(s => { (by[s.operatorId] = by[s.operatorId] || []).push(s); });
-    const keys = Object.keys(RVF_RNG); if(keys.length > 3) delete RVF_RNG[keys[0]];
-    return RVF_RNG[key] = { by, v, at: Date.now() };
+    const key = from + '|' + to;
+    if(!RVF_W || RVF_W.key !== key){
+      if(RVF_W){ try{ RVF_W.h.stop(); }catch(e){} RVF_W = null; }
+      const w = { key, h: null, by: null }; RVF_W = w;
+      w.h = await window.__db.watchPacked(from, to);
+      if(RVF_W !== w){ try{ w.h.stop(); }catch(e){} return null; }
+    }
+    const w = RVF_W; rvfWatchIdle();
+    if(!w.by || w.h.dirty){ const by = {}; w.h.list().forEach(s => { (by[s.operatorId] = by[s.operatorId] || []).push(s); }); w.by = by; w.h.dirty = false; }
+    return { by: w.by };
   }catch(err){ console.error('Packed totals not used:', err); return null; }
 }
 async function rvfOpSumsIn(id, from, to){
