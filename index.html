@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261126-101227">
+<meta name="rvf-build" content="20261126-101642">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -21642,11 +21642,7 @@ const ovType = (u) => { if(OVV.back.has(String(u.loginId))) return 4; const t = 
 const OV_GL = ['Sponsor', 'Non-Sponsor', 'Saudi', 'Type not set', 'Came back from vacation'];
 const ovSort = (list) => list.map((u, i) => [u, i]).sort((a, b) => ovType(a[0]) - ovType(b[0]) || a[1] - b[1]).map(x => x[0]);   // Sponsor first, then Non-Sponsor; the old order is kept inside each group
 // New Joined: Non-Sponsors who joined in the period but have already left are not listed - say so, so the numbers add up
-function ovLeftHidden(){
-  if(typeof empDrillKind === 'undefined' || empDrillKind !== 'highlight:newJoin') return [];
-  const dr = getDetailsDateRange();
-  return (state.users || []).filter(u => u.role !== 'pending' && !u.spare && u.profile && u.profile.joiningDate && dateWithinDetailsRange(u.profile.joiningDate, dr) && isExitedEmployee(u) && u.profile.employmentType === 'Non-Sponsor');
-}
+function ovLeftHidden(){ return []; }   // joined-and-left people are in the Exit/Terminated list, so nothing extra is said about them here
 // New Joined: someone who is no longer On The Job gets his current job status as a small remark under the name
 function ovRemark(u){
   if(typeof empDrillKind === 'undefined' || empDrillKind !== 'highlight:newJoin') return '';
