@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261126-093505">
+<meta name="rvf-build" content="20261126-095228">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -15305,7 +15305,7 @@ function employeesExitedInRange(withProfile, range, customFrom, customTo){
     const isExit = p.employmentStatus === 'terminated' || p.employmentStatus === 'final_exit';
     if(!isExit) return false;
     if(!cutoff && !upper) return true; // All Time
-    if(!p.endDate) return false;
+    if(!p.endDate) return true;
     const d = new Date(p.endDate);
     if(cutoff && d < cutoff) return false;
     if(upper && d > upper) return false;
@@ -32393,7 +32393,7 @@ document.addEventListener('mousedown', (ev) => {
     const sel = $('pf-empStatus'); if(!sel) return _s.apply(this, arguments);
     const u = profileCache.user, id = u.loginId, p0 = u.profile || {}, old = p0.employmentStatus === 'final_exit' ? 'terminated' : (p0.employmentStatus || 'running'), ns = sel.value;
     const isExit = ns === 'terminated', changed = ns !== old, back = old === 'vacation' && ns === 'running', ws = $('pf-workStart') ? $('pf-workStart').value : '';
-    if(isExit && !$('pf-endDate').value && $('pf-employmentType').value === 'Sponsor'){ toast('Please choose the exit date - it is required for a Sponsor employee'); $('pf-endDate').focus(); return; }
+    if(isExit && !$('pf-endDate').value && ($('pf-employmentType').value === 'Sponsor' || changed)){ toast('Please choose the exit date'); $('pf-endDate').focus(); return; }
     if(back && !ws){ toast('Please choose the work start date (the first day back at work after vacation)'); $('pf-workStart').focus(); return; }
     await _s.apply(this, arguments);
     if(!changed) return;
