@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261126-143537">
+<meta name="rvf-build" content="20261126-151711">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -7465,6 +7465,7 @@ function toggleMachineEditPanel(id){
       <div class="field"><label>Category</label>
         <select class="em-cat"><option value="" ${!machineCat(m)?'selected':''}>Not set</option>${MACHINE_CATS.map(c => `<option ${machineCat(m) === c ? 'selected' : ''}>${c}</option>`).join('')}</select></div>
     </div>
+    <div class="field em-vf" style="${machineCat(m) === 'VIP' ? '' : 'display:none;'}"><label title="Accounts counts this machine as VIP only in salary months that start on or after this date. Empty = always.">VIP from</label><input type="date" class="em-vipfrom" value="${assignEsc(m.vipFrom || '')}"></div>
     <div class="hint" style="text-align:left; margin:-4px 0 10px;">A VIP machine shows a small star everywhere, and Accounts uses it for the VIP extra-money and premium groups. VL, MR and DOT show as a small label.</div>
     <div class="row-2">
       <button class="btn btn-ghost btn-sm em-cancel">Cancel</button>
@@ -7472,6 +7473,7 @@ function toggleMachineEditPanel(id){
     </div>
   `;
   panel.querySelector('.em-cancel').addEventListener('click', () => { panel.style.display = 'none'; });
+  panel.querySelector('.em-cat').addEventListener('change', (ev) => { const w = panel.querySelector('.em-vf'); if(w) w.style.display = ev.target.value === 'VIP' ? '' : 'none'; });
   panel.querySelector('.em-save').addEventListener('click', () => saveMachineEdit(id, panel));
   const updateBaselinePreview = () => renderBaselinePreview(panel, id);
   panel.querySelector('.em-baseline').addEventListener('input', updateBaselinePreview);
@@ -7557,7 +7559,7 @@ async function saveMachineEdit(id, panel){
     model: panel.querySelector('.em-model').value.trim(),
     jacquard: panel.querySelector('.em-jac').value.trim(),
     note: panel.querySelector('.em-note').value.trim(),
-    category: panel.querySelector('.em-cat').value, vip: panel.querySelector('.em-cat').value === 'VIP', colours: panel.querySelector('.em-col').value.trim(),
+    category: panel.querySelector('.em-cat').value, vip: panel.querySelector('.em-cat').value === 'VIP', vipFrom: (panel.querySelector('.em-cat').value === 'VIP' && panel.querySelector('.em-vipfrom') ? panel.querySelector('.em-vipfrom').value : ''), colours: panel.querySelector('.em-col').value.trim(),
     baselineReading: baselineReading || null,
     baselineDate
   };
@@ -21977,7 +21979,10 @@ function acRateAt(t, colName, level){
 }
 /* extra money ladder: groups (department and/or machine list) + one table of picks steps */
 const acGroupMode = (g) => g.mode || ((g.machines || []).length ? 'list' : 'any');
-const acGroupMachines = (g) => { const m = acGroupMode(g); return m === 'vip' ? (state.machines || []).filter(x => x.vip).map(x => String(x.id)) : (m === 'list' ? (g.machines || []).map(String) : []); };
+const acVipDay = () => { try{ const d = a2Doc(); return (d && d.from) || ''; }catch(e){ return ''; } };
+const acMVip = (x) => !!(x && x.vip && (!x.vipFrom || !acVipDay() || x.vipFrom <= acVipDay()));
+const acMVipId = (id) => acMVip((state.machines || []).find(x => String(x.id) === String(id)));
+const acGroupMachines = (g) => { const m = acGroupMode(g); return m === 'vip' ? (state.machines || []).filter(acMVip).map(x => String(x.id)) : (m === 'list' ? (g.machines || []).map(String) : []); };
 /* share of the operator's picks that came from the group's machines (0-100) and how many of those machines he ran */
 function acGroupShare(g, mc){
   const lst = acGroupMachines(g), run = (mc || []).filter(m => (Number(m.p) || 0) > 0), tot = run.reduce((a, m) => a + Number(m.p), 0), inn = run.filter(m => lst.indexOf(String(m.m)) >= 0);
@@ -23834,7 +23839,7 @@ function a2Cols0(sec, all){
       { k: 'pos', l: 'Position', g: 'Person', rep: 1, text: r => r.pos || '', html: r => acEsc(r.pos || '') },
       { k: 'shift', l: 'Shift', g: 'Person', rep: 1, text: r => r.sh === 'D' ? 'Day' : r.sh === 'N' ? 'Night' : '', html: r => r.sh === 'D' ? 'Day' : r.sh === 'N' ? 'Night' : '' },
       { k: 'grp', l: 'Extra group', g: 'Person', rep: 1, text: r => r.grp || '', html: r => acEsc(r.grp || '') },
-      { k: 'mc', l: 'MC', g: 'Machines', def: A2.det !== false ? 1 : 0, ml: 1, text: (r, i) => ((r.mc[i] || {}).n || '') + ((r.mc[i] && machineIsVip(r.mc[i].m)) ? ' (VIP)' : ''), html: (r, e, i) => acEsc((r.mc[i] || {}).n || '') + ((r.mc[i] && machineIsVip(r.mc[i].m)) ? (A2.pdf ? ' <span class="mVipT">VIP</span>' : machineStar(r.mc[i].m)) : '') },
+      { k: 'mc', l: 'MC', g: 'Machines', def: A2.det !== false ? 1 : 0, ml: 1, text: (r, i) => ((r.mc[i] || {}).n || '') + ((r.mc[i] && acMVipId(r.mc[i].m)) ? ' (VIP)' : ''), html: (r, e, i) => acEsc((r.mc[i] || {}).n || '') + ((r.mc[i] && acMVipId(r.mc[i].m)) ? (A2.pdf ? ' <span class="mVipT">VIP</span>' : machineStar(r.mc[i].m)) : '') },
       { k: 'mcp', l: 'Picks', g: 'Machines', def: A2.det !== false ? 1 : 0, ml: 1, num: 1, text: (r, i) => a2I((r.mc[i] || {}).p), raw: (r, i) => r.mc[i] ? Math.round(r.mc[i].p) : '', html: (r, e, i) => r.mc[i] ? a2Peek(r, r.mc[i]) : '' },
       { k: 'total', l: 'Total picks', g: 'Pay', def: A2.tp !== false ? 1 : 0, num: 1, bold: 1, sum: 1, calc: 1, text: r => a2I(r.total), raw: r => Math.round(r.total) || '', sv: r => r.total, html: r => a2I(r.total) },
       { k: 'mcr', l: 'Rate', g: 'Pay', def: A2.det !== false ? 1 : 0, ml: 1, num: 1, text: (r, i) => a2R((r.mc[i] || {}).r), raw: (r, i) => (r.mc[i] || {}).r || '', html: (r, e, i) => a2R((r.mc[i] || {}).r) },
