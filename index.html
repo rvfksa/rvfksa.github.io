@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261126-090308">
+<meta name="rvf-build" content="20261126-092103">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -32663,6 +32663,46 @@ document.addEventListener('click', (e) => {
   const t = e.target.closest && e.target.closest('[data-a2x="takeout"],[data-a2x="keep2"],[data-a2x="keep"],[data-a2h],[data-a2v="ok"]'); if(!t) return;
   setTimeout(() => { try{ const d = a2Doc(); if(d && d.dirty){ clearTimeout(A2.as); a2AutoSave(); } }catch(err){} }, 60);
 });
+</script>
+<script>
+/* Employee Overview: the Period choice now changes the New Joined and Exit/Terminated tiles, and every filter always works (it opens the list when none is open) */
+(function(){
+  const MN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  function periodShort(){
+    const sel = document.getElementById('ceoFilterDateRange'); if(!sel) return '';
+    const v = sel.value, dr = getDetailsDateRange();
+    if(v === 'all') return 'All time';
+    if(v === 'thisMonth' || v === 'lastMonth' || v === 'month') return MN[Number(dr.to.slice(5, 7)) - 1] + ' ' + dr.to.slice(0, 4);
+    return sel.options[sel.selectedIndex].text;
+  }
+  function ovTilesUpdate(){
+    try{
+      const wp = (state.users || []).filter(u => u.role !== 'pending' && !u.spare), dr = getDetailsDateRange(), ps = periodShort();
+      const nj = wp.filter(u => u.profile && u.profile.joiningDate && dateWithinDetailsRange(u.profile.joiningDate, dr) && !(isExitedEmployee(u) && u.profile.employmentType === 'Non-Sponsor'));
+      const ex = employeesExitedInRange(wp, dr.mode, dr.from, dr.to);
+      const sp = (arr) => { const n = (t) => arr.filter(u => u.profile && u.profile.employmentType === t).length; return 'Sponsor <b>' + n('Sponsor') + '</b> &middot; Non-Sponsor <b>' + n('Non-Sponsor') + '</b>' + (n('Saudi') ? ' &middot; Saudi <b>' + n('Saudi') + '</b>' : ''); };
+      const set = (id, t, html) => { const e = document.getElementById(id); if(e){ if(html) e.innerHTML = t; else e.textContent = t; } };
+      set('kpiNewJoin', nj.length); set('kpiNewJoinSp', sp(nj), 1); set('kpiExited', ex.length); set('kpiExitedSp', sp(ex), 1);
+      const cap = (k, t) => { const c = document.querySelector('.ceoEmpHighlight[data-kind="' + k + '"] > div:nth-child(2)'); if(c) c.textContent = t + (ps ? ' · ' + ps : ''); };
+      cap('newJoin', 'New Joined'); cap('exited', 'Exit/Terminated');
+    }catch(e){ console.error(e); }
+  }
+  const r0 = renderEmployeeOverviewBox; let first = true;
+  renderEmployeeOverviewBox = function(users){
+    if(first){ first = false; try{ const s = document.getElementById('ceoFilterDateRange'); if(s && typeof acYmOpen === 'function' && acYmOpen() < acYmNow()) s.value = 'lastMonth'; }catch(e){} }
+    const r = r0.apply(this, arguments); ovTilesUpdate(); return r;
+  };
+  const opened = () => { const b = document.getElementById('ceoEmpDrill'); return !!empDrillKind && b && b.style.display !== 'none'; };
+  const FIL = '#ceoFilterDept,#ceoFilterCountry,#ceoFilterGender,#ceoFilterPosition,#ceoFilterTenure,#ceoFilterStatus,#ceoFilterType,#ceoFilterSheet,#ceoFilterShift';
+  const PER = '#ceoFilterDateRange,#ceoFilterMonth,#ceoFilterDateFrom,#ceoFilterDateTo';
+  document.addEventListener('change', (e) => {
+    const t = e.target; if(!t || !t.matches) return;
+    if(t.matches(PER)){ setTimeout(() => { ovTilesUpdate(); if(empDrillKind === 'highlight:exited' || empDrillKind === 'highlight:newJoin') renderEmpDrillList(); }, 0); return; }
+    if(t.matches(FIL)){
+      if(!opened()){ empDrillKind = 'all'; empDrillExtra = null; const b = document.getElementById('ceoEmpDrill'); if(b) b.style.display = 'block'; try{ OVC.drawnKind = null; }catch(err){} setTimeout(() => { try{ renderEmpDrillList(); }catch(err){ console.error(err); } }, 0); }
+    }
+  }, true);
+})();
 </script>
 </body>
 </html>
