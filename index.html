@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261126-073348">
+<meta name="rvf-build" content="20261126-074617">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -27525,7 +27525,7 @@ function a2DrawUsers(){
   a2OvPark();
   $('acMain').innerHTML = '<div id="employeeOverviewMountAccounts"></div>';
   mountEmployeeOverview('employeeOverviewMountAccounts');
-  try{ renderEmployeeOverviewBox(state.users || []); }catch(e){ console.error(e); }
+  try{ OVC.drawnKind = null; renderEmployeeOverviewBox(state.users || []); }catch(e){ console.error(e); }
   a2OvEditBtns();
 }
 document.addEventListener('change', (e) => { const t = e.target; if(!t || !t.id) return; const m = { acuSheet: 'sheet', acuPos: 'pos', acuEt: 'et', acuShift: 'shift' }[t.id]; if(!m) return; ACU[m] = t.value; const l = $('acuList'); if(l) l.innerHTML = acuRows(); });
@@ -32564,7 +32564,7 @@ function a2OvEditBtns(){
   const m = document.getElementById('employeeOverviewMountAccounts'); if(!m || !profCanEdit()) return;
   m.querySelectorAll('.viewDetailsBtn').forEach(v => {
     if(v.parentNode.classList.contains('a2OvAct')) return;
-    const e = document.createElement('button'); e.type = 'button'; e.className = 'pillBtn ok a2OvEdit'; e.dataset.acu = 'open'; e.dataset.id = v.dataset.id; e.textContent = 'Edit profile';
+    const e = document.createElement('button'); e.type = 'button'; e.className = 'pillBtn ok a2OvEdit'; e.dataset.acu = 'open'; e.dataset.id = v.dataset.id; e.innerHTML = '<span class="l">Edit profile</span><span class="s">Edit</span>';
     const w = document.createElement('span'); w.className = 'a2OvAct'; w.style.cssText = 'display:inline-flex;gap:6px;align-items:center;white-space:nowrap;';
     v.parentNode.insertBefore(w, v); w.appendChild(e); w.appendChild(v);
   });
@@ -32574,9 +32574,45 @@ function a2OvEditBtns(){
 { const f = loadAccountsPage; loadAccountsPage = function(){ a2OvPark(); return f.apply(this, arguments); }; }
 </script>
 <style>
-.a2OvEdit{ display:none; }
+.a2OvEdit{ display:none; } .a2OvEdit .s{ display:none; }
 #employeeOverviewMountAccounts .a2OvEdit{ display:inline-flex; }
 #employeeOverviewMountAccounts #employeeOverviewBlock > h2{ margin-top:4px; }
+</style>
+<script>
+/* Accounts > Users: what the old Users list had (Salary sheet column, Salary sheet and Shift filters) now lives inside the Employee Overview, only while it is shown in Accounts */
+function a2OvOn(){ const b = document.getElementById('employeeOverviewBlock'); return !!(b && b.parentElement && b.parentElement.id === 'employeeOverviewMountAccounts'); }
+OV_COLS.push({ k: 'sheet', l: 'Salary sheet', g: 'Work', acc: true, get: u => { try{ return acuSheetName(acuSheetOf(u)); }catch(e){ return ''; } } });
+{ const f = ovAvail; ovAvail = function(){ const on = a2OvOn(); return f.apply(this, arguments).filter(c => !c.acc || on); }; }
+{ const f = mountEmployeeOverview; mountEmployeeOverview = function(){ const b = document.getElementById('employeeOverviewBlock'), was = b && b.parentElement; const r = f.apply(this, arguments); if(b && b.parentElement !== was){ try{ OVC.drawnKind = null; }catch(e){} } return r; }; }
+(function(){
+  const t = document.getElementById('ceoFilterType'); const fld = t && t.closest('.field'); if(!fld || document.getElementById('ceoFilterSheet')) return;
+  fld.insertAdjacentHTML('afterend', '<div class="field ovAccOnly"><label>Salary sheet</label><select id="ceoFilterSheet"><option value="">All salary sheets</option><option value="operator">Operator</option><option value="sponsor">Sponsor</option><option value="nonsponsor">Non Sponsor</option><option value="saudi">Saudi</option><option value="left">Left out of sheets</option></select></div><div class="field ovAccOnly"><label>Shift</label><select id="ceoFilterShift"><option value="">Any shift</option><option value="Day">Day</option><option value="Night">Night</option><option value="__unset__">Not set</option></select></div>');
+})();
+{ const f = empDrillCompute; empDrillCompute = function(){
+    const r = f.apply(this, arguments); if(!a2OvOn()) return r;
+    const g = (id) => { const e = document.getElementById(id); return e ? e.value : ''; }, sh = g('ceoFilterSheet'), sf = g('ceoFilterShift'); if(!sh && !sf) return r;
+    r.list = r.list.filter(u => (!sh || acuSheetOf(u) === sh) && (!sf || (sf === '__unset__' ? !acuShiftOf(u) : acuShiftOf(u) === sf))); return r; }; }
+{ const f = ovFilterText; ovFilterText = function(){
+    let s = f.apply(this, arguments); if(!a2OvOn()) return s;
+    const g = (id) => { const e = document.getElementById(id); return e ? e.value : ''; }, add = [];
+    if(g('ceoFilterSheet')) add.push('Salary sheet: ' + acuSheetName(g('ceoFilterSheet')));
+    if(g('ceoFilterShift')) add.push('Shift: ' + (g('ceoFilterShift') === '__unset__' ? 'Not set' : g('ceoFilterShift')));
+    return add.length ? [s].concat(add).filter(Boolean).join(' · ') : s; }; }
+['ceoFilterSheet', 'ceoFilterShift'].forEach(id => { const e = document.getElementById(id); if(e) e.addEventListener('change', () => { if(empDrillKind) renderEmpDrillList(); }); });
+</script>
+<style>
+.ovAccOnly{ display:none; } #employeeOverviewMountAccounts .ovAccOnly{ display:block; }
+/* the Edit / View buttons stay at the right edge and stay reachable on a phone, where the table slides sideways */
+#ceoEmpDrillList table.ovTbl th:last-child, #ceoEmpDrillList table.ovTbl tr:not(.ovGrp) td:last-child{ position:sticky; right:0; width:1%; text-align:right; }
+#ceoEmpDrillList table.ovTbl th:last-child{ background:#f6f7fb; }
+#ceoEmpDrillList table.ovTbl tbody tr:not(.ovGrp) td:last-child{ background:#ffffff; box-shadow:-10px 0 8px -8px rgba(15,23,42,.16); }
+#ceoEmpDrillList table.ovTbl tbody tr:not(.ovGrp):nth-child(even) td:last-child{ background:#f9f9fa; }
+@media (max-width:560px){
+  #ceoEmpDrillList .a2OvAct{ gap:4px !important; }
+  #ceoEmpDrillList .a2OvEdit, #ceoEmpDrillList .viewDetailsBtn{ padding:5px 9px; font-size:10.5px; }
+  #ceoEmpDrillList .a2OvEdit .l{ display:none; } #ceoEmpDrillList .a2OvEdit .s{ display:inline; }
+  #ceoEmpDrillList table.ovTbl td[style*="font-weight:600"]{ min-width:120px; }
+}
 </style>
 </body>
 </html>
