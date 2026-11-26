@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261126-100233">
+<meta name="rvf-build" content="20261126-100911">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -15608,8 +15608,8 @@ function empDrillCompute(kind0){
       const have = new Set(list.map(u => String(u.loginId))), today = dateToStr(new Date());
       withProfile.forEach(u => {
         const p = u.profile || {}, v = OVV.map[u.loginId];
-        if(have.has(String(u.loginId)) || isExitedEmployee(u) || p.employmentStatus === 'vacation' || !v || !(v.to || v.workStart) || (v.to || v.workStart) > today) return;
-        if(dateWithinDetailsRange(v.to || v.workStart, dr)){ list.push(u); OVV.back.add(String(u.loginId)); }
+        if(have.has(String(u.loginId)) || isExitedEmployee(u) || p.employmentStatus === 'vacation' || !v || !ovBackDay(v) || ovBackDay(v) > today) return;
+        if(dateWithinDetailsRange(ovBackDay(v), dr)){ list.push(u); OVV.back.add(String(u.loginId)); }
       });
     }
     onlyRunning = false;
@@ -21572,6 +21572,7 @@ const OV_COLS = [
 // the salary lines an admin added in the profile (Admin > Dropdowns) become columns too
 function ovAll(){ return OV_COLS.concat((state.salaryComponents || []).map(c => ({ k: 'sc_' + c, l: c, g: 'Admin only', adm: true, get: u => { const m = ((((u.profile || {}).salary) || {}).components) || {}; return m[c] == null ? '' : m[c]; } }))); }
 // ---- vacation info: the latest vacation of each person (one shared read of the vacations list per session, only when it is needed)
+const ovBackDay = (v) => !v ? '' : (/^\d{4}-\d{2}-\d{2}$/.test(v.workStart || '') ? v.workStart : (v.to || ''));
 const OVV = { loaded: false, loading: false, map: {}, all: {}, back: new Set() };
 function ovVacEnsure(){
   if(OVV.loaded) return true;
@@ -21649,7 +21650,7 @@ function ovLeftHidden(){
 // New Joined: someone who is no longer On The Job gets his current job status as a small remark under the name
 function ovRemark(u){
   if(typeof empDrillKind === 'undefined' || empDrillKind !== 'highlight:newJoin') return '';
-  if(OVV.back.has(String(u.loginId))){ const v = ovVac(u); return '<div class="ovRemark" style="color:#166534; background:#dcfce7;">Returned ' + assignEsc(v && (v.to || v.workStart) ? fmtDate(v.to || v.workStart) : '') + '</div>'; }
+  if(OVV.back.has(String(u.loginId))){ const v = ovVac(u); return '<div class="ovRemark" style="color:#166534; background:#dcfce7;">Returned ' + assignEsc(v && ovBackDay(v) ? fmtDate(ovBackDay(v)) : '') + '</div>'; }
   const st = (u.profile || {}).employmentStatus; if(!st || st === 'running') return '';
   return '<div class="ovRemark">' + assignEsc(empStatusLabel(st)) + '</div>';
 }
