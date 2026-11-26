@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261126-082449">
+<meta name="rvf-build" content="20261126-085038">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -25735,7 +25735,7 @@ function a2VioInner(){
   const row = (x, btns) => `<div class="a2VioR"><span><b>${acEsc(x.r.name)}</b> &middot; ${acEsc(a2VioShort(x.v.date))} &middot; ${acEsc(x.v.reason || 'Violation')} &middot; <b>${acMoney(viAmt(x.v))} SAR</b></span>${btns}</div>`;
   return `<div class="a2Chg a2Vio">
     ${it.p.length ? `<div class="a2ChgH"><b>${it.p.length} violation deduction${it.p.length === 1 ? '' : 's'} waiting for your decision</b></div>${it.p.map(x => row(x, `<span class="a2VioB"><button type="button" class="pillBtn ok" data-a2v="add" data-id="${acEsc(x.v._id)}">Add to salary</button>${state.user && state.user.role === 'admin' ? `<button type="button" class="pillBtn" data-a2v="skip" data-id="${acEsc(x.v._id)}">Don't add</button>` : ''}</span>`)).join('')}` : ''}
-    ${it.a.length ? `<details class="a2VioD"><summary>${it.a.length} violation deduction${it.a.length === 1 ? '' : 's'} added in this sheet</summary>${it.a.map(x => row(x, `<span class="a2VioB">${state.user && state.user.role === 'admin' ? `<button type="button" class="pillBtn" data-a2v="rem" data-id="${acEsc(x.v._id)}">Remove</button>` : `<button type="button" class="pillBtn" data-a2v="ok" data-id="${acEsc(x.v._id)}">OK</button>`}</span>`)).join('')}</details>` : ''}</div>`;
+    ${it.a.length ? `<details class="a2VioD"><summary>${it.a.length} violation deduction${it.a.length === 1 ? '' : 's'} added in this sheet</summary>${it.a.map(x => row(x, `<span class="a2VioB"><button type="button" class="pillBtn ok" data-a2v="ok" data-id="${acEsc(x.v._id)}">OK</button>${state.user && state.user.role === 'admin' ? `<button type="button" class="pillBtn" data-a2v="rem" data-id="${acEsc(x.v._id)}">Undo deduction</button>` : ''}</span>`)).join('')}</details>` : ''}</div>`;
 }
 function a2VioFill(){ const b = document.getElementById('a2VioBox'); if(b){ b.innerHTML = a2VioInner(); if(!(state.user && state.user.role === 'admin')) b.querySelectorAll('[data-a2v="rem"],[data-a2v="skip"]').forEach(x => x.remove()); } }
 function a2VacList(){
@@ -32636,5 +32636,26 @@ document.addEventListener('click', (e) => {
     return rows;
   }; }
 </script>
+<script>
+/* Salary sheet notices (vacation, paid another way, decide, changes) use the same yellow box as the warning deductions */
+a2ChgHtml = function(){
+  const conv = (s) => {
+    const w = document.createElement('div'); w.innerHTML = s; const el = w.firstElementChild; if(!el) return '';
+    const tg = el.querySelector('.ntTag'), tgt = tg ? tg.textContent.trim() : '', isC = tg && tg.classList.contains('c');
+    const bt = [...el.querySelectorAll('button')]; bt.forEach(b => { b.className = b.className.indexOf('ntAdd') >= 0 ? 'pillBtn ok' : (b.dataset.a2h === 'hide' ? 'pillBtn' : b.className); if(b.dataset.a2h === 'hide') b.textContent = 'OK'; b.remove(); });
+    const tx = el.querySelector('.ntTx'); if(!tx) return '';
+    if(el.classList.contains('ntApply')) return '<div class="a2VioR"><span><b>Changes are ready</b></span><span class="a2VioB">' + bt.map(b => b.outerHTML).join('') + '</span></div>';
+    return '<div class="a2VioR"><span>' + (tgt && !isC ? '<b>' + acEsc(tgt) + '</b> &middot; ' : '') + tx.innerHTML + '</span><span class="a2VioB">' + bt.map(b => b.outerHTML).join('') + '</span></div>';
+  };
+  const rows = a2NtRows().concat(a2ChgRows()).map(conv).filter(Boolean), n = rows.filter(x => x.indexOf('Changes are ready') < 0).length;
+  return '<div id="a2VioBox">' + a2VioInner() + '</div>' + (rows.length ? '<div class="a2Chg a2Vio"><div class="a2ChgH"><b>' + n + ' notice' + (n === 1 ? '' : 's') + ' in this sheet</b></div>' + rows.join('') + '</div>' : '') + a2HidBox();
+};
+</script>
+<style>
+.a2Vio .a2VioR .pillBtn{font-size:11px !important;padding:0 10px !important;height:22px !important;min-height:0 !important;line-height:20px !important;white-space:nowrap;} .a2Vio .a2VioR{padding:4px 0;}
+.a2Vio .a2VioR > span:first-child{flex:1;min-width:0;line-height:1.35;}
+.a2Vio .a2VioB{flex:none;}
+@media(max-width:560px){.a2Vio .a2VioR > span:first-child{flex:1 1 100%;} .a2Vio .a2VioB{margin-left:auto;}}
+</style>
 </body>
 </html>
