@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261126-100012">
+<meta name="rvf-build" content="20261126-100233">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -15608,8 +15608,8 @@ function empDrillCompute(kind0){
       const have = new Set(list.map(u => String(u.loginId))), today = dateToStr(new Date());
       withProfile.forEach(u => {
         const p = u.profile || {}, v = OVV.map[u.loginId];
-        if(have.has(String(u.loginId)) || isExitedEmployee(u) || p.employmentStatus === 'vacation' || !v || !v.to || v.to > today) return;
-        if(dateWithinDetailsRange(v.to, dr)){ list.push(u); OVV.back.add(String(u.loginId)); }
+        if(have.has(String(u.loginId)) || isExitedEmployee(u) || p.employmentStatus === 'vacation' || !v || !(v.to || v.workStart) || (v.to || v.workStart) > today) return;
+        if(dateWithinDetailsRange(v.to || v.workStart, dr)){ list.push(u); OVV.back.add(String(u.loginId)); }
       });
     }
     onlyRunning = false;
@@ -21589,7 +21589,7 @@ const ovVac = (u) => OVV.map[u.loginId] || null;
 const ovTk = (u) => (ovVac(u) || {}).ticket || {};
 OV_COLS.push(
   { k: 'vfrom', l: 'Vacation from (going)', g: 'Vacation', get: u => OV_DT((ovVac(u) || {}).from) },
-  { k: 'vto', l: 'Return date', g: 'Vacation', get: u => OV_DT((ovVac(u) || {}).to) },
+  { k: 'vto', l: 'Return date', g: 'Vacation', get: u => OV_DT((ovVac(u) || {}).to || (ovVac(u) || {}).workStart) },
   { k: 'vdays', l: 'Vacation days', g: 'Vacation', get: u => (ovVac(u) || {}).totalDays || '' },
   { k: 'vrem', l: 'Vacations remaining', g: 'Vacation', get: u => { const r = vacRemaining(u); return r === null ? '' : r; } },
   { k: 'vupto', l: 'Vacations counted up to (year)', g: 'Vacation', get: u => { const r = vacTaken(u.profile || {}, OVV.all[u.loginId] || []); return r.upTo || ''; } },
@@ -21649,7 +21649,7 @@ function ovLeftHidden(){
 // New Joined: someone who is no longer On The Job gets his current job status as a small remark under the name
 function ovRemark(u){
   if(typeof empDrillKind === 'undefined' || empDrillKind !== 'highlight:newJoin') return '';
-  if(OVV.back.has(String(u.loginId))){ const v = ovVac(u); return '<div class="ovRemark" style="color:#166534; background:#dcfce7;">Returned ' + assignEsc(v && v.to ? fmtDate(v.to) : '') + '</div>'; }
+  if(OVV.back.has(String(u.loginId))){ const v = ovVac(u); return '<div class="ovRemark" style="color:#166534; background:#dcfce7;">Returned ' + assignEsc(v && (v.to || v.workStart) ? fmtDate(v.to || v.workStart) : '') + '</div>'; }
   const st = (u.profile || {}).employmentStatus; if(!st || st === 'running') return '';
   return '<div class="ovRemark">' + assignEsc(empStatusLabel(st)) + '</div>';
 }
