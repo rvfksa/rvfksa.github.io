@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261126-073223">
+<meta name="rvf-build" content="20261126-073348">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -32563,9 +32563,10 @@ function a2OvPark(){
 function a2OvEditBtns(){
   const m = document.getElementById('employeeOverviewMountAccounts'); if(!m || !profCanEdit()) return;
   m.querySelectorAll('.viewDetailsBtn').forEach(v => {
-    if(v.previousElementSibling && v.previousElementSibling.classList.contains('a2OvEdit')) return;
-    const e = document.createElement('button'); e.type = 'button'; e.className = 'pillBtn ok a2OvEdit'; e.dataset.acu = 'open'; e.dataset.id = v.dataset.id; e.textContent = 'Edit profile'; e.style.marginRight = '6px';
-    v.parentNode.insertBefore(e, v);
+    if(v.parentNode.classList.contains('a2OvAct')) return;
+    const e = document.createElement('button'); e.type = 'button'; e.className = 'pillBtn ok a2OvEdit'; e.dataset.acu = 'open'; e.dataset.id = v.dataset.id; e.textContent = 'Edit profile';
+    const w = document.createElement('span'); w.className = 'a2OvAct'; w.style.cssText = 'display:inline-flex;gap:6px;align-items:center;white-space:nowrap;';
+    v.parentNode.insertBefore(w, v); w.appendChild(e); w.appendChild(v);
   });
 }
 { const f = empDrillPaint; empDrillPaint = function(){ const r = f.apply(this, arguments); try{ a2OvEditBtns(); }catch(e){} return r; }; }
@@ -32576,7 +32577,6 @@ function a2OvEditBtns(){
 .a2OvEdit{ display:none; }
 #employeeOverviewMountAccounts .a2OvEdit{ display:inline-flex; }
 #employeeOverviewMountAccounts #employeeOverviewBlock > h2{ margin-top:4px; }
-#employeeOverviewMountAccounts table.ovTbl td:last-child{ white-space:nowrap; text-align:right; }
 </style>
 </body>
 </html>
