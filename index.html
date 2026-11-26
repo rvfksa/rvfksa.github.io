@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261126-101642">
+<meta name="rvf-build" content="20261126-102322">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -32733,6 +32733,66 @@ document.addEventListener('click', (e) => {
   const t = e.target.closest && e.target.closest('[data-pkd="mon"]'); if(!t || !PKX.dl) return;
   const c = rvfCycleAt(Number(t.dataset.k)); PKX.dl.from = c.start; PKX.dl.to = c.end; PKX.dl.keepFocus = false; pkxDlDraw();
 });
+</script>
+<script>
+/* Earned picks: "All operators" sits in the same row as the filter and Download; and a "Totals only" download: each operator, his machines with the total of each, then his total */
+{ const f0 = pkxDraw; pkxDraw = function(id){
+    f0.apply(this, arguments);
+    try{
+      if(id !== 'picksBody' || !(state.user && state.user.role === 'admin')) return;
+      const old = document.getElementById('pkAllBar'); if(old) old.remove();
+      const bar = document.querySelector('#picksBody .pkxBar'), dl = bar && bar.querySelector('[data-pk="dl"]');
+      if(dl && !bar.querySelector('[data-pk="dlall"]')){ const b = document.createElement('button'); b.type = 'button'; b.className = 'pillBtn'; b.dataset.pk = 'dlall'; b.dataset.c = 'picksBody'; b.innerHTML = DL_ICON + 'All operators'; dl.insertAdjacentElement('beforebegin', b); }
+    }catch(e){ console.error(e); }
+  }; }
+{ const l0 = pkAllBtn; pkAllBtn = function(){ if(document.querySelector('#picksBody .pkxBar')) return; return l0.apply(this, arguments); }; }
+{ const f0 = pkxDlDraw; pkxDlDraw = function(){
+    f0.apply(this, arguments);
+    try{
+      const d = PKX.dl, ov = document.getElementById('pkOv'); if(!d || !ov || !d.allowed || d.allowed.length < 2) return;
+      const m = ov.querySelector('.dlMode'); if(!m || m.querySelector('[data-v="sum"]')) return;
+      const lb = document.createElement('label'); lb.className = 'ovColChip' + (d.group === 'sum' ? ' on' : '');
+      lb.innerHTML = `<input type="radio" name="pkg" data-pkd="group" data-v="sum" ${d.group === 'sum' ? 'checked' : ''}> Totals only`;
+      m.appendChild(lb);
+      if(d.group === 'sum'){ ov.querySelectorAll('.dlSec').forEach(s => { const k = s.querySelector('[data-v]'); if(k && (k.dataset.v === 'cols' || k.dataset.v === 'mach')) s.style.display = 'none'; }); const e = ov.querySelector('[data-pkd="eff"]'); if(e && e.closest('label')) e.closest('label').style.display = 'none'; }
+    }catch(err){ console.error(err); }
+  }; }
+async function pkxGoSum(kind){
+  const d = PKX.dl; if(!d || d.busy) return;
+  if(!d.ops.size){ toast('Choose who to include'); return; }
+  d.busy = true; pkxDlDraw(); toast('Collecting…');
+  try{
+    const keep = d.cols; d.cols = new Set(['picks']);
+    let rows; try{ rows = await pkxCollect(d); } finally { d.cols = keep; }
+    const by = {};
+    rows.forEach(r => { const o = by[r.op] = by[r.op] || { id: r.op, name: r.opName, m: {} }; o.m[r.machine] = (o.m[r.machine] || 0) + r.picks + r.stopPicks; });
+    const ops = Object.values(by).sort((a, b) => a.name.localeCompare(b.name));
+    if(!ops.length){ toast('No entries for that choice'); d.busy = false; pkxDlDraw(); return; }
+    const lines = []; let grand = 0;
+    ops.forEach((o, i) => {
+      const ms = Object.keys(o.m).sort((a, b) => (parseInt(a, 10) || 0) - (parseInt(b, 10) || 0)); let tot = 0;
+      ms.forEach(mid => { tot += o.m[mid]; lines.push({ n: i + 1, op: o.name, id: o.id, mach: machineName(mid), v: Math.round(o.m[mid]) }); });
+      lines.push({ tot: true, op: o.name, id: o.id, v: Math.round(tot) }); grand += tot;
+    });
+    const stamp = rvfDateStamp(), rng = (d.from || 'start') + ' to ' + (d.to || 'today');
+    if(kind === 'xlsx'){
+      if(typeof XLSX === 'undefined'){ toast('Excel tool not loaded — check your connection'); d.busy = false; pkxDlDraw(); return; }
+      const aoa = [['#', 'Operator', 'ID', 'Machine', 'Total picks']].concat(lines.map(l => l.tot ? ['', l.op + ' - total', l.id, '', l.v] : [l.n, l.op, l.id, l.mach, l.v])).concat([['', 'All operators', '', '', Math.round(grand)]]);
+      const wb = XLSX.utils.book_new(), ws = XLSX.utils.aoa_to_sheet(aoa); ws['!cols'] = [{ wch: 5 }, { wch: 28 }, { wch: 8 }, { wch: 14 }, { wch: 14 }];
+      XLSX.utils.book_append_sheet(wb, ws, 'Totals'); XLSX.writeFile(wb, 'operator-totals-' + stamp + '.xlsx'); toast('Excel file downloaded');
+    } else {
+      const colg = '<colgroup><col style="width:6%"><col style="width:46%"><col style="width:24%"><col style="width:24%"></colgroup>';
+      const hd = '<tr><th>#</th><th>Operator</th><th>Machine</th><th class="r">Total picks</th></tr>';
+      const trs = lines.map(l => l.tot ? `<tr class="tot"><td></td><td><b>${acEsc(l.op)} (${acEsc(l.id)}) &middot; total</b></td><td></td><td class="r"><b>${pkxFmt(l.v)}</b></td></tr>` : `<tr><td>${l.n}</td><td>${acEsc(l.op)} (${acEsc(l.id)})</td><td>${acEsc(l.mach)}</td><td class="r">${pkxFmt(l.v)}</td></tr>`);
+      trs.push(`<tr class="tot"><td></td><td><b>All operators</b></td><td></td><td class="r"><b>${pkxFmt(grand)}</b></td></tr>`);
+      const blocks = [rvfPdfHeader('Operator total picks', [rng + ' · ' + rvfNowText(), ops.length + ' operators · total ' + pkxFmt(grand) + ' picks'])]; const PER = 48;
+      for(let i = 0; i < trs.length; i += PER) blocks.push(`<table class="pkPdf">${colg}<thead>${hd}</thead><tbody>${trs.slice(i, i + PER).join('')}</tbody></table>` + (i + PER < trs.length ? '<div data-pgbreak="1"></div>' : ''));
+      await rvfMakePdf(blocks, 'operator-totals-' + stamp + '.pdf', { footer: 'Riyadh Velvet Factory · Earned picks' });
+    }
+  }catch(err){ console.error(err); toast('Could not make the file — check your connection'); }
+  d.busy = false; pkxDlDraw();
+}
+{ const g0 = pkxGo; pkxGo = function(kind){ if(PKX.dl && PKX.dl.group === 'sum') return pkxGoSum(kind); return g0.apply(this, arguments); }; }
 </script>
 </body>
 </html>
