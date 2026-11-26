@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261126-074405">
+<meta name="rvf-build" content="20261126-074617">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -32564,7 +32564,7 @@ function a2OvEditBtns(){
   const m = document.getElementById('employeeOverviewMountAccounts'); if(!m || !profCanEdit()) return;
   m.querySelectorAll('.viewDetailsBtn').forEach(v => {
     if(v.parentNode.classList.contains('a2OvAct')) return;
-    const e = document.createElement('button'); e.type = 'button'; e.className = 'pillBtn ok a2OvEdit'; e.dataset.acu = 'open'; e.dataset.id = v.dataset.id; e.textContent = 'Edit profile';
+    const e = document.createElement('button'); e.type = 'button'; e.className = 'pillBtn ok a2OvEdit'; e.dataset.acu = 'open'; e.dataset.id = v.dataset.id; e.innerHTML = '<span class="l">Edit profile</span><span class="s">Edit</span>';
     const w = document.createElement('span'); w.className = 'a2OvAct'; w.style.cssText = 'display:inline-flex;gap:6px;align-items:center;white-space:nowrap;';
     v.parentNode.insertBefore(w, v); w.appendChild(e); w.appendChild(v);
   });
@@ -32574,7 +32574,7 @@ function a2OvEditBtns(){
 { const f = loadAccountsPage; loadAccountsPage = function(){ a2OvPark(); return f.apply(this, arguments); }; }
 </script>
 <style>
-.a2OvEdit{ display:none; }
+.a2OvEdit{ display:none; } .a2OvEdit .s{ display:none; }
 #employeeOverviewMountAccounts .a2OvEdit{ display:inline-flex; }
 #employeeOverviewMountAccounts #employeeOverviewBlock > h2{ margin-top:4px; }
 </style>
@@ -32607,7 +32607,12 @@ OV_COLS.push({ k: 'sheet', l: 'Salary sheet', g: 'Work', acc: true, get: u => { 
 #ceoEmpDrillList table.ovTbl th:last-child{ background:#f6f7fb; }
 #ceoEmpDrillList table.ovTbl tbody tr:not(.ovGrp) td:last-child{ background:#ffffff; box-shadow:-10px 0 8px -8px rgba(15,23,42,.16); }
 #ceoEmpDrillList table.ovTbl tbody tr:not(.ovGrp):nth-child(even) td:last-child{ background:#f9f9fa; }
-@media (max-width:560px){ .a2OvEdit{ padding:6px 10px; font-size:11px; } #ceoEmpDrillList table.ovTbl td .btn-sm{ padding:6px 10px; } }
+@media (max-width:560px){
+  #ceoEmpDrillList .a2OvAct{ gap:4px !important; }
+  #ceoEmpDrillList .a2OvEdit, #ceoEmpDrillList .viewDetailsBtn{ padding:5px 9px; font-size:10.5px; }
+  #ceoEmpDrillList .a2OvEdit .l{ display:none; } #ceoEmpDrillList .a2OvEdit .s{ display:inline; }
+  #ceoEmpDrillList table.ovTbl td[style*="font-weight:600"]{ min-width:120px; }
+}
 </style>
 </body>
 </html>
