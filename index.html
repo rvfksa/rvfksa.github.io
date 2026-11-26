@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261126-104956">
+<meta name="rvf-build" content="20261126-143537">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -23751,7 +23751,7 @@ function a2OpRates(r){
   }
   a2OpNet(r);
 }
-function a2OpNet(r){ if(typeof a2DaysRecalc === 'function') a2DaysRecalc(r); r.extra = r.ax || 0; a2JoinSet(r, acNum(r.bs) + acNum(r.otm)); r.net = Math.round(acNum(r.bs) + acNum(r.otm) + (r.np != null && r.np !== '' ? r.np : (r.prem || 0)) + r.extra - acNum(r.ded) - acNum(r.jded) + acNum(r.due)); }
+function a2OpNet(r){ if(typeof a2DaysRecalc === 'function') a2DaysRecalc(r); r.extra = acR2((r.ax || 0) + a2AddSum(r)); a2JoinSet(r, acNum(r.bs) + acNum(r.otm)); r.net = Math.round(acNum(r.bs) + acNum(r.otm) + (r.np != null && r.np !== '' ? r.np : (r.prem || 0)) + r.extra - acNum(r.ded) - acNum(r.jded) + acNum(r.due)); }
 function a2NewSp(u){
   const sal = (u.profile && u.profile.salary) || {};
   const r = { id: u.loginId, name: u.name, dept: u.department || '', basic: sal.basicSalary || '', fixed: sal.salaryType === 'fixed', ot: sal.overtime || '', extra: sal.extraMoney || '', ab: '', pr: '', c: {}, fl: {}, rm: '' };
@@ -23780,7 +23780,7 @@ function a2SpCalc(r){
 }
 function a2NewNs(u){ const sal = (u.profile && u.profile.salary) || {}; const r = { id: u.loginId, name: u.name, dept: u.department || '', pos: a2PosOf(u), fx: sal.basicSalary || '', ded: '', rm: '', net: 0 }; a2NsCalc(r); return r; }
 function a2PosNs(r){ if(r.pos) return r.pos; const u = (state.users || []).find(x => x.loginId === r.id); return u ? a2PosOf(u) : ''; }
-function a2NsCalc(r){ a2JoinSet(r, r.fx); r.net = Math.round(acNum(r.fx) - acNum(r.ded) - acNum(r.jded) + acNum(r.due)); }
+function a2NsCalc(r){ a2JoinSet(r, r.fx); r.net = Math.round(acNum(r.fx) + a2AddSum(r) - acNum(r.ded) - acNum(r.jded) + acNum(r.due)); }
 function a2Calc(sec, r){ if(sec === 'operator') a2OpNet(r); else if(sec === 'sponsor') a2SpCalc(r); else if(sec === 'saudi') a2SaCalc(r); else a2NsCalc(r); }
 function a2NewRow(sec, u){ return sec === 'operator' ? a2NewOp(u) : sec === 'sponsor' ? a2NewSp(u) : sec === 'saudi' ? a2NewSa(u) : a2NewNs(u); }
 // Saudi sheet: Basic + Housing/Premium + Extra + T Bonus = Total addition. Deduction = GOSI/Food + Advance + Absent days.
@@ -23791,7 +23791,7 @@ function a2NewSa(u){ const r = { id: u.loginId, name: '', dept: '', pos: '', ded
 // Net payment = Total salary - Deduction (+ any due held from last month). A day of leave is worked out from the Basic only.
 function a2SaCalc(r){
   a2DaysRecalc(r);
-  const tadd = acR2(acNum(r.basic) + acNum(r.hous) + acNum(r.extra) + acNum(r.tb));
+  const tadd = acR2(acNum(r.basic) + acNum(r.hous) + acNum(r.extra) + acNum(r.tb) + a2AddSum(r));
   a2JoinSet(r, tadd);
   r.tadd = tadd; r.net = Math.round(tadd - acNum(r.ded) - acNum(r.jded) + acNum(r.due));
 }
@@ -23805,7 +23805,7 @@ function a2Common(){
 }
 function a2CutPct(){ const d = a2Doc(); const f = d && d.rows.find(r => r.cutPct > 0); return f ? f.cutPct : (acNum(AC.set && AC.set.premCut) || 15); }
 function a2ShowDed(){ return true; }
-const a2OpGt = (r) => Math.round(acNum(r.bs) + acNum(r.otm) + (r.np != null && r.np !== '' ? r.np : (r.prem || 0)) + (r.ax || 0));
+const a2OpGt = (r) => Math.round(acNum(r.bs) + acNum(r.otm) + (r.np != null && r.np !== '' ? r.np : (r.prem || 0)) + (r.ax || 0) + a2AddSum(r));
 function a2DedReasons(){ return (AC.set && Array.isArray(AC.set.dedReasons)) ? AC.set.dedReasons : []; }
 function a2ReasonName(r, id){ const x = a2DedReasons().find(y => Number(y.id) === Number(id)); if(x) return x.name; const l = (r.dl || []).find(y => Number(y.r) === Number(id) && y.n); return l ? l.n : 'Reason ' + id; }
 function a2RmNums(r){ const s = new Set(); (r.dl || []).forEach(l => { if(l.r) s.add(Number(l.r)); }); return Array.from(s).sort((a, b) => a - b); }
@@ -23857,7 +23857,7 @@ function a2Cols0(sec, all){
       { k: 'pos', l: 'Position', g: 'Person', def: 1, rep: 1, text: r => a2PosNs(r), html: r => acEsc(a2PosNs(r)) },
       money('basic', 'Basic Salary', r => acNum(r.basic)),
       money('hous', 'Housing', r => acNum(r.hous)),
-      money('extra', 'Extra', r => acNum(r.extra)),
+      money('extra', 'Extra', r => acR2(acNum(r.extra) + a2AddSum(r))),
       money('tb', 'T Bonus', r => acNum(r.tb)),
       money('tot', 'Total salary', r => r.tadd, { bold: 1, text: r => a2W(r.tadd) || '0', html: r => a2W(r.tadd) || '0' }),
       money('ded', 'Deduction', r => acNum(r.ded), { dedCol: 0 }),
@@ -23871,6 +23871,7 @@ function a2Cols0(sec, all){
       { k: 'dept', l: 'Department', g: 'Person', def: 1, rep: 1, text: r => r.dept, html: r => acEsc(r.dept) },
       { k: 'pos', l: 'Position', g: 'Person', def: 1, rep: 1, text: r => a2PosNs(r), html: r => acEsc(a2PosNs(r)) },
       { k: 'fx', l: 'Salary', g: 'Pay', def: 1, num: 1, sum: 1, calc: 1, text: r => a2M(acNum(r.fx)), raw: r => acNum(r.fx) || '', sv: r => acNum(r.fx), html: r => a2M(acNum(r.fx)) },
+      { k: 'extra', l: 'Extra', g: 'Pay', def: ((a2Doc() || { rows: [] }).rows.some(r => a2AddSum(r) > 0)) ? 1 : 0, num: 1, sum: 1, calc: 1, text: r => a2M(a2AddSum(r)), raw: r => a2AddSum(r) || '', sv: r => a2AddSum(r), html: r => a2M(a2AddSum(r)) },
       { k: 'ded', l: 'Deduction', g: 'Pay', def: 1, num: 1, sum: 1, calc: 1, text: r => a2M(acNum(r.ded)), raw: r => acNum(r.ded) || '', sv: r => acNum(r.ded), html: r => a2M(acNum(r.ded)), dedCol: 0 },
       { k: 'net', l: 'Net pay', g: 'Pay', def: 1, num: 1, bold: 1, sum: 1, calc: 1, text: r => a2W(r.net) || '0', raw: r => r.net, sv: r => r.net, html: r => a2W(r.net) || '0' },
       { k: 'rm', l: 'Remarks', g: 'Pay', def: 1, calc: 1, text: r => a2RmTxt(r), html: (r) => a2RmHtml(r) },
@@ -24508,7 +24509,7 @@ function a2DaysRecalc(r){   // leave deductions in days of pay always follow the
 }
 function a2SpCalc(r){
   a2DaysRecalc(r);
-  const basic = acNum(r.basic), ot = r.othf ? acR2(acNum(r.otd) * a2WorkDaysFor(r) * a2OtRate(r)) : acNum(r.ot), ex = acR2(acNum(r.extra) + acNum(r.ty));
+  const basic = acNum(r.basic), ot = r.othf ? acR2(acNum(r.otd) * a2WorkDaysFor(r) * a2OtRate(r)) : acNum(r.ot), ex = acR2(acNum(r.extra) + acNum(r.ty) + a2AddSum(r));
   a2JoinSet(r, basic + (r.othf ? 0 : ot) + acNum(r.extra)); const gross = acR2(basic + ot + ex), ded = acNum(r.ded) + acNum(r.jded);
   r.v = { gross: Math.round(gross), totded: ded, net: Math.round(gross - ded + acNum(r.due)), otAmt: ot, exAmt: ex, housing: 0, transport: 0, absentDed: 0, c: {} };
 }
@@ -32871,6 +32872,61 @@ async function rvfOpSumsIn(id, from, to){
   const rg = await rvfRangeSums(from, to);
   return rg ? (rg.by[id] || []) : rvfOpSums(id);
 }
+</script>
+<style>
+.a2AcB{ display:inline-flex; gap:4px; align-items:center; white-space:nowrap; }
+.a2AddNote{ height:36px; border-radius:999px; border:1px solid var(--line); background:#fff; padding:0 12px; font:inherit; font-size:13px; width:100%; min-width:0; }
+.a2PL{ display:grid; grid-template-columns:110px 1fr 24px; gap:8px; align-items:center; margin-bottom:8px; }
+</style>
+<script>
+/* Add money to a person's pay (plus button in the row): it goes into Extra, and the note shows in Remarks */
+function a2AddSum(r){ return acR2(((r && r.al) || []).reduce((a, l) => a + acNum(l.a), 0)); }
+const A2P = { id: '', lines: [] };
+function a2AddDraw(){
+  const ov = document.getElementById('a2AddOv'); if(!ov) return;
+  const tot = A2P.lines.reduce((a, l) => a + acNum(l.a), 0), n = A2P.lines.length;
+  ov.querySelector('.a2DdBody').innerHTML = A2P.lines.map((l, i) => `<div class="a2PL"><input type="text" inputmode="decimal" class="a2DdA" data-ap="amt" data-i="${i}" value="${acEsc(l.a == null ? '' : l.a)}" placeholder="Amount"><input type="text" class="a2AddNote" data-ap="note" data-i="${i}" value="${acEsc(l.n || '')}" placeholder="Note (shown in Remarks)" maxlength="80">${n > 1 ? `<button type="button" class="a2DdX" data-ap="rm" data-i="${i}" title="Remove this line" aria-label="Remove">&times;</button>` : '<span class="a2DdX0"></span>'}</div>`).join('')
+    + `<button type="button" class="a2DdAdd" data-ap="add">+ Add another</button><div class="a2DdTot"><span>Total added</span><b id="a2PT">${acMoney(tot) || '0.00'} SAR</b></div>`;
+}
+function a2AddOpen(id){
+  const d = a2Doc(), r = d && d.rows.find(x => x.id === id); if(!r || !acCanEdit()) return;
+  A2P.id = id; A2P.lines = (r.al && r.al.length) ? r.al.map(l => ({ a: l.a, n: l.n || '' })) : [{ a: '', n: '' }];
+  let ov = document.getElementById('a2AddOv'); if(ov) ov.remove();
+  ov = document.createElement('div'); ov.id = 'a2AddOv'; ov.className = 'dlOv';
+  ov.innerHTML = `<div class="dlCard a2DdCard"><div class="dlHead"><b>Add &middot; ${acEsc(r.name)}</b><button type="button" class="dlX" data-ap="x" aria-label="Close">&times;</button></div><div class="a2DdBody"></div><div class="a2DdBtns"><button type="button" class="pillBtn" data-ap="x">Cancel</button><button type="button" class="pillBtn ok" data-ap="save">Save</button></div></div>`;
+  document.body.appendChild(ov); a2AddDraw();
+}
+function a2AddSave(){
+  const d = a2Doc(), r = d && d.rows.find(x => x.id === A2P.id); if(!r || !acCanEdit()) return;
+  const lines = A2P.lines.filter(l => acNum(l.a) > 0).map(l => ({ a: acR2(acNum(l.a)), n: String(l.n || '').trim() }));
+  if(lines.length) r.al = lines; else delete r.al;
+  a2Touch(); a2RefreshRow(r); a2DirtyUi();
+  const ov = document.getElementById('a2AddOv'); if(ov) ov.remove();
+}
+document.addEventListener('click', (e) => {
+  const t = e.target.closest && e.target.closest('[data-ap]'); if(!t) return; const a = t.dataset.ap;
+  if(a === 'open') a2AddOpen(t.dataset.id);
+  else if(a === 'x'){ const ov = document.getElementById('a2AddOv'); if(ov) ov.remove(); }
+  else if(a === 'add'){ A2P.lines.push({ a: '', n: '' }); a2AddDraw(); }
+  else if(a === 'rm'){ A2P.lines.splice(Number(t.dataset.i), 1); if(!A2P.lines.length) A2P.lines.push({ a: '', n: '' }); a2AddDraw(); }
+  else if(a === 'save') a2AddSave();
+});
+document.addEventListener('input', (e) => {
+  const t = e.target; if(!t.dataset || !t.dataset.ap || (t.dataset.ap !== 'amt' && t.dataset.ap !== 'note')) return;
+  const l = A2P.lines[Number(t.dataset.i)]; if(!l) return; if(t.dataset.ap === 'amt') l.a = t.value; else l.n = t.value;
+  const x = document.getElementById('a2PT'); if(x) x.textContent = (acMoney(A2P.lines.reduce((a, q) => a + acNum(q.a), 0)) || '0.00') + ' SAR';
+});
+{ const c0 = a2Cols; a2Cols = function(sec, all){
+  const cols = c0.apply(this, arguments), pl = (r) => (r.al || []).map(l => 'Added ' + acMoney(l.a) + (l.n ? ': ' + l.n : ''));
+  cols.forEach(c => {
+    if(c.k === 'ac'){ const h0 = c.html; c.html = (r, e, i) => { const x = h0(r, e, i); return x ? `<span class="a2AcB"><button type="button" class="a2Ab" data-ap="open" data-id="${acEsc(r.id)}" title="Add money to this person's pay" aria-label="Add"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/><line x1="12" y1="5" x2="12" y2="19"/></svg></button>${x}</span>` : x; }; }
+    if(c.k === 'rm'){ const t0 = c.text, h0 = c.html;
+      c.text = (r, i) => [t0(r, i), pl(r).join(', ')].filter(Boolean).join(', ');
+      c.html = (r, e, i) => { const x = h0(r, e, i) || '', l = pl(r); return x + (l.length ? (x ? '<br>' : '') + `<span class="a2Jn">${l.map(acEsc).join('<br>')}</span>` : ''); };
+    }
+  });
+  return cols;
+}; }
 </script>
 </body>
 </html>
