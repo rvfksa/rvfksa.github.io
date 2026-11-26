@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261126-093320">
+<meta name="rvf-build" content="20261126-093505">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -32719,7 +32719,7 @@ function pkAllBtn(){
 { const l0 = loadPicksForApprovals; loadPicksForApprovals = async function(){ try{ return await l0.apply(this, arguments); } finally { pkAllBtn(); } }; }
 document.addEventListener('click', (e) => {
   const t = e.target.closest && e.target.closest('[data-pk="dlall"]'); if(!t) return;
-  if(state.user && state.user.role === 'admin'){ pkxOpenDl(t.dataset.c); const d = PKX.dl; if(d){ d.group = 'op'; d.ops = new Set(d.allowed.map(u => u.loginId)); d.cols = new Set(pkxDefCols('op')); d.sec = 'who'; pkxDlDraw(); } }
+  if(state.user && state.user.role === 'admin'){ pkxOpenDl(t.dataset.c); const d = PKX.dl; if(d){ d.group = 'op'; d.ops = new Set(d.allowed.map(u => u.loginId)); d.cols = new Set(pkxDefCols('op')); d.sec = 'who'; const c = (acYmOpen() < acYmNow()) ? rvfCycleAt(1) : rvfCycleAt(0); d.from = c.start; d.to = c.end; pkxDlDraw(); } }
 });
 { const f0 = pkxDlDraw; pkxDlDraw = function(){
     f0.apply(this, arguments);
