@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261126-104709">
+<meta name="rvf-build" content="20261126-104956">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -32742,9 +32742,9 @@ function pkAllBtn(){
   try{
     if(!(state.user && state.user.role === 'admin') || document.getElementById('pkAllBar')) return;
     const m = document.getElementById('pkm_picks'); if(!m) return;
-    const w = document.createElement('div'); w.id = 'pkAllBar'; w.style.cssText = 'display:flex;justify-content:flex-end;margin:6px 0 2px;';
+    const w = document.createElement('span'); w.id = 'pkAllBar'; w.style.cssText = 'margin-left:auto;display:inline-flex;align-items:center;';
     w.innerHTML = `<button type="button" class="pillBtn" data-pk="dlall" data-c="picksBody">${DL_ICON}All operators</button>`;
-    m.insertAdjacentElement('afterend', w);
+    m.appendChild(w);
   }catch(e){}
 }
 { const l0 = loadPicksForApprovals; loadPicksForApprovals = async function(){ try{ return await l0.apply(this, arguments); } finally { pkAllBtn(); } }; }
