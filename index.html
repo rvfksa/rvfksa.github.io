@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261126-100911">
+<meta name="rvf-build" content="20261126-101227">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -21650,7 +21650,7 @@ function ovLeftHidden(){
 // New Joined: someone who is no longer On The Job gets his current job status as a small remark under the name
 function ovRemark(u){
   if(typeof empDrillKind === 'undefined' || empDrillKind !== 'highlight:newJoin') return '';
-  if(OVV.back.has(String(u.loginId))){ const v = ovVac(u); return '<div class="ovRemark" style="color:#166534; background:#dcfce7;">Returned ' + assignEsc(v && ovBackDay(v) ? fmtDate(ovBackDay(v)) : '') + '</div>'; }
+  if(OVV.back.has(String(u.loginId))){ const v = ovVac(u); return '<div class="ovRemark" style="color:#166534; background:#dcfce7;">Joined work ' + assignEsc(v && ovBackDay(v) ? fmtDate(ovBackDay(v)) : '') + '</div>'; }
   const st = (u.profile || {}).employmentStatus; if(!st || st === 'running') return '';
   return '<div class="ovRemark">' + assignEsc(empStatusLabel(st)) + '</div>';
 }
