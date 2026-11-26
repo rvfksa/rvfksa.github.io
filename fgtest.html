@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261126-103119">
+<meta name="rvf-build" content="20261126-103528">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -32771,25 +32771,31 @@ async function pkxGoSum(kind){
     rows.forEach(r => { const o = by[r.op] = by[r.op] || { id: r.op, name: r.opName, m: {} }; o.m[r.machine] = (o.m[r.machine] || 0) + r.picks + r.stopPicks; });
     const ops = Object.values(by).sort((a, b) => a.name.localeCompare(b.name));
     if(!ops.length){ toast('No entries for that choice'); d.busy = false; pkxDlDraw(); return; }
-    const lines = []; let grand = 0;
+    const groups = []; let grand = 0;
     ops.forEach((o, i) => {
       const ms = Object.keys(o.m).sort((a, b) => (parseInt(a, 10) || 0) - (parseInt(b, 10) || 0)); let tot = 0;
-      ms.forEach(mid => { tot += o.m[mid]; lines.push({ n: i + 1, op: o.name, id: o.id, mach: machineName(mid), v: Math.round(o.m[mid]) }); });
-      lines.push({ tot: true, op: o.name, id: o.id, v: Math.round(tot) }); grand += tot;
+      const mm = ms.map(mid => { tot += o.m[mid]; return { mach: machineName(mid), star: machineStar(mid), vip: !!machineIsVip(mid), v: Math.round(o.m[mid]) }; });
+      groups.push({ n: i + 1, op: o.name, id: o.id, ms: mm, tot: Math.round(tot) }); grand += tot;
     });
     const stamp = rvfDateStamp(), rng = (d.from || 'start') + ' to ' + (d.to || 'today');
     if(kind === 'xlsx'){
       if(typeof XLSX === 'undefined'){ toast('Excel tool not loaded — check your connection'); d.busy = false; pkxDlDraw(); return; }
-      const aoa = [['#', 'Operator', 'ID', 'Machine', 'Total picks']].concat(lines.map(l => l.tot ? ['', l.op + ' - total', l.id, '', l.v] : [l.n, l.op, l.id, l.mach, l.v])).concat([['', 'All operators', '', '', Math.round(grand)]]);
-      const wb = XLSX.utils.book_new(), ws = XLSX.utils.aoa_to_sheet(aoa); ws['!cols'] = [{ wch: 5 }, { wch: 28 }, { wch: 8 }, { wch: 14 }, { wch: 14 }];
+      const aoa = [['#', 'Operator', 'ID', 'Machine', 'Picks', 'Total picks']], merges = []; let r = 1;
+      groups.forEach(g => { const r0 = r; g.ms.forEach((m, k) => { aoa.push([k ? '' : g.n, k ? '' : g.op, k ? '' : g.id, m.mach + (m.vip ? ' ★' : ''), m.v, k ? '' : g.tot]); r++; }); if(g.ms.length > 1) [0, 1, 2, 5].forEach(c => merges.push({ s: { r: r0, c }, e: { r: r - 1, c } })); });
+      aoa.push(['', 'All operators', '', '', '', Math.round(grand)]);
+      const wb = XLSX.utils.book_new(), ws = XLSX.utils.aoa_to_sheet(aoa); ws['!cols'] = [{ wch: 5 }, { wch: 28 }, { wch: 8 }, { wch: 14 }, { wch: 12 }, { wch: 14 }]; ws['!merges'] = merges;
       XLSX.utils.book_append_sheet(wb, ws, 'Totals'); XLSX.writeFile(wb, 'operator-totals-' + stamp + '.xlsx'); toast('Excel file downloaded');
     } else {
-      const colg = '<colgroup><col style="width:6%"><col style="width:46%"><col style="width:24%"><col style="width:24%"></colgroup>';
-      const hd = '<tr><th>#</th><th>Operator</th><th>Machine</th><th class="r">Total picks</th></tr>';
-      const trs = lines.map(l => l.tot ? `<tr class="tot"><td></td><td><b>${acEsc(l.op)} (${acEsc(l.id)}) &middot; total</b></td><td></td><td class="r"><b>${pkxFmt(l.v)}</b></td></tr>` : `<tr><td>${l.n}</td><td>${acEsc(l.op)} (${acEsc(l.id)})</td><td>${acEsc(l.mach)}</td><td class="r">${pkxFmt(l.v)}</td></tr>`);
-      trs.push(`<tr class="tot"><td></td><td><b>All operators</b></td><td></td><td class="r"><b>${pkxFmt(grand)}</b></td></tr>`);
-      const blocks = [rvfPdfHeader('Operator total picks', [rng + ' · ' + rvfNowText(), ops.length + ' operators · total ' + pkxFmt(grand) + ' picks'])]; const PER = 48;
-      for(let i = 0; i < trs.length; i += PER) blocks.push(`<table class="pkPdf">${colg}<thead>${hd}</thead><tbody>${trs.slice(i, i + PER).join('')}</tbody></table>` + (i + PER < trs.length ? '<div data-pgbreak="1"></div>' : ''));
+      /* two columns side by side, an operator's name and total merged over his machines; as many pages as needed, one if it fits */
+      const R = groups.reduce((a, g) => a + g.ms.length, 0), PAGE = 1108, HEAD = 96, THEAD = 24;
+      let h = 18; while(h > 12 && Math.ceil(R / 2) * h + 14 > PAGE - HEAD - THEAD) h--;
+      const cap1 = Math.floor((PAGE - HEAD - THEAD) / h) - 1, cap2 = Math.floor((PAGE - THEAD) / h) - 1, fs = Math.max(7.5, Math.min(10, h - 6));
+      const pages = []; let page = [[], []], col = 0, used = 0, cap = cap1;
+      groups.forEach(g => { if(used + g.ms.length > cap){ if(col === 0){ col = 1; used = 0; } else { pages.push(page); page = [[], []]; col = 0; used = 0; cap = cap2; } } page[col].push(g); used += g.ms.length; });
+      pages.push(page);
+      const tbl = (gs) => `<table class="pkSum" style="font-size:${fs}px;"><colgroup><col style="width:40%"><col style="width:24%"><col style="width:18%"><col style="width:18%"></colgroup><thead><tr><th>Operator</th><th>Machine</th><th class="r">Picks</th><th class="r">Total</th></tr></thead><tbody>${gs.map(g => g.ms.map((m, k) => `<tr style="height:${h}px;"${k ? '' : ' class="f"'}>${k ? '' : `<td class="op" rowspan="${g.ms.length}"><b>${acEsc(g.op)}</b> <span>(${acEsc(g.id)})</span></td>`}<td>${acEsc(m.mach)}${m.star}</td><td class="r">${pkxFmt(m.v)}</td>${k ? '' : `<td class="r tt" rowspan="${g.ms.length}">${pkxFmt(g.tot)}</td>`}</tr>`).join('')).join('')}</tbody></table>`;
+      const blocks = [rvfPdfHeader('Operator total picks', [rng + ' · ' + rvfNowText(), groups.length + ' operators · total ' + pkxFmt(grand) + ' picks'])];
+      pages.forEach((pg, i) => blocks.push(`<div ${i ? 'data-pgbreak="1" ' : ''}style="display:flex; gap:12px; align-items:flex-start;"><div style="flex:1; min-width:0;">${tbl(pg[0])}</div><div style="flex:1; min-width:0;">${pg[1].length ? tbl(pg[1]) : ''}</div></div>`));
       await rvfMakePdf(blocks, 'operator-totals-' + stamp + '.pdf', { footer: 'Riyadh Velvet Factory · Earned picks' });
     }
   }catch(err){ console.error(err); toast('Could not make the file — check your connection'); }
@@ -32797,6 +32803,17 @@ async function pkxGoSum(kind){
 }
 { const g0 = pkxGo; pkxGo = function(kind){ if(PKX.dl && PKX.dl.group === 'sum') return pkxGoSum(kind); return g0.apply(this, arguments); }; }
 </script>
+<style>
+table.pkSum{ width:100%; table-layout:fixed; border-collapse:collapse; }
+table.pkSum th{ background:#f6f7fb; color:#64748b; font-size:8px; text-transform:uppercase; letter-spacing:.04em; font-weight:700; text-align:left; padding:5px 4px; line-height:12px; }
+table.pkSum td{ padding:0 4px; line-height:1.1; border-bottom:1px solid #e2e8f0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+table.pkSum th.r, table.pkSum td.r{ text-align:right; }
+table.pkSum tr.f td{ border-top:1px solid #94a3b8; }
+table.pkSum td.op{ vertical-align:middle; background:#fafbff; border-right:1px solid #e2e8f0; }
+table.pkSum td.op span{ color:#94a3b8; font-weight:400; }
+table.pkSum td.tt{ vertical-align:middle; font-weight:700; background:#eef2ff; border-left:1px solid #c7d2fe; }
+table.pkSum .mStar{ margin-left:3px; vertical-align:-1px; }
+</style>
 <script>
 /* Fewer reads: everybody's daily totals for a date range are read once from the packed months (a few documents), kept until something changes, and every person's list is cut from it */
 const RVF_RNG = {};
