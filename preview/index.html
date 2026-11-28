@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta name="robots" content="noindex">
-<meta name="rvf-build" content="20261128-123207">
+<meta name="rvf-build" content="20261128-123650">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -29327,7 +29327,7 @@ window.rvfUserSizes = function(){
   function remote(){
     return fetch(location.pathname + '?rvfchk=' + Date.now(), { cache: 'no-store' }).then(function(r){
       if(!r.ok) throw new Error('x');
-      var re = /name="rvf-build" content="20261128-123207"]+)"/;
+      var re = /name="rvf-build" content="20261128-123650"]+)"/;
       if(!r.body || !r.body.getReader) return r.text().then(function(t){ var x = t.match(re); return x ? x[1] : null; });
       var rd = r.body.getReader(), dec = new TextDecoder(), buf = '';
       function pump(){ return rd.read().then(function(x){
@@ -33308,6 +33308,9 @@ function atSubLine(){
 }
 
 /* ---------- one shift date: who came, who did not ---------- */
+const atNowMin = () => new Date().getHours() * 60 + new Date().getMinutes();
+// his shift for a day = the shift of his last worked day; today it is "not started yet" before its start time
+function atLastShift(S, d, back){ for(let i = 1; i <= (back || 7); i++){ const x = S.days[atAdd(d, -i)]; if(x) return x; } return null; }
 function atDayData(sd, live){
   const r = atRange(), G = atPunchesByPerson(r[0], r[1]), came = [], away = [];
   Object.keys(G).forEach(k => {
@@ -33319,7 +33322,8 @@ function atDayData(sd, live){
     let last = ''; for(let i = 1; i <= 7; i++){ const d = atAdd(d0, -i); if(S.days[d]){ last = d; break; } }
     if(!last || o.w.exited || atHol(sd) || !atEmployed(o.w, sd)) return;
     if(atVacOn(o.w, sd)) return;   // on vacation: not absent
-    away.push({ w: o.w, s: S.sh.s, last });
+    const ls = S.days[last];
+    away.push({ w: o.w, s: ls.s, last, later: live && sd === atToday() && atNowMin() < ls.start });
   });
   return { came, away };
 }
@@ -33367,15 +33371,16 @@ function atMismatchBox(){
 function atDayView(sd, live){
   const D = atDayData(sd, live);
   const came = D.came.filter(x => atPass(x.w, x.r.s)).sort((a, b) => (a.r.in ?? a.r.out) - (b.r.in ?? b.r.out) || atById(a, b));
-  const away = D.away.filter(x => atPass(x.w, x.s)).sort(atById);
+  const away0 = D.away.filter(x => atPass(x.w, x.s)).sort(atById), away = away0.filter(x => !x.later), later = away0.filter(x => x.later);
   const late = came.filter(x => x.r.late), miss = came.filter(x => x.r.missing);
   let h = `<div class="hrTiles atTiles">${atTile('came', came.length, live ? 'In today' : 'Came', 'ok')}${atTile('late', late.length, 'Late', 'soon')}${atTile('miss', miss.length, 'Missing punch', 'late')}${atTile('away', away.length, live ? 'Not in yet' : 'Did not come', 'info')}</div>`;
   const show = AT.show;
   if(atHol(sd)) h += `<div class="hrNote atLead" style="margin-top:10px;">${atEsc((state.holidays || {})[sd] || 'Holiday')} in the Calendar: nobody is counted absent, and anyone who worked gets a holiday day worked.</div>`;
-  if(show === 'away') return h + (away.length ? atAwayList(away, live ? 'Not in yet' : 'Did not come') : '<div class="hrEmpty">Everyone came.</div>');
+  if(show === 'away') return h + (away.length ? atAwayList(away, live ? 'Not in yet' : 'Did not come') : '<div class="hrEmpty">Everyone came.</div>') + atAwayList(later, 'Shift starts later today');
   const L = show === 'late' ? late : (show === 'miss' ? miss : came);
   h += `<div class="hrLabel">${show === 'late' ? 'Late' : (show === 'miss' ? 'Missing punch' : (live ? 'In today' : 'Came'))} <span class="atCount">${L.length}</span></div>` + atShiftTable(L);
   if(!show && away.length) h += atAwayList(away, live ? 'Not in yet' : 'Did not come');
+  if(!show && later.length) h += atAwayList(later, 'Shift starts later today');
   return h;
 }
 
@@ -33393,6 +33398,7 @@ function atMonthData(){
     let work = 0, pres = 0, hol = 0, vac = 0, abs = 0;
     days.forEach(d => {
       if(!atEmployed(o.w, d)) return;
+      if(d === t && !rec[d]){ const ls = atLastShift(S, d); if(!ls || atNowMin() < ls.start) return; }   // today: not counted before his shift starts
       if(atHol(d)){ if(rec[d]) hol++; return; }
       work++;
       if(rec[d]) pres++; else if(atVacOn(o.w, d)) vac++; else abs++;
@@ -33631,7 +33637,7 @@ function atXls(){
   } else {
     const d = AT.tab === 'today' ? atToday() : AT.day, D = atDayData(d, AT.tab === 'today');
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([hdr].concat(D.came.filter(x => atPass(x.w, x.r.s)).sort(atById).map(x => line(x.w, x.r)))), 'Came');
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['ID', 'Name', 'Department', 'Shift', 'Last came']].concat(D.away.filter(x => atPass(x.w, x.s)).sort(atById).map(x => [x.w.id, x.w.name, x.w.dept, x.s, x.last]))), 'Did not come');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['ID', 'Name', 'Department', 'Shift', 'Last came']].concat(D.away.filter(x => !x.later && atPass(x.w, x.s)).sort(atById).map(x => [x.w.id, x.w.name, x.w.dept, x.s, x.last]))), 'Did not come');
     XLSX.writeFile(wb, 'attendance-' + d + '.xlsx');
   }
   toast('Excel file downloaded');
