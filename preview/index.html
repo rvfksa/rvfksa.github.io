@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta name="robots" content="noindex">
-<meta name="rvf-build" content="20261128-122003">
+<meta name="rvf-build" content="20261128-123207">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -29327,7 +29327,7 @@ window.rvfUserSizes = function(){
   function remote(){
     return fetch(location.pathname + '?rvfchk=' + Date.now(), { cache: 'no-store' }).then(function(r){
       if(!r.ok) throw new Error('x');
-      var re = /name="rvf-build" content="20261128-122003"]+)"/;
+      var re = /name="rvf-build" content="20261128-123207"]+)"/;
       if(!r.body || !r.body.getReader) return r.text().then(function(t){ var x = t.match(re); return x ? x[1] : null; });
       var rd = r.body.getReader(), dec = new TextDecoder(), buf = '';
       function pump(){ return rd.read().then(function(x){
@@ -33609,7 +33609,7 @@ function atRender(){
   if(AT.tab === 'devices'){ body.innerHTML = atDevView(); return; }
   let h = `<div class="hrToolbar atBar">${atDateNav()}${AT.tab !== 'link' ? `<div class="hrSearch">${atSvg('search')}<input type="search" id="atQ" placeholder="Search name or ID" value="${atEsc(AT.q)}"></div>${atFilters()}` : `<div class="hrSearch">${atSvg('search')}<input type="search" id="atLinkQ" placeholder="Search device ID or name" value="${atEsc(AT.linkQ)}"></div>`}<span class="atGrow"></span><button type="button" class="refreshBtn atRef" data-at="refresh">${atSvg('ref', 15)}Refresh</button>${AT.tab !== 'link' ? `<button type="button" class="iconBtn" data-at="xls" title="Download Excel" aria-label="Download Excel">${atSvg('dl', 15)}</button>` : ''}</div>`;
   try{
-    if(AT.tab === 'today') h += atMismatchBox() + atDayView(atToday(), true);
+    if(AT.tab === 'today') h += atDayView(atToday(), true);
     else if(AT.tab === 'day') h += atDayView(AT.day, false);
     else if(AT.tab === 'month') h += atMonthView();
     else h += atLinkView();
