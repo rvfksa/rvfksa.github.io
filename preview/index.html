@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head><meta name="robots" content="noindex">
-<meta name="rvf-build" content="20261128-113716">
+<meta name="rvf-build" content="20261128-114029">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -33140,9 +33140,22 @@ function atPunchesByPerson(from, to){
 const AT_SPAN = 16 * 60;
 const atDayNo = (d) => Math.round(Date.UTC(+d.slice(0, 4), +d.slice(5, 7) - 1, +d.slice(8, 10)) / 86400000);
 function atShifts(o){
-  const L = o.list.map(x => ({ t: atDayNo(x.d) * 1440 + x.m, d: x.d, m: x.m, dev: x.dev })).sort((a, b) => a.t - b.t);
-  const ses = [];
-  L.forEach(x => { const c = ses[ses.length - 1]; if(c && x.t - c[0].t <= AT_SPAN) c.push(x); else ses.push([x]); });
+  const L0 = o.list.map(x => ({ t: atDayNo(x.d) * 1440 + x.m, d: x.d, m: x.m, dev: x.dev })).sort((a, b) => a.t - b.t), L = [];
+  L0.forEach(x => { if(!L.length || x.t - L[L.length - 1].t > AT_DUP) L.push(x); });
+  // Split the punches into shifts so that, over the whole period, shifts have normal lengths (6-15 h)
+  // and start close to the Day or Night start time. Rest days (no punches) anchor the split.
+  const nowT = atDayNo(atToday()) * 1440 + new Date().getHours() * 60 + new Date().getMinutes();
+  const score = (i, k) => {
+    const f = L[i], span = L[k].t - f.t, night = f.m >= 14 * 60 || f.m < 3 * 60;
+    let sc;
+    if(i === k) sc = (nowT - f.t < AT_SPAN && k === L.length - 1) ? 0 : -6;   // a single punch is fine only for a shift still running
+    else if(span < 120) sc = -4; else if(span < 360) sc = 2; else if(span <= 15 * 60) sc = 10; else sc = 4;
+    const st = atMin(atRule(f.d)[night ? 'night' : 'day'].start), dist = Math.min(Math.abs(f.m - st), 1440 - Math.abs(f.m - st)) / 60;
+    return sc + Math.max(0, 2 - dist) * 0.5;
+  };
+  const n = L.length, best = new Array(n + 1).fill(-Infinity), from = new Array(n + 1).fill(0); best[0] = 0;
+  for(let j = 1; j <= n; j++) for(let i = j - 1; i >= 0 && L[j - 1].t - L[i].t <= AT_SPAN; i--){ const c = best[i] + score(i, j - 1); if(c > best[j]){ best[j] = c; from[j] = i; } }
+  const ses = []; for(let j = n; j > 0; j = from[j]) ses.unshift(L.slice(from[j], j));
   const res = {}; let nN = 0, nD = 0;
   ses.forEach(S0 => {
     const f = S0[0], night = f.m >= 14 * 60 || f.m < 3 * 60, sd = f.m < 3 * 60 ? atAdd(f.d, -1) : f.d, base = atDayNo(sd) * 1440;
@@ -33207,9 +33220,10 @@ function atWatchToday(){
 }
 function atRange(){
   const t = atToday();
-  if(AT.tab === 'today') return [atAdd(t, -8), t];
-  if(AT.tab === 'day') return [atAdd(AT.day, -7), atAdd(AT.day, 1)];
-  return [atAdd(AT.cyc.from, -1), atAdd(AT.cyc.to, 1)];
+  // a few extra days before, so a shift that started earlier is grouped correctly
+  if(AT.tab === 'today') return [atAdd(t, -11), t];
+  if(AT.tab === 'day') return [atAdd(AT.day, -10), atAdd(AT.day, 1)];
+  return [atAdd(AT.cyc.from, -4), atAdd(AT.cyc.to, 1)];
 }
 async function atLoadTab(force){ const r = atRange(); await atLoadDays(r[0], r[1], force); atRender(); }
 function atSubLine(){
@@ -33303,8 +33317,8 @@ function atOpenPerson(id){
   AT.person = id;
   const t = atToday(), inMonth = AT.tab === 'month';
   const from = inMonth ? AT.cyc.from : atAdd(AT.tab === 'today' ? t : AT.day, -13), to0 = inMonth ? AT.cyc.to : (AT.tab === 'today' ? t : AT.day), to = to0 > t ? t : to0;
-  atLoadDays(atAdd(from, -1), atAdd(to, 1), false).then(() => {
-    const G = atPunchesByPerson(atAdd(from, -1), atAdd(to, 1)), o = G[id]; if(!o){ toast('No punches for this person'); return; }
+  atLoadDays(atAdd(from, -4), atAdd(to, 1), false).then(() => {
+    const G = atPunchesByPerson(atAdd(from, -4), atAdd(to, 1)), o = G[id]; if(!o){ toast('No punches for this person'); return; }
     const S = atShifts(o), days = []; for(let d = to; d >= from; d = atAdd(d, -1)) days.push(d);
     const L = days.map(d => S.days[d]).filter(Boolean), w = o.w;
     const worked = L.reduce((a, x) => a + (x.worked || 0), 0), late = L.filter(x => x.late).length, miss = L.filter(x => x.missing).length;
