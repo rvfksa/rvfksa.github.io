@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head><meta name="robots" content="noindex">
-<meta name="rvf-build" content="20261128-125956">
+<meta name="rvf-build" content="20261128-134100">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -33042,7 +33042,8 @@ window.__att = {
     }
     return out;
   },
-  async syncInfo() { const s = await getDoc(doc(fdb(), 'attDevices', '_biotimeSync')); return s.exists() ? s.data() : null; }
+  async syncInfo() { const s = await getDoc(doc(fdb(), 'attDevices', '_biotimeSync')); return s.exists() ? s.data() : null; },
+  async devStatus() { const s = await getDoc(doc(fdb(), 'attDevices', '_status')); return s.exists() ? s.data() : null; }
 };
 </script>
 <script>
@@ -33084,6 +33085,7 @@ const atIc = {
   away: '<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="23" y1="11" x2="17" y2="11"/>',
   ppl: '<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/>',
   hrs: '<path d="M5 22h14M5 2h14M17 22v-4.17a2 2 0 00-.59-1.42L12 12l-4.41 4.41A2 2 0 007 17.83V22M7 2v4.17a2 2 0 00.59 1.42L12 12l4.41-4.41A2 2 0 0017 6.17V2"/>',
+  dev: '<rect x="5" y="2" width="14" height="20" rx="2"/><circle cx="12" cy="10" r="3"/><line x1="9" y1="17" x2="15" y2="17"/>',
   dl: '<path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>',
   ref: '<polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/>',
   l: '<polyline points="15 18 9 12 15 6"/>', r: '<polyline points="9 18 15 12 9 6"/>',
@@ -33207,6 +33209,7 @@ async function atOpen(){
     if(!AT.day) AT.day = atAdd(atToday(), -1);
     atWatchToday();
     window.__att.syncInfo().then(s => { AT.sync = s; atSubLine(); }).catch(() => {});
+    window.__att.devStatus().then(s => { AT.dev = s; if($('atTabs')) atRender(); }).catch(() => {});   // one read: all devices
     await atLoadTab(false);
   }catch(e){ console.error(e); const b = $('atBody'); if(b) b.innerHTML = '<div class="hrEmpty">Could not load attendance. Check the connection and press Refresh.</div>'; }
 }
@@ -33222,7 +33225,7 @@ function atWatchToday(){
 function atRange(){
   const t = atToday();
   // a few extra days before, so a shift that started earlier is grouped correctly
-  if(AT.tab === 'today') return [atAdd(t, -11), t];
+  if(AT.tab === 'today' || AT.tab === 'devices') return [atAdd(t, -11), t];
   if(AT.tab === 'day') return [atAdd(AT.day, -10), atAdd(AT.day, 1)];
   return [atAdd(AT.cyc.from, -4), atAdd(AT.cyc.to, 1)];
 }
@@ -33376,6 +33379,38 @@ async function atSaveMap(next, msg){
   catch(e){ console.error(e); AT.map = prev; AT._by = null; atRender(); toast('Could not save'); }
 }
 
+/* ---------- devices: online / offline ---------- */
+const AT_DEV_FRESH = 40;   // minutes: a device is online if it was confirmed within this time
+const atAgo = (ms) => { const m = Math.round(ms / 60000); return m < 1 ? 'just now' : (m < 60 ? m + ' min ago' : (m < 1440 ? Math.floor(m / 60) + ' h ' + (m % 60) + ' min ago' : Math.floor(m / 1440) + ' days ago')); };
+function atDevList(){
+  const S = AT.dev && AT.dev.devices ? AT.dev.devices : {}, nowMs = Date.now();
+  const names = { BRC7222460101: 'office', MFP3241700994: 'finishing', MFP3241700507: 'ladies', MFP3241700986: 'polyspin', MFP3241700995: 'weaving 1', AIOR180360568: 'sstm' };
+  Object.keys(S).forEach(sn => { if(!names[sn]) names[sn] = S[sn].name || sn; });
+  return Object.keys(names).map(sn => {
+    const d = S[sn] || {}, seen = d.seenAt && d.seenAt.toDate ? d.seenAt.toDate().getTime() : 0;
+    const on = !!d.online && seen && nowMs - seen < AT_DEV_FRESH * 60000;
+    let last = seen; if(!on && d.lastActivity){ const t = new Date(String(d.lastActivity).replace(' ', 'T') + '+03:00').getTime(); if(!isNaN(t)) last = Math.max(last, t); }
+    return { sn, name: d.name || names[sn], on, last, ip: d.ip || '', users: d.users || 0, fp: d.fp || 0, face: d.face || 0, via: d.via || '', known: !!S[sn] };
+  }).sort((a, b) => (a.on === b.on ? a.name.localeCompare(b.name) : (a.on ? 1 : -1)));
+}
+function atDevView(){
+  const L = atDevList(), off = L.filter(d => !d.on), upd = AT.dev && AT.dev.updatedAt && AT.dev.updatedAt.toDate ? AT.dev.updatedAt.toDate().getTime() : 0;
+  // punches today per device, from the day document already loaded (no extra reads)
+  const cnt = {}, lastP = {}; const p = AT.today || {};
+  Object.keys(p).forEach(pin => p[pin].forEach(x => { const a = String(x).split('|'), dv = a[1] || ''; cnt[dv] = (cnt[dv] || 0) + 1; if(!lastP[dv] || a[0] > lastP[dv]) lastP[dv] = a[0]; }));
+  let h = `<div class="hrToolbar atBar"><span class="atDate">${L.length - off.length} of ${L.length} online</span><span class="atGrow"></span><button type="button" class="refreshBtn atRef" data-at="refresh">${atSvg('ref', 15)}Refresh</button></div>`;
+  h += `<div class="hrTiles atTiles" style="grid-template-columns:repeat(2,1fr)">${atTile('came', L.length - off.length, 'Online', 'ok', 'noop')}${atTile('miss', off.length, 'Offline', off.length ? 'late' : 'info', 'noop')}</div>`;
+  if(!AT.dev) h += '<div class="hrNote atLead" style="margin-top:10px;">No device status yet. It appears after the copy program on the BioTime PC runs (or once the devices send straight to the app).</div>';
+  else if(AT.dev.reportedBy === 'biotime' && upd && Date.now() - upd > AT_DEV_FRESH * 60000) h += `<div class="hrNote atLead atWarn" style="margin-top:10px;">Status last updated ${atAgo(Date.now() - upd)}. The copy program on the BioTime PC may be off, so this list may be out of date.</div>`;
+  h += '<div class="hrLabel">Devices</div>' + L.map(d => {
+    const cls = d.on ? 'ok' : 'late', stat = d.on ? 'Online' : 'Offline', sub = d.on ? 'Checked ' + atAgo(Date.now() - d.last) : (d.last ? 'Last heard ' + fmtDate(dateToStr(new Date(d.last))) + ' ' + pad(new Date(d.last).getHours()) + ':' + pad(new Date(d.last).getMinutes()) + ' (' + atAgo(Date.now() - d.last) + ')' : 'Never heard from');
+    const tp = cnt[d.name] || 0;
+    return `<div class="hrRow"><div class="hrIco lv-${cls === 'ok' ? 'ok' : 'late'} atDevIco">${atSvg('dev', 16)}</div><div class="hrBody"><div class="hrTitle">${atEsc(d.name.charAt(0).toUpperCase() + d.name.slice(1))} <span class="id">${atEsc(d.sn)}</span></div><div class="hrSub">${sub}${d.ip ? ' &middot; ' + atEsc(d.ip) : ''}${d.users ? ' &middot; ' + d.users + ' people' : ''}</div></div><div class="hrSide"><span class="atPill ${cls === 'ok' ? 'ok' : 'bad'}">${stat}</span><span class="hrStat info">${tp ? tp + ' punches today' + (lastP[d.name] ? ', last ' + lastP[d.name].slice(0, 5) : '') : 'No punches today'}</span></div></div>`;
+  }).join('');
+  h += `<div class="hrNote" style="margin-top:10px;">A device shows Offline when it has not been heard from for ${AT_DEV_FRESH} minutes. An offline device keeps every punch inside and sends them when it is back online, so nothing is lost.</div>`;
+  return h;
+}
+
 /* ---------- page ---------- */
 function atFilters(){
   const by = AT._by || (AT._by = atPeople());
@@ -33395,7 +33430,9 @@ function atRender(){
   const body = $('atBody'), tabs = $('atTabs'); if(!body || !AT.cyc) return;
   AT._by = AT._by || atPeople();
   const nu = atUnlinked().length;
-  tabs.innerHTML = [['today', 'today', 'Today'], ['day', 'day', 'Daily'], ['month', 'month', 'Salary month'], ['link', 'link', 'Link IDs']].map(t => `<button data-at="tab" data-v="${t[0]}" class="${AT.tab === t[0] ? 'active' : ''}">${atSvg(t[1], 15)}<span class="hrLbl">${t[2]}</span>${t[0] === 'link' && nu ? `<span class="hrCnt">${nu}</span>` : ''}</button>`).join('');
+  const off = atDevList().filter(d => !d.on).length;
+  tabs.innerHTML = [['today', 'today', 'Today'], ['day', 'day', 'Daily'], ['month', 'month', 'Salary month'], ['link', 'link', 'Link IDs'], ['devices', 'dev', 'Devices']].map(t => `<button data-at="tab" data-v="${t[0]}" class="${AT.tab === t[0] ? 'active' : ''}">${atSvg(t[1], 15)}<span class="hrLbl">${t[2]}</span>${t[0] === 'link' && nu ? `<span class="hrCnt">${nu}</span>` : ''}${t[0] === 'devices' && off ? `<span class="hrCnt">${off}</span>` : ''}</button>`).join('');
+  if(AT.tab === 'devices'){ body.innerHTML = atDevView(); return; }
   let h = `<div class="hrToolbar atBar">${atDateNav()}${AT.tab !== 'link' ? `<div class="hrSearch">${atSvg('search')}<input type="search" id="atQ" placeholder="Search name or ID" value="${atEsc(AT.q)}"></div>${atFilters()}` : `<div class="hrSearch">${atSvg('search')}<input type="search" id="atLinkQ" placeholder="Search device ID or name" value="${atEsc(AT.linkQ)}"></div>`}<span class="atGrow"></span><button type="button" class="refreshBtn atRef" data-at="refresh">${atSvg('ref', 15)}Refresh</button>${AT.tab !== 'link' ? `<button type="button" class="iconBtn" data-at="xls" title="Download Excel" aria-label="Download Excel">${atSvg('dl', 15)}</button>` : ''}</div>`;
   try{
     if(AT.tab === 'today') h += atDayView(atToday(), true);
@@ -33436,7 +33473,7 @@ document.addEventListener('click', async (e) => {
   if(a === 'person') return atOpenPerson(t.dataset.v);
   if(a === 'tab'){ AT.tab = t.dataset.v; AT.show = ''; atRender(); await atLoadTab(false); }
   else if(a === 'show'){ AT.show = AT.show === t.dataset.v || t.dataset.v === 'came' || t.dataset.v === 'ppl' ? '' : t.dataset.v; atRender(); }
-  else if(a === 'refresh'){ t.disabled = true; try{ AT.map = await window.__db.getConfigObject('attIdMap', {}); AT._by = null; atWatchToday(); window.__att.syncInfo().then(s => { AT.sync = s; atSubLine(); }).catch(() => {}); await atLoadTab(true); toast('Updated'); }catch(err){ console.error(err); toast('Could not refresh'); } t.disabled = false; }
+  else if(a === 'refresh'){ t.disabled = true; try{ AT.map = await window.__db.getConfigObject('attIdMap', {}); AT._by = null; atWatchToday(); window.__att.syncInfo().then(s => { AT.sync = s; atSubLine(); }).catch(() => {}); AT.dev = await window.__att.devStatus().catch(() => AT.dev); await atLoadTab(true); toast('Updated'); }catch(err){ console.error(err); toast('Could not refresh'); } t.disabled = false; }
   else if(a === 'dprev' || a === 'dnext'){ const n = atAdd(AT.day, a === 'dprev' ? -1 : 1); if(n > atToday()) return; AT.day = n; await atLoadTab(false); }
   else if(a === 'mprev' || a === 'mnext'){ const ref = a === 'mprev' ? atAdd(AT.cyc.from, -1) : atAdd(AT.cyc.to, 1); const c = computeSalaryCycle(new Date(ref + 'T12:00:00'), state.salaryCycleStartDay || 26); AT.cyc = { from: c.start, to: c.end }; await atLoadTab(false); }
   else if(a === 'xls') atXls();
@@ -33474,7 +33511,8 @@ document.addEventListener('keydown', (e) => { if(e.key === 'Escape' && AT.person
 #screen-attendance .atLive{ font-style:normal; margin-left:6px; font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--ok); background:var(--lcd-dim); border-radius:999px; padding:2px 8px; vertical-align:1px; }
 #screen-attendance .atRef{ height:34px; padding:0 14px; }
 #screen-attendance .atTiles{ grid-template-columns:repeat(4,1fr); }
-#screen-attendance .hrTile.lv-ok .ic{ background:var(--lcd-dim); color:var(--ok); }
+#screen-attendance .hrTile.lv-ok .ic, #screen-attendance .hrIco.lv-ok{ background:var(--lcd-dim); color:var(--ok); }
+#screen-attendance .atWarn{ background:var(--warn-soft); color:var(--warn); }
 #screen-attendance .atCount{ display:inline-block; margin-left:4px; color:var(--text-strong); font-weight:700; }
 #screen-attendance .atTbl td{ vertical-align:middle; }
 #screen-attendance .atTbl th.c, #screen-attendance .atTbl td.c{ text-align:center; } #screen-attendance .atTbl th.r, #screen-attendance .atTbl td.r{ text-align:right; }
