@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head><meta name="robots" content="noindex">
-<meta name="rvf-build" content="20261128-145419">
+<meta name="rvf-build" content="20261128-145634">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -33702,8 +33702,11 @@ document.addEventListener('keydown', (e) => { if(e.key === 'Escape' && AT.person
 .atDep{ border:1px solid var(--line); background:#fff; color:var(--muted); border-radius:999px; padding:4px 11px; font:inherit; font-size:11.5px; font-weight:600; cursor:pointer; }
 .atDep.on{ background:var(--amber-soft); color:var(--amber); border-color:transparent; }
 .atDep.oth{ opacity:.45; }
-.atGr{ display:flex; flex-wrap:wrap; gap:16px; font-size:12.5px; color:var(--text); }
-.atAdmG{ width:64px; height:30px; border-radius:10px; border:1px solid var(--line); padding:0 8px; font:inherit; margin:0 4px; }
+.atGr{ display:flex; flex-wrap:wrap; gap:10px 24px; font-size:12.5px; color:var(--text); }
+.atGr label{ display:inline-flex !important; align-items:center; gap:6px; margin:0; font-size:12.5px; font-weight:500; text-transform:none; letter-spacing:0; color:var(--text); }
+.atAdm input.atAdmG{ width:64px !important; min-width:0; height:30px; border-radius:10px; border:1px solid var(--line); padding:0 8px; font:inherit; margin:0; display:inline-block; text-align:center; }
+.atAdm input.atAdmT{ width:auto !important; display:inline-block; margin:0; }
+.atAdm input.atAdmN{ width:auto !important; display:inline-block; margin:0; }
 .atFacts{ grid-template-columns:repeat(4,1fr); }
 .atDays{ border:1px solid var(--line); border-radius:16px; overflow:hidden; }
 .atDr{ display:grid; grid-template-columns:54px 1fr auto auto; align-items:center; gap:10px; padding:9px 12px; border-bottom:1px solid var(--line); }
