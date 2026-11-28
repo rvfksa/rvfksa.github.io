@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261128-085621">
+<meta name="rvf-build" content="20261128-085931">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -32987,8 +32987,8 @@ function trkAll(items, C){
   const rows = items.map(i => { const o = C.by[i.id]; if(!o) return null; const b = yRwBal(i.id), idx = yIdx()[i.id] || { tot: 0 }; return { i, o, b, st: idx.tot, at: Math.max(0, b.out) }; }).filter(Boolean).sort((a, b) => b.o.sentRew - a.o.sentRew || b.o.rawIn - a.o.rawIn);
   const T = (f) => rows.reduce((a, r) => a + f(r), 0);
   const cols = [['Code', ''], ['Colour', '', 'k'], ['Received', '', 'r'], ['Sent to Rewinding', '', 'r'], ['Sent to other', '', 'r'], ['Rewound in', '', 'r'], ['Difference', '', 'r'], ['Out to weaving', '', 'r'], ['At weaving now', '', 'r']];
-  const body = rows.map(r => [`<span class="sxCode">${skEsc(r.i.code)}</span>`, `<button type="button" class="trkL sxYc" data-trk="open" data-v="${skEsc(r.i.id)}">${yDot(yHex(r.i.col, yFam(r.i.col)))}${skEsc(r.i.col)}</button>`, trkN(r.o.rawIn), `<b>${trkN(r.o.sentRew)}</b>`, trkN(r.o.sentOther), `<b>${trkN(r.o.rewIn)}</b>`, r.o.sentRew > 0 || r.o.rewIn > 0 ? sxN(r.o.diff) : '<span class="sxSm2">0</span>', trkN(r.o.outAll), trkN(r.at)]);
-  const foot = ['', '<b>Total</b>', `<b>${sxN(T(r => r.o.rawIn))}</b>`, `<b>${sxN(T(r => r.o.sentRew))}</b>`, `<b>${sxN(T(r => r.o.sentOther))}</b>`, `<b>${sxN(T(r => r.o.rewIn))}</b>`, `<b>${sxN(T(r => r.o.diff))}</b>`, `<b>${sxN(T(r => r.o.outAll))}</b>`, `<b>${sxN(T(r => r.at))}</b>`];
+  const body = rows.map(r => [`<span class="sxCode">${skEsc(r.i.code)}</span>`, `<button type="button" class="trkL sxYc" data-trk="open" data-v="${skEsc(r.i.id)}">${yDot(yHex(r.i.col, yFam(r.i.col)))}${skEsc(r.i.col)}</button>`, trkN(r.o.rawIn), `<b>${trkN(r.o.sentRew)}</b>`, trkN(r.o.sentOther), `<b>${trkN(r.o.rewIn)}</b>`, r.o.sentRew > 0 ? sxN(r.o.diff) : '<span class="sxSm2">-</span>', trkN(r.o.outAll), trkN(r.at)]);
+  const foot = ['', '<b>Total</b>', `<b>${sxN(T(r => r.o.rawIn))}</b>`, `<b>${sxN(T(r => r.o.sentRew))}</b>`, `<b>${sxN(T(r => r.o.sentOther))}</b>`, `<b>${sxN(T(r => r.o.rewIn))}</b>`, `<b>${sxN(T(r => r.o.sentRew > 0 ? r.o.diff : 0))}</b>`, `<b>${sxN(T(r => r.o.outAll))}</b>`, `<b>${sxN(T(r => r.at))}</b>`];
   return sxHead('All yarn', 'Kg · tap a colour to follow it') + '<div class="card sxCard">' + sxTbl(cols, body, rows.length ? foot : null, 'No yarn moved in this period.') + '</div>';
 }
 function trkItem(i, C){
@@ -32998,7 +32998,7 @@ function trkItem(i, C){
   const flow = '<div class="card sxCard trkFlow">'
     + step(1, 'Raw store', kv('Received', sxN(o.rawIn) + ' kg') + kv('In store now', sxN(st) + ' kg', 'hi'))
     + step(2, 'Sent from raw store', list(o.rawOut, 'Nothing sent'))
-    + step(3, 'Rewinding', kv('Received', sxN(o.sentRew) + ' kg') + kv('Rewound in (net)', sxN(o.rewIn) + ' kg', 'hi') + kv('Difference', sxN(o.diff) + ' kg', o.diff > 0.05 ? 'bad' : ''))
+    + step(3, 'Rewinding', kv('Received', sxN(o.sentRew) + ' kg') + kv('Rewound in (net)', sxN(o.rewIn) + ' kg', 'hi') + kv('Difference', o.sentRew > 0 ? sxN(o.diff) + ' kg' : '-', o.diff > 0.05 && o.sentRew > 0 ? 'bad' : ''))
     + step(4, 'Rewound stock', kv('In stock now', sxN(rw) + ' kg', 'hi') + list(o.rewOut, 'Nothing sent out'))
     + step(5, 'Weaving', kv('Given out', sxN(o.outAll) + ' kg') + kv('Back, full bobbins', sxN(o.ret) + ' kg') + kv('Back, run-out', sxN(o.run) + ' kg') + kv('At weaving now', sxN(Math.max(0, b.out)) + ' kg', 'hi'))
     + '</div>';
