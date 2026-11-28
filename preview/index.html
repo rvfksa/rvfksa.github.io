@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head><meta name="robots" content="noindex">
-<meta name="rvf-build" content="20261128-150208">
+<meta name="rvf-build" content="20261128-150832">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -33197,7 +33197,9 @@ function atShifts(o){
     if(i === k) sc = (nowT - f.t < AT_SPAN && k === L.length - 1) ? 0 : -6;   // a single punch is fine only for a shift still running
     else if(span < 120) sc = -4; else if(span < 360) sc = 2; else if(span <= 15 * 60) sc = 10; else sc = 4;
     const st = atMin(tt[night ? 'night' : 'day'].start), dist = Math.min(Math.abs(f.m - st), 1440 - Math.abs(f.m - st)) / 60;
-    return sc + Math.max(0, 2 - dist) * 0.5;
+    // the shift on his profile only breaks a tie (a missed or single punch); clear punches always win
+    const pref = o.w.set ? ((o.w.set === 'Night') === night ? 1.5 : 0) : 0;
+    return sc + Math.max(0, 2 - dist) * 0.5 + pref;
   };
   const n = L.length, best = new Array(n + 1).fill(-Infinity), from = new Array(n + 1).fill(0); best[0] = 0;
   for(let j = 1; j <= n; j++) for(let i = j - 1; i >= 0 && L[j - 1].t - L[i].t <= AT_SPAN; i--){ const c = best[i] + score(i, j - 1); if(c > best[j]){ best[j] = c; from[j] = i; } }
