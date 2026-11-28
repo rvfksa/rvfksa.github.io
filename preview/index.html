@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head><meta name="robots" content="noindex">
-<meta name="rvf-build" content="20261128-145634">
+<meta name="rvf-build" content="20261128-150208">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -33126,12 +33126,14 @@ const atRule = (d) => { try{ return getShiftRuleForDate(d); }catch(e){ return ma
    Until Admin saves them, the suggested values below are used. */
 function atDefaults(){
   const r = atRule(atToday());
-  return { graceLate: 10, graceEarly: 10, tts: [
+  return { from: '2026-11-26', graceLate: 10, graceEarly: 10, tts: [
     { id: 'std', name: 'Everyone else', day: { start: r.day.start, end: r.day.end }, night: { start: r.night.start, end: r.night.end }, depts: [] },
     { id: 'weave', name: 'Weaving floor', day: { start: '05:30', end: '17:30' }, night: { start: '17:30', end: '05:30' }, depts: ['RVF', 'SSTM'] }
   ] };
 }
-function atSet(){ const s = AT.set; return (s && Array.isArray(s.tts) && s.tts.length) ? s : atDefaults(); }
+function atSet(){ const s = AT.set; return (s && Array.isArray(s.tts) && s.tts.length) ? Object.assign({ from: '2026-11-26' }, s) : atDefaults(); }
+// attendance is counted from this date (first day of the December 2026 salary month); earlier salary months are not counted
+const atFrom = () => atSet().from || '2026-11-26';
 function atTT(w){
   const S = atSet(), d = String((w && w.dept) || '').trim().toUpperCase();
   return S.tts.find(t => (t.depts || []).some(x => String(x).trim().toUpperCase() === d)) || S.tts.find(t => !(t.depts || []).length) || S.tts[0];
@@ -33353,8 +33355,8 @@ function atDayView(sd, live){
 
 /* ---------- salary month ---------- */
 function atMonthData(){
-  const t = atToday(), to = AT.cyc.to > t ? t : AT.cyc.to, days = [];
-  for(let d = AT.cyc.from; d <= to; d = atAdd(d, 1)) days.push(d);
+  const t = atToday(), to = AT.cyc.to > t ? t : AT.cyc.to, days = [], f0 = AT.cyc.from > atFrom() ? AT.cyc.from : atFrom();
+  for(let d = f0; d <= to; d = atAdd(d, 1)) days.push(d);
   const r = atRange(), G = atPunchesByPerson(r[0], r[1]), people = [];
   Object.keys(G).forEach(k => {
     const o = G[k], S = atShifts(o), rec = {};
@@ -33376,6 +33378,7 @@ function atMonthData(){
   return { days, people };
 }
 function atMonthView(){
+  if(AT.cyc.to < atFrom()) return `<div class="hrEmpty">Attendance is counted from ${fmtDate(atFrom())} (the first salary month that uses it). Earlier months are not counted here.</div>`;
   const M = atMonthData(), L = M.people.filter(p => atPass(p.w, p.s)).sort(atById);
   const show = AT.show, V = show === 'late' ? L.filter(p => p.late) : (show === 'miss' ? L.filter(p => p.miss) : L);
   let h = `<div class="hrTiles atTiles">${atTile('ppl', L.length, 'People', 'info')}${atTile('late', L.reduce((a, p) => a + p.late, 0), 'Late days', 'soon')}${atTile('miss', L.reduce((a, p) => a + p.miss, 0), 'Missing punches', 'late')}${atTile('hrs', Math.round(L.reduce((a, p) => a + p.worked, 0) / 60).toLocaleString(), 'Hours worked', 'ok', 'noop')}</div>`;
@@ -33523,6 +33526,7 @@ function atAdmRender(){
       + '</div>';
   });
   if(ed) h += `<button type="button" class="pillBtn" data-atadm="add" style="margin-top:8px;">+ Add timetable</button>`;
+  h += `<div class="hrLabel">Start</div><div class="atGr"><label>Count attendance from <input type="date" class="atAdmT" data-atadm="from" value="${atEsc(D.from || '2026-11-26')}"${dis}></label><span class="hrNote" style="margin:0;">The first salary month that uses attendance. Months before this are not counted.</span></div>`;
   h += `<div class="hrLabel">Grace</div><div class="atGr"><label>Late after <input type="number" min="0" max="120" class="atAdmG" data-atadm="grace" data-f="graceLate" value="${+D.graceLate || 0}"${dis}> minutes</label><label>Left early if more than <input type="number" min="0" max="120" class="atAdmG" data-atadm="grace" data-f="graceEarly" value="${+D.graceEarly || 0}"${dis}> minutes before the end</label></div>`;
   h += `<div class="hrLabel">Working days</div><div class="hrNote">Come from <b>Admin &gt; Factory &gt; Calendar</b>: a holiday there (Friday, Eid, national day) is never counted as absent, and anyone who punches on it gets a <i>holiday worked</i>. Days before his joining date or after his exit date, vacation days (HR) and approved leave requests (Leave / Request) are not counted as absent. The month is the salary month from <b>Salary Month</b>.</div>`;
   h += `<div class="hrNote" style="margin-top:8px;">${AT.set ? 'Saved settings are in use.' : 'Not saved yet: the suggested times above are in use (they match how people punch now).'}</div></div>`;
@@ -33549,6 +33553,7 @@ document.addEventListener('input', (e) => {
   const D = AT.admDraft, i = +t.dataset.i;
   if(t.dataset.atadm === 'time') D.tts[i][t.dataset.k][t.dataset.f] = t.value;
   else if(t.dataset.atadm === 'name') D.tts[i].name = t.value;
+  else if(t.dataset.atadm === 'from'){ if(t.value) D.from = t.value; }
   else if(t.dataset.atadm === 'grace') D[t.dataset.f] = Math.max(0, Math.min(120, +t.value || 0));
   else return;
   AT.admDirty = true; const b = document.querySelector('[data-atadm="save"]'); if(b) b.disabled = false;
@@ -33567,7 +33572,7 @@ function atDateNav(){
   const t = atToday();
   if(AT.tab === 'today') return `<span class="atDate">${atWd(t)}, ${fmtDate(t)} <i class="atLive">Live</i></span>`;
   if(AT.tab === 'day') return `<span class="atNav"><button type="button" class="iconBtn" data-at="dprev" title="Previous day">${atSvg('l', 15)}</button><input type="date" id="atDateIn" value="${AT.day}" max="${t}"><button type="button" class="iconBtn" data-at="dnext" title="Next day"${AT.day >= t ? ' disabled' : ''}>${atSvg('r', 15)}</button></span>`;
-  return `<span class="atNav"><button type="button" class="iconBtn" data-at="mprev" title="Previous salary month">${atSvg('l', 15)}</button><span class="atDate">${fmtDate(AT.cyc.from)} &ndash; ${fmtDate(AT.cyc.to)}</span><button type="button" class="iconBtn" data-at="mnext" title="Next salary month"${AT.cyc.to >= t ? ' disabled' : ''}>${atSvg('r', 15)}</button></span>`;
+  return `<span class="atNav"><button type="button" class="iconBtn" data-at="mprev" title="Previous salary month"${AT.cyc.from <= atFrom() ? ' disabled' : ''}>${atSvg('l', 15)}</button><span class="atDate">${fmtDate(AT.cyc.from)} &ndash; ${fmtDate(AT.cyc.to)}</span><button type="button" class="iconBtn" data-at="mnext" title="Next salary month"${AT.cyc.to >= t ? ' disabled' : ''}>${atSvg('r', 15)}</button></span>`;
 }
 function atRender(){
   const body = $('atBody'), tabs = $('atTabs'); if(!body || !AT.cyc) return;
@@ -33618,6 +33623,7 @@ document.addEventListener('click', async (e) => {
   else if(a === 'show'){ AT.show = AT.show === t.dataset.v || t.dataset.v === 'came' || t.dataset.v === 'ppl' ? '' : t.dataset.v; atRender(); }
   else if(a === 'refresh'){ t.disabled = true; try{ AT.map = await window.__db.getConfigObject('attIdMap', {}); AT.set = await window.__db.getConfigObject('attSettings', null); AT.vac = null; AT.leave = null; AT._by = null; atWatchToday(); window.__att.syncInfo().then(s => { AT.sync = s; atSubLine(); }).catch(() => {}); AT.dev = await window.__att.devStatus().catch(() => AT.dev); await atLoadTab(true); toast('Updated'); }catch(err){ console.error(err); toast('Could not refresh'); } t.disabled = false; }
   else if(a === 'dprev' || a === 'dnext'){ const n = atAdd(AT.day, a === 'dprev' ? -1 : 1); if(n > atToday()) return; AT.day = n; await atLoadTab(false); }
+  else if((a === 'mprev' && AT.cyc.from <= atFrom())) return;
   else if(a === 'mprev' || a === 'mnext'){ const ref = a === 'mprev' ? atAdd(AT.cyc.from, -1) : atAdd(AT.cyc.to, 1); const c = computeSalaryCycle(new Date(ref + 'T12:00:00'), state.salaryCycleStartDay || 26); AT.cyc = { from: c.start, to: c.end }; await atLoadTab(false); }
   else if(a === 'xls') atXls();
   else if(a === 'hidemis'){ AT.hideMis = atShiftMismatch().map(x => x.w.id + x.now).join(','); atRender(); }
