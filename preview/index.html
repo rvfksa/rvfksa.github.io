@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head><meta name="robots" content="noindex">
-<meta name="rvf-build" content="20261128-110749">
+<meta name="rvf-build" content="20261128-113449">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -33049,8 +33049,7 @@ window.__att = {
 /* ---------- Attendance page (Admin; others when the page is given to them) ----------
    Punches are grouped by SHIFT (from Admin > Shift & Timing, by date), not by calendar day:
    a night shift 18:30 -> 06:30 is one shift. Day/Night comes from the person's assigned shift,
-   or from their punch times when none is set. In = first punch, Out = last punch, the two in
-   between are lunch out / lunch in. */
+   or from their punch times when none is set. In = first punch, Out = last punch. */
 PAGE_DEFS.attendance = { label: 'Attendance' };
 (function(){
   const _up = userPages;
@@ -33099,7 +33098,7 @@ const atSvg = (k, s) => `<svg width="${s || 16}" height="${s || 16}" viewBox="0 
 function atMount(){
   if($('screen-attendance')) return;
   const s = document.createElement('section'); s.className = 'screen'; s.id = 'screen-attendance';
-  s.innerHTML = '<div class="eyebrow">HR</div><h1>Attendance</h1><p class="sub" id="atSub">In, lunch and out times from the attendance devices, by shift.</p>'
+  s.innerHTML = '<div class="eyebrow">HR</div><h1>Attendance</h1><p class="sub" id="atSub">In and out times from the attendance devices, by shift.</p>'
     + '<div class="card hrBox atBox"><div class="hrTabs" id="atTabs"></div><div id="atBody"><div class="hrEmpty">Loading&hellip;</div></div></div>';
   const ref = $('screen-mystatus'); (ref && ref.parentNode ? ref.parentNode : document.body).appendChild(s);
   const m = document.createElement('div'); m.id = 'atModal'; m.className = 'hrModal'; m.innerHTML = '<div class="hrSheet atSheet" id="atSheet"></div>';
@@ -33158,21 +33157,13 @@ function atShifts(o){
     const rule = atRule(sd)[sh.s === 'Night' ? 'night' : 'day'];
     let st = atMin(rule.start), en = atMin(rule.end); if(en <= st) en += 1440;
     const r = { date: sd, s: sh.s, auto: sh.auto, n: P.length, devs: Array.from(new Set(P.map(x => x.dev).filter(Boolean))), start: st, end: en };
-    r.in = P[0].m;
+    // In = first punch of the shift, Out = last punch (always the latest one); punches in between are not shown
+    r.in = P[0].m; r.out = P.length > 1 ? P[P.length - 1].m : null;
     r.open = Date.now() < new Date(sd + 'T00:00:00').getTime() + (en + 60) * 60000;   // shift still running (until 1 hour after it ends)
-    if(r.open){
-      // still at work: punches in order are in, lunch out, lunch in, out
-      r.lo = P.length >= 2 ? P[1].m : null; r.li = P.length >= 3 ? P[2].m : null; r.out = P.length >= 4 ? P[P.length - 1].m : null;
-      r.now = r.out != null ? 'Gone' : (P.length === 2 ? 'At lunch' : 'At work');
-    } else {
-      r.out = P.length > 1 ? P[P.length - 1].m : null;
-      if(P.length >= 3){ r.lo = P[1].m; r.li = P.length >= 4 ? P[2].m : null; }
-    }
-    r.lunch = (r.lo != null && r.li != null) ? r.li - r.lo : 0;
-    r.worked = r.out != null ? r.out - r.in - r.lunch : null;
+    r.worked = r.out != null ? r.out - r.in : null;
     r.late = r.in - st > AT_GRACE ? r.in - st : 0;
-    r.early = (r.out != null && en - r.out > AT_GRACE) ? en - r.out : 0;
-    r.missing = r.open ? '' : (r.out == null ? 'Out' : (P.length === 3 ? 'Lunch in' : ''));
+    r.early = (!r.open && r.out != null && en - r.out > AT_GRACE) ? en - r.out : 0;
+    r.missing = (!r.open && r.out == null) ? 'Out' : '';
     res[sd] = r;
   });
   return { sh, days: res };
@@ -33228,7 +33219,7 @@ async function atLoadTab(force){ const r = atRange(); await atLoadDays(r[0], r[1
 function atSubLine(){
   const el = $('atSub'); if(!el) return;
   const s = AT.sync, at = s && s.lastSync && s.lastSync.toDate ? s.lastSync.toDate() : null;
-  el.innerHTML = 'In, lunch and out times from the attendance devices, by shift' + (at ? ` &middot; updated ${fmtDate(dateToStr(at))} ${pad(at.getHours())}:${pad(at.getMinutes())}` : '') + '.';
+  el.innerHTML = 'In and out times from the attendance devices, by shift' + (at ? ` &middot; updated ${fmtDate(dateToStr(at))} ${pad(at.getHours())}:${pad(at.getMinutes())}` : '') + '.';
 }
 
 /* ---------- one shift date: who came, who did not ---------- */
@@ -33248,7 +33239,7 @@ function atPill(r){
   if(r.late) t.push(`<span class="atPill bad">Late ${atHM(r.late).replace('0h ', '')}</span>`);
   if(r.missing) t.push(`<span class="atPill bad">No ${r.missing.toLowerCase()}</span>`);
   if(r.early) t.push(`<span class="atPill warn">Left ${atHM(r.early).replace('0h ', '')} early</span>`);
-  if(r.open && r.now !== 'Gone') t.push(`<span class="atPill ${r.now === 'At lunch' ? 'warn' : 'ok'}">${r.now}</span>`);
+  if(r.open) t.push('<span class="atPill ok">At work</span>');
   else if(!t.length && r.out != null) t.push('<span class="atPill ok">On time</span>');
   return t.join('');
 }
@@ -33258,8 +33249,8 @@ function atPersonCell(w, sub){
 }
 function atShiftTable(rows){
   if(!rows.length) return '<div class="hrEmpty">Nobody in this view.</div>';
-  return `<div class="hrScroll"><table class="hrTbl atTbl"><thead><tr><th>Employee</th><th>Shift</th><th class="c">In</th><th class="c">Lunch out</th><th class="c">Lunch in</th><th class="c">Out</th><th class="r">Worked</th><th></th></tr></thead><tbody>`
-    + rows.map(x => { const r = x.r; return `<tr class="clk" data-at="person" data-v="${atEsc(x.w.id)}"><td>${atPersonCell(x.w)}</td><td>${atShiftChip(r.s, r.auto)}<div class="atDim">${atClock(r.start)}&ndash;${atClock(r.end)}</div></td><td class="c t${r.late ? ' bad' : ''}">${atClock(r.in)}</td><td class="c t">${r.lo != null ? atClock(r.lo) : '<span class="atDash">&ndash;</span>'}</td><td class="c t">${r.li != null ? atClock(r.li) : (r.lo != null && !r.open ? '<span class="atMiss">?</span>' : '<span class="atDash">&ndash;</span>')}</td><td class="c t${r.early ? ' warn' : ''}">${r.out != null ? atClock(r.out) : (r.open ? '<span class="atDash">&ndash;</span>' : '<span class="atMiss">?</span>')}</td><td class="r t"><b>${r.worked != null ? atHM(r.worked) : (r.open ? '<span class="atDim">' + atHM(Math.max(0, (new Date().getHours() * 60 + new Date().getMinutes() + (r.date < atToday() ? 1440 : 0)) - r.in - r.lunch)) + ' so far</span>' : '')}</b></td><td class="atPills">${atPill(r)}</td></tr>`; }).join('')
+  return `<div class="hrScroll"><table class="hrTbl atTbl"><thead><tr><th>Employee</th><th>Shift</th><th class="c">In</th><th class="c">Out</th><th class="r">Worked</th><th></th></tr></thead><tbody>`
+    + rows.map(x => { const r = x.r; return `<tr class="clk" data-at="person" data-v="${atEsc(x.w.id)}"><td>${atPersonCell(x.w)}</td><td>${atShiftChip(r.s, r.auto)}<div class="atDim">${atClock(r.start)}&ndash;${atClock(r.end)}</div></td><td class="c t${r.late ? ' bad' : ''}">${atClock(r.in)}</td><td class="c t${r.early ? ' warn' : ''}">${r.out != null ? atClock(r.out) : (r.open ? '<span class="atDash">&ndash;</span>' : '<span class="atMiss">?</span>')}</td><td class="r t"><b>${r.worked != null ? atHM(r.worked) : (r.open ? '<span class="atDim">' + atHM(Math.max(0, (new Date().getHours() * 60 + new Date().getMinutes() + (r.date < atToday() ? 1440 : 0)) - r.in)) + ' so far</span>' : '')}</b></td><td class="atPills">${atPill(r)}</td></tr>`; }).join('')
     + '</tbody></table></div>';
 }
 function atAwayList(L, label){
@@ -33324,8 +33315,8 @@ function atOpenPerson(id){
     h += `<div class="hrFacts atFacts"><div class="hrFact"><div class="k">Present</div><div class="v">${L.length} days</div></div><div class="hrFact"><div class="k">Worked</div><div class="v">${atHM(worked)}</div></div><div class="hrFact"><div class="k">Late</div><div class="v">${late} days</div></div><div class="hrFact"><div class="k">Missing punch</div><div class="v">${miss}</div></div></div>`;
     h += `<div class="atDays">${days.map(d => { const r = S.days[d], wd = atWd(d);
       if(!r) return `<div class="atDr off"><div class="atDd"><b>${d.slice(8)}</b><span>${wd}</span></div><div class="atDt">${wd === 'Fri' ? 'Friday' : 'No punch'}</div></div>`;
-      return `<div class="atDr"><div class="atDd"><b>${d.slice(8)}</b><span>${wd}</span></div><div class="atDt"><span class="${r.late ? 'bad' : ''}">${atClock(r.in)}</span><i>&rarr;</i>${r.lo != null ? `<span class="lu">${atClock(r.lo)}&ndash;${r.li != null ? atClock(r.li) : '?'}</span><i>&rarr;</i>` : ''}<span class="${r.early ? 'warn' : ''}">${r.out != null ? atClock(r.out) : '?'}</span></div><div class="atDw">${r.worked != null ? atHM(r.worked) : ''}</div><div class="atPills">${atPill(r)}</div></div>`; }).join('')}</div>`;
-    h += `<div class="hrNote" style="margin-top:10px;">Lunch is the time between the 2nd and 3rd punch and is not counted as worked. Shift times come from Admin &gt; Shift &amp; Timing.${S.sh.auto ? ' * Shift worked out from punch times because no shift is set on the profile.' : ''}</div>`;
+      return `<div class="atDr"><div class="atDd"><b>${d.slice(8)}</b><span>${wd}</span></div><div class="atDt"><span class="${r.late ? 'bad' : ''}">${atClock(r.in)}</span><i>&rarr;</i><span class="${r.early ? 'warn' : ''}">${r.out != null ? atClock(r.out) : '?'}</span></div><div class="atDw">${r.worked != null ? atHM(r.worked) : ''}</div><div class="atPills">${atPill(r)}</div></div>`; }).join('')}</div>`;
+    h += `<div class="hrNote" style="margin-top:10px;">In is the first punch of the shift and Out is the last punch; a night shift's Out is on the next morning. Shift times come from Admin &gt; Shift &amp; Timing.${S.sh.auto ? ' * Shift worked out from punch times because no shift is set on the profile.' : ''}</div>`;
     $('atSheet').innerHTML = h; $('atModal').style.display = 'flex';
   }).catch(e => { console.error(e); toast('Could not load'); });
 }
@@ -33399,8 +33390,8 @@ function atRender(){
 /* ---------- Excel ---------- */
 function atXls(){
   if(!window.XLSX){ toast('The Excel tool did not load'); return; }
-  const wb = XLSX.utils.book_new(), hdr = ['ID', 'Device ID', 'Name', 'Department', 'Shift', 'Date', 'In', 'Lunch out', 'Lunch in', 'Out', 'Worked (h)', 'Late (min)', 'Left early (min)', 'Missing'];
-  const line = (w, r) => [w.id, w.pin, w.name, w.dept, r.s, r.date, atClock(r.in), r.lo != null ? atClock(r.lo) : '', r.li != null ? atClock(r.li) : '', r.out != null ? atClock(r.out) : '', atHrs(r.worked), r.late || '', r.early || '', r.missing];
+  const wb = XLSX.utils.book_new(), hdr = ['ID', 'Device ID', 'Name', 'Department', 'Shift', 'Date', 'In', 'Out', 'Worked (h)', 'Late (min)', 'Left early (min)', 'Missing'];
+  const line = (w, r) => [w.id, w.pin, w.name, w.dept, r.s, r.date, atClock(r.in), r.out != null ? atClock(r.out) : '', atHrs(r.worked), r.late || '', r.early || '', r.missing];
   if(AT.tab === 'month'){
     const M = atMonthData(), L = M.people.filter(p => atPass(p.w, p.s)).sort(atById);
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['ID', 'Device ID', 'Name', 'Department', 'Type', 'Shift', 'Present', 'Absent', 'Late days', 'Late (min)', 'Missing punches', 'Worked (h)', 'Avg per day (h)']].concat(L.map(p => [p.w.id, p.w.pin, p.w.name, p.w.dept, p.w.notInApp ? 'Not in app' : p.w.type, p.s, p.present, p.absent, p.late, p.lateMin, p.miss, atHrs(p.worked), p.full ? atHrs(p.worked / p.full) : '']))), 'Summary');
