@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head><meta name="robots" content="noindex">
-<meta name="rvf-build" content="20261128-113449">
+<meta name="rvf-build" content="20261128-113716">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -33048,8 +33048,7 @@ window.__att = {
 <script>
 /* ---------- Attendance page (Admin; others when the page is given to them) ----------
    Punches are grouped by SHIFT (from Admin > Shift & Timing, by date), not by calendar day:
-   a night shift 18:30 -> 06:30 is one shift. Day/Night comes from the person's assigned shift,
-   or from their punch times when none is set. In = first punch, Out = last punch. */
+   a night shift 18:30 -> 06:30 is one shift. Day/Night is decided from each shift's first punch. In = first punch, Out = last punch. */
 PAGE_DEFS.attendance = { label: 'Attendance' };
 (function(){
   const _up = userPages;
@@ -33135,28 +33134,25 @@ function atPunchesByPerson(from, to){
   }
   return g;
 }
-// Day or Night: the person's own setting, otherwise what their punches show
-function atShiftOf(o){
-  if(o.w.set) return { s: o.w.set, auto: false };
-  const firsts = {}; o.list.forEach(x => { if(firsts[x.d] == null || x.m < firsts[x.d]) firsts[x.d] = x.m; });
-  let n = 0, dd = 0; Object.values(firsts).forEach(m => { if(m >= 14 * 60) n++; else if(m >= 3 * 60) dd++; });
-  return { s: n > dd ? 'Night' : 'Day', auto: true };
-}
-// group one person's punches into shifts: shiftDate -> record
+// Each shift is found from the punches themselves: a shift starts at a punch, every punch within
+// 16 hours belongs to it, and a shift that starts after 14:00 (or before 03:00) is a night shift.
+// This follows people who move between Day and Night without changing their profile.
+const AT_SPAN = 16 * 60;
+const atDayNo = (d) => Math.round(Date.UTC(+d.slice(0, 4), +d.slice(5, 7) - 1, +d.slice(8, 10)) / 86400000);
 function atShifts(o){
-  const sh = atShiftOf(o), out = {};
-  o.list.forEach(x => {
-    let sd = x.d, m = x.m;
-    if(sh.s === 'Night' && x.m < 12 * 60){ sd = atAdd(x.d, -1); m = x.m + 1440; }   // after midnight: still last night's shift
-    (out[sd] = out[sd] || []).push({ m, dev: x.dev });
-  });
-  const res = {};
-  Object.keys(out).forEach(sd => {
-    const L = out[sd].sort((a, b) => a.m - b.m), P = [];
-    L.forEach(x => { if(!P.length || x.m - P[P.length - 1].m > AT_DUP) P.push(x); });
+  const L = o.list.map(x => ({ t: atDayNo(x.d) * 1440 + x.m, d: x.d, m: x.m, dev: x.dev })).sort((a, b) => a.t - b.t);
+  const ses = [];
+  L.forEach(x => { const c = ses[ses.length - 1]; if(c && x.t - c[0].t <= AT_SPAN) c.push(x); else ses.push([x]); });
+  const res = {}; let nN = 0, nD = 0;
+  ses.forEach(S0 => {
+    const f = S0[0], night = f.m >= 14 * 60 || f.m < 3 * 60, sd = f.m < 3 * 60 ? atAdd(f.d, -1) : f.d, base = atDayNo(sd) * 1440;
+    const P = []; S0.forEach(x => { const m = x.t - base; if(!P.length || m - P[P.length - 1].m > AT_DUP) P.push({ m, dev: x.dev }); });
+    if(night) nN++; else nD++;
+    const sh = { s: night ? 'Night' : 'Day' };
+    if(res[sd] && res[sd].n >= P.length) return;   // two shifts on one date (rare): keep the fuller one
     const rule = atRule(sd)[sh.s === 'Night' ? 'night' : 'day'];
     let st = atMin(rule.start), en = atMin(rule.end); if(en <= st) en += 1440;
-    const r = { date: sd, s: sh.s, auto: sh.auto, n: P.length, devs: Array.from(new Set(P.map(x => x.dev).filter(Boolean))), start: st, end: en };
+    const r = { date: sd, s: sh.s, n: P.length, devs: Array.from(new Set(P.map(x => x.dev).filter(Boolean))), start: st, end: en };
     // In = first punch of the shift, Out = last punch (always the latest one); punches in between are not shown
     r.in = P[0].m; r.out = P.length > 1 ? P[P.length - 1].m : null;
     r.open = Date.now() < new Date(sd + 'T00:00:00').getTime() + (en + 60) * 60000;   // shift still running (until 1 hour after it ends)
@@ -33166,7 +33162,7 @@ function atShifts(o){
     r.missing = (!r.open && r.out == null) ? 'Out' : '';
     res[sd] = r;
   });
-  return { sh, days: res };
+  return { sh: { s: nN > nD ? 'Night' : 'Day' }, days: res };
 }
 function atPass(w, s){
   if(AT.dept && (w.dept || '') !== AT.dept) return false;
@@ -33224,9 +33220,11 @@ function atSubLine(){
 
 /* ---------- one shift date: who came, who did not ---------- */
 function atDayData(sd, live){
-  const r = atRange(), G = atPunchesByPerson(r[0], r[1]), came = [], away = [], early = live && new Date().getHours() < 14;
+  const r = atRange(), G = atPunchesByPerson(r[0], r[1]), came = [], away = [];
   Object.keys(G).forEach(k => {
-    const o = G[k], S = atShifts(o), d0 = (early && S.sh.s === 'Night') ? atAdd(sd, -1) : sd, rec = S.days[d0];   // before 2 pm, Today shows last night's night shift
+    const o = G[k], S = atShifts(o), y = S.days[atAdd(sd, -1)];
+    // Today also shows a night shift from last night that is still running
+    const d0 = (!S.days[sd] && live && y && y.s === 'Night' && y.open) ? atAdd(sd, -1) : sd, rec = S.days[d0];
     if(rec){ came.push({ w: o.w, r: rec }); return; }
     // expected: worked on one of the 7 shift days before, not exited, not a Friday off for them
     let last = ''; for(let i = 1; i <= 7; i++){ const d = atAdd(d0, -i); if(S.days[d]){ last = d; break; } }
@@ -33243,14 +33241,14 @@ function atPill(r){
   else if(!t.length && r.out != null) t.push('<span class="atPill ok">On time</span>');
   return t.join('');
 }
-const atShiftChip = (s, auto) => `<span class="atSh ${s === 'Night' ? 'n' : 'd'}" title="${s} shift${auto ? ' (from punch times)' : ''}">${atSvg(s === 'Night' ? 'moon' : 'sun', 12)}${s}${auto ? '*' : ''}</span>`;
+const atShiftChip = (s) => `<span class="atSh ${s === 'Night' ? 'n' : 'd'}" title="${s} shift">${atSvg(s === 'Night' ? 'moon' : 'sun', 12)}${s}</span>`;
 function atPersonCell(w, sub){
   return `<div class="atWho">${atAvatar(w)}<div><div class="hrTitle">${atEsc(w.name)} <span class="id">${atEsc(w.id)}</span>${w.notInApp ? '<span class="atTag">Not in app</span>' : ''}${w.exited ? '<span class="atTag red">Exited</span>' : ''}</div><div class="hrSub">${atEsc(sub != null ? sub : w.dept)}</div></div></div>`;
 }
 function atShiftTable(rows){
   if(!rows.length) return '<div class="hrEmpty">Nobody in this view.</div>';
   return `<div class="hrScroll"><table class="hrTbl atTbl"><thead><tr><th>Employee</th><th>Shift</th><th class="c">In</th><th class="c">Out</th><th class="r">Worked</th><th></th></tr></thead><tbody>`
-    + rows.map(x => { const r = x.r; return `<tr class="clk" data-at="person" data-v="${atEsc(x.w.id)}"><td>${atPersonCell(x.w)}</td><td>${atShiftChip(r.s, r.auto)}<div class="atDim">${atClock(r.start)}&ndash;${atClock(r.end)}</div></td><td class="c t${r.late ? ' bad' : ''}">${atClock(r.in)}</td><td class="c t${r.early ? ' warn' : ''}">${r.out != null ? atClock(r.out) : (r.open ? '<span class="atDash">&ndash;</span>' : '<span class="atMiss">?</span>')}</td><td class="r t"><b>${r.worked != null ? atHM(r.worked) : (r.open ? '<span class="atDim">' + atHM(Math.max(0, (new Date().getHours() * 60 + new Date().getMinutes() + (r.date < atToday() ? 1440 : 0)) - r.in)) + ' so far</span>' : '')}</b></td><td class="atPills">${atPill(r)}</td></tr>`; }).join('')
+    + rows.map(x => { const r = x.r; return `<tr class="clk" data-at="person" data-v="${atEsc(x.w.id)}"><td>${atPersonCell(x.w)}</td><td>${atShiftChip(r.s)}<div class="atDim">${atClock(r.start)}&ndash;${atClock(r.end)}</div></td><td class="c t${r.late ? ' bad' : ''}">${atClock(r.in)}</td><td class="c t${r.early ? ' warn' : ''}">${r.out != null ? atClock(r.out) : (r.open ? '<span class="atDash">&ndash;</span>' : '<span class="atMiss">?</span>')}</td><td class="r t"><b>${r.worked != null ? atHM(r.worked) : (r.open ? '<span class="atDim">' + atHM(Math.max(0, (new Date().getHours() * 60 + new Date().getMinutes() + (r.date < atToday() ? 1440 : 0)) - r.in)) + ' so far</span>' : '')}</b></td><td class="atPills">${atPill(r)}</td></tr>`; }).join('')
     + '</tbody></table></div>';
 }
 function atAwayList(L, label){
@@ -33282,7 +33280,7 @@ function atMonthData(){
     days.forEach(d => { if(S.days[d]) rec[d] = S.days[d]; });
     const L = Object.values(rec); if(!L.length) return;
     const work = days.filter(d => atWd(d) !== 'Fri' || rec[d]).length;
-    people.push({ w: o.w, s: S.sh.s, auto: S.sh.auto, rec, present: L.length, absent: Math.max(0, work - L.length),
+    people.push({ w: o.w, s: S.sh.s, rec, present: L.length, absent: Math.max(0, work - L.length),
       late: L.filter(x => x.late).length, lateMin: L.reduce((a, x) => a + x.late, 0), miss: L.filter(x => x.missing).length,
       worked: L.reduce((a, x) => a + (x.worked || 0), 0), full: L.filter(x => x.worked != null).length });
   });
@@ -33295,7 +33293,7 @@ function atMonthView(){
   if(!V.length) return h + '<div class="hrEmpty">Nobody in this view.</div>';
   h += `<div class="hrLabel">${M.days.length} days &middot; Fridays without punches are not counted as absent</div>`;
   h += `<div class="hrScroll"><table class="hrTbl atTbl"><thead><tr><th>Employee</th><th>Shift</th><th class="r">Present</th><th class="r">Absent</th><th class="r">Late</th><th class="r">Missing</th><th class="r">Worked</th><th class="r">Avg / day</th></tr></thead><tbody>`
-    + V.map(p => `<tr class="clk" data-at="person" data-v="${atEsc(p.w.id)}"><td>${atPersonCell(p.w)}</td><td>${atShiftChip(p.s, p.auto)}</td><td class="r t"><b>${p.present}</b></td><td class="r t">${p.absent ? `<span class="atWarnN">${p.absent}</span>` : '0'}</td><td class="r t">${p.late ? `<span class="atBadN">${p.late}</span><div class="atDim">${atHM(p.lateMin)}</div>` : '0'}</td><td class="r t">${p.miss ? `<span class="atBadN">${p.miss}</span>` : '0'}</td><td class="r t"><b>${atHM(p.worked)}</b></td><td class="r t">${p.full ? atHM(p.worked / p.full) : ''}</td></tr>`).join('')
+    + V.map(p => `<tr class="clk" data-at="person" data-v="${atEsc(p.w.id)}"><td>${atPersonCell(p.w)}</td><td>${atShiftChip(p.s)}</td><td class="r t"><b>${p.present}</b></td><td class="r t">${p.absent ? `<span class="atWarnN">${p.absent}</span>` : '0'}</td><td class="r t">${p.late ? `<span class="atBadN">${p.late}</span><div class="atDim">${atHM(p.lateMin)}</div>` : '0'}</td><td class="r t">${p.miss ? `<span class="atBadN">${p.miss}</span>` : '0'}</td><td class="r t"><b>${atHM(p.worked)}</b></td><td class="r t">${p.full ? atHM(p.worked / p.full) : ''}</td></tr>`).join('')
     + '</tbody></table></div>';
   return h;
 }
@@ -33310,13 +33308,13 @@ function atOpenPerson(id){
     const S = atShifts(o), days = []; for(let d = to; d >= from; d = atAdd(d, -1)) days.push(d);
     const L = days.map(d => S.days[d]).filter(Boolean), w = o.w;
     const worked = L.reduce((a, x) => a + (x.worked || 0), 0), late = L.filter(x => x.late).length, miss = L.filter(x => x.missing).length;
-    let h = `<div class="hrSheetHead">${atAvatar(w, true)}<div style="flex:1;min-width:0;"><div class="hrTitle" style="font-size:15px;">${atEsc(w.name)} <span class="id">${atEsc(w.id)}</span></div><div class="hrSub">${atEsc(w.dept)}${w.dept ? ' &middot; ' : ''}${atShiftChip(S.sh.s, S.sh.auto)}${w.linked ? ` &middot; device ID ${atEsc(w.pin)}` : ''}</div></div><button type="button" class="iconBtn" data-at="close" title="Close">${atSvg('x', 15)}</button></div>`;
+    let h = `<div class="hrSheetHead">${atAvatar(w, true)}<div style="flex:1;min-width:0;"><div class="hrTitle" style="font-size:15px;">${atEsc(w.name)} <span class="id">${atEsc(w.id)}</span></div><div class="hrSub">${atEsc(w.dept)}${w.dept ? ' &middot; ' : ''}${atShiftChip(S.sh.s)}${w.linked ? ` &middot; device ID ${atEsc(w.pin)}` : ''}</div></div><button type="button" class="iconBtn" data-at="close" title="Close">${atSvg('x', 15)}</button></div>`;
     h += `<div class="hrSub" style="margin:-6px 0 12px;">${fmtDate(from)} &ndash; ${fmtDate(to)}</div>`;
     h += `<div class="hrFacts atFacts"><div class="hrFact"><div class="k">Present</div><div class="v">${L.length} days</div></div><div class="hrFact"><div class="k">Worked</div><div class="v">${atHM(worked)}</div></div><div class="hrFact"><div class="k">Late</div><div class="v">${late} days</div></div><div class="hrFact"><div class="k">Missing punch</div><div class="v">${miss}</div></div></div>`;
     h += `<div class="atDays">${days.map(d => { const r = S.days[d], wd = atWd(d);
       if(!r) return `<div class="atDr off"><div class="atDd"><b>${d.slice(8)}</b><span>${wd}</span></div><div class="atDt">${wd === 'Fri' ? 'Friday' : 'No punch'}</div></div>`;
       return `<div class="atDr"><div class="atDd"><b>${d.slice(8)}</b><span>${wd}</span></div><div class="atDt"><span class="${r.late ? 'bad' : ''}">${atClock(r.in)}</span><i>&rarr;</i><span class="${r.early ? 'warn' : ''}">${r.out != null ? atClock(r.out) : '?'}</span></div><div class="atDw">${r.worked != null ? atHM(r.worked) : ''}</div><div class="atPills">${atPill(r)}</div></div>`; }).join('')}</div>`;
-    h += `<div class="hrNote" style="margin-top:10px;">In is the first punch of the shift and Out is the last punch; a night shift's Out is on the next morning. Shift times come from Admin &gt; Shift &amp; Timing.${S.sh.auto ? ' * Shift worked out from punch times because no shift is set on the profile.' : ''}</div>`;
+    h += `<div class="hrNote" style="margin-top:10px;">In is the first punch of the shift and Out is the last punch; a night shift's Out is on the next morning. Shift times come from Admin &gt; Shift &amp; Timing.  A shift that starts after 14:00 is a night shift.</div>`;
     $('atSheet').innerHTML = h; $('atModal').style.display = 'flex';
   }).catch(e => { console.error(e); toast('Could not load'); });
 }
