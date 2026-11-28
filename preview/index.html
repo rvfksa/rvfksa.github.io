@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head><meta name="robots" content="noindex">
-<meta name="rvf-build" content="20261128-110535">
+<meta name="rvf-build" content="20261128-110749">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -33158,13 +33158,21 @@ function atShifts(o){
     const rule = atRule(sd)[sh.s === 'Night' ? 'night' : 'day'];
     let st = atMin(rule.start), en = atMin(rule.end); if(en <= st) en += 1440;
     const r = { date: sd, s: sh.s, auto: sh.auto, n: P.length, devs: Array.from(new Set(P.map(x => x.dev).filter(Boolean))), start: st, end: en };
-    r.in = P[0].m; r.out = P.length > 1 ? P[P.length - 1].m : null;
-    if(P.length >= 3){ r.lo = P[1].m; r.li = P.length >= 4 ? P[2].m : null; }
+    r.in = P[0].m;
+    r.open = Date.now() < new Date(sd + 'T00:00:00').getTime() + (en + 60) * 60000;   // shift still running (until 1 hour after it ends)
+    if(r.open){
+      // still at work: punches in order are in, lunch out, lunch in, out
+      r.lo = P.length >= 2 ? P[1].m : null; r.li = P.length >= 3 ? P[2].m : null; r.out = P.length >= 4 ? P[P.length - 1].m : null;
+      r.now = r.out != null ? 'Gone' : (P.length === 2 ? 'At lunch' : 'At work');
+    } else {
+      r.out = P.length > 1 ? P[P.length - 1].m : null;
+      if(P.length >= 3){ r.lo = P[1].m; r.li = P.length >= 4 ? P[2].m : null; }
+    }
     r.lunch = (r.lo != null && r.li != null) ? r.li - r.lo : 0;
     r.worked = r.out != null ? r.out - r.in - r.lunch : null;
     r.late = r.in - st > AT_GRACE ? r.in - st : 0;
     r.early = (r.out != null && en - r.out > AT_GRACE) ? en - r.out : 0;
-    r.missing = r.out == null ? 'Out' : (P.length === 3 ? 'Lunch in' : '');
+    r.missing = r.open ? '' : (r.out == null ? 'Out' : (P.length === 3 ? 'Lunch in' : ''));
     res[sd] = r;
   });
   return { sh, days: res };
@@ -33240,7 +33248,8 @@ function atPill(r){
   if(r.late) t.push(`<span class="atPill bad">Late ${atHM(r.late).replace('0h ', '')}</span>`);
   if(r.missing) t.push(`<span class="atPill bad">No ${r.missing.toLowerCase()}</span>`);
   if(r.early) t.push(`<span class="atPill warn">Left ${atHM(r.early).replace('0h ', '')} early</span>`);
-  if(!t.length && r.out != null) t.push('<span class="atPill ok">On time</span>');
+  if(r.open && r.now !== 'Gone') t.push(`<span class="atPill ${r.now === 'At lunch' ? 'warn' : 'ok'}">${r.now}</span>`);
+  else if(!t.length && r.out != null) t.push('<span class="atPill ok">On time</span>');
   return t.join('');
 }
 const atShiftChip = (s, auto) => `<span class="atSh ${s === 'Night' ? 'n' : 'd'}" title="${s} shift${auto ? ' (from punch times)' : ''}">${atSvg(s === 'Night' ? 'moon' : 'sun', 12)}${s}${auto ? '*' : ''}</span>`;
@@ -33250,7 +33259,7 @@ function atPersonCell(w, sub){
 function atShiftTable(rows){
   if(!rows.length) return '<div class="hrEmpty">Nobody in this view.</div>';
   return `<div class="hrScroll"><table class="hrTbl atTbl"><thead><tr><th>Employee</th><th>Shift</th><th class="c">In</th><th class="c">Lunch out</th><th class="c">Lunch in</th><th class="c">Out</th><th class="r">Worked</th><th></th></tr></thead><tbody>`
-    + rows.map(x => { const r = x.r; return `<tr class="clk" data-at="person" data-v="${atEsc(x.w.id)}"><td>${atPersonCell(x.w)}</td><td>${atShiftChip(r.s, r.auto)}<div class="atDim">${atClock(r.start)}&ndash;${atClock(r.end)}</div></td><td class="c t${r.late ? ' bad' : ''}">${atClock(r.in)}</td><td class="c t">${r.lo != null ? atClock(r.lo) : '<span class="atDash">&ndash;</span>'}</td><td class="c t">${r.li != null ? atClock(r.li) : (r.lo != null ? '<span class="atMiss">?</span>' : '<span class="atDash">&ndash;</span>')}</td><td class="c t${r.early ? ' warn' : ''}">${r.out != null ? atClock(r.out) : '<span class="atMiss">?</span>'}</td><td class="r t"><b>${r.worked != null ? atHM(r.worked) : ''}</b></td><td class="atPills">${atPill(r)}</td></tr>`; }).join('')
+    + rows.map(x => { const r = x.r; return `<tr class="clk" data-at="person" data-v="${atEsc(x.w.id)}"><td>${atPersonCell(x.w)}</td><td>${atShiftChip(r.s, r.auto)}<div class="atDim">${atClock(r.start)}&ndash;${atClock(r.end)}</div></td><td class="c t${r.late ? ' bad' : ''}">${atClock(r.in)}</td><td class="c t">${r.lo != null ? atClock(r.lo) : '<span class="atDash">&ndash;</span>'}</td><td class="c t">${r.li != null ? atClock(r.li) : (r.lo != null && !r.open ? '<span class="atMiss">?</span>' : '<span class="atDash">&ndash;</span>')}</td><td class="c t${r.early ? ' warn' : ''}">${r.out != null ? atClock(r.out) : (r.open ? '<span class="atDash">&ndash;</span>' : '<span class="atMiss">?</span>')}</td><td class="r t"><b>${r.worked != null ? atHM(r.worked) : (r.open ? '<span class="atDim">' + atHM(Math.max(0, (new Date().getHours() * 60 + new Date().getMinutes() + (r.date < atToday() ? 1440 : 0)) - r.in - r.lunch)) + ' so far</span>' : '')}</b></td><td class="atPills">${atPill(r)}</td></tr>`; }).join('')
     + '</tbody></table></div>';
 }
 function atAwayList(L, label){
