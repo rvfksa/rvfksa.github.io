@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261128-095453">
+<meta name="rvf-build" content="20261128-124256">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -33023,5 +33023,742 @@ document.addEventListener('change', (ev) => {
 <style>
 .sxHs .sxYc .sxYd, .sxLg .sxYc .sxYd{ margin-right:6px; vertical-align:middle; }
 </style>
+<script type="module">
+/* Attendance data (punches from the attendance devices). Reads only; one document per day. */
+import { getApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, doc, getDoc, getDocs, collection, query, where, documentId, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+const fdb = () => getFirestore(getApp());
+window.__att = {
+  async days(from, to) {
+    const s = await getDocs(query(collection(fdb(), 'attDays'), where(documentId(), '>=', from), where(documentId(), '<=', to)));
+    const o = {}; s.forEach(d => { o[d.id] = (d.data() || {}).p || {}; }); return o;
+  },
+  watchDay(date, cb) { return onSnapshot(doc(fdb(), 'attDays', date), s => cb(s.exists() ? ((s.data() || {}).p || {}) : {}), e => console.error(e)); },
+  async users(pins) {
+    const out = {}, L = Array.from(new Set(pins.map(String)));
+    for (let i = 0; i < L.length; i += 30) {
+      const s = await getDocs(query(collection(fdb(), 'attUsers'), where(documentId(), 'in', L.slice(i, i + 30))));
+      s.forEach(d => { out[d.id] = d.data() || {}; });
+    }
+    return out;
+  },
+  async syncInfo() { const s = await getDoc(doc(fdb(), 'attDevices', '_biotimeSync')); return s.exists() ? s.data() : null; },
+  async devStatus() { const s = await getDoc(doc(fdb(), 'attDevices', '_status')); return s.exists() ? s.data() : null; }
+};
+</script>
+
+<script>
+/* ---------- Attendance page (Admin; others when the page is given to them) ----------
+   Punches are grouped by SHIFT (from Admin > Shift & Timing, by date), not by calendar day:
+   a night shift 18:30 -> 06:30 is one shift. Day/Night is decided from each shift's first punch. In = first punch, Out = last punch. */
+PAGE_DEFS.attendance = { label: 'Attendance' };
+(function(){
+  const _up = userPages;
+  userPages = function(u){ const p = _up(u).slice(); if(u && u.role === 'admin' && p.indexOf('attendance') < 0) p.push('attendance'); return p; };
+  const _g = goTo;
+  goTo = function(key){
+    if(key === 'attendance'){ clearCaptureDraft(); markNavActive('attendance'); atMount(); showScreen('screen-attendance'); atOpen(); return; }
+    if(AT.unsub){ try{ AT.unsub(); }catch(e){} AT.unsub = null; AT.todayDate = ''; }   // leaving the page: stop listening
+    return _g.apply(this, arguments);
+  };
+})();
+
+const AT = { tab: 'today', day: '', cyc: null, q: '', dept: '', shift: '', type: '', show: '', cache: {}, today: null, todayDate: '', unsub: null, map: null, names: {}, sync: null, linkQ: '', person: '' };
+const AT_DUP = 3;            // punches within 3 minutes of each other are one punch
+const atEsc = (t) => String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+const atToday = () => dateToStr(new Date());
+const atAdd = (d, n) => { const x = new Date(d + 'T12:00:00'); x.setDate(x.getDate() + n); return dateToStr(x); };
+const atMin = (t) => { const a = String(t || '').split(':'); return a.length < 2 ? null : Number(a[0]) * 60 + Number(a[1]); };
+const atClock = (m) => m == null ? '' : pad(Math.floor(((m % 1440) + 1440) % 1440 / 60)) + ':' + pad(((m % 60) + 60) % 60);
+const atHM = (m) => (m == null || isNaN(m)) ? '' : Math.floor(m / 60) + 'h ' + pad(Math.round(m % 60));
+const atHrs = (m) => m == null ? '' : Math.round(m / 6) / 10;
+const AT_WD = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const atWd = (d) => AT_WD[new Date(d + 'T12:00:00').getDay()];
+const atIc = {
+  today: '<circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/>',
+  day: '<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>',
+  month: '<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01M16 18h.01"/>',
+  link: '<path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/>',
+  ok: '<path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>',
+  late: '<circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/>',
+  miss: '<circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>',
+  away: '<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="23" y1="11" x2="17" y2="11"/>',
+  ppl: '<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/>',
+  hrs: '<path d="M5 22h14M5 2h14M17 22v-4.17a2 2 0 00-.59-1.42L12 12l-4.41 4.41A2 2 0 007 17.83V22M7 2v4.17a2 2 0 00.59 1.42L12 12l4.41-4.41A2 2 0 0017 6.17V2"/>',
+  dev: '<rect x="5" y="2" width="14" height="20" rx="2"/><circle cx="12" cy="10" r="3"/><line x1="9" y1="17" x2="15" y2="17"/>',
+  dl: '<path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>',
+  ref: '<polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/>',
+  l: '<polyline points="15 18 9 12 15 6"/>', r: '<polyline points="9 18 15 12 9 6"/>',
+  x: '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>',
+  search: '<circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>',
+  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  moon: '<path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>'
+};
+const atSvg = (k, s) => `<svg width="${s || 16}" height="${s || 16}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${atIc[k]}</svg>`;
+
+function atMount(){
+  if($('screen-attendance')) return;
+  const s = document.createElement('section'); s.className = 'screen'; s.id = 'screen-attendance';
+  s.innerHTML = '<div class="eyebrow">HR</div><h1>Attendance</h1><p class="sub" id="atSub">In and out times from the attendance devices, by shift.</p>'
+    + '<div class="card hrBox atBox"><div class="hrTabs" id="atTabs"></div><div id="atBody"><div class="hrEmpty">Loading&hellip;</div></div></div>';
+  const ref = $('screen-mystatus'); (ref && ref.parentNode ? ref.parentNode : document.body).appendChild(s);
+  const m = document.createElement('div'); m.id = 'atModal'; m.className = 'hrModal'; m.innerHTML = '<div class="hrSheet atSheet" id="atSheet"></div>';
+  m.addEventListener('click', (e) => { if(e.target === m) atClose(); });
+  document.body.appendChild(m);
+}
+
+/* ---------- who is this device ID ---------- */
+function atPeople(){ const by = {}; (state.users || []).forEach(u => { if(u && u.loginId != null && u.role !== 'pending' && !u.spare) by[String(u.loginId)] = u; }); return by; }
+function atWho(pin){
+  const by = AT._by || (AT._by = atPeople()), map = AT.map || {};
+  const id = map[pin] != null ? String(map[pin]) : pin, u = by[id];
+  if(u) return { pin, id, u, name: u.name || id, dept: u.department || '', type: (u.profile && u.profile.employmentType) || '', exited: isExitedEmployee(u), linked: map[pin] != null, set: u.assignedShift === 'Night' ? 'Night' : (u.assignedShift === 'Day' ? 'Day' : '') };
+  const b = AT.names[pin] || {};
+  return { pin, id: pin, u: null, name: b.name || ('ID ' + pin), dept: b.dept || '', type: '', notInApp: true, set: '' };
+}
+function atAvatar(w, big){
+  const ph = w.u && w.u.profile && w.u.profile.photoDataUrl, ini = String(w.name || '?').replace(/[^A-Za-z ]/g, '').trim().split(/\s+/).slice(0, 2).map(x => x[0] || '').join('').toUpperCase() || '#';
+  return `<div class="hrAvatar atAv${big ? ' big' : ''}">${ph && ph.length > 200 ? `<img src="${ph}" alt="">` : ini}</div>`;
+}
+
+/* ---------- shifts ---------- */
+const atRule = (d) => { try{ return getShiftRuleForDate(d); }catch(e){ return makeDefaultShiftRule(); } };
+/* Attendance settings (Admin > Factory > Attendance): timetables by department + grace minutes.
+   Until Admin saves them, the suggested values below are used. */
+function atDefaults(){
+  const r = atRule(atToday());
+  return { from: '2026-11-26', graceLate: 10, graceEarly: 10, tts: [
+    { id: 'std', name: 'Everyone else', day: { start: r.day.start, end: r.day.end }, night: { start: r.night.start, end: r.night.end }, depts: [] },
+    { id: 'weave', name: 'Weaving floor', day: { start: '05:30', end: '17:30' }, night: { start: '17:30', end: '05:30' }, depts: ['RVF', 'SSTM'] }
+  ] };
+}
+function atSet(){ const s = AT.set; return (s && Array.isArray(s.tts) && s.tts.length) ? Object.assign({ from: '2026-11-26' }, s) : atDefaults(); }
+// attendance is counted from this date (first day of the December 2026 salary month); earlier salary months are not counted
+const atFrom = () => atSet().from || '2026-11-26';
+function atTT(w){
+  const S = atSet(), d = String((w && w.dept) || '').trim().toUpperCase();
+  return S.tts.find(t => (t.depts || []).some(x => String(x).trim().toUpperCase() === d)) || S.tts.find(t => !(t.depts || []).length) || S.tts[0];
+}
+// working-day helpers: Calendar holidays (Admin > Factory > Calendar), joining / exit date, vacations
+const atHol = (d) => { try{ return isHoliday(d); }catch(e){ return false; } };
+// on vacation (HR vacations) or on an approved leave request (Leave / Request page) that day: returns its name, else ''
+function atVacOn(w, d){
+  if(!w || !w.u) return '';
+  const id = String(w.u.loginId);
+  const V = (AT.vac && AT.vac[id]) || [];
+  if(V.some(v => v.from && d >= v.from && d <= (v.to || (v.workStart ? atAdd(v.workStart, -1) : v.from)))) return 'Vacation';
+  const L = (AT.leave && AT.leave[id]) || [];
+  const l = L.find(v => v.from && d >= v.from && d <= (v.to || v.from));
+  return l ? (l.type || 'Leave') : '';
+}
+function atEmployed(w, d){
+  const p = (w && w.u && w.u.profile) || {};
+  if(p.joiningDate && d < p.joiningDate) return false;
+  if(p.endDate && d > p.endDate) return false;
+  return true;
+}
+async function atLoadVac(){
+  if(AT.vac && AT.leave) return;
+  const [vs, ls] = await Promise.all([
+    window.__db.listVacations().catch(e => { console.error(e); return []; }),          // shared, read once per visit
+    window.__db.listLeaveRequests().catch(e => { console.error(e); return []; })
+  ]);
+  const m = {}; (vs || []).forEach(v => { if(v && v.employeeId) (m[String(v.employeeId)] = m[String(v.employeeId)] || []).push(v); }); AT.vac = m;
+  const l = {}; (ls || []).forEach(v => { if(v && v.employeeId && v.status === 'approved' && v.from) (l[String(v.employeeId)] = l[String(v.employeeId)] || []).push(v); }); AT.leave = l;
+}
+// every punch of every person in the loaded days: key -> { w, list:[{d, m, dev}] }
+function atPunchesByPerson(from, to){
+  const g = {};
+  for(let d = from; d <= to; d = atAdd(d, 1)){
+    const p = atP(d), map = AT.map || {};
+    Object.keys(p).forEach(pin => {
+      if(map[pin] === '-') return;   // ignored (old) device ID
+      const w = atWho(pin), o = g[w.id] || (g[w.id] = { w, list: [] });
+      if(w.u && !o.w.u) o.w = w;
+      p[pin].forEach(x => { const a = String(x).split('|'), m = atMin(a[0]); if(m != null) o.list.push({ d, m, dev: a[1] || '' }); });
+    });
+  }
+  return g;
+}
+// Each shift is found from the punches themselves: a shift starts at a punch, every punch within
+// 16 hours belongs to it, and a shift that starts after 14:00 (or before 03:00) is a night shift.
+// This follows people who move between Day and Night without changing their profile.
+const AT_SPAN = 16 * 60;
+const atDayNo = (d) => Math.round(Date.UTC(+d.slice(0, 4), +d.slice(5, 7) - 1, +d.slice(8, 10)) / 86400000);
+const AT_REST = 20 * 60;   // 20 h with no punch = a rest day (Friday, holiday, leave): the next punch always starts a new shift
+function atShifts(o){
+  const tt = atTT(o.w), G = atSet();
+  const L0 = o.list.map(x => ({ t: atDayNo(x.d) * 1440 + x.m, d: x.d, m: x.m, dev: x.dev })).sort((a, b) => a.t - b.t), L = [];
+  L0.forEach(x => { if(!L.length || x.t - L[L.length - 1].t > AT_DUP) L.push(x); });
+  const nowT = atDayNo(atToday()) * 1440 + new Date().getHours() * 60 + new Date().getMinutes();
+  const isN = m => m >= 14 * 60 || m < 3 * 60;
+  const T = s => { const r = tt[s === 'Night' ? 'night' : 'day']; let st = atMin(r.start), en = atMin(r.end); if(en <= st) en += 1440; return { st, en }; };
+  const gL = +G.graceLate || 0, gE = +G.graceEarly || 0;
+  // how well an In/Out pair fits a shift: people come a little before the start and leave at or after the end
+  const fit = (s, inM, outM) => { const { st, en } = T(s); const d = v => ((v % 1440) + 1440) % 1440;
+    const near = (v, a, lo, hi) => { let x = d(v) - d(a); if(x > 720) x -= 1440; if(x < -720) x += 1440; return x >= lo && x <= hi; };
+    return (near(inM, st, -90, 30 + gL) ? 1 : 0) + (near(outM, en, -gE, 150) ? 1 : 0); };
+  // type of a group of punches; a lone punch takes the shift of its week (In or Out decided by its time)
+  const typ = (i, k, bias) => i === k && bias ? bias : (isN(L[i].m) ? 'Night' : 'Day');
+  const score = (i, k, bias) => {
+    const f = L[i], span = L[k].t - f.t, s = typ(i, k, bias);
+    let sc;
+    if(i === k) sc = (nowT - f.t < AT_SPAN && k === L.length - 1) ? 0 : -6;   // a single punch is fine only for a shift still running
+    else { sc = span < 120 ? -4 : span < 360 ? 2 : span <= 15 * 60 ? 10 : 4; sc += fit(s, f.m, L[k].m); }
+    return sc + (bias && s !== bias ? -3 : 0);   // a shift different from the week's shift needs clear punches
+  };
+  const run = (a, z, bias) => {   // best split of punches a..z-1
+    const n = z - a, best = new Array(n + 1).fill(-Infinity), from = new Array(n + 1).fill(0); best[0] = 0;
+    for(let j = 1; j <= n; j++) for(let i = j - 1; i >= 0 && L[a + j - 1].t - L[a + i].t <= AT_SPAN; i--){ const c = best[i] + score(a + i, a + j - 1, bias); if(c > best[j]){ best[j] = c; from[j] = i; } }
+    const seg = []; for(let j = n; j > 0; j = from[j]) seg.unshift([a + from[j], a + j - 1]);
+    return { v: best[n], seg };
+  };
+  // 1) cut at rest days. 2) each block (normally Saturday to Thursday) gets one shift: the one that pairs its punches best;
+  //    if equal, the first punch after the rest day decides (it is always an In); then the profile.
+  const ses = []; let a = 0;
+  for(let z = 1; z <= L.length; z++){
+    if(z < L.length && L[z].t - L[z - 1].t < AT_REST) continue;
+    const D = run(a, z, 'Day'), N = run(a, z, 'Night'), first = isN(L[a].m) ? 'Night' : 'Day';
+    let w = D.v > N.v + 0.5 ? 'Day' : N.v > D.v + 0.5 ? 'Night' : first;
+    if(Math.abs(D.v - N.v) <= 0.5 && z - a === 1 && o.w.set) w = o.w.set;
+    (w === 'Day' ? D : N).seg.forEach(([i, k]) => ses.push({ i, k, s: typ(i, k, w) }));
+    a = z;
+  }
+  const res = {}; let nN = 0, nD = 0;
+  ses.forEach(g => {
+    const S0 = L.slice(g.i, g.k + 1), f = S0[0], s = g.s, lone = S0.length === 1;
+    // a lone punch at the "wrong" end of the shift is an Out whose In was missed
+    const outOnly = lone && isN(f.m) !== (s === 'Night');
+    let sd = f.m < 3 * 60 ? atAdd(f.d, -1) : f.d;
+    if(outOnly && s === 'Night' && f.m >= 3 * 60) sd = atAdd(f.d, -1);
+    const base = atDayNo(sd) * 1440;
+    const P = []; S0.forEach(x => { const m = x.t - base; if(!P.length || m - P[P.length - 1].m > AT_DUP) P.push({ m, dev: x.dev }); });
+    if(s === 'Night') nN++; else nD++;
+    if(res[sd] && res[sd].n >= P.length) return;   // two shifts on one date (rare): keep the fuller one
+    const { st, en } = T(s);
+    const r = { date: sd, s, n: P.length, devs: Array.from(new Set(P.map(x => x.dev).filter(Boolean))), start: st, end: en };
+    // In = first punch of the shift, Out = last punch (always the latest one); punches in between are not shown
+    if(outOnly){ r.in = null; r.out = P[0].m; } else { r.in = P[0].m; r.out = P.length > 1 ? P[P.length - 1].m : null; }
+    r.open = Date.now() < new Date(sd + 'T00:00:00').getTime() + (en + 60) * 60000;   // shift still running (until 1 hour after it ends)
+    r.worked = (r.in != null && r.out != null) ? r.out - r.in : null;
+    r.late = r.in != null && r.in - st > gL ? r.in - st : 0;
+    r.early = (!r.open && r.out != null && en - r.out > gE) ? en - r.out : 0;
+    r.tt = tt.name;
+    r.missing = r.in == null ? 'In' : (!r.open && r.out == null) ? 'Out' : '';
+    res[sd] = r;
+  });
+  return { sh: { s: nN > nD ? 'Night' : 'Day' }, days: res };
+}
+function atPass(w, s){
+  if(AT.dept && (w.dept || '') !== AT.dept) return false;
+  if(AT.shift && s && s !== AT.shift) return false;
+  if(AT.type && (AT.type === '__none' ? !w.notInApp : (w.type || '') !== AT.type)) return false;
+  if(AT.q){ const q = AT.q.toLowerCase(); if(String(w.id).toLowerCase().indexOf(q) < 0 && String(w.pin).toLowerCase().indexOf(q) < 0 && String(w.name).toLowerCase().indexOf(q) < 0) return false; }
+  return true;
+}
+const atById = (a, b) => (Number(a.w.id) || 0) - (Number(b.w.id) || 0) || String(a.w.id).localeCompare(String(b.w.id));
+
+/* ---------- loading (one document per day; past days are kept for this visit) ---------- */
+const atP = (d) => d === AT.todayDate ? (AT.today || {}) : (AT.cache[d] || {});
+async function atLoadDays(from, to, force){
+  const t = atToday(), need = [];
+  for(let d = from; d <= to && d <= t; d = atAdd(d, 1)) if(d !== AT.todayDate && (force || !AT.cache[d])) need.push(d);
+  if(need.length){ const got = await window.__att.days(need[0], need[need.length - 1]); need.forEach(x => { AT.cache[x] = got[x] || {}; }); }
+  const pins = new Set(); for(let d = from; d <= to && d <= t; d = atAdd(d, 1)) Object.keys(atP(d)).forEach(p => pins.add(p));
+  const by = AT._by || (AT._by = atPeople()), map = AT.map || {};
+  const miss = Array.from(pins).filter(p => !AT.names[p] && !(map[p] != null && by[String(map[p])]) && !by[p]);
+  if(miss.length){ try{ const got = await window.__att.users(miss); miss.forEach(p => { AT.names[p] = got[p] || { name: '' }; }); }catch(e){ console.error(e); } }
+}
+async function atOpen(){
+  try{
+    if(!state.users || !state.users.length) state.users = await window.__db.listUsersOnce();
+    AT._by = null;
+    if(!AT.map) AT.map = await window.__db.getConfigObject('attIdMap', {});
+    if(AT.set === undefined) AT.set = await window.__db.getConfigObject('attSettings', null);
+    if(!AT.cyc){ const c = computeSalaryCycle(new Date(), state.salaryCycleStartDay || 26); AT.cyc = { from: c.start, to: c.end }; }
+    if(!AT.day) AT.day = atAdd(atToday(), -1);
+    atWatchToday();
+    window.__att.syncInfo().then(s => { AT.sync = s; atSubLine(); }).catch(() => {});
+    window.__att.devStatus().then(s => { AT.dev = s; if($('atTabs')) atRender(); }).catch(() => {});   // one read: all devices
+    await atLoadTab(false);
+  }catch(e){ console.error(e); const b = $('atBody'); if(b) b.innerHTML = '<div class="hrEmpty">Could not load attendance. Check the connection and press Refresh.</div>'; }
+}
+function atWatchToday(){
+  const t = atToday(); if(AT.unsub && AT.todayDate === t) return;
+  if(AT.unsub){ try{ AT.unsub(); }catch(e){} }
+  AT.todayDate = t; AT.today = null;
+  AT.unsub = window.__att.watchDay(t, (p) => {   // live: one document, new punches show by themselves
+    AT.today = p;
+    atLoadDays(t, t, false).then(() => { if(AT.tab === 'today' || (AT.tab === 'day' && AT.day >= atAdd(t, -1))) atRender(); });
+  });
+}
+function atRange(){
+  const t = atToday();
+  // a few extra days before, so a shift that started earlier is grouped correctly
+  if(AT.tab === 'today' || AT.tab === 'devices') return [atAdd(t, -11), t];
+  if(AT.tab === 'day') return [atAdd(AT.day, -10), atAdd(AT.day, 1)];
+  return [atAdd(AT.cyc.from, -4), atAdd(AT.cyc.to, 1)];
+}
+async function atLoadTab(force){ const r = atRange(); await atLoadDays(r[0], r[1], force); if(AT.tab === 'month' || AT.tab === 'day' || AT.tab === 'today') await atLoadVac(); atRender(); }
+function atSubLine(){
+  const el = $('atSub'); if(!el) return;
+  const s = AT.sync, at = s && s.lastSync && s.lastSync.toDate ? s.lastSync.toDate() : null;
+  el.innerHTML = 'In and out times from the attendance devices, by shift' + (at ? ` &middot; updated ${fmtDate(dateToStr(at))} ${pad(at.getHours())}:${pad(at.getMinutes())}` : '') + '.';
+}
+
+/* ---------- one shift date: who came, who did not ---------- */
+const atNowMin = () => new Date().getHours() * 60 + new Date().getMinutes();
+// his shift for a day = the shift of his last worked day; today it is "not started yet" before its start time
+function atLastShift(S, d, back){ for(let i = 1; i <= (back || 7); i++){ const x = S.days[atAdd(d, -i)]; if(x) return x; } return null; }
+function atDayData(sd, live){
+  const r = atRange(), G = atPunchesByPerson(r[0], r[1]), came = [], away = [];
+  Object.keys(G).forEach(k => {
+    const o = G[k], S = atShifts(o), y = S.days[atAdd(sd, -1)];
+    // Today also shows a night shift from last night that is still running
+    const d0 = (!S.days[sd] && live && y && y.s === 'Night' && y.open) ? atAdd(sd, -1) : sd, rec = S.days[d0];
+    if(rec){ came.push({ w: o.w, r: rec }); return; }
+    // expected: worked on one of the 7 shift days before, not exited, not a Friday off for them
+    let last = ''; for(let i = 1; i <= 7; i++){ const d = atAdd(d0, -i); if(S.days[d]){ last = d; break; } }
+    if(!last || o.w.exited || atHol(sd) || !atEmployed(o.w, sd)) return;
+    if(atVacOn(o.w, sd)) return;   // on vacation: not absent
+    const ls = S.days[last];
+    away.push({ w: o.w, s: ls.s, last, later: live && sd === atToday() && atNowMin() < ls.start });
+  });
+  return { came, away };
+}
+function atPill(r){
+  const t = [];
+  if(r.late) t.push(`<span class="atPill bad">Late ${atHM(r.late).replace('0h ', '')}</span>`);
+  if(r.missing) t.push(`<span class="atPill bad">No ${r.missing.toLowerCase()}</span>`);
+  if(r.early) t.push(`<span class="atPill warn">Left ${atHM(r.early).replace('0h ', '')} early</span>`);
+  if(r.open) t.push('<span class="atPill ok">At work</span>');
+  else if(!t.length && r.out != null) t.push('<span class="atPill ok">On time</span>');
+  return t.join('');
+}
+const atShiftChip = (s) => `<span class="atSh ${s === 'Night' ? 'n' : 'd'}" title="${s} shift">${atSvg(s === 'Night' ? 'moon' : 'sun', 12)}${s}</span>`;
+function atPersonCell(w, sub){
+  return `<div class="atWho">${atAvatar(w)}<div><div class="hrTitle">${atEsc(w.name)} <span class="id">${atEsc(w.id)}</span>${w.notInApp ? '<span class="atTag">Not in app</span>' : ''}${w.exited ? '<span class="atTag red">Exited</span>' : ''}</div><div class="hrSub">${atEsc(sub != null ? sub : w.dept)}</div></div></div>`;
+}
+function atShiftTable(rows){
+  if(!rows.length) return '<div class="hrEmpty">Nobody in this view.</div>';
+  return `<div class="hrScroll"><table class="hrTbl atTbl"><thead><tr><th>Employee</th><th>Shift</th><th class="c">In</th><th class="c">Out</th><th class="r">Worked</th><th></th></tr></thead><tbody>`
+    + rows.map(x => { const r = x.r; return `<tr class="clk" data-at="person" data-v="${atEsc(x.w.id)}"><td>${atPersonCell(x.w)}</td><td>${atShiftChip(r.s)}<div class="atDim">${atClock(r.start)}&ndash;${atClock(r.end)}</div></td><td class="c t${r.late ? ' bad' : ''}">${r.in != null ? atClock(r.in) : '<span class="atMiss">?</span>'}</td><td class="c t${r.early ? ' warn' : ''}">${r.out != null ? atClock(r.out) : (r.open ? '<span class="atDash">&ndash;</span>' : '<span class="atMiss">?</span>')}</td><td class="r t"><b>${r.worked != null ? atHM(r.worked) : (r.open && r.in != null ? '<span class="atDim">' + atHM(Math.max(0, (new Date().getHours() * 60 + new Date().getMinutes() + (r.date < atToday() ? 1440 : 0)) - r.in)) + ' so far</span>' : '')}</b></td><td class="atPills">${atPill(r)}</td></tr>`; }).join('')
+    + '</tbody></table></div>';
+}
+function atAwayList(L, label){
+  if(!L.length) return '';
+  return `<div class="hrLabel">${label} <span class="atCount">${L.length}</span></div>` + L.map(x => `<div class="hrRow clk" data-at="person" data-v="${atEsc(x.w.id)}">${atAvatar(x.w)}<div class="hrBody"><div class="hrTitle">${atEsc(x.w.name)} <span class="id">${atEsc(x.w.id)}</span>${x.w.notInApp ? '<span class="atTag">Not in app</span>' : ''}</div><div class="hrSub">${atEsc(x.w.dept)}${x.w.dept ? ' &middot; ' : ''}${x.s} shift</div></div><div class="hrSide"><span class="hrStat info">Last came ${fmtDate(x.last)}</span></div></div>`).join('');
+}
+function atTile(k, n, l, cls, act){ return `<button class="hrTile lv-${cls}${AT.show === k ? ' on' : ''}" data-at="${act || 'show'}" data-v="${k}"><span class="ic">${atSvg(k === 'came' ? 'ok' : (k === 'late' ? 'late' : (k === 'miss' ? 'miss' : (k === 'away' ? 'away' : (k === 'hrs' ? 'hrs' : (k === 'ppl' ? 'ppl' : 'link'))))), 17)}</span><span class="tx"><span class="n">${n}</span><span class="l">${l}</span></span></button>`; }
+/* Profile says Day/Night but the last 3 shifts in a row were the other one: tell Admin to update the profile */
+function atShiftMismatch(){
+  const r = atRange(), G = atPunchesByPerson(r[0], r[1]), out = [];
+  Object.keys(G).forEach(k => {
+    const o = G[k]; if(!o.w.u || !o.w.set || o.w.exited) return;
+    const L = Object.values(atShifts(o).days).sort((a, b) => a.date < b.date ? 1 : -1).slice(0, 3);
+    if(L.length === 3 && L.every(x => x.s !== o.w.set)) out.push({ w: o.w, set: o.w.set, now: L[0].s, since: L[2].date });
+  });
+  return out.sort(atById);
+}
+function atMismatchBox(){
+  const M = atShiftMismatch(); if(!M.length) return '';
+  const hid = (AT.hideMis || '') === M.map(x => x.w.id + x.now).join(','); if(hid) return '';
+  return `<div class="atMis"><div class="atMisH"><b>${M.length} ${M.length === 1 ? 'person works' : 'people work'} a different shift than the profile says</b><button type="button" class="atMisX" data-at="hidemis" title="Hide this notice">Hide</button></div>`
+    + `<div class="hrNote" style="margin:2px 0 8px;">Their last 3 shifts in a row were not the shift set on their profile. Change it in Admin &gt; Users (or Operators &amp; machines) if they moved.</div>`
+    + M.map(x => `<div class="atMisR clk" data-at="person" data-v="${atEsc(x.w.id)}">${atAvatar(x.w)}<div class="hrBody"><div class="hrTitle">${atEsc(x.w.name)} <span class="id">${atEsc(x.w.id)}</span></div><div class="hrSub">${atEsc(x.w.dept)} &middot; profile: ${x.set} &middot; working ${x.now} since ${fmtDate(x.since)}</div></div>${atShiftChip(x.now)}</div>`).join('') + '</div>';
+}
+function atDayView(sd, live){
+  const D = atDayData(sd, live);
+  const came = D.came.filter(x => atPass(x.w, x.r.s)).sort((a, b) => (a.r.in ?? a.r.out) - (b.r.in ?? b.r.out) || atById(a, b));
+  const away0 = D.away.filter(x => atPass(x.w, x.s)).sort(atById), away = away0.filter(x => !x.later), later = away0.filter(x => x.later);
+  const late = came.filter(x => x.r.late), miss = came.filter(x => x.r.missing);
+  let h = `<div class="hrTiles atTiles">${atTile('came', came.length, live ? 'In today' : 'Came', 'ok')}${atTile('late', late.length, 'Late', 'soon')}${atTile('miss', miss.length, 'Missing punch', 'late')}${atTile('away', away.length, live ? 'Not in yet' : 'Did not come', 'info')}</div>`;
+  const show = AT.show;
+  if(atHol(sd)) h += `<div class="hrNote atLead" style="margin-top:10px;">${atEsc((state.holidays || {})[sd] || 'Holiday')} in the Calendar: nobody is counted absent, and anyone who worked gets a holiday day worked.</div>`;
+  if(show === 'away') return h + (away.length ? atAwayList(away, live ? 'Not in yet' : 'Did not come') : '<div class="hrEmpty">Everyone came.</div>') + atAwayList(later, 'Shift starts later today');
+  const L = show === 'late' ? late : (show === 'miss' ? miss : came);
+  h += `<div class="hrLabel">${show === 'late' ? 'Late' : (show === 'miss' ? 'Missing punch' : (live ? 'In today' : 'Came'))} <span class="atCount">${L.length}</span></div>` + atShiftTable(L);
+  if(!show && away.length) h += atAwayList(away, live ? 'Not in yet' : 'Did not come');
+  if(!show && later.length) h += atAwayList(later, 'Shift starts later today');
+  return h;
+}
+
+/* ---------- salary month ---------- */
+function atMonthData(){
+  const t = atToday(), to = AT.cyc.to > t ? t : AT.cyc.to, days = [], f0 = AT.cyc.from > atFrom() ? AT.cyc.from : atFrom();
+  for(let d = f0; d <= to; d = atAdd(d, 1)) days.push(d);
+  const r = atRange(), G = atPunchesByPerson(r[0], r[1]), people = [];
+  Object.keys(G).forEach(k => {
+    const o = G[k], S = atShifts(o), rec = {};
+    days.forEach(d => { if(S.days[d]) rec[d] = S.days[d]; });
+    const L = Object.values(rec); if(!L.length) return;
+    // working days = days of the salary month (until today) that are not holidays in the Calendar,
+    // from his joining date until his exit date; vacation days are not absent
+    let work = 0, pres = 0, hol = 0, vac = 0, abs = 0;
+    days.forEach(d => {
+      if(!atEmployed(o.w, d)) return;
+      if(d === t && !rec[d]){ const ls = atLastShift(S, d); if(!ls || atNowMin() < ls.start) return; }   // today: not counted before his shift starts
+      if(atHol(d)){ if(rec[d]) hol++; return; }
+      work++;
+      if(rec[d]) pres++; else if(atVacOn(o.w, d)) vac++; else abs++;
+    });
+    people.push({ w: o.w, s: S.sh.s, rec, work, holW: hol, vac, present: pres, absent: abs,
+      late: L.filter(x => x.late).length, lateMin: L.reduce((a, x) => a + x.late, 0), miss: L.filter(x => x.missing).length,
+      worked: L.reduce((a, x) => a + (x.worked || 0), 0), full: L.filter(x => x.worked != null).length });
+  });
+  return { days, people };
+}
+function atMonthView(){
+  if(AT.cyc.to < atFrom()) return `<div class="hrEmpty">Attendance is counted from ${fmtDate(atFrom())} (the first salary month that uses it). Earlier months are not counted here.</div>`;
+  const M = atMonthData(), L = M.people.filter(p => atPass(p.w, p.s)).sort(atById);
+  const show = AT.show, V = show === 'late' ? L.filter(p => p.late) : (show === 'miss' ? L.filter(p => p.miss) : L);
+  let h = `<div class="hrTiles atTiles">${atTile('ppl', L.length, 'People', 'info')}${atTile('late', L.reduce((a, p) => a + p.late, 0), 'Late days', 'soon')}${atTile('miss', L.reduce((a, p) => a + p.miss, 0), 'Missing punches', 'late')}${atTile('hrs', Math.round(L.reduce((a, p) => a + p.worked, 0) / 60).toLocaleString(), 'Hours worked', 'ok', 'noop')}</div>`;
+  if(!V.length) return h + '<div class="hrEmpty">Nobody in this view.</div>';
+  const nh = M.days.filter(d => atHol(d)).length;
+  h += `<div class="hrLabel">${M.days.length} days so far &middot; ${M.days.length - nh} working days &middot; ${nh} holidays from the Calendar</div>`;
+  h += `<div class="hrScroll"><table class="hrTbl atTbl"><thead><tr><th>Employee</th><th>Shift</th><th class="r" title="Working days for him (from joining, until exit)">Work days</th><th class="r">Present</th><th class="r" title="Worked on a holiday">Holiday</th><th class="r" title="Vacation or approved leave">Leave</th><th class="r">Absent</th><th class="r">Late</th><th class="r">Missing</th><th class="r">Worked</th><th class="r">Avg / day</th></tr></thead><tbody>`
+    + V.map(p => `<tr class="clk" data-at="person" data-v="${atEsc(p.w.id)}"><td>${atPersonCell(p.w)}</td><td>${atShiftChip(p.s)}</td><td class="r t">${p.work}</td><td class="r t"><b>${p.present}</b></td><td class="r t">${p.holW || '0'}</td><td class="r t">${p.vac || '0'}</td><td class="r t">${p.absent ? `<span class="atWarnN">${p.absent}</span>` : '0'}</td><td class="r t">${p.late ? `<span class="atBadN">${p.late}</span><div class="atDim">${atHM(p.lateMin)}</div>` : '0'}</td><td class="r t">${p.miss ? `<span class="atBadN">${p.miss}</span>` : '0'}</td><td class="r t"><b>${atHM(p.worked)}</b></td><td class="r t">${p.full ? atHM(p.worked / p.full) : ''}</td></tr>`).join('')
+    + '</tbody></table></div>';
+  return h;
+}
+
+/* ---------- one person (card) ---------- */
+function atOpenPerson(id){
+  AT.person = id;
+  const t = atToday(), inMonth = AT.tab === 'month';
+  const from = inMonth ? AT.cyc.from : atAdd(AT.tab === 'today' ? t : AT.day, -13), to0 = inMonth ? AT.cyc.to : (AT.tab === 'today' ? t : AT.day), to = to0 > t ? t : to0;
+  atLoadDays(atAdd(from, -4), atAdd(to, 1), false).then(() => {
+    const G = atPunchesByPerson(atAdd(from, -4), atAdd(to, 1)), o = G[id]; if(!o){ toast('No punches for this person'); return; }
+    const S = atShifts(o), days = []; for(let d = to; d >= from; d = atAdd(d, -1)) days.push(d);
+    const L = days.map(d => S.days[d]).filter(Boolean), w = o.w;
+    const worked = L.reduce((a, x) => a + (x.worked || 0), 0), late = L.filter(x => x.late).length, miss = L.filter(x => x.missing).length;
+    let h = `<div class="hrSheetHead">${atAvatar(w, true)}<div style="flex:1;min-width:0;"><div class="hrTitle" style="font-size:15px;">${atEsc(w.name)} <span class="id">${atEsc(w.id)}</span></div><div class="hrSub">${atEsc(w.dept)}${w.dept ? ' &middot; ' : ''}${atShiftChip(S.sh.s)}${w.linked ? ` &middot; device ID ${atEsc(w.pin)}` : ''}</div></div><button type="button" class="iconBtn" data-at="close" title="Close">${atSvg('x', 15)}</button></div>`;
+    h += `<div class="hrSub" style="margin:-6px 0 12px;">${fmtDate(from)} &ndash; ${fmtDate(to)}</div>`;
+    h += `<div class="hrFacts atFacts"><div class="hrFact"><div class="k">Present</div><div class="v">${L.length} days</div></div><div class="hrFact"><div class="k">Worked</div><div class="v">${atHM(worked)}</div></div><div class="hrFact"><div class="k">Late</div><div class="v">${late} days</div></div><div class="hrFact"><div class="k">Missing punch</div><div class="v">${miss}</div></div></div>`;
+    h += `<div class="atDays">${days.map(d => { const r = S.days[d], wd = atWd(d);
+      if(!r) return `<div class="atDr off"><div class="atDd"><b>${d.slice(8)}</b><span>${wd}</span></div><div class="atDt">${atHol(d) ? atEsc((state.holidays || {})[d] || 'Holiday') : (!atEmployed(w, d) ? 'Not employed' : (atVacOn(w, d) ? atEsc(atVacOn(w, d)) : '<span class="bad">Absent</span>'))}</div></div>`;
+      return `<div class="atDr"><div class="atDd"><b>${d.slice(8)}</b><span>${wd}</span></div><div class="atDt"><span class="${r.late ? 'bad' : ''}">${r.in != null ? atClock(r.in) : '?'}</span><i>&rarr;</i><span class="${r.early ? 'warn' : ''}">${r.out != null ? atClock(r.out) : '?'}</span></div><div class="atDw">${r.worked != null ? atHM(r.worked) : ''}</div><div class="atPills">${atPill(r)}</div></div>`; }).join('')}</div>`;
+    h += `<div class="hrNote" style="margin-top:10px;">In is the first punch of the shift and Out is the last punch; a night shift's Out is on the next morning. Shift times come from Admin &gt; Factory &gt; Attendance (${atEsc(atTT(w).name)}); holidays from the Calendar.  A shift that starts after 14:00 is a night shift.</div>`;
+    $('atSheet').innerHTML = h; $('atModal').style.display = 'flex';
+  }).catch(e => { console.error(e); toast('Could not load'); });
+}
+function atClose(){ const m = $('atModal'); if(m) m.style.display = 'none'; AT.person = ''; }
+
+/* ---------- linking device IDs to app employees ---------- */
+function atUnlinked(){
+  const by = AT._by || (AT._by = atPeople()), map = AT.map || {}, seen = {};
+  const add = (p) => Object.keys(p || {}).forEach(pin => { if(map[pin] == null && !by[pin]) seen[pin] = (seen[pin] || 0) + 1; });
+  Object.keys(AT.cache).forEach(d => add(AT.cache[d])); add(AT.today);
+  return Object.keys(seen).map(pin => ({ pin, days: seen[pin] }));
+}
+const atNm = (s) => String(s || '').toLowerCase().replace(/\b(md|mohd|mhd|mr|mohammed|muhammad|mohammad)\b/g, '').replace(/[^a-z ]/g, '').replace(/\s+/g, ' ').trim();
+function atSuggest(pin){
+  const by = AT._by || (AT._by = atPeople()), used = new Set(Object.values(AT.map || {}).map(String)), nm = atNm((AT.names[pin] || {}).name), c = [];
+  ['5' + pin, '50' + pin, '500' + pin].forEach(id => { if(by[id]) c.push(by[id]); });
+  if(nm) Object.values(by).forEach(u => { const un = atNm(u.name); if(un && (un === nm || (nm.length > 3 && un.length > 3 && (un.indexOf(nm) >= 0 || nm.indexOf(un) >= 0)))) c.push(u); });
+  return c.filter((u, i, a) => a.indexOf(u) === i && !used.has(String(u.loginId)) && !isExitedEmployee(u)).slice(0, 3);
+}
+function atLinkView(){
+  const by = AT._by || (AT._by = atPeople()), map = AT.map || {}, q = AT.linkQ.toLowerCase();
+  const un = atUnlinked().map(x => Object.assign(x, { b: AT.names[x.pin] || {} })).filter(x => !q || x.pin.indexOf(q) >= 0 || String(x.b.name || '').toLowerCase().indexOf(q) >= 0).sort((a, b) => b.days - a.days);
+  const opts = Object.values(by).filter(u => !isExitedEmployee(u)).sort((a, b) => (Number(a.loginId) || 0) - (Number(b.loginId) || 0)).map(u => `<option value="${atEsc(u.loginId)} ${atEsc(u.name || '')}"></option>`).join('');
+  let h = `<div class="hrNote atLead">A device ID that is the same as the Employee ID is matched by itself. Link the others once, for example someone entered on the device as <b>413</b> who is <b>5413</b> in the app. From then on their punches count for that employee everywhere.</div><datalist id="atEmpL">${opts}</datalist>`;
+  h += `<div class="hrLabel">Not linked <span class="atCount">${un.length}</span></div>`;
+  h += un.length ? un.map(x => { const sg = atSuggest(x.pin), w = { name: x.b.name || ('ID ' + x.pin), id: x.pin };
+    return `<div class="hrRow">${atAvatar(w)}<div class="hrBody"><div class="hrTitle">${atEsc(x.b.name || 'No name on device')} <span class="id">device ${atEsc(x.pin)}</span></div><div class="hrSub">${atEsc(x.b.dept || '')}${x.b.dept ? ' &middot; ' : ''}punched on ${x.days} of the loaded days</div><div class="atLk">${sg.map(u => `<button type="button" class="atSug" data-at="link" data-pin="${atEsc(x.pin)}" data-v="${atEsc(u.loginId)}" title="Link to this employee">${atSvg('link', 12)} ${atEsc(u.loginId)} &middot; ${atEsc(u.name || '')}</button>`).join('')}</div></div><div class="hrSide"><div class="atLkIn"><input class="atLi" list="atEmpL" placeholder="Employee ID or name" data-pin="${atEsc(x.pin)}"><button type="button" class="pillBtn" data-at="linkin" data-pin="${atEsc(x.pin)}">Link</button><button type="button" class="pillBtn atIgn" data-at="ignore" data-pin="${atEsc(x.pin)}" title="Old or unused device ID: do not count its punches">Ignore</button></div></div></div>`; }).join('') : '<div class="hrEmpty">Every device ID is matched.</div>';
+  const ln = Object.keys(map).filter(p => map[p] !== '-').sort((a, b) => (Number(a) || 0) - (Number(b) || 0));
+  const ig = Object.keys(map).filter(p => map[p] === '-').sort((a, b) => (Number(a) || 0) - (Number(b) || 0));
+  h += `<div class="hrLabel">Linked <span class="atCount">${ln.length}</span></div>`;
+  h += ln.length ? ln.map(pin => { const u = by[String(map[pin])], w = { name: u ? u.name : '?', id: map[pin], u };
+    return `<div class="hrRow">${atAvatar(w)}<div class="hrBody"><div class="hrTitle">${atEsc(u ? u.name : 'Employee not found')} <span class="id">${atEsc(map[pin])}</span></div><div class="hrSub">Device ID ${atEsc(pin)}${u && u.department ? ' &middot; ' + atEsc(u.department) : ''}</div></div><div class="hrSide"><div class="hrActs"><button type="button" class="iconBtn" data-at="unlink" data-pin="${atEsc(pin)}" title="Remove this link">${atSvg('x', 15)}</button></div></div></div>`; }).join('') : '<div class="hrEmpty">No links yet.</div>';
+  if(ig.length){
+    h += `<div class="hrLabel">Ignored (old IDs, not counted) <span class="atCount">${ig.length}</span></div>`;
+    h += ig.map(pin => { const b = AT.names[pin] || {}, w = { name: b.name || ('ID ' + pin), id: pin };
+      return `<div class="hrRow">${atAvatar(w)}<div class="hrBody"><div class="hrTitle">${atEsc(b.name || 'Device ID ' + pin)} <span class="id">device ${atEsc(pin)}</span></div><div class="hrSub">Punches on this ID are not counted</div></div><div class="hrSide"><div class="hrActs"><button type="button" class="iconBtn" data-at="unlink" data-pin="${atEsc(pin)}" title="Count this ID again">${atSvg('x', 15)}</button></div></div></div>`; }).join('');
+  }
+  return h;
+}
+async function atSaveMap(next, msg){
+  if(!(state.user && state.user.role === 'admin')){ toast('Only the Admin can change links'); return; }
+  const prev = AT.map; AT.map = next; AT._by = null; atRender();
+  try{ await window.__db.saveConfigObject('attIdMap', next); toast(msg); }
+  catch(e){ console.error(e); AT.map = prev; AT._by = null; atRender(); toast('Could not save'); }
+}
+
+/* ---------- devices: online / offline ---------- */
+const AT_DEV_FRESH = 40;   // minutes: a device is online if it was confirmed within this time
+const atAgo = (ms) => { const m = Math.round(ms / 60000); return m < 1 ? 'just now' : (m < 60 ? m + ' min ago' : (m < 1440 ? Math.floor(m / 60) + ' h ' + (m % 60) + ' min ago' : Math.floor(m / 1440) + ' days ago')); };
+function atDevList(){
+  const S = AT.dev && AT.dev.devices ? AT.dev.devices : {}, nowMs = Date.now();
+  const names = { BRC7222460101: 'office', MFP3241700994: 'finishing', MFP3241700507: 'ladies', MFP3241700986: 'polyspin', MFP3241700995: 'weaving 1', AIOR180360568: 'sstm' };
+  Object.keys(S).forEach(sn => { if(!names[sn]) names[sn] = S[sn].name || sn; });
+  return Object.keys(names).map(sn => {
+    const d = S[sn] || {}, seen = d.seenAt && d.seenAt.toDate ? d.seenAt.toDate().getTime() : 0;
+    const on = !!d.online && seen && nowMs - seen < AT_DEV_FRESH * 60000;
+    let last = seen; if(!on && d.lastActivity){ const t = new Date(String(d.lastActivity).replace(' ', 'T') + '+03:00').getTime(); if(!isNaN(t)) last = Math.max(last, t); }
+    return { sn, name: d.name || names[sn], on, last, ip: d.ip || '', users: d.users || 0, fp: d.fp || 0, face: d.face || 0, via: d.via || '', known: !!S[sn] };
+  }).sort((a, b) => (a.on === b.on ? a.name.localeCompare(b.name) : (a.on ? 1 : -1)));
+}
+function atDevView(){
+  const L = atDevList(), off = L.filter(d => !d.on), upd = AT.dev && AT.dev.updatedAt && AT.dev.updatedAt.toDate ? AT.dev.updatedAt.toDate().getTime() : 0;
+  // punches today per device, from the day document already loaded (no extra reads)
+  const cnt = {}, lastP = {}; const p = AT.today || {};
+  Object.keys(p).forEach(pin => p[pin].forEach(x => { const a = String(x).split('|'), dv = a[1] || ''; cnt[dv] = (cnt[dv] || 0) + 1; if(!lastP[dv] || a[0] > lastP[dv]) lastP[dv] = a[0]; }));
+  let h = `<div class="hrToolbar atBar"><span class="atDate">${L.length - off.length} of ${L.length} online</span><span class="atGrow"></span><button type="button" class="refreshBtn atRef" data-at="refresh">${atSvg('ref', 15)}Refresh</button></div>`;
+  h += `<div class="hrTiles atTiles" style="grid-template-columns:repeat(2,1fr)">${atTile('came', L.length - off.length, 'Online', 'ok', 'noop')}${atTile('miss', off.length, 'Offline', off.length ? 'late' : 'info', 'noop')}</div>`;
+  if(!AT.dev) h += '<div class="hrNote atLead" style="margin-top:10px;">No device status yet. It appears after the copy program on the BioTime PC runs (or once the devices send straight to the app).</div>';
+  else if(AT.dev.reportedBy === 'biotime' && upd && Date.now() - upd > AT_DEV_FRESH * 60000) h += `<div class="hrNote atLead atWarn" style="margin-top:10px;">Status last updated ${atAgo(Date.now() - upd)}. The copy program on the BioTime PC may be off, so this list may be out of date.</div>`;
+  h += '<div class="hrLabel">Devices</div>' + L.map(d => {
+    const cls = d.on ? 'ok' : 'late', stat = d.on ? 'Online' : 'Offline', sub = d.on ? 'Checked ' + atAgo(Date.now() - d.last) : (d.last ? 'Last heard ' + fmtDate(dateToStr(new Date(d.last))) + ' ' + pad(new Date(d.last).getHours()) + ':' + pad(new Date(d.last).getMinutes()) + ' (' + atAgo(Date.now() - d.last) + ')' : 'Never heard from');
+    const tp = cnt[d.name] || 0;
+    return `<div class="hrRow"><div class="hrIco lv-${cls === 'ok' ? 'ok' : 'late'} atDevIco">${atSvg('dev', 16)}</div><div class="hrBody"><div class="hrTitle">${atEsc(d.name.charAt(0).toUpperCase() + d.name.slice(1))} <span class="id">${atEsc(d.sn)}</span></div><div class="hrSub">${sub}${d.ip ? ' &middot; ' + atEsc(d.ip) : ''}${d.users ? ' &middot; ' + d.users + ' people' : ''}</div></div><div class="hrSide"><span class="atPill ${cls === 'ok' ? 'ok' : 'bad'}">${stat}</span><span class="hrStat info">${tp ? tp + ' punches today' + (lastP[d.name] ? ', last ' + lastP[d.name].slice(0, 5) : '') : 'No punches today'}</span></div></div>`;
+  }).join('');
+  h += `<div class="hrNote" style="margin-top:10px;">A device shows Offline when it has not been heard from for ${AT_DEV_FRESH} minutes. An offline device keeps every punch inside and sends them when it is back online, so nothing is lost.</div>`;
+  return h;
+}
+
+/* ---------- Admin > Factory > Attendance: timetables and grace ---------- */
+(function(){
+  const orig = document.getElementById('admTabsOrig'), anchor = document.getElementById('admin-shifttime');
+  if(!orig || !anchor) return;
+  const tab = document.createElement('div'); tab.className = 'auth-tab'; tab.dataset.admintab = 'attendance'; tab.textContent = 'Attendance';
+  orig.appendChild(tab);
+  const pane = document.createElement('div'); pane.className = 'auth-pane'; pane.id = 'admin-attendance';
+  anchor.parentNode.appendChild(pane);
+  tab.addEventListener('click', () => {
+    orig.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active')); tab.classList.add('active');
+    document.querySelectorAll('#screen-admin .auth-pane').forEach(p => p.classList.remove('active')); pane.classList.add('active');
+    atAdmOpen();
+  });
+  try{ const g = ADM_G.find(x => x.n === 'Factory'); if(g && !g.t.some(t => t[0] === 'attendance')) g.t.splice(2, 0, ['attendance', 'Attendance']); }catch(e){}
+})();
+async function atAdmOpen(){
+  const pane = $('admin-attendance'); if(!pane) return;
+  pane.innerHTML = '<div class="hrEmpty">Loading&hellip;</div>';
+  try{ AT.set = await window.__db.getConfigObject('attSettings', null); }catch(e){ console.error(e); }
+  AT.admDraft = JSON.parse(JSON.stringify(atSet())); AT.admDirty = false; atAdmRender();
+}
+function atAdmDepts(){
+  const set = new Set(); (state.users || []).forEach(u => { if(u && u.department && !isExitedEmployee(u)) set.add(String(u.department).trim()); });
+  (AT.admDraft.tts || []).forEach(t => (t.depts || []).forEach(d => set.add(d)));
+  return Array.from(set).sort();
+}
+function atAdmRender(){
+  const pane = $('admin-attendance'), D = AT.admDraft; if(!pane || !D) return;
+  const ed = state.user && state.user.role === 'admin', dis = ed ? '' : ' disabled', depts = atAdmDepts();
+  const tIn = (i, k, f) => `<input type="time" class="atAdmT" data-atadm="time" data-i="${i}" data-k="${k}" data-f="${f}" value="${atEsc(D.tts[i][k][f])}"${dis}>`;
+  let h = `<div class="card hrBox atAdm"><div class="atAdmHead"><div><h2 style="margin:0;">Attendance</h2><div class="hrNote">Times used on the Attendance page to judge <b>Late</b> and <b>Left early</b>. Day or Night is found from each person's own punches, so people who change shift are followed by themselves.</div></div>${ed ? `<button type="button" class="btn btn-primary btn-sm atAdmSave" data-atadm="save"${AT.admDirty ? '' : ' disabled'}>Save</button>` : ''}</div>`;
+  h += '<div class="hrLabel">Timetables</div>';
+  D.tts.forEach((t, i) => {
+    const def = !(t.depts || []).length && i === D.tts.findIndex(x => !(x.depts || []).length);
+    h += `<div class="atTT"><div class="atTTh"><input class="atAdmN" data-atadm="name" data-i="${i}" value="${atEsc(t.name)}"${dis}>${def ? '<span class="atTag">Everyone not listed below</span>' : ''}${ed && D.tts.length > 1 && !def ? `<button type="button" class="iconBtn" data-atadm="del" data-i="${i}" title="Remove this timetable">${atSvg('x', 14)}</button>` : ''}</div>`
+      + `<div class="atTTg"><div class="atTTc"><span class="atSh d">${atSvg('sun', 12)}Day</span>${tIn(i, 'day', 'start')}<i>&ndash;</i>${tIn(i, 'day', 'end')}</div><div class="atTTc"><span class="atSh n">${atSvg('moon', 12)}Night</span>${tIn(i, 'night', 'start')}<i>&ndash;</i>${tIn(i, 'night', 'end')}</div></div>`
+      + (def ? '' : `<div class="atTTd">${depts.map(d => { const on = (t.depts || []).indexOf(d) >= 0, other = !on && D.tts.some((x, j) => j !== i && (x.depts || []).indexOf(d) >= 0); return `<button type="button" class="atDep${on ? ' on' : ''}${other ? ' oth' : ''}" data-atadm="dep" data-i="${i}" data-d="${atEsc(d)}"${dis} title="${other ? 'Now in another timetable; click to move here' : ''}">${atEsc(d)}</button>`; }).join('')}</div>`)
+      + '</div>';
+  });
+  if(ed) h += `<button type="button" class="pillBtn" data-atadm="add" style="margin-top:8px;">+ Add timetable</button>`;
+  h += `<div class="hrLabel">Start</div><div class="atGr"><label>Count attendance from <input type="date" class="atAdmT" data-atadm="from" value="${atEsc(D.from || '2026-11-26')}"${dis}></label><span class="hrNote" style="margin:0;">The first salary month that uses attendance. Months before this are not counted.</span></div>`;
+  h += `<div class="hrLabel">Grace</div><div class="atGr"><label>Late after <input type="number" min="0" max="120" class="atAdmG" data-atadm="grace" data-f="graceLate" value="${+D.graceLate || 0}"${dis}> minutes</label><label>Left early if more than <input type="number" min="0" max="120" class="atAdmG" data-atadm="grace" data-f="graceEarly" value="${+D.graceEarly || 0}"${dis}> minutes before the end</label></div>`;
+  h += `<div class="hrLabel">Working days</div><div class="hrNote">Come from <b>Admin &gt; Factory &gt; Calendar</b>: a holiday there (Friday, Eid, national day) is never counted as absent, and anyone who punches on it gets a <i>holiday worked</i>. Days before his joining date or after his exit date, vacation days (HR) and approved leave requests (Leave / Request) are not counted as absent. The month is the salary month from <b>Salary Month</b>.</div>`;
+  h += `<div class="hrNote" style="margin-top:8px;">${AT.set ? 'Saved settings are in use.' : 'Not saved yet: the suggested times above are in use (they match how people punch now).'}</div></div>`;
+  pane.innerHTML = h;
+}
+document.addEventListener('click', async (e) => {
+  const t = e.target.closest && e.target.closest('[data-atadm]'); if(!t || !$('admin-attendance') || !$('admin-attendance').contains(t)) return;
+  const D = AT.admDraft, a = t.dataset.atadm, i = +t.dataset.i;
+  if(a === 'dep'){ const d = t.dataset.d; D.tts.forEach((x, j) => { x.depts = (x.depts || []).filter(y => y !== d); }); if(!t.classList.contains('on')) D.tts[i].depts.push(d); AT.admDirty = true; atAdmRender(); }
+  else if(a === 'add'){ const r = atRule(atToday()); D.tts.push({ id: 't' + Date.now(), name: 'New timetable', day: { start: r.day.start, end: r.day.end }, night: { start: r.night.start, end: r.night.end }, depts: [] }); AT.admDirty = true; atAdmRender(); }
+  else if(a === 'del'){ D.tts.splice(i, 1); AT.admDirty = true; atAdmRender(); }
+  else if(a === 'save'){
+    if(!(state.user && state.user.role === 'admin')){ toast('Only the Admin can change this'); return; }
+    const ok = D.tts.every(x => /^\d\d:\d\d$/.test(x.day.start) && /^\d\d:\d\d$/.test(x.day.end) && /^\d\d:\d\d$/.test(x.night.start) && /^\d\d:\d\d$/.test(x.night.end));
+    if(!ok){ toast('Fill every start and end time'); return; }
+    if(!D.tts.some(x => !(x.depts || []).length)){ toast('Keep one timetable without departments for everyone else'); return; }
+    t.disabled = true;
+    try{ await window.__db.saveConfigObject('attSettings', D); AT.set = JSON.parse(JSON.stringify(D)); AT.admDirty = false; toast('Attendance settings saved'); atAdmRender(); }
+    catch(err){ console.error(err); toast('Could not save'); t.disabled = false; }
+  }
+});
+document.addEventListener('input', (e) => {
+  const t = e.target; if(!t.dataset || !t.dataset.atadm || !AT.admDraft) return;
+  const D = AT.admDraft, i = +t.dataset.i;
+  if(t.dataset.atadm === 'time') D.tts[i][t.dataset.k][t.dataset.f] = t.value;
+  else if(t.dataset.atadm === 'name') D.tts[i].name = t.value;
+  else if(t.dataset.atadm === 'from'){ if(t.value) D.from = t.value; }
+  else if(t.dataset.atadm === 'grace') D[t.dataset.f] = Math.max(0, Math.min(120, +t.value || 0));
+  else return;
+  AT.admDirty = true; const b = document.querySelector('[data-atadm="save"]'); if(b) b.disabled = false;
+});
+
+/* ---------- page ---------- */
+function atFilters(){
+  const by = AT._by || (AT._by = atPeople());
+  const depts = Array.from(new Set(Object.values(by).map(u => u.department).filter(Boolean))).sort();
+  const types = Array.from(new Set(Object.values(by).map(u => u.profile && u.profile.employmentType).filter(Boolean))).sort();
+  return `<select class="atSel" id="atDept"><option value="">All departments</option>${depts.map(d => `<option${d === AT.dept ? ' selected' : ''}>${atEsc(d)}</option>`).join('')}</select>`
+    + `<select class="atSel" id="atShift"><option value="">Day &amp; Night</option><option${AT.shift === 'Day' ? ' selected' : ''}>Day</option><option${AT.shift === 'Night' ? ' selected' : ''}>Night</option></select>`
+    + `<select class="atSel" id="atType"><option value="">All types</option>${types.map(d => `<option${d === AT.type ? ' selected' : ''}>${atEsc(d)}</option>`).join('')}<option value="__none"${AT.type === '__none' ? ' selected' : ''}>Not in the app</option></select>`;
+}
+function atDateNav(){
+  const t = atToday();
+  if(AT.tab === 'today') return `<span class="atDate">${atWd(t)}, ${fmtDate(t)} <i class="atLive">Live</i></span>`;
+  if(AT.tab === 'day') return `<span class="atNav"><button type="button" class="iconBtn" data-at="dprev" title="Previous day">${atSvg('l', 15)}</button><input type="date" id="atDateIn" value="${AT.day}" max="${t}"><button type="button" class="iconBtn" data-at="dnext" title="Next day"${AT.day >= t ? ' disabled' : ''}>${atSvg('r', 15)}</button></span>`;
+  return `<span class="atNav"><button type="button" class="iconBtn" data-at="mprev" title="Previous salary month"${AT.cyc.from <= atFrom() ? ' disabled' : ''}>${atSvg('l', 15)}</button><span class="atDate">${fmtDate(AT.cyc.from)} &ndash; ${fmtDate(AT.cyc.to)}</span><button type="button" class="iconBtn" data-at="mnext" title="Next salary month"${AT.cyc.to >= t ? ' disabled' : ''}>${atSvg('r', 15)}</button></span>`;
+}
+function atRender(){
+  const body = $('atBody'), tabs = $('atTabs'); if(!body || !AT.cyc) return;
+  AT._by = AT._by || atPeople();
+  const nu = atUnlinked().length;
+  const off = atDevList().filter(d => !d.on).length;
+  tabs.innerHTML = [['today', 'today', 'Today'], ['day', 'day', 'Daily'], ['month', 'month', 'Salary month'], ['link', 'link', 'Link IDs'], ['devices', 'dev', 'Devices']].map(t => `<button data-at="tab" data-v="${t[0]}" class="${AT.tab === t[0] ? 'active' : ''}">${atSvg(t[1], 15)}<span class="hrLbl">${t[2]}</span>${t[0] === 'link' && nu ? `<span class="hrCnt">${nu}</span>` : ''}${t[0] === 'devices' && off ? `<span class="hrCnt">${off}</span>` : ''}</button>`).join('');
+  if(AT.tab === 'devices'){ body.innerHTML = atDevView(); return; }
+  let h = `<div class="hrToolbar atBar">${atDateNav()}${AT.tab !== 'link' ? `<div class="hrSearch">${atSvg('search')}<input type="search" id="atQ" placeholder="Search name or ID" value="${atEsc(AT.q)}"></div>${atFilters()}` : `<div class="hrSearch">${atSvg('search')}<input type="search" id="atLinkQ" placeholder="Search device ID or name" value="${atEsc(AT.linkQ)}"></div>`}<span class="atGrow"></span><button type="button" class="refreshBtn atRef" data-at="refresh">${atSvg('ref', 15)}Refresh</button>${AT.tab !== 'link' ? `<button type="button" class="iconBtn" data-at="xls" title="Download Excel" aria-label="Download Excel">${atSvg('dl', 15)}</button>` : ''}</div>`;
+  try{
+    if(AT.tab === 'today') h += atDayView(atToday(), true);
+    else if(AT.tab === 'day') h += atDayView(AT.day, false);
+    else if(AT.tab === 'month') h += atMonthView();
+    else h += atLinkView();
+  }catch(e){ console.error(e); h += '<div class="hrEmpty">Something went wrong in this view. The rest of the app is not affected.</div>'; }
+  body.innerHTML = h;
+}
+
+/* ---------- Excel ---------- */
+function atXls(){
+  if(!window.XLSX){ toast('The Excel tool did not load'); return; }
+  const wb = XLSX.utils.book_new(), hdr = ['ID', 'Device ID', 'Name', 'Department', 'Shift', 'Date', 'In', 'Out', 'Worked (h)', 'Late (min)', 'Left early (min)', 'Missing'];
+  const line = (w, r) => [w.id, w.pin, w.name, w.dept, r.s, r.date, r.in != null ? atClock(r.in) : '', r.out != null ? atClock(r.out) : '', atHrs(r.worked), r.late || '', r.early || '', r.missing];
+  if(AT.tab === 'month'){
+    const M = atMonthData(), L = M.people.filter(p => atPass(p.w, p.s)).sort(atById);
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['ID', 'Device ID', 'Name', 'Department', 'Type', 'Shift', 'Work days', 'Present', 'Holiday worked', 'Vacation / leave', 'Absent', 'Late days', 'Late (min)', 'Missing punches', 'Worked (h)', 'Avg per day (h)']].concat(L.map(p => [p.w.id, p.w.pin, p.w.name, p.w.dept, p.w.notInApp ? 'Not in app' : p.w.type, p.s, p.work, p.present, p.holW, p.vac, p.absent, p.late, p.lateMin, p.miss, atHrs(p.worked), p.full ? atHrs(p.worked / p.full) : '']))), 'Summary');
+    const rows = [hdr]; L.forEach(p => M.days.forEach(d => { if(p.rec[d]) rows.push(line(p.w, p.rec[d])); }));
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), 'Shifts');
+    XLSX.writeFile(wb, 'attendance-' + AT.cyc.from + '-to-' + AT.cyc.to + '.xlsx');
+  } else {
+    const d = AT.tab === 'today' ? atToday() : AT.day, D = atDayData(d, AT.tab === 'today');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([hdr].concat(D.came.filter(x => atPass(x.w, x.r.s)).sort(atById).map(x => line(x.w, x.r)))), 'Came');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['ID', 'Name', 'Department', 'Shift', 'Last came']].concat(D.away.filter(x => !x.later && atPass(x.w, x.s)).sort(atById).map(x => [x.w.id, x.w.name, x.w.dept, x.s, x.last]))), 'Did not come');
+    XLSX.writeFile(wb, 'attendance-' + d + '.xlsx');
+  }
+  toast('Excel file downloaded');
+}
+
+/* ---------- events ---------- */
+document.addEventListener('click', async (e) => {
+  const t = e.target.closest && e.target.closest('[data-at]'); if(!t) return;
+  const inPage = $('screen-attendance') && $('screen-attendance').contains(t), inCard = $('atModal') && $('atModal').contains(t);
+  if(!inPage && !inCard) return;
+  const a = t.dataset.at;
+  if(a === 'close') return atClose();
+  if(a === 'person') return atOpenPerson(t.dataset.v);
+  if(a === 'tab'){ AT.tab = t.dataset.v; AT.show = ''; atRender(); await atLoadTab(false); }
+  else if(a === 'show'){ AT.show = AT.show === t.dataset.v || t.dataset.v === 'came' || t.dataset.v === 'ppl' ? '' : t.dataset.v; atRender(); }
+  else if(a === 'refresh'){ t.disabled = true; try{ AT.map = await window.__db.getConfigObject('attIdMap', {}); AT.set = await window.__db.getConfigObject('attSettings', null); AT.vac = null; AT.leave = null; AT._by = null; atWatchToday(); window.__att.syncInfo().then(s => { AT.sync = s; atSubLine(); }).catch(() => {}); AT.dev = await window.__att.devStatus().catch(() => AT.dev); await atLoadTab(true); toast('Updated'); }catch(err){ console.error(err); toast('Could not refresh'); } t.disabled = false; }
+  else if(a === 'dprev' || a === 'dnext'){ const n = atAdd(AT.day, a === 'dprev' ? -1 : 1); if(n > atToday()) return; AT.day = n; await atLoadTab(false); }
+  else if((a === 'mprev' && AT.cyc.from <= atFrom())) return;
+  else if(a === 'mprev' || a === 'mnext'){ const ref = a === 'mprev' ? atAdd(AT.cyc.from, -1) : atAdd(AT.cyc.to, 1); const c = computeSalaryCycle(new Date(ref + 'T12:00:00'), state.salaryCycleStartDay || 26); AT.cyc = { from: c.start, to: c.end }; await atLoadTab(false); }
+  else if(a === 'xls') atXls();
+  else if(a === 'hidemis'){ AT.hideMis = atShiftMismatch().map(x => x.w.id + x.now).join(','); atRender(); }
+  else if(a === 'link' || a === 'linkin'){
+    const pin = t.dataset.pin, by = AT._by || atPeople();
+    const id = a === 'link' ? t.dataset.v : ((document.querySelector(`.atLi[data-pin="${CSS.escape(pin)}"]`) || {}).value || '').trim().split(' ')[0];
+    if(!id || !by[id]){ toast('Pick an employee from the list'); return; }
+    await atSaveMap(Object.assign({}, AT.map, { [pin]: id }), 'Device ID ' + pin + ' linked to ' + id);
+  }
+  else if(a === 'ignore'){ await atSaveMap(Object.assign({}, AT.map, { [t.dataset.pin]: '-' }), 'Device ID ' + t.dataset.pin + ' ignored'); }
+  else if(a === 'unlink'){ const next = Object.assign({}, AT.map); delete next[t.dataset.pin]; await atSaveMap(next, 'Link removed'); }
+});
+document.addEventListener('input', (e) => {
+  const t = e.target; if(!t || (t.id !== 'atQ' && t.id !== 'atLinkQ')) return;
+  if(t.id === 'atQ') AT.q = t.value; else AT.linkQ = t.value;
+  clearTimeout(AT._qt); AT._qt = setTimeout(() => { const id = t.id, pos = t.selectionStart; atRender(); const n = $(id); if(n){ n.focus(); try{ n.setSelectionRange(pos, pos); }catch(err){} } }, 250);
+});
+document.addEventListener('change', async (e) => {
+  const t = e.target; if(!t || !$('screen-attendance') || !$('screen-attendance').contains(t)) return;
+  if(t.id === 'atDept'){ AT.dept = t.value; atRender(); }
+  else if(t.id === 'atShift'){ AT.shift = t.value; atRender(); }
+  else if(t.id === 'atType'){ AT.type = t.value; atRender(); }
+  else if(t.id === 'atDateIn' && t.value){ AT.day = t.value > atToday() ? atToday() : t.value; await atLoadTab(false); }
+});
+document.addEventListener('keydown', (e) => { if(e.key === 'Escape' && AT.person) atClose(); });
+</script>
+<style>
+#screen-attendance .atBox{ padding:14px 16px 16px; }
+#screen-attendance .atBar{ margin:2px 0 14px; }
+#screen-attendance .atBar .hrSearch{ flex:1 1 180px; max-width:280px; }
+#screen-attendance .atGrow{ flex:1 1 auto; }
+#screen-attendance .atSel, #screen-attendance #atDateIn{ height:34px; border-radius:12px; border:1px solid var(--line); background:#fff; padding:0 10px; font:inherit; font-size:12.5px; width:auto; min-width:0; color:var(--text); }
+#screen-attendance .atNav{ display:inline-flex; align-items:center; gap:6px; }
+#screen-attendance .atDate{ font-size:13px; font-weight:600; color:var(--text-strong); white-space:nowrap; padding:0 2px; }
+#screen-attendance .atLive{ font-style:normal; margin-left:6px; font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--ok); background:var(--lcd-dim); border-radius:999px; padding:2px 8px; vertical-align:1px; }
+#screen-attendance .atRef{ height:34px; padding:0 14px; }
+#screen-attendance .atTiles{ grid-template-columns:repeat(4,1fr); }
+#screen-attendance .hrTile.lv-ok .ic, #screen-attendance .hrIco.lv-ok{ background:var(--lcd-dim); color:var(--ok); }
+#screen-attendance .atWarn{ background:var(--warn-soft); color:var(--warn); }
+#screen-attendance .atCount{ display:inline-block; margin-left:4px; color:var(--text-strong); font-weight:700; }
+#screen-attendance .atTbl td{ vertical-align:middle; }
+#screen-attendance .atTbl th.c, #screen-attendance .atTbl td.c{ text-align:center; } #screen-attendance .atTbl th.r, #screen-attendance .atTbl td.r{ text-align:right; }
+#screen-attendance .atTbl td.t{ font-family:'JetBrains Mono',monospace; font-size:12px; white-space:nowrap; font-variant-numeric:tabular-nums; }
+#screen-attendance .atTbl td.t.bad{ color:var(--danger); font-weight:600; } #screen-attendance .atTbl td.t.warn{ color:var(--warn); font-weight:600; }
+.atWho{ display:flex; align-items:center; gap:10px; min-width:200px; }
+.atAv{ width:34px; height:34px; font-size:12px; }
+.atAv.big{ width:48px; height:48px; font-size:15px; }
+.atTag{ display:inline-block; font-family:'Inter',sans-serif; font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; border-radius:999px; padding:2px 7px; background:var(--panel-2); color:var(--muted); margin-left:6px; vertical-align:1px; }
+.atTag.red{ background:var(--danger-soft); color:var(--danger); }
+.atSh{ display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:600; border-radius:999px; padding:2px 8px 2px 6px; white-space:nowrap; }
+.atSh.d{ background:var(--warn-soft); color:var(--warn); } .atSh.n{ background:var(--acc-blue-soft); color:var(--acc-blue); }
+.atDim{ font-size:10.5px; color:var(--muted); margin-top:3px; font-family:'JetBrains Mono',monospace; }
+.atDash{ color:#cbd5e1; } .atMiss{ color:var(--danger); font-weight:700; }
+.atPills{ white-space:nowrap; text-align:right; }
+.atPill{ display:inline-block; font-size:10.5px; font-weight:600; border-radius:999px; padding:3px 9px; margin-left:4px; }
+.atPill.ok{ background:var(--lcd-dim); color:var(--ok); } .atPill.bad{ background:var(--danger-soft); color:var(--danger); } .atPill.warn{ background:var(--warn-soft); color:var(--warn); }
+.atBadN{ color:var(--danger); font-weight:700; } .atWarnN{ color:var(--warn); font-weight:700; }
+#screen-attendance .hrRow.clk{ cursor:pointer; margin:0 -8px; padding-left:8px; padding-right:8px; border-radius:12px; } #screen-attendance .hrRow.clk:hover{ background:var(--panel-2); }
+#screen-attendance .atLead{ background:var(--panel-2); border-radius:12px; padding:10px 12px; }
+.atLk{ display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+.atSug{ display:inline-flex; align-items:center; gap:5px; border:0; background:var(--amber-soft); color:var(--amber); border-radius:999px; padding:5px 11px; font:inherit; font-size:11.5px; font-weight:600; cursor:pointer; }
+.atSug:hover{ filter:brightness(.97); }
+.atLkIn{ display:flex; gap:6px; align-items:center; }
+.atIgn{ color:var(--muted); }
+.atLi{ height:32px; width:190px; border-radius:12px; border:1px solid var(--line); padding:0 10px; font:inherit; font-size:12px; }
+.atSheet{ max-width:640px; }
+.atMis{ background:var(--warn-soft); border-radius:16px; padding:12px 14px; margin-bottom:14px; }
+.atMisH{ display:flex; align-items:center; justify-content:space-between; gap:10px; color:var(--warn); font-size:13px; }
+.atMisX{ border:0; background:transparent; color:var(--warn); font:inherit; font-size:11.5px; font-weight:600; cursor:pointer; }
+.atMisR{ display:flex; align-items:center; gap:10px; padding:7px 8px; border-radius:12px; background:#fff; margin-top:6px; cursor:pointer; }
+.atMisR .hrBody{ flex:1; min-width:0; }
+.atAdm{ padding:16px 18px; }
+.atAdmHead{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
+.atAdmSave{ width:auto; }
+.atTT{ border:1px solid var(--line); border-radius:16px; padding:12px; margin-top:10px; }
+.atTTh{ display:flex; align-items:center; gap:8px; }
+.atAdmN{ flex:1; max-width:260px; height:32px; border-radius:10px; border:1px solid var(--line); padding:0 10px; font:inherit; font-size:13px; font-weight:600; }
+.atTTg{ display:flex; flex-wrap:wrap; gap:14px; margin-top:10px; }
+.atTTc{ display:flex; align-items:center; gap:6px; } .atTTc i{ font-style:normal; color:var(--muted); }
+.atAdmT{ height:32px; border-radius:10px; border:1px solid var(--line); padding:0 8px; font:inherit; font-size:12.5px; width:auto; }
+.atTTd{ display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
+.atDep{ border:1px solid var(--line); background:#fff; color:var(--muted); border-radius:999px; padding:4px 11px; font:inherit; font-size:11.5px; font-weight:600; cursor:pointer; }
+.atDep.on{ background:var(--amber-soft); color:var(--amber); border-color:transparent; }
+.atDep.oth{ opacity:.45; }
+.atGr{ display:flex; flex-wrap:wrap; gap:10px 24px; font-size:12.5px; color:var(--text); }
+.atGr label{ display:inline-flex !important; align-items:center; gap:6px; margin:0; font-size:12.5px; font-weight:500; text-transform:none; letter-spacing:0; color:var(--text); }
+.atAdm input.atAdmG{ width:64px !important; min-width:0; height:30px; border-radius:10px; border:1px solid var(--line); padding:0 8px; font:inherit; margin:0; display:inline-block; text-align:center; }
+.atAdm input.atAdmT{ width:auto !important; display:inline-block; margin:0; }
+.atAdm input.atAdmN{ width:auto !important; display:inline-block; margin:0; }
+.atFacts{ grid-template-columns:repeat(4,1fr); }
+.atDays{ border:1px solid var(--line); border-radius:16px; overflow:hidden; }
+.atDr{ display:grid; grid-template-columns:54px 1fr auto auto; align-items:center; gap:10px; padding:9px 12px; border-bottom:1px solid var(--line); }
+.atDr:last-child{ border-bottom:0; }
+.atDr.off{ background:var(--panel-2); color:var(--muted); grid-template-columns:54px 1fr; }
+.atDd b{ font-family:'JetBrains Mono',monospace; font-size:14px; color:var(--text-strong); } .atDd span{ display:block; font-size:10px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); font-weight:600; }
+.atDr.off .atDd b{ color:var(--muted); }
+.atDt{ font-family:'JetBrains Mono',monospace; font-size:12.5px; display:flex; flex-wrap:wrap; align-items:center; gap:6px; }
+.atDt i{ font-style:normal; color:#cbd5e1; } .atDt .lu{ color:var(--muted); font-size:11.5px; background:var(--panel-2); border-radius:8px; padding:1px 6px; }
+.atDt .bad{ color:var(--danger); font-weight:600; } .atDt .warn{ color:var(--warn); font-weight:600; }
+.atDr.off .atDt{ font-family:'Inter',sans-serif; font-size:12px; }
+.atDw{ font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:700; color:var(--text-strong); white-space:nowrap; }
+@media (max-width:760px){ #screen-attendance .atTiles{ grid-template-columns:repeat(2,1fr); } .atFacts{ grid-template-columns:repeat(2,1fr); } #screen-attendance .atBar .hrSearch{ max-width:none; flex-basis:100%; } }
+@media (max-width:560px){ .atDr{ grid-template-columns:44px 1fr auto; } .atDr .atPills{ grid-column:2 / -1; text-align:left; } .atPill{ margin:0 4px 0 0; } .atLkIn{ width:100%; } .atLi{ flex:1; width:auto; } }
+</style>
+
 </body>
 </html>
