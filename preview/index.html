@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head><meta name="robots" content="noindex">
-<meta name="rvf-build" content="20261128-134100">
+<meta name="rvf-build" content="20261128-145419">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -33063,7 +33063,6 @@ PAGE_DEFS.attendance = { label: 'Attendance' };
 })();
 
 const AT = { tab: 'today', day: '', cyc: null, q: '', dept: '', shift: '', type: '', show: '', cache: {}, today: null, todayDate: '', unsub: null, map: null, names: {}, sync: null, linkQ: '', person: '' };
-const AT_GRACE = 5;          // minutes before someone counts as late / left early
 const AT_DUP = 3;            // punches within 3 minutes of each other are one punch
 const atEsc = (t) => String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const atToday = () => dateToStr(new Date());
@@ -33123,6 +33122,47 @@ function atAvatar(w, big){
 
 /* ---------- shifts ---------- */
 const atRule = (d) => { try{ return getShiftRuleForDate(d); }catch(e){ return makeDefaultShiftRule(); } };
+/* Attendance settings (Admin > Factory > Attendance): timetables by department + grace minutes.
+   Until Admin saves them, the suggested values below are used. */
+function atDefaults(){
+  const r = atRule(atToday());
+  return { graceLate: 10, graceEarly: 10, tts: [
+    { id: 'std', name: 'Everyone else', day: { start: r.day.start, end: r.day.end }, night: { start: r.night.start, end: r.night.end }, depts: [] },
+    { id: 'weave', name: 'Weaving floor', day: { start: '05:30', end: '17:30' }, night: { start: '17:30', end: '05:30' }, depts: ['RVF', 'SSTM'] }
+  ] };
+}
+function atSet(){ const s = AT.set; return (s && Array.isArray(s.tts) && s.tts.length) ? s : atDefaults(); }
+function atTT(w){
+  const S = atSet(), d = String((w && w.dept) || '').trim().toUpperCase();
+  return S.tts.find(t => (t.depts || []).some(x => String(x).trim().toUpperCase() === d)) || S.tts.find(t => !(t.depts || []).length) || S.tts[0];
+}
+// working-day helpers: Calendar holidays (Admin > Factory > Calendar), joining / exit date, vacations
+const atHol = (d) => { try{ return isHoliday(d); }catch(e){ return false; } };
+// on vacation (HR vacations) or on an approved leave request (Leave / Request page) that day: returns its name, else ''
+function atVacOn(w, d){
+  if(!w || !w.u) return '';
+  const id = String(w.u.loginId);
+  const V = (AT.vac && AT.vac[id]) || [];
+  if(V.some(v => v.from && d >= v.from && d <= (v.to || (v.workStart ? atAdd(v.workStart, -1) : v.from)))) return 'Vacation';
+  const L = (AT.leave && AT.leave[id]) || [];
+  const l = L.find(v => v.from && d >= v.from && d <= (v.to || v.from));
+  return l ? (l.type || 'Leave') : '';
+}
+function atEmployed(w, d){
+  const p = (w && w.u && w.u.profile) || {};
+  if(p.joiningDate && d < p.joiningDate) return false;
+  if(p.endDate && d > p.endDate) return false;
+  return true;
+}
+async function atLoadVac(){
+  if(AT.vac && AT.leave) return;
+  const [vs, ls] = await Promise.all([
+    window.__db.listVacations().catch(e => { console.error(e); return []; }),          // shared, read once per visit
+    window.__db.listLeaveRequests().catch(e => { console.error(e); return []; })
+  ]);
+  const m = {}; (vs || []).forEach(v => { if(v && v.employeeId) (m[String(v.employeeId)] = m[String(v.employeeId)] || []).push(v); }); AT.vac = m;
+  const l = {}; (ls || []).forEach(v => { if(v && v.employeeId && v.status === 'approved' && v.from) (l[String(v.employeeId)] = l[String(v.employeeId)] || []).push(v); }); AT.leave = l;
+}
 // every punch of every person in the loaded days: key -> { w, list:[{d, m, dev}] }
 function atPunchesByPerson(from, to){
   const g = {};
@@ -33143,6 +33183,7 @@ function atPunchesByPerson(from, to){
 const AT_SPAN = 16 * 60;
 const atDayNo = (d) => Math.round(Date.UTC(+d.slice(0, 4), +d.slice(5, 7) - 1, +d.slice(8, 10)) / 86400000);
 function atShifts(o){
+  const tt = atTT(o.w), G = atSet();
   const L0 = o.list.map(x => ({ t: atDayNo(x.d) * 1440 + x.m, d: x.d, m: x.m, dev: x.dev })).sort((a, b) => a.t - b.t), L = [];
   L0.forEach(x => { if(!L.length || x.t - L[L.length - 1].t > AT_DUP) L.push(x); });
   // Split the punches into shifts so that, over the whole period, shifts have normal lengths (6-15 h)
@@ -33153,7 +33194,7 @@ function atShifts(o){
     let sc;
     if(i === k) sc = (nowT - f.t < AT_SPAN && k === L.length - 1) ? 0 : -6;   // a single punch is fine only for a shift still running
     else if(span < 120) sc = -4; else if(span < 360) sc = 2; else if(span <= 15 * 60) sc = 10; else sc = 4;
-    const st = atMin(atRule(f.d)[night ? 'night' : 'day'].start), dist = Math.min(Math.abs(f.m - st), 1440 - Math.abs(f.m - st)) / 60;
+    const st = atMin(tt[night ? 'night' : 'day'].start), dist = Math.min(Math.abs(f.m - st), 1440 - Math.abs(f.m - st)) / 60;
     return sc + Math.max(0, 2 - dist) * 0.5;
   };
   const n = L.length, best = new Array(n + 1).fill(-Infinity), from = new Array(n + 1).fill(0); best[0] = 0;
@@ -33166,15 +33207,16 @@ function atShifts(o){
     if(night) nN++; else nD++;
     const sh = { s: night ? 'Night' : 'Day' };
     if(res[sd] && res[sd].n >= P.length) return;   // two shifts on one date (rare): keep the fuller one
-    const rule = atRule(sd)[sh.s === 'Night' ? 'night' : 'day'];
+    const rule = tt[sh.s === 'Night' ? 'night' : 'day'];
     let st = atMin(rule.start), en = atMin(rule.end); if(en <= st) en += 1440;
     const r = { date: sd, s: sh.s, n: P.length, devs: Array.from(new Set(P.map(x => x.dev).filter(Boolean))), start: st, end: en };
     // In = first punch of the shift, Out = last punch (always the latest one); punches in between are not shown
     r.in = P[0].m; r.out = P.length > 1 ? P[P.length - 1].m : null;
     r.open = Date.now() < new Date(sd + 'T00:00:00').getTime() + (en + 60) * 60000;   // shift still running (until 1 hour after it ends)
     r.worked = r.out != null ? r.out - r.in : null;
-    r.late = r.in - st > AT_GRACE ? r.in - st : 0;
-    r.early = (!r.open && r.out != null && en - r.out > AT_GRACE) ? en - r.out : 0;
+    r.late = r.in - st > (+G.graceLate || 0) ? r.in - st : 0;
+    r.early = (!r.open && r.out != null && en - r.out > (+G.graceEarly || 0)) ? en - r.out : 0;
+    r.tt = tt.name;
     r.missing = (!r.open && r.out == null) ? 'Out' : '';
     res[sd] = r;
   });
@@ -33205,6 +33247,7 @@ async function atOpen(){
     if(!state.users || !state.users.length) state.users = await window.__db.listUsersOnce();
     AT._by = null;
     if(!AT.map) AT.map = await window.__db.getConfigObject('attIdMap', {});
+    if(AT.set === undefined) AT.set = await window.__db.getConfigObject('attSettings', null);
     if(!AT.cyc){ const c = computeSalaryCycle(new Date(), state.salaryCycleStartDay || 26); AT.cyc = { from: c.start, to: c.end }; }
     if(!AT.day) AT.day = atAdd(atToday(), -1);
     atWatchToday();
@@ -33229,7 +33272,7 @@ function atRange(){
   if(AT.tab === 'day') return [atAdd(AT.day, -10), atAdd(AT.day, 1)];
   return [atAdd(AT.cyc.from, -4), atAdd(AT.cyc.to, 1)];
 }
-async function atLoadTab(force){ const r = atRange(); await atLoadDays(r[0], r[1], force); atRender(); }
+async function atLoadTab(force){ const r = atRange(); await atLoadDays(r[0], r[1], force); if(AT.tab === 'month' || AT.tab === 'day' || AT.tab === 'today') await atLoadVac(); atRender(); }
 function atSubLine(){
   const el = $('atSub'); if(!el) return;
   const s = AT.sync, at = s && s.lastSync && s.lastSync.toDate ? s.lastSync.toDate() : null;
@@ -33246,7 +33289,9 @@ function atDayData(sd, live){
     if(rec){ came.push({ w: o.w, r: rec }); return; }
     // expected: worked on one of the 7 shift days before, not exited, not a Friday off for them
     let last = ''; for(let i = 1; i <= 7; i++){ const d = atAdd(d0, -i); if(S.days[d]){ last = d; break; } }
-    if(last && !o.w.exited) away.push({ w: o.w, s: S.sh.s, last });
+    if(!last || o.w.exited || atHol(sd) || !atEmployed(o.w, sd)) return;
+    if(atVacOn(o.w, sd)) return;   // on vacation: not absent
+    away.push({ w: o.w, s: S.sh.s, last });
   });
   return { came, away };
 }
@@ -33274,6 +33319,23 @@ function atAwayList(L, label){
   return `<div class="hrLabel">${label} <span class="atCount">${L.length}</span></div>` + L.map(x => `<div class="hrRow clk" data-at="person" data-v="${atEsc(x.w.id)}">${atAvatar(x.w)}<div class="hrBody"><div class="hrTitle">${atEsc(x.w.name)} <span class="id">${atEsc(x.w.id)}</span>${x.w.notInApp ? '<span class="atTag">Not in app</span>' : ''}</div><div class="hrSub">${atEsc(x.w.dept)}${x.w.dept ? ' &middot; ' : ''}${x.s} shift</div></div><div class="hrSide"><span class="hrStat info">Last came ${fmtDate(x.last)}</span></div></div>`).join('');
 }
 function atTile(k, n, l, cls, act){ return `<button class="hrTile lv-${cls}${AT.show === k ? ' on' : ''}" data-at="${act || 'show'}" data-v="${k}"><span class="ic">${atSvg(k === 'came' ? 'ok' : (k === 'late' ? 'late' : (k === 'miss' ? 'miss' : (k === 'away' ? 'away' : (k === 'hrs' ? 'hrs' : (k === 'ppl' ? 'ppl' : 'link'))))), 17)}</span><span class="tx"><span class="n">${n}</span><span class="l">${l}</span></span></button>`; }
+/* Profile says Day/Night but the last 3 shifts in a row were the other one: tell Admin to update the profile */
+function atShiftMismatch(){
+  const r = atRange(), G = atPunchesByPerson(r[0], r[1]), out = [];
+  Object.keys(G).forEach(k => {
+    const o = G[k]; if(!o.w.u || !o.w.set || o.w.exited) return;
+    const L = Object.values(atShifts(o).days).sort((a, b) => a.date < b.date ? 1 : -1).slice(0, 3);
+    if(L.length === 3 && L.every(x => x.s !== o.w.set)) out.push({ w: o.w, set: o.w.set, now: L[0].s, since: L[2].date });
+  });
+  return out.sort(atById);
+}
+function atMismatchBox(){
+  const M = atShiftMismatch(); if(!M.length) return '';
+  const hid = (AT.hideMis || '') === M.map(x => x.w.id + x.now).join(','); if(hid) return '';
+  return `<div class="atMis"><div class="atMisH"><b>${M.length} ${M.length === 1 ? 'person works' : 'people work'} a different shift than the profile says</b><button type="button" class="atMisX" data-at="hidemis" title="Hide this notice">Hide</button></div>`
+    + `<div class="hrNote" style="margin:2px 0 8px;">Their last 3 shifts in a row were not the shift set on their profile. Change it in Admin &gt; Users (or Operators &amp; machines) if they moved.</div>`
+    + M.map(x => `<div class="atMisR clk" data-at="person" data-v="${atEsc(x.w.id)}">${atAvatar(x.w)}<div class="hrBody"><div class="hrTitle">${atEsc(x.w.name)} <span class="id">${atEsc(x.w.id)}</span></div><div class="hrSub">${atEsc(x.w.dept)} &middot; profile: ${x.set} &middot; working ${x.now} since ${fmtDate(x.since)}</div></div>${atShiftChip(x.now)}</div>`).join('') + '</div>';
+}
 function atDayView(sd, live){
   const D = atDayData(sd, live);
   const came = D.came.filter(x => atPass(x.w, x.r.s)).sort((a, b) => a.r.in - b.r.in || atById(a, b));
@@ -33281,6 +33343,7 @@ function atDayView(sd, live){
   const late = came.filter(x => x.r.late), miss = came.filter(x => x.r.missing);
   let h = `<div class="hrTiles atTiles">${atTile('came', came.length, live ? 'In today' : 'Came', 'ok')}${atTile('late', late.length, 'Late', 'soon')}${atTile('miss', miss.length, 'Missing punch', 'late')}${atTile('away', away.length, live ? 'Not in yet' : 'Did not come', 'info')}</div>`;
   const show = AT.show;
+  if(atHol(sd)) h += `<div class="hrNote atLead" style="margin-top:10px;">${atEsc((state.holidays || {})[sd] || 'Holiday')} in the Calendar: nobody is counted absent, and anyone who worked gets a holiday day worked.</div>`;
   if(show === 'away') return h + (away.length ? atAwayList(away, live ? 'Not in yet' : 'Did not come') : '<div class="hrEmpty">Everyone came.</div>');
   const L = show === 'late' ? late : (show === 'miss' ? miss : came);
   h += `<div class="hrLabel">${show === 'late' ? 'Late' : (show === 'miss' ? 'Missing punch' : (live ? 'In today' : 'Came'))} <span class="atCount">${L.length}</span></div>` + atShiftTable(L);
@@ -33297,8 +33360,16 @@ function atMonthData(){
     const o = G[k], S = atShifts(o), rec = {};
     days.forEach(d => { if(S.days[d]) rec[d] = S.days[d]; });
     const L = Object.values(rec); if(!L.length) return;
-    const work = days.filter(d => atWd(d) !== 'Fri' || rec[d]).length;
-    people.push({ w: o.w, s: S.sh.s, rec, present: L.length, absent: Math.max(0, work - L.length),
+    // working days = days of the salary month (until today) that are not holidays in the Calendar,
+    // from his joining date until his exit date; vacation days are not absent
+    let work = 0, pres = 0, hol = 0, vac = 0, abs = 0;
+    days.forEach(d => {
+      if(!atEmployed(o.w, d)) return;
+      if(atHol(d)){ if(rec[d]) hol++; return; }
+      work++;
+      if(rec[d]) pres++; else if(atVacOn(o.w, d)) vac++; else abs++;
+    });
+    people.push({ w: o.w, s: S.sh.s, rec, work, holW: hol, vac, present: pres, absent: abs,
       late: L.filter(x => x.late).length, lateMin: L.reduce((a, x) => a + x.late, 0), miss: L.filter(x => x.missing).length,
       worked: L.reduce((a, x) => a + (x.worked || 0), 0), full: L.filter(x => x.worked != null).length });
   });
@@ -33309,9 +33380,10 @@ function atMonthView(){
   const show = AT.show, V = show === 'late' ? L.filter(p => p.late) : (show === 'miss' ? L.filter(p => p.miss) : L);
   let h = `<div class="hrTiles atTiles">${atTile('ppl', L.length, 'People', 'info')}${atTile('late', L.reduce((a, p) => a + p.late, 0), 'Late days', 'soon')}${atTile('miss', L.reduce((a, p) => a + p.miss, 0), 'Missing punches', 'late')}${atTile('hrs', Math.round(L.reduce((a, p) => a + p.worked, 0) / 60).toLocaleString(), 'Hours worked', 'ok', 'noop')}</div>`;
   if(!V.length) return h + '<div class="hrEmpty">Nobody in this view.</div>';
-  h += `<div class="hrLabel">${M.days.length} days &middot; Fridays without punches are not counted as absent</div>`;
-  h += `<div class="hrScroll"><table class="hrTbl atTbl"><thead><tr><th>Employee</th><th>Shift</th><th class="r">Present</th><th class="r">Absent</th><th class="r">Late</th><th class="r">Missing</th><th class="r">Worked</th><th class="r">Avg / day</th></tr></thead><tbody>`
-    + V.map(p => `<tr class="clk" data-at="person" data-v="${atEsc(p.w.id)}"><td>${atPersonCell(p.w)}</td><td>${atShiftChip(p.s)}</td><td class="r t"><b>${p.present}</b></td><td class="r t">${p.absent ? `<span class="atWarnN">${p.absent}</span>` : '0'}</td><td class="r t">${p.late ? `<span class="atBadN">${p.late}</span><div class="atDim">${atHM(p.lateMin)}</div>` : '0'}</td><td class="r t">${p.miss ? `<span class="atBadN">${p.miss}</span>` : '0'}</td><td class="r t"><b>${atHM(p.worked)}</b></td><td class="r t">${p.full ? atHM(p.worked / p.full) : ''}</td></tr>`).join('')
+  const nh = M.days.filter(d => atHol(d)).length;
+  h += `<div class="hrLabel">${M.days.length} days so far &middot; ${M.days.length - nh} working days &middot; ${nh} holidays from the Calendar</div>`;
+  h += `<div class="hrScroll"><table class="hrTbl atTbl"><thead><tr><th>Employee</th><th>Shift</th><th class="r" title="Working days for him (from joining, until exit)">Work days</th><th class="r">Present</th><th class="r" title="Worked on a holiday">Holiday</th><th class="r" title="Vacation or approved leave">Leave</th><th class="r">Absent</th><th class="r">Late</th><th class="r">Missing</th><th class="r">Worked</th><th class="r">Avg / day</th></tr></thead><tbody>`
+    + V.map(p => `<tr class="clk" data-at="person" data-v="${atEsc(p.w.id)}"><td>${atPersonCell(p.w)}</td><td>${atShiftChip(p.s)}</td><td class="r t">${p.work}</td><td class="r t"><b>${p.present}</b></td><td class="r t">${p.holW || '0'}</td><td class="r t">${p.vac || '0'}</td><td class="r t">${p.absent ? `<span class="atWarnN">${p.absent}</span>` : '0'}</td><td class="r t">${p.late ? `<span class="atBadN">${p.late}</span><div class="atDim">${atHM(p.lateMin)}</div>` : '0'}</td><td class="r t">${p.miss ? `<span class="atBadN">${p.miss}</span>` : '0'}</td><td class="r t"><b>${atHM(p.worked)}</b></td><td class="r t">${p.full ? atHM(p.worked / p.full) : ''}</td></tr>`).join('')
     + '</tbody></table></div>';
   return h;
 }
@@ -33330,9 +33402,9 @@ function atOpenPerson(id){
     h += `<div class="hrSub" style="margin:-6px 0 12px;">${fmtDate(from)} &ndash; ${fmtDate(to)}</div>`;
     h += `<div class="hrFacts atFacts"><div class="hrFact"><div class="k">Present</div><div class="v">${L.length} days</div></div><div class="hrFact"><div class="k">Worked</div><div class="v">${atHM(worked)}</div></div><div class="hrFact"><div class="k">Late</div><div class="v">${late} days</div></div><div class="hrFact"><div class="k">Missing punch</div><div class="v">${miss}</div></div></div>`;
     h += `<div class="atDays">${days.map(d => { const r = S.days[d], wd = atWd(d);
-      if(!r) return `<div class="atDr off"><div class="atDd"><b>${d.slice(8)}</b><span>${wd}</span></div><div class="atDt">${wd === 'Fri' ? 'Friday' : 'No punch'}</div></div>`;
+      if(!r) return `<div class="atDr off"><div class="atDd"><b>${d.slice(8)}</b><span>${wd}</span></div><div class="atDt">${atHol(d) ? atEsc((state.holidays || {})[d] || 'Holiday') : (!atEmployed(w, d) ? 'Not employed' : (atVacOn(w, d) ? atEsc(atVacOn(w, d)) : '<span class="bad">Absent</span>'))}</div></div>`;
       return `<div class="atDr"><div class="atDd"><b>${d.slice(8)}</b><span>${wd}</span></div><div class="atDt"><span class="${r.late ? 'bad' : ''}">${atClock(r.in)}</span><i>&rarr;</i><span class="${r.early ? 'warn' : ''}">${r.out != null ? atClock(r.out) : '?'}</span></div><div class="atDw">${r.worked != null ? atHM(r.worked) : ''}</div><div class="atPills">${atPill(r)}</div></div>`; }).join('')}</div>`;
-    h += `<div class="hrNote" style="margin-top:10px;">In is the first punch of the shift and Out is the last punch; a night shift's Out is on the next morning. Shift times come from Admin &gt; Shift &amp; Timing.  A shift that starts after 14:00 is a night shift.</div>`;
+    h += `<div class="hrNote" style="margin-top:10px;">In is the first punch of the shift and Out is the last punch; a night shift's Out is on the next morning. Shift times come from Admin &gt; Factory &gt; Attendance (${atEsc(atTT(w).name)}); holidays from the Calendar.  A shift that starts after 14:00 is a night shift.</div>`;
     $('atSheet').innerHTML = h; $('atModal').style.display = 'flex';
   }).catch(e => { console.error(e); toast('Could not load'); });
 }
@@ -33411,6 +33483,77 @@ function atDevView(){
   return h;
 }
 
+/* ---------- Admin > Factory > Attendance: timetables and grace ---------- */
+(function(){
+  const orig = document.getElementById('admTabsOrig'), anchor = document.getElementById('admin-shifttime');
+  if(!orig || !anchor) return;
+  const tab = document.createElement('div'); tab.className = 'auth-tab'; tab.dataset.admintab = 'attendance'; tab.textContent = 'Attendance';
+  orig.appendChild(tab);
+  const pane = document.createElement('div'); pane.className = 'auth-pane'; pane.id = 'admin-attendance';
+  anchor.parentNode.appendChild(pane);
+  tab.addEventListener('click', () => {
+    orig.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active')); tab.classList.add('active');
+    document.querySelectorAll('#screen-admin .auth-pane').forEach(p => p.classList.remove('active')); pane.classList.add('active');
+    atAdmOpen();
+  });
+  try{ const g = ADM_G.find(x => x.n === 'Factory'); if(g && !g.t.some(t => t[0] === 'attendance')) g.t.splice(2, 0, ['attendance', 'Attendance']); }catch(e){}
+})();
+async function atAdmOpen(){
+  const pane = $('admin-attendance'); if(!pane) return;
+  pane.innerHTML = '<div class="hrEmpty">Loading&hellip;</div>';
+  try{ AT.set = await window.__db.getConfigObject('attSettings', null); }catch(e){ console.error(e); }
+  AT.admDraft = JSON.parse(JSON.stringify(atSet())); AT.admDirty = false; atAdmRender();
+}
+function atAdmDepts(){
+  const set = new Set(); (state.users || []).forEach(u => { if(u && u.department && !isExitedEmployee(u)) set.add(String(u.department).trim()); });
+  (AT.admDraft.tts || []).forEach(t => (t.depts || []).forEach(d => set.add(d)));
+  return Array.from(set).sort();
+}
+function atAdmRender(){
+  const pane = $('admin-attendance'), D = AT.admDraft; if(!pane || !D) return;
+  const ed = state.user && state.user.role === 'admin', dis = ed ? '' : ' disabled', depts = atAdmDepts();
+  const tIn = (i, k, f) => `<input type="time" class="atAdmT" data-atadm="time" data-i="${i}" data-k="${k}" data-f="${f}" value="${atEsc(D.tts[i][k][f])}"${dis}>`;
+  let h = `<div class="card hrBox atAdm"><div class="atAdmHead"><div><h2 style="margin:0;">Attendance</h2><div class="hrNote">Times used on the Attendance page to judge <b>Late</b> and <b>Left early</b>. Day or Night is found from each person's own punches, so people who change shift are followed by themselves.</div></div>${ed ? `<button type="button" class="btn btn-primary btn-sm atAdmSave" data-atadm="save"${AT.admDirty ? '' : ' disabled'}>Save</button>` : ''}</div>`;
+  h += '<div class="hrLabel">Timetables</div>';
+  D.tts.forEach((t, i) => {
+    const def = !(t.depts || []).length && i === D.tts.findIndex(x => !(x.depts || []).length);
+    h += `<div class="atTT"><div class="atTTh"><input class="atAdmN" data-atadm="name" data-i="${i}" value="${atEsc(t.name)}"${dis}>${def ? '<span class="atTag">Everyone not listed below</span>' : ''}${ed && D.tts.length > 1 && !def ? `<button type="button" class="iconBtn" data-atadm="del" data-i="${i}" title="Remove this timetable">${atSvg('x', 14)}</button>` : ''}</div>`
+      + `<div class="atTTg"><div class="atTTc"><span class="atSh d">${atSvg('sun', 12)}Day</span>${tIn(i, 'day', 'start')}<i>&ndash;</i>${tIn(i, 'day', 'end')}</div><div class="atTTc"><span class="atSh n">${atSvg('moon', 12)}Night</span>${tIn(i, 'night', 'start')}<i>&ndash;</i>${tIn(i, 'night', 'end')}</div></div>`
+      + (def ? '' : `<div class="atTTd">${depts.map(d => { const on = (t.depts || []).indexOf(d) >= 0, other = !on && D.tts.some((x, j) => j !== i && (x.depts || []).indexOf(d) >= 0); return `<button type="button" class="atDep${on ? ' on' : ''}${other ? ' oth' : ''}" data-atadm="dep" data-i="${i}" data-d="${atEsc(d)}"${dis} title="${other ? 'Now in another timetable; click to move here' : ''}">${atEsc(d)}</button>`; }).join('')}</div>`)
+      + '</div>';
+  });
+  if(ed) h += `<button type="button" class="pillBtn" data-atadm="add" style="margin-top:8px;">+ Add timetable</button>`;
+  h += `<div class="hrLabel">Grace</div><div class="atGr"><label>Late after <input type="number" min="0" max="120" class="atAdmG" data-atadm="grace" data-f="graceLate" value="${+D.graceLate || 0}"${dis}> minutes</label><label>Left early if more than <input type="number" min="0" max="120" class="atAdmG" data-atadm="grace" data-f="graceEarly" value="${+D.graceEarly || 0}"${dis}> minutes before the end</label></div>`;
+  h += `<div class="hrLabel">Working days</div><div class="hrNote">Come from <b>Admin &gt; Factory &gt; Calendar</b>: a holiday there (Friday, Eid, national day) is never counted as absent, and anyone who punches on it gets a <i>holiday worked</i>. Days before his joining date or after his exit date, vacation days (HR) and approved leave requests (Leave / Request) are not counted as absent. The month is the salary month from <b>Salary Month</b>.</div>`;
+  h += `<div class="hrNote" style="margin-top:8px;">${AT.set ? 'Saved settings are in use.' : 'Not saved yet: the suggested times above are in use (they match how people punch now).'}</div></div>`;
+  pane.innerHTML = h;
+}
+document.addEventListener('click', async (e) => {
+  const t = e.target.closest && e.target.closest('[data-atadm]'); if(!t || !$('admin-attendance') || !$('admin-attendance').contains(t)) return;
+  const D = AT.admDraft, a = t.dataset.atadm, i = +t.dataset.i;
+  if(a === 'dep'){ const d = t.dataset.d; D.tts.forEach((x, j) => { x.depts = (x.depts || []).filter(y => y !== d); }); if(!t.classList.contains('on')) D.tts[i].depts.push(d); AT.admDirty = true; atAdmRender(); }
+  else if(a === 'add'){ const r = atRule(atToday()); D.tts.push({ id: 't' + Date.now(), name: 'New timetable', day: { start: r.day.start, end: r.day.end }, night: { start: r.night.start, end: r.night.end }, depts: [] }); AT.admDirty = true; atAdmRender(); }
+  else if(a === 'del'){ D.tts.splice(i, 1); AT.admDirty = true; atAdmRender(); }
+  else if(a === 'save'){
+    if(!(state.user && state.user.role === 'admin')){ toast('Only the Admin can change this'); return; }
+    const ok = D.tts.every(x => /^\d\d:\d\d$/.test(x.day.start) && /^\d\d:\d\d$/.test(x.day.end) && /^\d\d:\d\d$/.test(x.night.start) && /^\d\d:\d\d$/.test(x.night.end));
+    if(!ok){ toast('Fill every start and end time'); return; }
+    if(!D.tts.some(x => !(x.depts || []).length)){ toast('Keep one timetable without departments for everyone else'); return; }
+    t.disabled = true;
+    try{ await window.__db.saveConfigObject('attSettings', D); AT.set = JSON.parse(JSON.stringify(D)); AT.admDirty = false; toast('Attendance settings saved'); atAdmRender(); }
+    catch(err){ console.error(err); toast('Could not save'); t.disabled = false; }
+  }
+});
+document.addEventListener('input', (e) => {
+  const t = e.target; if(!t.dataset || !t.dataset.atadm || !AT.admDraft) return;
+  const D = AT.admDraft, i = +t.dataset.i;
+  if(t.dataset.atadm === 'time') D.tts[i][t.dataset.k][t.dataset.f] = t.value;
+  else if(t.dataset.atadm === 'name') D.tts[i].name = t.value;
+  else if(t.dataset.atadm === 'grace') D[t.dataset.f] = Math.max(0, Math.min(120, +t.value || 0));
+  else return;
+  AT.admDirty = true; const b = document.querySelector('[data-atadm="save"]'); if(b) b.disabled = false;
+});
+
 /* ---------- page ---------- */
 function atFilters(){
   const by = AT._by || (AT._by = atPeople());
@@ -33435,7 +33578,7 @@ function atRender(){
   if(AT.tab === 'devices'){ body.innerHTML = atDevView(); return; }
   let h = `<div class="hrToolbar atBar">${atDateNav()}${AT.tab !== 'link' ? `<div class="hrSearch">${atSvg('search')}<input type="search" id="atQ" placeholder="Search name or ID" value="${atEsc(AT.q)}"></div>${atFilters()}` : `<div class="hrSearch">${atSvg('search')}<input type="search" id="atLinkQ" placeholder="Search device ID or name" value="${atEsc(AT.linkQ)}"></div>`}<span class="atGrow"></span><button type="button" class="refreshBtn atRef" data-at="refresh">${atSvg('ref', 15)}Refresh</button>${AT.tab !== 'link' ? `<button type="button" class="iconBtn" data-at="xls" title="Download Excel" aria-label="Download Excel">${atSvg('dl', 15)}</button>` : ''}</div>`;
   try{
-    if(AT.tab === 'today') h += atDayView(atToday(), true);
+    if(AT.tab === 'today') h += atMismatchBox() + atDayView(atToday(), true);
     else if(AT.tab === 'day') h += atDayView(AT.day, false);
     else if(AT.tab === 'month') h += atMonthView();
     else h += atLinkView();
@@ -33450,7 +33593,7 @@ function atXls(){
   const line = (w, r) => [w.id, w.pin, w.name, w.dept, r.s, r.date, atClock(r.in), r.out != null ? atClock(r.out) : '', atHrs(r.worked), r.late || '', r.early || '', r.missing];
   if(AT.tab === 'month'){
     const M = atMonthData(), L = M.people.filter(p => atPass(p.w, p.s)).sort(atById);
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['ID', 'Device ID', 'Name', 'Department', 'Type', 'Shift', 'Present', 'Absent', 'Late days', 'Late (min)', 'Missing punches', 'Worked (h)', 'Avg per day (h)']].concat(L.map(p => [p.w.id, p.w.pin, p.w.name, p.w.dept, p.w.notInApp ? 'Not in app' : p.w.type, p.s, p.present, p.absent, p.late, p.lateMin, p.miss, atHrs(p.worked), p.full ? atHrs(p.worked / p.full) : '']))), 'Summary');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['ID', 'Device ID', 'Name', 'Department', 'Type', 'Shift', 'Work days', 'Present', 'Holiday worked', 'Vacation / leave', 'Absent', 'Late days', 'Late (min)', 'Missing punches', 'Worked (h)', 'Avg per day (h)']].concat(L.map(p => [p.w.id, p.w.pin, p.w.name, p.w.dept, p.w.notInApp ? 'Not in app' : p.w.type, p.s, p.work, p.present, p.holW, p.vac, p.absent, p.late, p.lateMin, p.miss, atHrs(p.worked), p.full ? atHrs(p.worked / p.full) : '']))), 'Summary');
     const rows = [hdr]; L.forEach(p => M.days.forEach(d => { if(p.rec[d]) rows.push(line(p.w, p.rec[d])); }));
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), 'Shifts');
     XLSX.writeFile(wb, 'attendance-' + AT.cyc.from + '-to-' + AT.cyc.to + '.xlsx');
@@ -33473,10 +33616,11 @@ document.addEventListener('click', async (e) => {
   if(a === 'person') return atOpenPerson(t.dataset.v);
   if(a === 'tab'){ AT.tab = t.dataset.v; AT.show = ''; atRender(); await atLoadTab(false); }
   else if(a === 'show'){ AT.show = AT.show === t.dataset.v || t.dataset.v === 'came' || t.dataset.v === 'ppl' ? '' : t.dataset.v; atRender(); }
-  else if(a === 'refresh'){ t.disabled = true; try{ AT.map = await window.__db.getConfigObject('attIdMap', {}); AT._by = null; atWatchToday(); window.__att.syncInfo().then(s => { AT.sync = s; atSubLine(); }).catch(() => {}); AT.dev = await window.__att.devStatus().catch(() => AT.dev); await atLoadTab(true); toast('Updated'); }catch(err){ console.error(err); toast('Could not refresh'); } t.disabled = false; }
+  else if(a === 'refresh'){ t.disabled = true; try{ AT.map = await window.__db.getConfigObject('attIdMap', {}); AT.set = await window.__db.getConfigObject('attSettings', null); AT.vac = null; AT.leave = null; AT._by = null; atWatchToday(); window.__att.syncInfo().then(s => { AT.sync = s; atSubLine(); }).catch(() => {}); AT.dev = await window.__att.devStatus().catch(() => AT.dev); await atLoadTab(true); toast('Updated'); }catch(err){ console.error(err); toast('Could not refresh'); } t.disabled = false; }
   else if(a === 'dprev' || a === 'dnext'){ const n = atAdd(AT.day, a === 'dprev' ? -1 : 1); if(n > atToday()) return; AT.day = n; await atLoadTab(false); }
   else if(a === 'mprev' || a === 'mnext'){ const ref = a === 'mprev' ? atAdd(AT.cyc.from, -1) : atAdd(AT.cyc.to, 1); const c = computeSalaryCycle(new Date(ref + 'T12:00:00'), state.salaryCycleStartDay || 26); AT.cyc = { from: c.start, to: c.end }; await atLoadTab(false); }
   else if(a === 'xls') atXls();
+  else if(a === 'hidemis'){ AT.hideMis = atShiftMismatch().map(x => x.w.id + x.now).join(','); atRender(); }
   else if(a === 'link' || a === 'linkin'){
     const pin = t.dataset.pin, by = AT._by || atPeople();
     const id = a === 'link' ? t.dataset.v : ((document.querySelector(`.atLi[data-pin="${CSS.escape(pin)}"]`) || {}).value || '').trim().split(' ')[0];
@@ -33540,6 +33684,26 @@ document.addEventListener('keydown', (e) => { if(e.key === 'Escape' && AT.person
 .atIgn{ color:var(--muted); }
 .atLi{ height:32px; width:190px; border-radius:12px; border:1px solid var(--line); padding:0 10px; font:inherit; font-size:12px; }
 .atSheet{ max-width:640px; }
+.atMis{ background:var(--warn-soft); border-radius:16px; padding:12px 14px; margin-bottom:14px; }
+.atMisH{ display:flex; align-items:center; justify-content:space-between; gap:10px; color:var(--warn); font-size:13px; }
+.atMisX{ border:0; background:transparent; color:var(--warn); font:inherit; font-size:11.5px; font-weight:600; cursor:pointer; }
+.atMisR{ display:flex; align-items:center; gap:10px; padding:7px 8px; border-radius:12px; background:#fff; margin-top:6px; cursor:pointer; }
+.atMisR .hrBody{ flex:1; min-width:0; }
+.atAdm{ padding:16px 18px; }
+.atAdmHead{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
+.atAdmSave{ width:auto; }
+.atTT{ border:1px solid var(--line); border-radius:16px; padding:12px; margin-top:10px; }
+.atTTh{ display:flex; align-items:center; gap:8px; }
+.atAdmN{ flex:1; max-width:260px; height:32px; border-radius:10px; border:1px solid var(--line); padding:0 10px; font:inherit; font-size:13px; font-weight:600; }
+.atTTg{ display:flex; flex-wrap:wrap; gap:14px; margin-top:10px; }
+.atTTc{ display:flex; align-items:center; gap:6px; } .atTTc i{ font-style:normal; color:var(--muted); }
+.atAdmT{ height:32px; border-radius:10px; border:1px solid var(--line); padding:0 8px; font:inherit; font-size:12.5px; width:auto; }
+.atTTd{ display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
+.atDep{ border:1px solid var(--line); background:#fff; color:var(--muted); border-radius:999px; padding:4px 11px; font:inherit; font-size:11.5px; font-weight:600; cursor:pointer; }
+.atDep.on{ background:var(--amber-soft); color:var(--amber); border-color:transparent; }
+.atDep.oth{ opacity:.45; }
+.atGr{ display:flex; flex-wrap:wrap; gap:16px; font-size:12.5px; color:var(--text); }
+.atAdmG{ width:64px; height:30px; border-radius:10px; border:1px solid var(--line); padding:0 8px; font:inherit; margin:0 4px; }
 .atFacts{ grid-template-columns:repeat(4,1fr); }
 .atDays{ border:1px solid var(--line); border-radius:16px; overflow:hidden; }
 .atDr{ display:grid; grid-template-columns:54px 1fr auto auto; align-items:center; gap:10px; padding:9px 12px; border-bottom:1px solid var(--line); }
