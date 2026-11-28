@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="rvf-build" content="20261126-151711">
+<meta name="rvf-build" content="20261128-090048">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -6531,6 +6531,7 @@ const PAGE_DEFS = {
   stk_fst:    { label: 'Finished Goods' },
   stk_req:    { label: 'Material Requests' },
   stk_mp:     { label: 'Machine Plan' },
+  stk_trk:    { label: 'Track' },
   stk_dz:     { label: 'Designs' },
   aichat:     { label: 'AI' }
 };
@@ -6551,7 +6552,7 @@ function renderNav(){
   nav.innerHTML = '';
   const pages = userPages(state.user).slice();
   if(state.user.role === 'admin' && !pages.includes('stock')) pages.push('stock');
-  if(state.user.role === 'admin') ['stk_raw','stk_rew','stk_wp','stk_fin','stk_fst','stk_req','stk_mp'].forEach(k => { if(!pages.includes(k)) pages.push(k); });
+  if(state.user.role === 'admin') ['stk_raw','stk_rew','stk_wp','stk_fin','stk_fst','stk_req','stk_mp','stk_trk'].forEach(k => { if(!pages.includes(k)) pages.push(k); });
   pages.forEach(key => {
     const def = PAGE_DEFS[key];
     if(!def || key === 'aichat') return;   // the AI page is switched off for everyone (nothing deleted)
@@ -29824,7 +29825,7 @@ const SX_YSEED = [["Weft","RM1108","WEFT - 3/1","VISHAL, INDIA","NE 3/1-PC",25.0
    STOCK v2: Dashboard, Raw weft, Rewind & Warping, Requisitions, Finishing, Finished store, Designs & Machines, Settings
    Linked with what the app already has (machines, designs, colours, people, items). Small saves only.
    ============================================================ */
-const SX_TABS = [['dash', 'Stock'], ['raw', 'Raw yarn'], ['rew', 'Rewound yarn'], ['wp', 'Warp beams'], ['fin', 'Unrolling report'], ['fst', 'Finished goods'], ['req', 'Material requests'], ['mp', 'Machine plan'], ['dz', 'Designs'], ['dm', 'Machines and designs'], ['set', 'Settings']];
+const SX_TABS = [['dash', 'Stock'], ['trk', 'Track'], ['raw', 'Raw yarn'], ['rew', 'Rewound yarn'], ['wp', 'Warp beams'], ['fin', 'Unrolling report'], ['fst', 'Finished goods'], ['req', 'Material requests'], ['mp', 'Machine plan'], ['dz', 'Designs'], ['dm', 'Machines and designs'], ['set', 'Settings']];
 const SX_CFG0 = () => ({ stores: ['Store 1', 'Store 2', 'Store 3'], cats: ['Gama', 'Polyspin thread', 'China', 'India'], dests: ['Rewinding', 'Warping', 'Weaving', 'Other'], sizes: [], sizesC: ['140x200', '160x250', '200x300', '90x190', '100x200', '80x150', '90x150'], sizesM: ['70x115', '70x110', '67x114', '65x115', '65x110', '30x60', '40x80', '80x120'], types: ['VL', 'MR', 'VIP'], depts: ['RVF', 'SSTM'], truckBundle: 0, truckVip: 0, truckRoll: 0, rollM: 30, mins: {}, assign: {} });
 const SX = { loaded: false, loading: false, cfg: SX_CFG0(), bal: {}, q: [], mc: {}, tab: 'dash', fsub: 'cr', rwsub: 'rew', dmsub: 'plan', rawk: 'in', rwk: 'in', ff: {}, fo: '', fil: { from: '', to: '', mc: '', size: '', type: '', dept: '', q: '' }, last: {}, busy: false };
 try{ SX.last = JSON.parse(localStorage.getItem('rvfSxLast') || '{}') || {}; }catch(e){}
@@ -29834,10 +29835,10 @@ const sxYm = (d) => String(d || sxToday()).slice(0, 7);
 const sxN = (n) => (Math.round((Number(n) || 0) * 10) / 10).toLocaleString('en-US');
 const sxMe = () => (state.user && (state.user.name || state.user.loginId)) || '';
 const sxAdmin = () => !!(state.user && state.user.role === 'admin');
-const SX_PK = { mp: 'stk_mp', dz: 'stk_dz', raw: 'stk_raw', rew: 'stk_rew', wp: 'stk_wp', fin: 'stk_fin', fst: 'stk_fst', req: 'stk_req' };
+const SX_PK = { trk: 'stk_trk', mp: 'stk_mp', dz: 'stk_dz', raw: 'stk_raw', rew: 'stk_rew', wp: 'stk_wp', fin: 'stk_fin', fst: 'stk_fst', req: 'stk_req' };
 function sxForce(p){ if(p === 'dz'){ SX.mpt = 'des'; p = 'mp'; } else if(p === 'mp') SX.mpt = 'mach'; SX.sfor = ''; SX.force = p || ''; SX.tab = p || 'dash'; SK.tab = SX.tab; }
 function sxCan(stage){ if(sxAdmin()) return true; try{ if(SX_PK[stage] && userPages(state.user).includes(SX_PK[stage])) return true; }catch(e){} const as = SX.cfg.assign || {}; let a = as[stage]; if((stage === 'rew' || stage === 'wp') && a === undefined) a = as.rw; a = a || []; const me = String(state.user && state.user.loginId); if(stage === 'set' || stage === 'mach') return a.indexOf(me) >= 0; if(stage === 'req') return a.length ? a.indexOf(me) >= 0 : true; return a.length ? a.indexOf(me) >= 0 : !!(state.user && state.user.role === 'supervisor'); }
-const SX_PG = [['raw', 'Raw yarn', 'Yarn in the store: what came in, what went out, how much is left and for how many days', 'raw'], ['rew', 'Rewound yarn', 'Yarn rewound onto bobbins, and yarn recovered from weaving', 'rew'], ['wp', 'Warp beams', 'Warp beams made and used', 'wp'], ['fin', 'Unrolling report', 'Rolls from weaving are unrolled, repacked and counted by category in pieces and metres', 'fin'], ['fst', 'Finished goods', 'Carpets and Rugs, VIP, Upholstery and 2nd quality ready for sale', 'fst'], ['req', 'Material requests', 'Requests from the weaving manager', 'req'], ['mp', 'Machine plan', 'Which design and colour runs on each machine, with its category, and the list of designs with samples', 'mach'], ['dz', 'Designs', 'Design codes and samples, stock and where each design is running', 'mach'], ['dm', 'Machines and designs', 'Which design runs on which machine', 'mach'], ['set', 'Settings', 'Lists, truck size, minimums and who enters what', 'set']];
+const SX_PG = [['trk', 'Yarn track', 'Where the yarn went: raw store, rewinding, rewound stock and weaving, step by step', 'trk'], ['raw', 'Raw yarn', 'Yarn in the store: what came in, what went out, how much is left and for how many days', 'raw'], ['rew', 'Rewound yarn', 'Yarn rewound onto bobbins, and yarn recovered from weaving', 'rew'], ['wp', 'Warp beams', 'Warp beams made and used', 'wp'], ['fin', 'Unrolling report', 'Rolls from weaving are unrolled, repacked and counted by category in pieces and metres', 'fin'], ['fst', 'Finished goods', 'Carpets and Rugs, VIP, Upholstery and 2nd quality ready for sale', 'fst'], ['req', 'Material requests', 'Requests from the weaving manager', 'req'], ['mp', 'Machine plan', 'Which design and colour runs on each machine, with its category, and the list of designs with samples', 'mach'], ['dz', 'Designs', 'Design codes and samples, stock and where each design is running', 'mach'], ['dm', 'Machines and designs', 'Which design runs on which machine', 'mach'], ['set', 'Settings', 'Lists, truck size, minimums and who enters what', 'set']];
 const sxPriv = () => sxAdmin() || !!(state.user && state.user.role === 'supervisor');
 function sxSee(pg){ if(pg === 'set') return sxAdmin() || sxCan('set'); if(sxPriv()) return true; const p = SX_PG.find(x => x[0] === pg); return !!p && sxCan(p[3]); }
 function sxWho(stage){ const as = SX.cfg.assign || {}; let a = as[stage]; if((stage === 'rew' || stage === 'wp') && a === undefined) a = as.rw; a = a || []; if(!a.length) return stage === 'req' ? 'Everybody' : (stage === 'set' || stage === 'mach') ? 'Administrator' : 'Administrator and supervisors'; return a.map(id => { const u = (state.users || []).find(x => String(x.loginId) === String(id)); return u ? u.name : id; }).join(', '); }
@@ -30298,11 +30299,11 @@ function skRender(){
   const sc = $('screen-stock'), h1 = sc && sc.querySelector('h1'), sb = sc && sc.querySelector('p.sub');
   if(SX.force && !sxSee(SX.force)){ m.innerHTML = sxEmpty('You do not have this page yet. Ask the administrator.'); return; }
   const FP = SX.force ? SX_PG.find(x => x[0] === SX.force) : null;
-  const eb = sc && sc.querySelector('.eyebrow'); if(eb) eb.textContent = ({ raw: 'Raw Yarn', rew: 'Rewound Yarn', wp: 'Warp Beams', fin: 'Unrolling Report', fst: 'Finished Goods', req: 'Material Requests', mp: 'Machine Plan', dz: 'Designs' })[SX.force] || 'Stock';
+  const eb = sc && sc.querySelector('.eyebrow'); if(eb) eb.textContent = ({ raw: 'Raw Yarn', rew: 'Rewound Yarn', wp: 'Warp Beams', fin: 'Unrolling Report', fst: 'Finished Goods', req: 'Material Requests', mp: 'Machine Plan', dz: 'Designs', trk: 'Track' })[SX.force] || 'Stock';
   if(h1 && sb){ h1.textContent = FP ? FP[1] : 'Stock & Production Plan'; sb.textContent = FP ? FP[2] : 'What we have, what came in, what went out, and which design runs on which machine.'; }
   SX.solo = !!SX.force || (!sxPriv() && pages.length === 1);
   let t = SX.force || SX.tab; if(!SX.force && SX.solo) t = pages[0][0]; else if(t !== 'dash' && !sxSee(t)) t = 'dash'; SX.tab = t;
-  let h = SX.sfor ? sxSetHtml() : t === 'dash' ? sxDashHtml() : sxPageHead(t) + (t === 'raw' ? sxRawHtml() : (t === 'rew' || t === 'wp') ? sxRwHtml() : t === 'req' ? sxReqHtml() : t === 'fin' ? sxFinHtml() : t === 'fst' ? sxFstHtml() : t === 'mp' ? sxMpHtml() : t === 'dz' ? sxDzHtml() : t === 'dm' ? sxDmHtml() : sxSetHtml());
+  let h = SX.sfor ? sxSetHtml() : t === 'dash' ? sxDashHtml() : sxPageHead(t) + (t === 'raw' ? sxRawHtml() : (t === 'rew' || t === 'wp') ? sxRwHtml() : t === 'req' ? sxReqHtml() : t === 'fin' ? sxFinHtml() : t === 'fst' ? sxFstHtml() : t === 'mp' ? sxMpHtml() : t === 'dz' ? sxDzHtml() : t === 'dm' ? sxDmHtml() : t === 'trk' ? trkHtml() : sxSetHtml());
   m.innerHTML = h;
   if(t === 'fin' && !SX.sfor){ const before = Object.keys(SX.mc).length; sxFinLoad().then(() => { if(SX.tab === 'fin' && Object.keys(SX.mc).length !== before) skRender(); }); }
 }
@@ -31035,7 +31036,7 @@ const yNum = (id) => { const e = $(id); return e ? (Number(String(e.value).repla
 function ySizeKg(t){ t = String(t || '').trim().toLowerCase(); const n = parseFloat(t); if(!(n > 0)) return 0; if(/kg/.test(t)) return n; if(/g/.test(t)) return n / 1000; return n >= 10 ? n / 1000 : n; }
 const ySups = () => Array.from(new Set((SX.cfg.ysups || []).concat(yItems().map(i => i.sup).filter(Boolean)))).sort((a, b) => a.localeCompare(b));
 const yNmIc = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="10" y1="9" x2="10" y2="15"/><line x1="14" y1="9" x2="14" y2="15"/></svg>';
-const yNmBtn = (r) => `<button type="button" class="yNm${r.nm ? ' on' : ''}" data-sx="ynm" data-v="${skEsc(r.i.id)}" title="${r.nm ? 'Marked as not moving. Click to undo' : 'Mark as not moving'}" aria-label="${r.nm ? 'Not moving. Click to undo' : 'Mark as not moving'}">${yNmIc}</button>`;
+const yNmBtn = (r) => `<button type="button" class="yNm" data-trk="open" data-v="${skEsc(r.i.id)}" title="Track this yarn" aria-label="Track this yarn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="12" r="2"/><circle cx="19" cy="12" r="2"/><path d="M7 12h10M14 9l3 3-3 3"/></svg></button><button type="button" class="yNm${r.nm ? ' on' : ''}" data-sx="ynm" data-v="${skEsc(r.i.id)}" title="${r.nm ? 'Marked as not moving. Click to undo' : 'Mark as not moving'}" aria-label="${r.nm ? 'Not moving. Click to undo' : 'Mark as not moving'}">${yNmIc}</button>`;
 function yCfg(){
   const c = SX.cfg; if(!c.ystores) c.ystores = ['RVF', 'SSTM'];
   if(!c.ydest) c.ydest = ['Weaving', 'Rewinding', 'Warping', 'Finishing', 'VIP', 'Dornier', 'Other'];
@@ -32932,6 +32933,92 @@ document.addEventListener('input', (e) => {
   });
   return cols;
 }; }
+</script>
+<style>
+.trkBar{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; padding:10px 12px; }
+.trkSel{ height:34px; border-radius:999px; border:1px solid var(--line); background:#fff; padding:0 12px; font:inherit; font-size:13px; min-width:0; max-width:100%; }
+.trkBar .trkSel{ width:auto; flex:0 0 auto; } .trkBar .trkSel.grow{ flex:1 1 220px; width:auto; }
+.trkL{ background:none; border:0; padding:0; font:inherit; color:inherit; cursor:pointer; text-align:left; } .trkL:hover{ text-decoration:underline; }
+.trkFlow{ display:flex; flex-wrap:wrap; gap:10px; padding:12px; }
+.trkS{ flex:1 1 170px; min-width:0; border:1px solid var(--line); border-radius:12px; background:#fff; padding:10px 12px; position:relative; }
+.trkS:not(:last-child)::after{ content:'\203A'; position:absolute; right:-9px; top:50%; transform:translateY(-50%); width:16px; height:16px; line-height:14px; text-align:center; border-radius:50%; background:#eef2ff; color:#4f46e5; font-size:14px; z-index:1; }
+@media (max-width:640px){ .trkS:not(:last-child)::after{ display:none; } }
+.trkH{ display:flex; align-items:center; gap:7px; font-size:12px; font-weight:600; margin-bottom:6px; color:var(--text-strong,#0f172a); }
+.trkH i{ font-style:normal; width:18px; height:18px; border-radius:50%; background:#eef2ff; color:#4f46e5; font-size:10.5px; display:inline-flex; align-items:center; justify-content:center; }
+.trkR{ display:flex; justify-content:space-between; gap:8px; font-size:12px; padding:3px 0; border-top:1px dashed #e8ebf2; } .trkR:first-of-type{ border-top:0; } .trkR span{ color:var(--muted); } .trkR b{ white-space:nowrap; }
+.trkR.hi b{ color:#4f46e5; } .trkR.bad b{ color:#dc2626; }
+</style>
+<script>
+/* Yarn Track: raw store -> rewinding -> rewound stock -> weaving, from the entries already saved */
+SX.trk = SX.trk || { per: '3m', item: '', key: '' };
+const TRK_PER = [['month', 'This month'], ['last', 'Last month'], ['3m', 'Last 3 months'], ['all', 'All time']];
+function trkRange(){
+  const t = sxToday(), ym = t.slice(0, 7), sh = (s, n) => { let y = Number(s.slice(0, 4)), m = Number(s.slice(5, 7)) + n; while(m < 1){ m += 12; y--; } while(m > 12){ m -= 12; y++; } return y + '-' + String(m).padStart(2, '0'); };
+  const per = SX.trk.per; let a = ym + '-01', b = t;
+  if(per === 'last'){ a = sh(ym, -1) + '-01'; b = dateToStr(new Date(Number(ym.slice(0, 4)), Number(ym.slice(5, 7)) - 1, 0)); }
+  else if(per === '3m') a = sh(ym, -2) + '-01'; else if(per === 'all') a = '2025-06-01';
+  const ms = []; for(let m = a.slice(0, 7); m <= b.slice(0, 7); m = sh(m, 1)) ms.push(m);
+  return { a, b, ms };
+}
+async function trkLoad(){ const R = trkRange(), key = SX.trk.per; await Promise.all(R.ms.map(m => sxMonth('w', m))); SX.trk.key = key; if(SX.tab === 'trk') skRender(); }
+function trkCalc(){
+  const R = trkRange(), by = {}, ev = [];
+  R.ms.forEach(m => sxEnt('w', m).forEach(e => {
+    if(!e.y || e.open || (e.s !== 'yr' && e.s !== 'rew') || ['in', 'out', 'ret'].indexOf(e.k) < 0) return; const d = e.d || ''; if(d < R.a || d > R.b) return;
+    const o = by[e.y] = by[e.y] || { id: e.y, rawIn: 0, rawOut: {}, rewIn: 0, gross: 0, rewOut: {}, ret: 0, run: 0 }, kg = Number(e.kg) || 0;
+    if(e.s === 'yr'){ if(e.k === 'in') o.rawIn += kg; else { const to = e.to || 'Other'; o.rawOut[to] = (o.rawOut[to] || 0) + kg; } }
+    else if(e.k === 'in'){ o.rewIn += kg; o.gross += Number(e.gross) || 0; }
+    else if(e.k === 'out'){ const to = e.to || 'Other'; o.rewOut[to] = (o.rewOut[to] || 0) + kg; }
+    else if(e.rt === 'run') o.run += kg; else o.ret += kg;
+    ev.push(e);
+  }));
+  Object.keys(by).forEach(k => { const o = by[k]; o.sentRew = o.rawOut['Rewinding'] || 0; o.sentOther = Object.keys(o.rawOut).reduce((a, t) => a + (t === 'Rewinding' ? 0 : o.rawOut[t]), 0); o.outAll = Object.keys(o.rewOut).reduce((a, t) => a + o.rewOut[t], 0); o.diff = o.sentRew - o.rewIn; });
+  return { by, ev, R };
+}
+const trkN = (v) => v > 0.0004 ? sxN(v) : '<span class="sxSm2">0</span>';
+function trkHtml(){
+  const R = trkRange(); if(SX.trk.key !== SX.trk.per){ trkLoad(); return '<div class="card"><div class="hrEmpty">Loading…</div></div>'; }
+  const C = trkCalc(), items = yItems().filter(i => i.on !== false || C.by[i.id]);
+  const bar = `<div class="card sxCard trkBar"><select class="trkSel" data-trk="per" aria-label="Period">${TRK_PER.map(x => `<option value="${x[0]}" ${SX.trk.per === x[0] ? 'selected' : ''}>${x[1]}</option>`).join('')}</select><select class="trkSel grow" data-trk="item" aria-label="Yarn"><option value="">All yarn</option>${items.map(i => `<option value="${skEsc(i.id)}" ${SX.trk.item === i.id ? 'selected' : ''}>${skEsc(i.code ? i.code + ' · ' : '')}${skEsc(i.col)}</option>`).join('')}</select></div>`;
+  const it = SX.trk.item ? yItem(SX.trk.item) : null;
+  return bar + (it ? trkItem(it, C) : trkAll(items, C));
+}
+function trkAll(items, C){
+  const rows = items.map(i => { const o = C.by[i.id]; if(!o) return null; const b = yRwBal(i.id), idx = yIdx()[i.id] || { tot: 0 }; return { i, o, b, st: idx.tot, at: Math.max(0, b.out) }; }).filter(Boolean).sort((a, b) => b.o.sentRew - a.o.sentRew || b.o.rawIn - a.o.rawIn);
+  const T = (f) => rows.reduce((a, r) => a + f(r), 0);
+  const cols = [['Code', ''], ['Colour', '', 'k'], ['Received', '', 'r'], ['Sent to Rewinding', '', 'r'], ['Sent to other', '', 'r'], ['Rewound in', '', 'r'], ['Difference', '', 'r'], ['Out to weaving', '', 'r'], ['At weaving now', '', 'r']];
+  const body = rows.map(r => [`<span class="sxCode">${skEsc(r.i.code)}</span>`, `<button type="button" class="trkL sxYc" data-trk="open" data-v="${skEsc(r.i.id)}">${yDot(yHex(r.i.col, yFam(r.i.col)))}${skEsc(r.i.col)}</button>`, trkN(r.o.rawIn), `<b>${trkN(r.o.sentRew)}</b>`, trkN(r.o.sentOther), `<b>${trkN(r.o.rewIn)}</b>`, r.o.sentRew > 0 ? sxN(r.o.diff) : '<span class="sxSm2">-</span>', trkN(r.o.outAll), trkN(r.at)]);
+  const foot = ['', '<b>Total</b>', `<b>${sxN(T(r => r.o.rawIn))}</b>`, `<b>${sxN(T(r => r.o.sentRew))}</b>`, `<b>${sxN(T(r => r.o.sentOther))}</b>`, `<b>${sxN(T(r => r.o.rewIn))}</b>`, `<b>${sxN(T(r => r.o.sentRew > 0 ? r.o.diff : 0))}</b>`, `<b>${sxN(T(r => r.o.outAll))}</b>`, `<b>${sxN(T(r => r.at))}</b>`];
+  return sxHead('All yarn', 'Kg · tap a colour to follow it') + '<div class="card sxCard">' + sxTbl(cols, body, rows.length ? foot : null, 'No yarn moved in this period.') + '</div>';
+}
+function trkItem(i, C){
+  const o = C.by[i.id] || { rawIn: 0, rawOut: {}, rewIn: 0, gross: 0, rewOut: {}, ret: 0, run: 0, sentRew: 0, sentOther: 0, outAll: 0, diff: 0 }, b = yRwBal(i.id), st = (yIdx()[i.id] || { tot: 0 }).tot, rw = Math.max(0, b.kg) + Math.max(0, b.kq) + Math.max(0, b.rc);
+  const kv = (k, v, c) => `<div class="trkR ${c || ''}"><span>${k}</span><b>${v}</b></div>`, list = (m, none) => { const k = Object.keys(m).filter(x => m[x] > 0.0004).sort((x, y) => m[y] - m[x]); return k.length ? k.map(x => kv(skEsc(x), sxN(m[x]) + ' kg', x === 'Rewinding' ? 'hi' : '')).join('') : kv(none, '—'); };
+  const step = (n, t, inner) => `<div class="trkS"><div class="trkH"><i>${n}</i>${t}</div>${inner}</div>`;
+  const flow = '<div class="card sxCard trkFlow">'
+    + step(1, 'Raw store', kv('Received', sxN(o.rawIn) + ' kg') + kv('In store now', sxN(st) + ' kg', 'hi'))
+    + step(2, 'Sent from raw store', list(o.rawOut, 'Nothing sent'))
+    + step(3, 'Rewinding', kv('Received', sxN(o.sentRew) + ' kg') + kv('Rewound in (net)', sxN(o.rewIn) + ' kg', 'hi') + kv('Difference', o.sentRew > 0 ? sxN(o.diff) + ' kg' : '-', o.diff > 0.05 && o.sentRew > 0 ? 'bad' : ''))
+    + step(4, 'Rewound stock', kv('In stock now', sxN(rw) + ' kg', 'hi') + list(o.rewOut, 'Nothing sent out'))
+    + step(5, 'Weaving', kv('Given out', sxN(o.outAll) + ' kg') + kv('Back, full bobbins', sxN(o.ret) + ' kg') + kv('Back, run-out', sxN(o.run) + ' kg') + kv('At weaving now', sxN(Math.max(0, b.out)) + ' kg', 'hi'))
+    + '</div>';
+  const mine = C.ev.filter(e => e.y === i.id).sort((a, b2) => (b2.t || 0) - (a.t || 0)), pgi = sxPgInfo('trk:' + i.id, mine.length, 10);
+  const label = (e) => e.s === 'yr' ? (e.k === 'in' ? 'Raw store IN' : 'Raw store OUT') : e.k === 'in' ? 'Rewinding IN' : e.k === 'out' ? 'Rewound OUT' : 'Back from weaving';
+  const move = (e) => e.s === 'yr' ? (e.k === 'in' ? 'From ' + (e.sup || '') : (e.store || 'Store') + ' to ' + (e.to || '')) : e.k === 'in' ? 'Rewound' + (e.bob ? ', ' + sxN(e.bob) + ' bobbins' : '') + (e.q === 2 ? ', 2nd quality' : '') : e.k === 'out' ? 'To ' + (e.to || '') + (e.src === 'rc' ? ' (recovered yarn)' : '') : (e.rt === 'run' ? 'Run-out bobbins, recovered' : 'Full bobbins returned');
+  const rows = mine.slice(pgi.a, pgi.b).map(e => [sxWhen(e), `<span class="sxTag ${e.k === 'out' ? 'out' : e.k === 'ret' ? 'open' : 'in'}">${label(e)}</span>`, `<span class="sxSm2">${skEsc(move(e))}</span>`, `<b>${sxN(e.kg)}</b>`, sxByC(e)]);
+  return `<div class="sxNote" style="margin:10px 12px 0;"><b>${skEsc(i.col)}</b> · ${skEsc(i.code)} · ${skEsc(i.sup)}${i.sz ? ' · ' + skEsc(i.sz) : ''} <button type="button" class="trkL" style="color:#4f46e5;margin-left:8px;" data-trk="all">All yarn</button></div>`
+    + sxHead('Steps', 'Raw store to weaving') + flow + sxHead('Every move', 'Newest first') + '<div class="card sxCard">' + sxTbl([['When', ''], ['Step', '', 'a'], ['What', ''], ['Kg', '', 'r'], ['By', '']], rows, null, 'No moves in this period.') + pgi.html + '</div>';
+}
+document.addEventListener('click', (ev) => {
+  const el = ev.target.closest && ev.target.closest('[data-trk]'); if(!el || el.tagName === 'SELECT') return; const a = el.dataset.trk;
+  if(a === 'open'){ ev.preventDefault(); SX.trk.item = el.dataset.v; if(SX.pg) SX.pg = {}; goTo('stk_trk'); }
+  else if(a === 'all'){ SX.trk.item = ''; skRender(); }
+});
+document.addEventListener('change', (ev) => {
+  const el = ev.target; if(!el.dataset || !el.dataset.trk || el.tagName !== 'SELECT') return;
+  if(el.dataset.trk === 'per'){ SX.trk.per = el.value; SX.trk.key = ''; } else { SX.trk.item = el.value; }
+  if(SX.pg) SX.pg = {}; skRender();
+});
 </script>
 </body>
 </html>
