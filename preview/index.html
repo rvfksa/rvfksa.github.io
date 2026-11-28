@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head><meta name="robots" content="noindex">
-<meta name="rvf-build" content="20261128-114029">
+<meta name="rvf-build" content="20261128-125956">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -33125,8 +33125,9 @@ const atRule = (d) => { try{ return getShiftRuleForDate(d); }catch(e){ return ma
 function atPunchesByPerson(from, to){
   const g = {};
   for(let d = from; d <= to; d = atAdd(d, 1)){
-    const p = atP(d);
+    const p = atP(d), map = AT.map || {};
     Object.keys(p).forEach(pin => {
+      if(map[pin] === '-') return;   // ignored (old) device ID
       const w = atWho(pin), o = g[w.id] || (g[w.id] = { w, list: [] });
       if(w.u && !o.w.u) o.w = w;
       p[pin].forEach(x => { const a = String(x).split('|'), m = atMin(a[0]); if(m != null) o.list.push({ d, m, dev: a[1] || '' }); });
@@ -33355,11 +33356,17 @@ function atLinkView(){
   let h = `<div class="hrNote atLead">A device ID that is the same as the Employee ID is matched by itself. Link the others once, for example someone entered on the device as <b>413</b> who is <b>5413</b> in the app. From then on their punches count for that employee everywhere.</div><datalist id="atEmpL">${opts}</datalist>`;
   h += `<div class="hrLabel">Not linked <span class="atCount">${un.length}</span></div>`;
   h += un.length ? un.map(x => { const sg = atSuggest(x.pin), w = { name: x.b.name || ('ID ' + x.pin), id: x.pin };
-    return `<div class="hrRow">${atAvatar(w)}<div class="hrBody"><div class="hrTitle">${atEsc(x.b.name || 'No name on device')} <span class="id">device ${atEsc(x.pin)}</span></div><div class="hrSub">${atEsc(x.b.dept || '')}${x.b.dept ? ' &middot; ' : ''}punched on ${x.days} of the loaded days</div><div class="atLk">${sg.map(u => `<button type="button" class="atSug" data-at="link" data-pin="${atEsc(x.pin)}" data-v="${atEsc(u.loginId)}" title="Link to this employee">${atSvg('link', 12)} ${atEsc(u.loginId)} &middot; ${atEsc(u.name || '')}</button>`).join('')}</div></div><div class="hrSide"><div class="atLkIn"><input class="atLi" list="atEmpL" placeholder="Employee ID or name" data-pin="${atEsc(x.pin)}"><button type="button" class="pillBtn" data-at="linkin" data-pin="${atEsc(x.pin)}">Link</button></div></div></div>`; }).join('') : '<div class="hrEmpty">Every device ID is matched.</div>';
-  const ln = Object.keys(map).sort((a, b) => (Number(a) || 0) - (Number(b) || 0));
+    return `<div class="hrRow">${atAvatar(w)}<div class="hrBody"><div class="hrTitle">${atEsc(x.b.name || 'No name on device')} <span class="id">device ${atEsc(x.pin)}</span></div><div class="hrSub">${atEsc(x.b.dept || '')}${x.b.dept ? ' &middot; ' : ''}punched on ${x.days} of the loaded days</div><div class="atLk">${sg.map(u => `<button type="button" class="atSug" data-at="link" data-pin="${atEsc(x.pin)}" data-v="${atEsc(u.loginId)}" title="Link to this employee">${atSvg('link', 12)} ${atEsc(u.loginId)} &middot; ${atEsc(u.name || '')}</button>`).join('')}</div></div><div class="hrSide"><div class="atLkIn"><input class="atLi" list="atEmpL" placeholder="Employee ID or name" data-pin="${atEsc(x.pin)}"><button type="button" class="pillBtn" data-at="linkin" data-pin="${atEsc(x.pin)}">Link</button><button type="button" class="pillBtn atIgn" data-at="ignore" data-pin="${atEsc(x.pin)}" title="Old or unused device ID: do not count its punches">Ignore</button></div></div></div>`; }).join('') : '<div class="hrEmpty">Every device ID is matched.</div>';
+  const ln = Object.keys(map).filter(p => map[p] !== '-').sort((a, b) => (Number(a) || 0) - (Number(b) || 0));
+  const ig = Object.keys(map).filter(p => map[p] === '-').sort((a, b) => (Number(a) || 0) - (Number(b) || 0));
   h += `<div class="hrLabel">Linked <span class="atCount">${ln.length}</span></div>`;
   h += ln.length ? ln.map(pin => { const u = by[String(map[pin])], w = { name: u ? u.name : '?', id: map[pin], u };
     return `<div class="hrRow">${atAvatar(w)}<div class="hrBody"><div class="hrTitle">${atEsc(u ? u.name : 'Employee not found')} <span class="id">${atEsc(map[pin])}</span></div><div class="hrSub">Device ID ${atEsc(pin)}${u && u.department ? ' &middot; ' + atEsc(u.department) : ''}</div></div><div class="hrSide"><div class="hrActs"><button type="button" class="iconBtn" data-at="unlink" data-pin="${atEsc(pin)}" title="Remove this link">${atSvg('x', 15)}</button></div></div></div>`; }).join('') : '<div class="hrEmpty">No links yet.</div>';
+  if(ig.length){
+    h += `<div class="hrLabel">Ignored (old IDs, not counted) <span class="atCount">${ig.length}</span></div>`;
+    h += ig.map(pin => { const b = AT.names[pin] || {}, w = { name: b.name || ('ID ' + pin), id: pin };
+      return `<div class="hrRow">${atAvatar(w)}<div class="hrBody"><div class="hrTitle">${atEsc(b.name || 'Device ID ' + pin)} <span class="id">device ${atEsc(pin)}</span></div><div class="hrSub">Punches on this ID are not counted</div></div><div class="hrSide"><div class="hrActs"><button type="button" class="iconBtn" data-at="unlink" data-pin="${atEsc(pin)}" title="Count this ID again">${atSvg('x', 15)}</button></div></div></div>`; }).join('');
+  }
   return h;
 }
 async function atSaveMap(next, msg){
@@ -33439,6 +33446,7 @@ document.addEventListener('click', async (e) => {
     if(!id || !by[id]){ toast('Pick an employee from the list'); return; }
     await atSaveMap(Object.assign({}, AT.map, { [pin]: id }), 'Device ID ' + pin + ' linked to ' + id);
   }
+  else if(a === 'ignore'){ await atSaveMap(Object.assign({}, AT.map, { [t.dataset.pin]: '-' }), 'Device ID ' + t.dataset.pin + ' ignored'); }
   else if(a === 'unlink'){ const next = Object.assign({}, AT.map); delete next[t.dataset.pin]; await atSaveMap(next, 'Link removed'); }
 });
 document.addEventListener('input', (e) => {
@@ -33491,6 +33499,7 @@ document.addEventListener('keydown', (e) => { if(e.key === 'Escape' && AT.person
 .atSug{ display:inline-flex; align-items:center; gap:5px; border:0; background:var(--amber-soft); color:var(--amber); border-radius:999px; padding:5px 11px; font:inherit; font-size:11.5px; font-weight:600; cursor:pointer; }
 .atSug:hover{ filter:brightness(.97); }
 .atLkIn{ display:flex; gap:6px; align-items:center; }
+.atIgn{ color:var(--muted); }
 .atLi{ height:32px; width:190px; border-radius:12px; border:1px solid var(--line); padding:0 10px; font:inherit; font-size:12px; }
 .atSheet{ max-width:640px; }
 .atFacts{ grid-template-columns:repeat(4,1fr); }
