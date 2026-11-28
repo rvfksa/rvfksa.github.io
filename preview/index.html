@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
-<head><meta name="robots" content="noindex">
-<meta name="rvf-build" content="20261128-150832">
+<head>
+<meta name="robots" content="noindex">
+<meta name="rvf-build" content="20261128-122003">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Riyadh Velvet Factory</title>
@@ -29326,7 +29327,7 @@ window.rvfUserSizes = function(){
   function remote(){
     return fetch(location.pathname + '?rvfchk=' + Date.now(), { cache: 'no-store' }).then(function(r){
       if(!r.ok) throw new Error('x');
-      var re = /name="rvf-build" content="([^"]+)"/;
+      var re = /name="rvf-build" content="20261128-122003"]+)"/;
       if(!r.body || !r.body.getReader) return r.text().then(function(t){ var x = t.match(re); return x ? x[1] : null; });
       var rd = r.body.getReader(), dec = new TextDecoder(), buf = '';
       function pump(){ return rd.read().then(function(x){
@@ -33046,6 +33047,7 @@ window.__att = {
   async devStatus() { const s = await getDoc(doc(fdb(), 'attDevices', '_status')); return s.exists() ? s.data() : null; }
 };
 </script>
+
 <script>
 /* ---------- Attendance page (Admin; others when the page is given to them) ----------
    Punches are grouped by SHIFT (from Admin > Shift & Timing, by date), not by calendar day:
@@ -33184,44 +33186,66 @@ function atPunchesByPerson(from, to){
 // This follows people who move between Day and Night without changing their profile.
 const AT_SPAN = 16 * 60;
 const atDayNo = (d) => Math.round(Date.UTC(+d.slice(0, 4), +d.slice(5, 7) - 1, +d.slice(8, 10)) / 86400000);
+const AT_REST = 20 * 60;   // 20 h with no punch = a rest day (Friday, holiday, leave): the next punch always starts a new shift
 function atShifts(o){
   const tt = atTT(o.w), G = atSet();
   const L0 = o.list.map(x => ({ t: atDayNo(x.d) * 1440 + x.m, d: x.d, m: x.m, dev: x.dev })).sort((a, b) => a.t - b.t), L = [];
   L0.forEach(x => { if(!L.length || x.t - L[L.length - 1].t > AT_DUP) L.push(x); });
-  // Split the punches into shifts so that, over the whole period, shifts have normal lengths (6-15 h)
-  // and start close to the Day or Night start time. Rest days (no punches) anchor the split.
   const nowT = atDayNo(atToday()) * 1440 + new Date().getHours() * 60 + new Date().getMinutes();
-  const score = (i, k) => {
-    const f = L[i], span = L[k].t - f.t, night = f.m >= 14 * 60 || f.m < 3 * 60;
+  const isN = m => m >= 14 * 60 || m < 3 * 60;
+  const T = s => { const r = tt[s === 'Night' ? 'night' : 'day']; let st = atMin(r.start), en = atMin(r.end); if(en <= st) en += 1440; return { st, en }; };
+  const gL = +G.graceLate || 0, gE = +G.graceEarly || 0;
+  // how well an In/Out pair fits a shift: people come a little before the start and leave at or after the end
+  const fit = (s, inM, outM) => { const { st, en } = T(s); const d = v => ((v % 1440) + 1440) % 1440;
+    const near = (v, a, lo, hi) => { let x = d(v) - d(a); if(x > 720) x -= 1440; if(x < -720) x += 1440; return x >= lo && x <= hi; };
+    return (near(inM, st, -90, 30 + gL) ? 1 : 0) + (near(outM, en, -gE, 150) ? 1 : 0); };
+  // type of a group of punches; a lone punch takes the shift of its week (In or Out decided by its time)
+  const typ = (i, k, bias) => i === k && bias ? bias : (isN(L[i].m) ? 'Night' : 'Day');
+  const score = (i, k, bias) => {
+    const f = L[i], span = L[k].t - f.t, s = typ(i, k, bias);
     let sc;
     if(i === k) sc = (nowT - f.t < AT_SPAN && k === L.length - 1) ? 0 : -6;   // a single punch is fine only for a shift still running
-    else if(span < 120) sc = -4; else if(span < 360) sc = 2; else if(span <= 15 * 60) sc = 10; else sc = 4;
-    const st = atMin(tt[night ? 'night' : 'day'].start), dist = Math.min(Math.abs(f.m - st), 1440 - Math.abs(f.m - st)) / 60;
-    // the shift on his profile only breaks a tie (a missed or single punch); clear punches always win
-    const pref = o.w.set ? ((o.w.set === 'Night') === night ? 1.5 : 0) : 0;
-    return sc + Math.max(0, 2 - dist) * 0.5 + pref;
+    else { sc = span < 120 ? -4 : span < 360 ? 2 : span <= 15 * 60 ? 10 : 4; sc += fit(s, f.m, L[k].m); }
+    return sc + (bias && s !== bias ? -3 : 0);   // a shift different from the week's shift needs clear punches
   };
-  const n = L.length, best = new Array(n + 1).fill(-Infinity), from = new Array(n + 1).fill(0); best[0] = 0;
-  for(let j = 1; j <= n; j++) for(let i = j - 1; i >= 0 && L[j - 1].t - L[i].t <= AT_SPAN; i--){ const c = best[i] + score(i, j - 1); if(c > best[j]){ best[j] = c; from[j] = i; } }
-  const ses = []; for(let j = n; j > 0; j = from[j]) ses.unshift(L.slice(from[j], j));
+  const run = (a, z, bias) => {   // best split of punches a..z-1
+    const n = z - a, best = new Array(n + 1).fill(-Infinity), from = new Array(n + 1).fill(0); best[0] = 0;
+    for(let j = 1; j <= n; j++) for(let i = j - 1; i >= 0 && L[a + j - 1].t - L[a + i].t <= AT_SPAN; i--){ const c = best[i] + score(a + i, a + j - 1, bias); if(c > best[j]){ best[j] = c; from[j] = i; } }
+    const seg = []; for(let j = n; j > 0; j = from[j]) seg.unshift([a + from[j], a + j - 1]);
+    return { v: best[n], seg };
+  };
+  // 1) cut at rest days. 2) each block (normally Saturday to Thursday) gets one shift: the one that pairs its punches best;
+  //    if equal, the first punch after the rest day decides (it is always an In); then the profile.
+  const ses = []; let a = 0;
+  for(let z = 1; z <= L.length; z++){
+    if(z < L.length && L[z].t - L[z - 1].t < AT_REST) continue;
+    const D = run(a, z, 'Day'), N = run(a, z, 'Night'), first = isN(L[a].m) ? 'Night' : 'Day';
+    let w = D.v > N.v + 0.5 ? 'Day' : N.v > D.v + 0.5 ? 'Night' : first;
+    if(Math.abs(D.v - N.v) <= 0.5 && z - a === 1 && o.w.set) w = o.w.set;
+    (w === 'Day' ? D : N).seg.forEach(([i, k]) => ses.push({ i, k, s: typ(i, k, w) }));
+    a = z;
+  }
   const res = {}; let nN = 0, nD = 0;
-  ses.forEach(S0 => {
-    const f = S0[0], night = f.m >= 14 * 60 || f.m < 3 * 60, sd = f.m < 3 * 60 ? atAdd(f.d, -1) : f.d, base = atDayNo(sd) * 1440;
+  ses.forEach(g => {
+    const S0 = L.slice(g.i, g.k + 1), f = S0[0], s = g.s, lone = S0.length === 1;
+    // a lone punch at the "wrong" end of the shift is an Out whose In was missed
+    const outOnly = lone && isN(f.m) !== (s === 'Night');
+    let sd = f.m < 3 * 60 ? atAdd(f.d, -1) : f.d;
+    if(outOnly && s === 'Night' && f.m >= 3 * 60) sd = atAdd(f.d, -1);
+    const base = atDayNo(sd) * 1440;
     const P = []; S0.forEach(x => { const m = x.t - base; if(!P.length || m - P[P.length - 1].m > AT_DUP) P.push({ m, dev: x.dev }); });
-    if(night) nN++; else nD++;
-    const sh = { s: night ? 'Night' : 'Day' };
+    if(s === 'Night') nN++; else nD++;
     if(res[sd] && res[sd].n >= P.length) return;   // two shifts on one date (rare): keep the fuller one
-    const rule = tt[sh.s === 'Night' ? 'night' : 'day'];
-    let st = atMin(rule.start), en = atMin(rule.end); if(en <= st) en += 1440;
-    const r = { date: sd, s: sh.s, n: P.length, devs: Array.from(new Set(P.map(x => x.dev).filter(Boolean))), start: st, end: en };
+    const { st, en } = T(s);
+    const r = { date: sd, s, n: P.length, devs: Array.from(new Set(P.map(x => x.dev).filter(Boolean))), start: st, end: en };
     // In = first punch of the shift, Out = last punch (always the latest one); punches in between are not shown
-    r.in = P[0].m; r.out = P.length > 1 ? P[P.length - 1].m : null;
+    if(outOnly){ r.in = null; r.out = P[0].m; } else { r.in = P[0].m; r.out = P.length > 1 ? P[P.length - 1].m : null; }
     r.open = Date.now() < new Date(sd + 'T00:00:00').getTime() + (en + 60) * 60000;   // shift still running (until 1 hour after it ends)
-    r.worked = r.out != null ? r.out - r.in : null;
-    r.late = r.in - st > (+G.graceLate || 0) ? r.in - st : 0;
-    r.early = (!r.open && r.out != null && en - r.out > (+G.graceEarly || 0)) ? en - r.out : 0;
+    r.worked = (r.in != null && r.out != null) ? r.out - r.in : null;
+    r.late = r.in != null && r.in - st > gL ? r.in - st : 0;
+    r.early = (!r.open && r.out != null && en - r.out > gE) ? en - r.out : 0;
     r.tt = tt.name;
-    r.missing = (!r.open && r.out == null) ? 'Out' : '';
+    r.missing = r.in == null ? 'In' : (!r.open && r.out == null) ? 'Out' : '';
     res[sd] = r;
   });
   return { sh: { s: nN > nD ? 'Night' : 'Day' }, days: res };
@@ -33315,7 +33339,7 @@ function atPersonCell(w, sub){
 function atShiftTable(rows){
   if(!rows.length) return '<div class="hrEmpty">Nobody in this view.</div>';
   return `<div class="hrScroll"><table class="hrTbl atTbl"><thead><tr><th>Employee</th><th>Shift</th><th class="c">In</th><th class="c">Out</th><th class="r">Worked</th><th></th></tr></thead><tbody>`
-    + rows.map(x => { const r = x.r; return `<tr class="clk" data-at="person" data-v="${atEsc(x.w.id)}"><td>${atPersonCell(x.w)}</td><td>${atShiftChip(r.s)}<div class="atDim">${atClock(r.start)}&ndash;${atClock(r.end)}</div></td><td class="c t${r.late ? ' bad' : ''}">${atClock(r.in)}</td><td class="c t${r.early ? ' warn' : ''}">${r.out != null ? atClock(r.out) : (r.open ? '<span class="atDash">&ndash;</span>' : '<span class="atMiss">?</span>')}</td><td class="r t"><b>${r.worked != null ? atHM(r.worked) : (r.open ? '<span class="atDim">' + atHM(Math.max(0, (new Date().getHours() * 60 + new Date().getMinutes() + (r.date < atToday() ? 1440 : 0)) - r.in)) + ' so far</span>' : '')}</b></td><td class="atPills">${atPill(r)}</td></tr>`; }).join('')
+    + rows.map(x => { const r = x.r; return `<tr class="clk" data-at="person" data-v="${atEsc(x.w.id)}"><td>${atPersonCell(x.w)}</td><td>${atShiftChip(r.s)}<div class="atDim">${atClock(r.start)}&ndash;${atClock(r.end)}</div></td><td class="c t${r.late ? ' bad' : ''}">${r.in != null ? atClock(r.in) : '<span class="atMiss">?</span>'}</td><td class="c t${r.early ? ' warn' : ''}">${r.out != null ? atClock(r.out) : (r.open ? '<span class="atDash">&ndash;</span>' : '<span class="atMiss">?</span>')}</td><td class="r t"><b>${r.worked != null ? atHM(r.worked) : (r.open && r.in != null ? '<span class="atDim">' + atHM(Math.max(0, (new Date().getHours() * 60 + new Date().getMinutes() + (r.date < atToday() ? 1440 : 0)) - r.in)) + ' so far</span>' : '')}</b></td><td class="atPills">${atPill(r)}</td></tr>`; }).join('')
     + '</tbody></table></div>';
 }
 function atAwayList(L, label){
@@ -33342,7 +33366,7 @@ function atMismatchBox(){
 }
 function atDayView(sd, live){
   const D = atDayData(sd, live);
-  const came = D.came.filter(x => atPass(x.w, x.r.s)).sort((a, b) => a.r.in - b.r.in || atById(a, b));
+  const came = D.came.filter(x => atPass(x.w, x.r.s)).sort((a, b) => (a.r.in ?? a.r.out) - (b.r.in ?? b.r.out) || atById(a, b));
   const away = D.away.filter(x => atPass(x.w, x.s)).sort(atById);
   const late = came.filter(x => x.r.late), miss = came.filter(x => x.r.missing);
   let h = `<div class="hrTiles atTiles">${atTile('came', came.length, live ? 'In today' : 'Came', 'ok')}${atTile('late', late.length, 'Late', 'soon')}${atTile('miss', miss.length, 'Missing punch', 'late')}${atTile('away', away.length, live ? 'Not in yet' : 'Did not come', 'info')}</div>`;
@@ -33408,7 +33432,7 @@ function atOpenPerson(id){
     h += `<div class="hrFacts atFacts"><div class="hrFact"><div class="k">Present</div><div class="v">${L.length} days</div></div><div class="hrFact"><div class="k">Worked</div><div class="v">${atHM(worked)}</div></div><div class="hrFact"><div class="k">Late</div><div class="v">${late} days</div></div><div class="hrFact"><div class="k">Missing punch</div><div class="v">${miss}</div></div></div>`;
     h += `<div class="atDays">${days.map(d => { const r = S.days[d], wd = atWd(d);
       if(!r) return `<div class="atDr off"><div class="atDd"><b>${d.slice(8)}</b><span>${wd}</span></div><div class="atDt">${atHol(d) ? atEsc((state.holidays || {})[d] || 'Holiday') : (!atEmployed(w, d) ? 'Not employed' : (atVacOn(w, d) ? atEsc(atVacOn(w, d)) : '<span class="bad">Absent</span>'))}</div></div>`;
-      return `<div class="atDr"><div class="atDd"><b>${d.slice(8)}</b><span>${wd}</span></div><div class="atDt"><span class="${r.late ? 'bad' : ''}">${atClock(r.in)}</span><i>&rarr;</i><span class="${r.early ? 'warn' : ''}">${r.out != null ? atClock(r.out) : '?'}</span></div><div class="atDw">${r.worked != null ? atHM(r.worked) : ''}</div><div class="atPills">${atPill(r)}</div></div>`; }).join('')}</div>`;
+      return `<div class="atDr"><div class="atDd"><b>${d.slice(8)}</b><span>${wd}</span></div><div class="atDt"><span class="${r.late ? 'bad' : ''}">${r.in != null ? atClock(r.in) : '?'}</span><i>&rarr;</i><span class="${r.early ? 'warn' : ''}">${r.out != null ? atClock(r.out) : '?'}</span></div><div class="atDw">${r.worked != null ? atHM(r.worked) : ''}</div><div class="atPills">${atPill(r)}</div></div>`; }).join('')}</div>`;
     h += `<div class="hrNote" style="margin-top:10px;">In is the first punch of the shift and Out is the last punch; a night shift's Out is on the next morning. Shift times come from Admin &gt; Factory &gt; Attendance (${atEsc(atTT(w).name)}); holidays from the Calendar.  A shift that starts after 14:00 is a night shift.</div>`;
     $('atSheet').innerHTML = h; $('atModal').style.display = 'flex';
   }).catch(e => { console.error(e); toast('Could not load'); });
@@ -33597,7 +33621,7 @@ function atRender(){
 function atXls(){
   if(!window.XLSX){ toast('The Excel tool did not load'); return; }
   const wb = XLSX.utils.book_new(), hdr = ['ID', 'Device ID', 'Name', 'Department', 'Shift', 'Date', 'In', 'Out', 'Worked (h)', 'Late (min)', 'Left early (min)', 'Missing'];
-  const line = (w, r) => [w.id, w.pin, w.name, w.dept, r.s, r.date, atClock(r.in), r.out != null ? atClock(r.out) : '', atHrs(r.worked), r.late || '', r.early || '', r.missing];
+  const line = (w, r) => [w.id, w.pin, w.name, w.dept, r.s, r.date, r.in != null ? atClock(r.in) : '', r.out != null ? atClock(r.out) : '', atHrs(r.worked), r.late || '', r.early || '', r.missing];
   if(AT.tab === 'month'){
     const M = atMonthData(), L = M.people.filter(p => atPass(p.w, p.s)).sort(atById);
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['ID', 'Device ID', 'Name', 'Department', 'Type', 'Shift', 'Work days', 'Present', 'Holiday worked', 'Vacation / leave', 'Absent', 'Late days', 'Late (min)', 'Missing punches', 'Worked (h)', 'Avg per day (h)']].concat(L.map(p => [p.w.id, p.w.pin, p.w.name, p.w.dept, p.w.notInApp ? 'Not in app' : p.w.type, p.s, p.work, p.present, p.holW, p.vac, p.absent, p.late, p.lateMin, p.miss, atHrs(p.worked), p.full ? atHrs(p.worked / p.full) : '']))), 'Summary');
